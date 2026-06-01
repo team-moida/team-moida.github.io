@@ -222,8 +222,12 @@ function App() {
             const startTime = meetingSettings?.start || '08:00';
             const [shr,smin] = startTime.split(':');
             const meetingStart = new Date(sy,sm-1,sd,parseInt(shr),parseInt(smin),0);
-            const lateThreshold = new Date(meetingStart.getTime() + 60000);
-            const status = now >= lateThreshold ? '지각' : '정상';
+            // 출석 기준:
+            // - 정상: 시작 ~ 시작+1분
+            // - 지각: 시작+1분 초과 ~ 종료
+            // - 노쇼: 미출석
+            const normalThreshold = new Date(meetingStart.getTime() + 60000);
+            const status = now <= normalThreshold ? '정상' : '지각';
             const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
 
             const batch = db.batch();
@@ -329,8 +333,12 @@ function App() {
             const meetingStart = new Date(sy,sm-1,sd,parseInt(shr),parseInt(smin),0);
             const allowFrom = new Date(meetingStart.getTime() - 60*60*1000);
             if (!testMode && now < allowFrom) { showToast('아직 출석 가능 시간이 아닙니다.', 'error'); setIsCheckingIn(false); return; }
-            const lateThreshold = new Date(meetingStart.getTime() + 60000);
-            const status = now >= lateThreshold ? '지각' : '정상';
+            // 출석 기준:
+            // - 정상: 시작 ~ 시작+1분
+            // - 지각: 시작+1분 초과 ~ 종료
+            // - 노쇼: 미출석
+            const normalThreshold = new Date(meetingStart.getTime() + 60000);
+            const status = now <= normalThreshold ? '정상' : '지각';
             const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
             await getCol('weekly_session').doc(mySession.id).update({ checkedIn:true, checkInTime:timeStr, status });
             showToast(`출석 완료! ${status} (${timeStr})`, 'success');

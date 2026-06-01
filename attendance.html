@@ -703,8 +703,12 @@ function App() {
             const allowFromStr = allowFrom.toLocaleTimeString('ko-KR',{hour12:false,hour:'2-digit',minute:'2-digit'});
             return showAlert('출석 불가',`출석 가능 시간: ${participant.date} ${allowFromStr}~${meetingTimes.end}`);
         }
-        const lateThreshold = new Date(meetingStart.getTime() + 60000);
-        const finalStatus = now >= lateThreshold ? '지각' : '정상';
+        // 출석 기준:
+        // - 정상: 시작 ~ 시작+1분
+        // - 지각: 시작+1분 초과 ~ 종료
+        // - 노쇼: 미출석
+        const normalThreshold = new Date(meetingStart.getTime() + 60000); // 시작 + 1분
+        const finalStatus = now <= normalThreshold ? '정상' : '지각';
         const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
         try {
             await getSessionCol().doc(participant.id).update({ checkedIn:true, checkInTime:timeStr, status:finalStatus });
