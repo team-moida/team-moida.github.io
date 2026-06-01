@@ -502,26 +502,34 @@ function App() {
             setMeetingTimes(updatedTimes);
             await updateTestModeSettings(true);
 
-            // 자동 인원 선정 (Firestore에서 직접 조회)
-            try {
-                const memberSnap = await getMemberCol().where('isResigned', '!=', true).get();
-                const allMembers = memberSnap.docs.map(d => ({id: d.id, ...d.data()}));
+            // 자동 인원 선정 (1초 대기 후 실행 - members 로드 대기)
+            setTimeout(async () => {
+                try {
+                    // 활성 회원 (탈퇴 안 한 사람들)
+                    const activeMemberList = members.filter(m => !m.isResigned);
 
-                const sessionSnap = await getSessionCol().where('date', '==', todayStr).get();
-                const existingIds = new Set(sessionSnap.docs.map(d => d.data().memberId));
+                    // 이미 오늘 선정된 회원들
+                    const sessionSnap = await getSessionCol().where('date', '==', todayStr).get();
+                    const existingIds = new Set(sessionSnap.docs.map(d => d.data().memberId));
 
-                const toAdd = allMembers.filter(m => !existingIds.has(m.id));
-                if (toAdd.length > 0) {
-                    await Promise.all(toAdd.map(m => getSessionCol().add({
-                        memberId:m.id, name:m.name, gender:m.gender, level:m.level,
-                        date:todayStr, checkedIn:false, checkInTime:null, status:'미출석',
-                        isGuest:false, team:'', createdAt:new Date().toISOString()
-                    })));
-                    showAlert('테스트 모드 활성화', `${toAdd.length}명 자동 선정됨\n\n🧪 테스트 모드 활성화!\n아래 버튼으로 출석 기준을 설정하세요.\n• ⏰ 정상: 현재 시간이 정상 범위\n• ⏱️ 지각: 현재 시간이 지각 범위\n• ❌ 노쇼: 종료 후 상태`);
-                } else {
-                    showAlert('테스트 모드 활성화', '🧪 테스트 모드 활성화!\n기준에 따라 출석을 테스트하세요.');
+                    // 선정되지 않은 회원들
+                    const toAdd = activeMemberList.filter(m => !existingIds.has(m.id));
+
+                    if (toAdd.length > 0) {
+                        await Promise.all(toAdd.map(m => getSessionCol().add({
+                            memberId:m.id, name:m.name, gender:m.gender, level:m.level,
+                            date:todayStr, checkedIn:false, checkInTime:null, status:'미출석',
+                            isGuest:false, team:'', createdAt:new Date().toISOString()
+                        })));
+                        showAlert('테스트 모드 활성화', `${toAdd.length}명 자동 선정됨\n\n🧪 테스트 모드 활성화!\n아래 버튼으로 출석 기준을 설정하세요.\n• ⏰ 정상: 현재 시간이 정상 범위\n• ⏱️ 지각: 현재 시간이 지각 범위\n• ❌ 노쇼: 종료 후 상태`);
+                    } else {
+                        showAlert('테스트 모드 활성화', '🧪 테스트 모드 활성화!\n기준에 따라 출석을 테스트하세요.');
+                    }
+                } catch(e) {
+                    console.error('테스트 인원 선정 실패:', e);
+                    showAlert('알림', '인원 자동 선정 실패. 수동으로 선정하세요.');
                 }
-            } catch(e) { console.error('테스트 인원 선정 실패:', e); showAlert('알림', '인원 자동 선정 실패. 수동으로 선정하세요.'); }
+            }, 1000);
         } else {
             // 테스트 모드 OFF: 데이터 정리 및 복원
             if (testModeBackup) {
