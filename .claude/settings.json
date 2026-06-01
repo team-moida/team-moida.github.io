@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd 'd:/LSH/관리 어플' && git add -A && git diff --cached --quiet || (git commit -m '모이다 자동 업데이트' && git push)",
+            "shell": "bash",
+            "timeout": 30,
+            "statusMessage": "GitHub에 자동 업로드 중..."
+          }
+        ]
+      }
+    ]
+  }
+}
