@@ -1034,12 +1034,16 @@ function App() {
                                     ⏱️ 지각 시간 전환
                                 </button>
                                 <button onClick={async ()=>{
-                                    const noShowList = activeList.filter(p => !p.checkedIn && p.status !== '노쇼');
+                                    const noShowList = activeParticipants.filter(p => !p.checkedIn && p.status !== '노쇼');
                                     if (noShowList.length === 0) { showAlert('알림', '미출석 인원이 없습니다.'); return; }
                                     try {
                                         const batch = db.batch();
                                         noShowList.forEach(p => batch.update(getSessionCol().doc(p.id), { status: '노쇼' }));
                                         await batch.commit();
+                                        // onSnapshot 지연 방지: React state 즉시 반영
+                                        setSessionData(prev => prev.map(p =>
+                                            noShowList.some(ns => ns.id === p.id) ? {...p, status: '노쇼'} : p
+                                        ));
                                         showAlert('노쇼 처리', `미출석 ${noShowList.length}명이 노쇼로 처리됨 ✗`);
                                     } catch(e) { showAlert('오류', '노쇼 처리 실패'); }
                                 }}
