@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>모이다 - 데이터 이전</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full">
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">📦</div>
+            <h1 class="text-2xl font-black text-slate-800">데이터 이전 도구</h1>
+            <p class="text-sm text-slate-500 mt-1">OTP FC → 모이다 (moida)</p>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-6 text-sm text-blue-800 leading-relaxed">
+            <strong>📌 안내</strong><br>
+            기존 OTP FC 데이터를 새 앱(모이다)으로 <strong>복사</strong>합니다.<br>
+            기존 웹과 데이터는 <strong>절대 건드리지 않습니다.</strong>
+        </div>
+
+        <div id="progress-area" class="hidden mb-6">
+            <div class="flex justify-between text-xs text-slate-500 mb-2">
+                <span id="progress-label">준비 중...</span>
+                <span id="progress-count">0 / 0</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div id="progress-bar" class="bg-pink-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div id="log-area" class="hidden max-h-52 overflow-y-auto space-y-1 mb-6 bg-slate-50 rounded-2xl p-4 text-xs font-mono"></div>
+
+        <button id="start-btn" onclick="startMigration()"
+            class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-base shadow-lg active:scale-95 transition-all">
+            📦 데이터 복사 시작
+        </button>
+
+        <div id="done-area" class="hidden mt-6 text-center bg-green-50 border border-green-100 rounded-2xl p-6">
+            <div class="text-4xl mb-3">🎉</div>
+            <p class="font-black text-green-700 text-lg">이전 완료!</p>
+            <p class="text-sm text-slate-500 mt-2">
+                이 파일(migrate.html)은 이제<br>
+                GitHub에서 삭제해도 됩니다.
+            </p>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // ① 기존 Firebase (읽기 전용 - 절대 수정 안 함)
+        const oldConfig = {
+            apiKey: "AIzaSyCAcQzliuWJTB8vPm9gb0vsyR8pIAx7YTw",
+            authDomain: "otp-fc-check.firebaseapp.com",
+            projectId: "otp-fc-check",
+            storageBucket: "otp-fc-check.firebasestorage.app",
+            messagingSenderId: "907414776392",
+            appId: "1:907414776392:web:0a29a660bb956e5a40467d"
+        };
+
+        // ② 새 Firebase (모이다)
+        const newConfig = {
+            apiKey: "AIzaSyBYykNZVf20LLQ-YIIeA2TKz9DSBsypRZM",
+            authDomain: "moida-otpfc.firebaseapp.com",
+            projectId: "moida-otpfc",
+            storageBucket: "moida-otpfc.firebasestorage.app",
+            messagingSenderId: "407991675090",
+            appId: "1:407991675090:web:df9f7d8a7c93a6eb5ae50b"
+        };
+
+        const oldApp = firebase.initializeApp(oldConfig, 'old');
+        const newApp = firebase.initializeApp(newConfig, 'new');
+        const oldDb = firebase.firestore(oldApp);
+        const newDb = firebase.firestore(newApp);
+
+        // 이전할 컬렉션 목록
+        const COLLECTIONS = [
+            { name: 'members',         label: '회원 명단' },
+            { name: 'weekly_session',  label: '주간 출석' },
+            { name: 'history',         label: '출결 기록' },
+            { name: 'settings',        label: '모임 설정' },
+            { name: 'monthly_checks',  label: '월별 회비' },
+            { name: 'team_drafts',     label: '팀 편성 기록' },
+            { name: 'court_presets',   label: '구장 프리셋' },
+            { name: 'match_schedules', label: '매치 테이블' },
+        ];
+
+        const oldPath = (col) =>
+            oldDb.collection('artifacts').doc('otp-fc-attendance')
+                 .collection('public').doc('data').collection(col);
+
+        const newPath = (col) =>
+            newDb.collection('artifacts').doc('moida-otpfc')
+                 .collection('public').doc('data').collection(col);
+
+        function addLog(msg, type = 'info') {
+            const area = document.getElementById('log-area');
+            area.classList.remove('hidden');
+            const el = document.createElement('div');
+            const colors = {
+                info:    'text-slate-500',
+                success: 'text-green-600 font-bold',
+                error:   'text-red-500 font-bold',
+            };
+            el.className = colors[type] || colors.info;
+            el.textContent = msg;
+            area.appendChild(el);
+            area.scrollTop = area.scrollHeight;
+        }
+
+        function setProgress(label, done, total) {
+            document.getElementById('progress-label').textContent = label;
+            document.getElementById('progress-count').textContent = `${done} / ${total}`;
+            document.getElementById('progress-bar').style.width =
+                total > 0 ? Math.round((done / total) * 100) + '%' : '0%';
+        }
+
+        async function startMigration() {
+            const btn = document.getElementById('start-btn');
+            btn.disabled = true;
+            btn.textContent = '⏳ 복사 중... 잠시만 기다려주세요';
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('progress-area').classList.remove('hidden');
+
+            try {
+                addLog('서버 연결 중...');
+                await firebase.auth(oldApp).signInAnonymously();
+                await firebase.auth(newApp).signInAnonymously();
+                addLog('✅ 연결 성공!', 'success');
+
+                // 전체 문서 수 먼저 계산
+                addLog('데이터 크기 확인 중...');
+                const snapshots = {};
+                let total = 0;
+                for (const col of COLLECTIONS) {
+                    const snap = await oldPath(col.name).get();
+                    snapshots[col.name] = snap;
+                    total += snap.size;
+                    addLog(`  ${col.label}: ${snap.size}개`);
+                }
+                addLog(`총 ${total}개 데이터 발견. 복사 시작!`);
+
+                let done = 0;
+                for (const col of COLLECTIONS) {
+                    const snap = snapshots[col.name];
+                    if (snap.empty) continue;
+
+                    setProgress(`${col.label} 복사 중...`, done, total);
+                    const docs = snap.docs;
+
+                    // 400개씩 배치 처리 (Firestore 제한)
+                    for (let i = 0; i < docs.length; i += 400) {
+                        const batch = newDb.batch();
+                        const chunk = docs.slice(i, i + 400);
+                        chunk.forEach(doc => {
+                            batch.set(newPath(col.name).doc(doc.id), doc.data());
+                        });
+                        await batch.commit();
+                        done += chunk.length;
+                        setProgress(`${col.label} 복사 중...`, done, total);
+                    }
+
+                    addLog(`✅ ${col.label} 완료 (${snap.size}개)`, 'success');
+                }
+
+                setProgress('완료!', total, total);
+                addLog('🎉 모든 데이터 복사 완료!', 'success');
+                document.getElementById('done-area').classList.remove('hidden');
+                btn.classList.add('hidden');
+
+            } catch (e) {
+                console.error(e);
+                addLog('❌ 오류: ' + e.message, 'error');
+                btn.disabled = false;
+                btn.textContent = '🔄 다시 시도';
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <title>모이다 - OTP FC</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        body {
+            background: linear-gradient(145deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .card { transition: transform 0.15s ease, opacity 0.15s ease; }
+        .card:active { transform: scale(0.97); opacity: 0.9; }
+        .shake { animation: shake 0.4s ease; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        .fade-in { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        input:focus { outline: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin { animation: spin 0.8s linear infinite; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-5">
+
+    <div class="w-full max-w-sm">
+
+        <!-- 로고 -->
+        <div class="flex flex-col items-center mb-8">
+            <div class="w-28 h-28 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-4 shadow-2xl shadow-pink-500/20">
+                <img src="icon.png" alt="OTP FC" class="w-24 h-24 object-contain drop-shadow-lg"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                <div style="display:none" class="w-full h-full flex items-center justify-center text-4xl">⚽</div>
+            </div>
+            <h1 class="text-5xl font-black text-white tracking-tight">모이다</h1>
+            <p class="text-pink-400 text-[11px] mt-2 tracking-[0.3em] uppercase font-medium">One Two Pass Futsal Club</p>
+        </div>
+
+        <!-- 로그인 폼 -->
+        <div id="login-view" style="display:none;" class="fade-in">
+            <div id="login-form-wrap">
+                <input id="login-name" type="text" placeholder="이름"
+                    style="user-select:text;-webkit-user-select:text;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.15);color:white;"
+                    class="w-full rounded-2xl px-4 py-4 mb-3 text-base transition-colors placeholder:text-slate-500"
+                    onkeydown="if(event.key==='Enter') document.getElementById('login-birth').focus()">
+                <input id="login-birth" type="tel" placeholder="생년월일 6자리 (YYMMDD)"
+                    style="user-select:text;-webkit-user-select:text;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.15);color:white;"
+                    maxlength="6" inputmode="numeric"
+                    class="w-full rounded-2xl px-4 py-4 mb-4 text-base transition-colors placeholder:text-slate-500"
+                    onkeydown="if(event.key==='Enter') doLogin()">
+                <button onclick="doLogin()" id="login-btn"
+                    class="card w-full py-4 bg-pink-500 hover:bg-pink-400 text-white rounded-2xl font-black text-base shadow-lg shadow-pink-500/30">
+                    로그인
+                </button>
+            </div>
+        </div>
+
+        <!-- 관리자/운영진 허브 -->
+        <div id="admin-view" style="display:none;" class="fade-in">
+            <!-- 인사말 -->
+            <div class="flex items-center justify-between mb-5 bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
+                <div>
+                    <p class="text-white font-bold text-base" id="greeting-name"></p>
+                    <p class="text-slate-400 text-xs mt-0.5" id="greeting-role"></p>
+                </div>
+                <button onclick="doLogout()" class="text-slate-400 text-xs border border-slate-700 rounded-xl px-3 py-1.5 active:opacity-70">
+                    로그아웃
+                </button>
+            </div>
+
+            <!-- 내 회원 앱 -->
+            <a href="member.html" class="card flex items-center gap-4 bg-blue-500/15 border border-blue-500/30 rounded-2xl p-4 mb-5 block">
+                <div class="w-11 h-11 bg-blue-500/20 rounded-xl flex items-center justify-center text-xl flex-shrink-0">👤</div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-white font-black text-sm">내 회원 앱</p>
+                    <p class="text-blue-400 text-xs mt-0.5">출석 체크 · 팀 확인</p>
+                </div>
+                <div class="text-slate-500 text-xl">›</div>
+            </a>
+
+            <!-- 관리 메뉴 -->
+            <p class="text-slate-600 text-[10px] font-bold tracking-widest uppercase mb-2 px-1">관리</p>
+            <div class="space-y-2.5">
+                <a href="attendance.html" class="card flex items-center gap-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl p-4 block">
+                    <div class="w-11 h-11 bg-emerald-500/20 rounded-xl flex items-center justify-center text-xl flex-shrink-0">✅</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-white font-black text-sm">출결 관리</p>
+                        <p class="text-emerald-400 text-xs mt-0.5">출석 체크 · 선정 · 기록</p>
+                    </div>
+                    <div class="text-slate-500 text-xl">›</div>
+                </a>
+                <a href="roster.html" class="card flex items-center gap-4 bg-pink-500/15 border border-pink-500/30 rounded-2xl p-4 block">
+                    <div class="w-11 h-11 bg-pink-500/20 rounded-xl flex items-center justify-center text-xl flex-shrink-0">📋</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-white font-black text-sm">명단 · 회비 관리</p>
+                        <p class="text-pink-400 text-xs mt-0.5">회원 정보 · 납부 현황</p>
+                    </div>
+                    <div class="text-slate-500 text-xl">›</div>
+                </a>
+                <a href="team-maker.html" class="card flex items-center gap-4 bg-violet-500/15 border border-violet-500/30 rounded-2xl p-4 block">
+                    <div class="w-11 h-11 bg-violet-500/20 rounded-xl flex items-center justify-center text-xl flex-shrink-0">⚡</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-white font-black text-sm">팀 편성</p>
+                        <p class="text-violet-400 text-xs mt-0.5">자동 균등 팀 편성</p>
+                    </div>
+                    <div class="text-slate-500 text-xl">›</div>
+                </a>
+                <a href="match.html" class="card flex items-center gap-4 bg-rose-500/15 border border-rose-500/30 rounded-2xl p-4 block">
+                    <div class="w-11 h-11 bg-rose-500/20 rounded-xl flex items-center justify-center text-xl flex-shrink-0">🏟️</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-white font-black text-sm">매치 테이블</p>
+                        <p class="text-rose-400 text-xs mt-0.5">경기 일정 자동 편성</p>
+                    </div>
+                    <div class="text-slate-500 text-xl">›</div>
+                </a>
+            </div>
+        </div>
+
+        <!-- 로딩 -->
+        <div id="loading-view" class="flex justify-center py-6">
+            <div class="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full spin"></div>
+        </div>
+
+        <p class="text-center text-slate-700 text-[10px] mt-8">모이다 v1.0 · OTP FC © 2025</p>
+    </div>
+
+    <!-- 토스트 -->
+    <div id="toast" style="display:none;position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;"
+         class="text-white text-sm font-bold px-5 py-3 rounded-2xl shadow-lg whitespace-nowrap"></div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBYykNZVf20LLQ-YIIeA2TKz9DSBsypRZM",
+            authDomain: "moida-otpfc.firebaseapp.com",
+            projectId: "moida-otpfc",
+            storageBucket: "moida-otpfc.firebasestorage.app",
+            messagingSenderId: "407991675090",
+            appId: "1:407991675090:web:df9f7d8a7c93a6eb5ae50b"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const getCol = (n) => db.collection('artifacts').doc('moida-otpfc').collection('public').doc('data').collection(n);
+
+        const ADMIN_ROLES = ['회장', '매니저', '총무', '부총무'];
+        const LS_KEY = 'moida_member_data';
+
+        function getSaved() {
+            try { return JSON.parse(localStorage.getItem(LS_KEY)); } catch(e) { return null; }
+        }
+
+        function showView(id) {
+            ['login-view', 'admin-view', 'loading-view'].forEach(v => {
+                document.getElementById(v).style.display = 'none';
+            });
+            document.getElementById(id).style.display = id === 'loading-view' ? 'flex' : 'block';
+        }
+
+        let toastTimer = null;
+        function showToast(msg, type) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.style.background = type === 'ok' ? '#059669' : '#ef4444';
+            el.style.display = 'block';
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+        }
+
+        function routeByRole(data) {
+            if (ADMIN_ROLES.includes(data.role)) {
+                document.getElementById('greeting-name').textContent = data.name + '님';
+                document.getElementById('greeting-role').textContent = data.role;
+                showView('admin-view');
+            } else {
+                location.href = 'member.html';
+            }
+        }
+
+        async function initApp() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            }
+            await auth.signInAnonymously().catch(() => {});
+
+            const saved = getSaved();
+            if (saved && saved.memberId) {
+                if (!saved.role) {
+                    try {
+                        const doc = await getCol('members').doc(saved.memberId).get();
+                        if (doc.exists && !doc.data().isResigned) {
+                            saved.role = doc.data().role || '회원';
+                            localStorage.setItem(LS_KEY, JSON.stringify(saved));
+                        } else {
+                            localStorage.removeItem(LS_KEY);
+                            showView('login-view');
+                            return;
+                        }
+                    } catch(e) {
+                        showView('login-view');
+                        return;
+                    }
+                }
+                routeByRole(saved);
+            } else {
+                showView('login-view');
+            }
+        }
+
+        async function doLogin() {
+            const name = document.getElementById('login-name').value.trim();
+            const birth6 = document.getElementById('login-birth').value.replace(/[^0-9]/g, '').slice(0, 6);
+
+            if (!name) return showToast('이름을 입력해주세요.');
+            if (birth6.length !== 6) return showToast('생년월일 6자리(YYMMDD)를 입력해주세요.');
+
+            const btn = document.getElementById('login-btn');
+            btn.disabled = true;
+            btn.textContent = '확인 중...';
+
+            try {
+                const snap = await getCol('members').where('name', '==', name).get();
+                let found = null;
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    if (data.isResigned) return;
+                    const b = String(data.birth || '');
+                    if (b.substring(2) === birth6 || b === birth6) found = { id: doc.id, ...data };
+                });
+
+                if (!found) {
+                    const wrap = document.getElementById('login-form-wrap');
+                    wrap.classList.add('shake');
+                    setTimeout(() => wrap.classList.remove('shake'), 400);
+                    showToast('이름 또는 생년월일이 일치하지 않습니다.');
+                    return;
+                }
+
+                const memberData = { memberId: found.id, name: found.name, role: found.role || '회원' };
+                localStorage.setItem(LS_KEY, JSON.stringify(memberData));
+                routeByRole(memberData);
+            } catch(e) {
+                showToast('로그인 실패: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '로그인';
+            }
+        }
+
+        function doLogout() {
+            localStorage.removeItem(LS_KEY);
+            document.getElementById('login-name').value = '';
+            document.getElementById('login-birth').value = '';
+            showView('login-view');
+        }
+
+        initApp();
+    </script>
+</body>
+</html>

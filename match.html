@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#f8fafc">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <title>모이다 - 매치 테이블</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @font-face{font-family:'Esamanru';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10@1.0/GongGothicMedium.woff') format('woff');font-weight:normal}
+        @font-face{font-family:'Esamanru';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10@1.0/GongGothicBold.woff') format('woff');font-weight:700}
+        body{font-family:'Esamanru',sans-serif!important;background:#f8fafc;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none;-webkit-font-smoothing:antialiased;touch-action:manipulation}
+        .animate-zoom-in{animation:zoomIn 0.2s ease-out}
+        @keyframes zoomIn{from{opacity:0;transform:scale(0.98)}to{opacity:1;transform:scale(1)}}
+        button:active{transform:scale(0.95);opacity:0.8}
+        #loading-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.5s}
+        .no-scrollbar::-webkit-scrollbar{display:none}.no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+        .match-row{transition:all 0.2s ease;cursor:pointer}
+        .match-row:active{background:#f1f5f9}
+        .match-completed{opacity:0.45;background:#f8fafc}
+        select,input{outline:none;font-family:'Esamanru',sans-serif}
+        select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.75rem center;background-size:1rem;padding-right:2rem!important}
+    </style>
+</head>
+<body>
+<div id="loading-screen">
+    <div class="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+    <p class="mt-4 font-bold text-slate-500 italic">모이다 연결 중...</p>
+</div>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useMemo, useRef } = React;
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBYykNZVf20LLQ-YIIeA2TKz9DSBsypRZM",
+    authDomain: "moida-otpfc.firebaseapp.com",
+    projectId: "moida-otpfc",
+    storageBucket: "moida-otpfc.firebasestorage.app",
+    messagingSenderId: "407991675090",
+    appId: "1:407991675090:web:df9f7d8a7c93a6eb5ae50b"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const APP_ID = 'moida-otpfc';
+const getCol = (n) => db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection(n);
+
+const getTeamBadge = (idx) => ['bg-pink-500 text-white','bg-sky-400 text-white','bg-lime-400 text-slate-800','bg-yellow-400 text-slate-800','bg-blue-600 text-white','bg-red-500 text-white'][idx] || 'bg-slate-400 text-white';
+const getTeamName = (idx) => String.fromCharCode(65+idx);
+
+const Icon = {
+    Home:({size=18,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+    Refresh:({size=16,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M21 21v-5h-5"/></svg>,
+    Save:({size=16,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>,
+    Camera:({size=16,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
+    Download:({size=16,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+    Plus:({size=14,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 4v16m8-8H4"/></svg>,
+    Minus:({size=14,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 12H4"/></svg>,
+    Trash:({size=14,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+    Check:({size=14,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>,
+    Chart:({size=16,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>,
+};
+
+function App() {
+    const [view, setView] = useState('setup');
+    const [loading, setLoading] = useState(true);
+    const [confirmedData, setConfirmedData] = useState(null);
+    const [schedule, setSchedule] = useState({list:[],stats:{}});
+    const [completedMatches, setCompletedMatches] = useState(new Set());
+    const [presets, setPresets] = useState([]);
+    const [savedSchedules, setSavedSchedules] = useState([]);
+    const [selectedPresetId, setSelectedPresetId] = useState('manual');
+    const [presetToggles, setPresetToggles] = useState([]);
+    const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
+    const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
+    const [presetForm, setPresetForm] = useState({name:'',courtCount:3,fieldNames:['1구장','2구장','3구장'],fieldTypes:['6vs6','6vs6','6vs6']});
+    const [isSaving, setIsSaving] = useState(false);
+    const [isCapturing, setIsCapturing] = useState(false);
+    const [alertModal, setAlertModal] = useState({show:false,title:'',content:'',type:'info',onConfirm:null});
+
+    const [config, setConfig] = useState({
+        meetingDate:new Date().toISOString().split('T')[0],
+        courtCount:3, matchDuration:12, breakDuration:3,
+        startTime:'08:00', endTime:'10:00',
+        fieldNames:['1구장','2구장','3구장'], fieldTypes:['6vs6','6vs6','6vs6'],
+        strictCourtSize:false
+    });
+
+    const showAlert=(title,content,type='info',onConfirm=null)=>setAlertModal({show:true,title,content,type,onConfirm});
+    const showConfirm=(title,content,onConfirm)=>setAlertModal({show:true,title,content,type:'confirm',onConfirm});
+
+    const hoursList=Array.from({length:24},(_,i)=>String(i).padStart(2,'0'));
+    const minutesList=['00','10','20','30','40','50'];
+    const splitTime=(t)=>{const p=(t||'08:00').split(':');return{h:p[0]||'08',m:p[1]||'00'};};
+
+    useEffect(()=>{
+        const init=async()=>{
+            try{await auth.signInAnonymously();}catch(e){console.error(e);}
+            finally{setLoading(false);const l=document.getElementById('loading-screen');if(l){l.style.opacity='0';setTimeout(()=>{if(l)l.style.display='none';},500);}}
+        };
+        init();
+        if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+        const unsubAuth=auth.onAuthStateChanged(u=>{
+            if(!u)return;
+            getCol('team_drafts').onSnapshot(snap=>{
+                const drafts=snap.docs.map(d=>({id:d.id,...d.data()}));
+                const latest=drafts.filter(d=>d.isConfirmed).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0];
+                if(latest){setConfirmedData(latest);if(latest.meetingDate)setConfig(p=>({...p,meetingDate:latest.meetingDate}));}
+            });
+            getCol('court_presets').onSnapshot(snap=>setPresets(snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt))));
+            getCol('match_schedules').onSnapshot(snap=>setSavedSchedules(snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))));
+        });
+        return()=>unsubAuth();
+    },[]);
+
+    const generateMatchTable = () => {
+        if(!confirmedData){return showAlert('알림','먼저 팀 편성을 확정해주세요.');}
+        const teams=confirmedData.teams.map((_,i)=>getTeamName(i));
+        const teamSizes={};confirmedData.teams.forEach((t,i)=>{teamSizes[getTeamName(i)]=t.members.length;});
+        const{courtCount,matchDuration,breakDuration,startTime,endTime}=config;
+        let currentTime=new Date(`2024-01-01T${startTime}:00`);
+        const limitTime=new Date(`2024-01-01T${endTime}:00`);
+        const teamStats={};teams.forEach(t=>teamStats[t]=0);
+        const matchupHistory={};teams.forEach(t1=>{matchupHistory[t1]={};teams.forEach(t2=>{if(t1!==t2)matchupHistory[t1][t2]=0;});});
+        const courtUsage={};const lastOpponent={};
+        teams.forEach(t=>{courtUsage[t]={};for(let i=0;i<courtCount;i++)courtUsage[t][i]=0;lastOpponent[t]=null;});
+        let sessionList=[];let matchIdx=1;
+
+        while(currentTime<limitTime){
+            let usedInSession=new Set();
+            let sessionMatches=[];
+            const sessionCourts=Array.from({length:courtCount},(_,i)=>({idx:i,type:config.fieldTypes[i]||'6vs6'}));
+            for(const court of sessionCourts){
+                const isSmall=court.type==='5vs5';
+                let candidates=teams.filter(t=>!usedInSession.has(t));
+                if(config.strictCourtSize&&isSmall)candidates=candidates.filter(t=>teamSizes[t]<=5);
+                if(candidates.length<2)continue;
+                candidates.sort(()=>Math.random()-0.5);
+                let bestPair=null;let minScore=Infinity;
+                for(let i=0;i<candidates.length;i++){
+                    for(let j=i+1;j<candidates.length;j++){
+                        const t1=candidates[i],t2=candidates[j];
+                        const isB2B=(lastOpponent[t1]===t2||lastOpponent[t2]===t1);
+                        const score=matchupHistory[t1][t2]*10000+(teamStats[t1]+teamStats[t2])*100+(courtUsage[t1][court.idx]+courtUsage[t2][court.idx])*50+(isB2B?500000:0)+Math.random();
+                        if(score<minScore){minScore=score;bestPair=[t1,t2];}
+                    }
+                }
+                if(bestPair){
+                    const[t1,t2]=bestPair;
+                    sessionMatches.push({match:[t1,t2],fieldIdx:court.idx});
+                    usedInSession.add(t1);usedInSession.add(t2);
+                    matchupHistory[t1][t2]++;matchupHistory[t2][t1]++;
+                    teamStats[t1]++;teamStats[t2]++;
+                    courtUsage[t1][court.idx]++;courtUsage[t2][court.idx]++;
+                    lastOpponent[t1]=t2;lastOpponent[t2]=t1;
+                }
+            }
+            if(sessionMatches.length>0){
+                const startL=currentTime.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:false});
+                const endC=new Date(currentTime.getTime()+matchDuration*60000);
+                const endL=endC.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:false});
+                sessionList.push({id:matchIdx++,time:`${startL} - ${endL}`,startTime:startL,endTime:endL,matches:sessionMatches.sort((a,b)=>a.fieldIdx-b.fieldIdx),resting:teams.filter(t=>!usedInSession.has(t))});
+                currentTime=new Date(currentTime.getTime()+(matchDuration+breakDuration)*60000);
+                if(new Date(currentTime.getTime()-breakDuration*60000)>=limitTime)break;
+            } else break;
+        }
+        setSchedule({list:sessionList,stats:teamStats});
+        setCompletedMatches(new Set());
+        setView('results');
+    };
+
+    const saveMatchSchedule = async () => {
+        if(!schedule.list.length)return;
+        setIsSaving(true);
+        try {
+            await getCol('match_schedules').add({
+                schedule,config,completedMatches:Array.from(completedMatches),
+                createdAt:new Date().toISOString(),meetingDate:config.meetingDate,
+                label:`${config.meetingDate} 매치 (${schedule.list.length}라운드)`
+            });
+            showAlert('저장 완료','매치 테이블이 저장되었습니다.');
+        } catch(e){showAlert('오류','저장 실패');} finally{setIsSaving(false);}
+    };
+
+    const handleCapture = async () => {
+        setIsCapturing(true);
+        await new Promise(r=>setTimeout(r,500));
+        try {
+            const el=document.getElementById('capture-area');
+            if(!el)return;
+            const canvas=await window.html2canvas(el,{scale:2,backgroundColor:'#f8fafc',useCORS:true,scrollY:0});
+            const link=document.createElement('a');
+            link.download=`모이다_매치표_${config.meetingDate}.png`;
+            link.href=canvas.toDataURL('image/png',1.0);
+            link.click();
+        } catch(e){showAlert('오류','캡쳐 실패');}
+        finally{setIsCapturing(false);}
+    };
+
+    const handlePresetSelect = (preset) => {
+        setSelectedPresetId(preset.id);
+        setPresetToggles(new Array(preset.courtCount).fill(false));
+        setConfig(p=>({...p,courtCount:0,fieldNames:[],fieldTypes:[]}));
+    };
+
+    const handleToggleSubCourt = (idx) => {
+        const newToggles=[...presetToggles];newToggles[idx]=!newToggles[idx];setPresetToggles(newToggles);
+        const p=presets.find(pr=>pr.id===selectedPresetId);if(!p)return;
+        const names=[],types=[];
+        newToggles.forEach((on,i)=>{if(on){names.push(p.fieldNames[i]);types.push(p.fieldTypes[i]);}});
+        setConfig(prev=>({...prev,courtCount:names.length,fieldNames:names,fieldTypes:types}));
+    };
+
+    const savePreset = async () => {
+        if(!presetForm.name.trim())return showAlert('알림','프리셋 이름을 입력해주세요.');
+        try {
+            await getCol('court_presets').add({...presetForm,createdAt:new Date().toISOString()});
+            setIsPresetModalOpen(false);
+            setPresetForm({name:'',courtCount:3,fieldNames:['1구장','2구장','3구장'],fieldTypes:['6vs6','6vs6','6vs6']});
+            showAlert('완료','프리셋이 저장되었습니다.');
+        } catch(e){showAlert('오류','저장 실패');}
+    };
+
+    const statsData = useMemo(()=>{
+        if(!schedule.list.length||!confirmedData)return null;
+        const teams=confirmedData.teams.map((_,i)=>getTeamName(i));
+        const matchupCounts={},totalMatches={};
+        teams.forEach(t=>{matchupCounts[t]={};teams.forEach(o=>{if(t!==o)matchupCounts[t][o]=0;});totalMatches[t]=0;});
+        schedule.list.forEach(session=>{
+            session.matches.forEach(m=>{
+                const[t1,t2]=m.match;matchupCounts[t1][t2]++;matchupCounts[t2][t1]++;totalMatches[t1]++;totalMatches[t2]++;
+            });
+        });
+        return{matchupCounts,totalMatches,teams};
+    },[schedule,confirmedData]);
+
+    if(loading)return(
+        <div className="h-screen flex items-center justify-center">
+            <div className="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+    );
+
+    return (
+        <div className="min-h-screen pb-32 text-slate-900">
+            <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 h-16 flex items-center px-4 shadow-sm">
+                <div className="max-w-5xl mx-auto w-full flex justify-between items-center">
+                    <div className="flex items-center gap-1">
+                        {[['setup','설정'],['results','매치표'],['stats','통계']].map(([v,l])=>(
+                            <button key={v} onClick={()=>setView(v)} className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${view===v?'bg-pink-500 text-white shadow-lg':'text-slate-400 hover:text-slate-600'}`}>{l}</button>
+                        ))}
+                    </div>
+                    <div className="flex gap-2">
+                        {schedule.list.length>0&&<button onClick={saveMatchSchedule} disabled={isSaving} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-blue-600"><Icon.Save size={16}/></button>}
+                        {schedule.list.length>0&&<button onClick={handleCapture} disabled={isCapturing} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-pink-500"><Icon.Camera size={16}/></button>}
+                        <button onClick={()=>window.location.reload()} className="p-2.5 rounded-xl bg-slate-50 text-slate-400"><Icon.Refresh size={16}/></button>
+                        <button onClick={()=>window.location.href='index.html'} className="p-2.5 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"><Icon.Home size={18}/></button>
+                    </div>
+                </div>
+            </nav>
+
+            <main className="p-4 max-w-5xl mx-auto animate-zoom-in">
+
+                {/* ===== 설정 탭 ===== */}
+                {view==='setup' && (
+                    <div>
+                        <button onClick={()=>setIsLoadModalOpen(true)} className="w-full py-4 bg-white border border-slate-200 rounded-3xl shadow-sm flex items-center justify-center gap-2 mb-5 active:scale-95 transition-all">
+                            <span className="text-2xl">📂</span>
+                            <p className="font-black text-slate-700">과거 기록 불러오기</p>
+                        </button>
+
+                        <div className="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm mb-4">
+                            <p className="text-xs font-black text-pink-500 uppercase tracking-widest mb-4">기본 설정</p>
+                            <div className="space-y-4">
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-400 mb-1">모임 날짜</p>
+                                    <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 font-black text-sm text-center"
+                                        value={config.meetingDate} onChange={e=>setConfig(p=>({...p,meetingDate:e.target.value}))}/>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 mb-1">시작 시간</p>
+                                        <div className="flex gap-1">
+                                            <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-black" value={splitTime(config.startTime).h} onChange={e=>setConfig(p=>({...p,startTime:`${e.target.value}:${splitTime(p.startTime).m}`}))}>
+                                                {hoursList.map(h=><option key={h} value={h}>{h}시</option>)}
+                                            </select>
+                                            <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-black" value={splitTime(config.startTime).m} onChange={e=>setConfig(p=>({...p,startTime:`${splitTime(p.startTime).h}:${e.target.value}`}))}>
+                                                {minutesList.map(m=><option key={m} value={m}>{m}분</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-rose-400 mb-1">종료 시간</p>
+                                        <div className="flex gap-1">
+                                            <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-black" value={splitTime(config.endTime).h} onChange={e=>setConfig(p=>({...p,endTime:`${e.target.value}:${splitTime(p.endTime).m}`}))}>
+                                                {hoursList.map(h=><option key={h} value={h}>{h}시</option>)}
+                                            </select>
+                                            <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-black" value={splitTime(config.endTime).m} onChange={e=>setConfig(p=>({...p,endTime:`${splitTime(p.endTime).h}:${e.target.value}`}))}>
+                                                {minutesList.map(m=><option key={m} value={m}>{m}분</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 mb-1">경기 시간(분)</p>
+                                        <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-3 font-black text-center text-sm"
+                                            value={config.matchDuration} onChange={e=>setConfig(p=>({...p,matchDuration:parseInt(e.target.value)||12}))}/>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 mb-1">휴식 시간(분)</p>
+                                        <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-3 font-black text-center text-sm"
+                                            value={config.breakDuration} onChange={e=>setConfig(p=>({...p,breakDuration:parseInt(e.target.value)||3}))}/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 구장 설정 */}
+                        <div className="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm mb-4">
+                            <div className="flex items-center justify-between mb-4">
+                                <p className="text-xs font-black text-pink-500 uppercase tracking-widest">구장 프리셋</p>
+                                <button onClick={()=>setIsPresetModalOpen(true)} className="px-3 py-1.5 bg-pink-50 text-pink-500 rounded-xl text-xs font-black">+ 추가</button>
+                            </div>
+                            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-3">
+                                <button onClick={()=>setSelectedPresetId('manual')} className={`shrink-0 px-4 py-2.5 rounded-2xl font-black text-xs border-2 transition-all ${selectedPresetId==='manual'?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-500 border-slate-200'}`}>직접 입력</button>
+                                {presets.map(p=>(
+                                    <button key={p.id} onClick={()=>handlePresetSelect(p)} className={`shrink-0 px-4 py-2.5 rounded-2xl font-black text-xs border-2 transition-all ${selectedPresetId===p.id?'bg-pink-500 text-white border-pink-500':'bg-white text-slate-600 border-slate-200'}`}>{p.name}</button>
+                                ))}
+                            </div>
+
+                            {selectedPresetId!=='manual' && (
+                                <div className="bg-pink-50 rounded-2xl p-4 mb-3">
+                                    <p className="text-xs font-black text-pink-600 mb-2">세부 구장 선택</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {presets.find(p=>p.id===selectedPresetId)?.fieldNames.map((name,i)=>(
+                                            <button key={i} onClick={()=>handleToggleSubCourt(i)}
+                                                className={`px-3 py-2 rounded-xl font-black text-xs border transition-all ${presetToggles[i]?'bg-pink-500 text-white border-pink-500':'bg-white text-slate-500 border-slate-200'}`}>
+                                                {name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedPresetId==='manual' && (
+                                <div className="space-y-2 mb-3">
+                                    <p className="text-[10px] font-black text-slate-400">구장 수: {config.courtCount}</p>
+                                    <div className="flex gap-2">
+                                        <button onClick={()=>{if(config.courtCount>1){const fn=[...config.fieldNames];fn.pop();const ft=[...config.fieldTypes];ft.pop();setConfig(p=>({...p,courtCount:p.courtCount-1,fieldNames:fn,fieldTypes:ft}));}}} className="p-2.5 rounded-xl bg-slate-100 text-slate-600"><Icon.Minus size={14}/></button>
+                                        <button onClick={()=>{if(config.courtCount<6){const fn=[...config.fieldNames,`${config.courtCount+1}구장`];const ft=[...config.fieldTypes,'6vs6'];setConfig(p=>({...p,courtCount:p.courtCount+1,fieldNames:fn,fieldTypes:ft}));}}} className="p-2.5 rounded-xl bg-slate-100 text-slate-600"><Icon.Plus size={14}/></button>
+                                    </div>
+                                    {config.fieldNames.map((name,i)=>(
+                                        <div key={i} className="flex gap-2 items-center">
+                                            <input type="text" className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-black" value={name}
+                                                onChange={e=>{const fn=[...config.fieldNames];fn[i]=e.target.value;setConfig(p=>({...p,fieldNames:fn}));}}/>
+                                            <select className="bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-black"
+                                                value={config.fieldTypes[i]} onChange={e=>{const ft=[...config.fieldTypes];ft[i]=e.target.value;setConfig(p=>({...p,fieldTypes:ft}));}}>
+                                                <option value="6vs6">6vs6</option><option value="5vs5">5vs5</option>
+                                            </select>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="flex items-center gap-3 p-3.5 rounded-2xl border border-slate-200 cursor-pointer" onClick={()=>setConfig(p=>({...p,strictCourtSize:!p.strictCourtSize}))}>
+                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${config.strictCourtSize?'bg-pink-500 border-pink-500':'border-slate-300'}`}>
+                                    {config.strictCourtSize&&<Icon.Check size={10} className="text-white"/>}
+                                </div>
+                                <p className="text-xs font-black text-slate-700">5vs5 구장에 6명 이상 팀 배정 제외</p>
+                            </div>
+                        </div>
+
+                        {confirmedData && (
+                            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-4">
+                                <p className="text-xs font-black text-emerald-600">✓ 확정된 팀 편성: {confirmedData.meetingDate}</p>
+                                <p className="text-xs text-emerald-500 mt-0.5">{confirmedData.teams?.length}팀 · {confirmedData.teams?.reduce((s,t)=>s+t.members.length,0)}명</p>
+                            </div>
+                        )}
+
+                        <button onClick={generateMatchTable} disabled={config.courtCount===0}
+                            className="w-full py-4 bg-slate-900 text-white rounded-3xl font-black text-lg shadow-xl disabled:opacity-30">
+                            🏟️ 매치 테이블 생성
+                        </button>
+                    </div>
+                )}
+
+                {/* ===== 매치표 탭 ===== */}
+                {view==='results' && (
+                    <div id="capture-area">
+                        <div className="text-center mb-4">
+                            <p className="text-2xl font-black text-slate-800">{config.meetingDate}</p>
+                            <p className="text-xs text-slate-400 mt-1">{config.startTime} ~ {config.endTime} · {schedule.list.length}라운드</p>
+                        </div>
+
+                        {schedule.list.length===0
+                            ? <div className="text-center py-20 text-slate-300"><p className="text-4xl mb-3">🏟️</p><p className="font-black">설정 탭에서 매치 테이블을 생성해주세요</p></div>
+                            : schedule.list.map(session=>{
+                                const isDone=completedMatches.has(session.id);
+                                return (
+                                    <div key={session.id} onClick={()=>setCompletedMatches(prev=>{const n=new Set(prev);n.has(session.id)?n.delete(session.id):n.add(session.id);return n;})}
+                                        className={`match-row mb-2 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm ${isDone?'match-completed':''}`}>
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isDone?'bg-emerald-500 border-emerald-500':'border-slate-300'}`}>
+                                                {isDone&&<Icon.Check size={10} className="text-white"/>}
+                                            </div>
+                                            <p className="font-black text-sm text-slate-600">{session.time}</p>
+                                        </div>
+                                        <div className="space-y-2 pl-9">
+                                            {session.matches.map((m,mi)=>{
+                                                const[t1,t2]=m.match;
+                                                const t1Idx=t1.charCodeAt(0)-65;
+                                                const t2Idx=t2.charCodeAt(0)-65;
+                                                return (
+                                                    <div key={mi} className="flex items-center gap-2">
+                                                        <span className="text-[10px] font-black text-slate-400 w-12 shrink-0">{config.fieldNames[m.fieldIdx]||`${m.fieldIdx+1}구장`}</span>
+                                                        <div className="flex items-center gap-2 flex-1">
+                                                            <span className={`px-3 py-1.5 rounded-xl font-black text-xs ${getTeamBadge(t1Idx)} ${isDone?'opacity-60':''}`}>{t1}</span>
+                                                            <span className="text-slate-400 font-black text-sm">vs</span>
+                                                            <span className={`px-3 py-1.5 rounded-xl font-black text-xs ${getTeamBadge(t2Idx)} ${isDone?'opacity-60':''}`}>{t2}</span>
+                                                        </div>
+                                                        <span className="text-[9px] font-black text-slate-300">{config.fieldTypes[m.fieldIdx]||'6vs6'}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                            {session.resting.length>0 && (
+                                                <p className="text-[10px] text-slate-400">휴식: {session.resting.join(', ')}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        }
+                    </div>
+                )}
+
+                {/* ===== 통계 탭 ===== */}
+                {view==='stats' && (
+                    <div>
+                        {!statsData
+                            ? <div className="text-center py-20 text-slate-300"><p className="text-4xl mb-3">📊</p><p className="font-black">매치 테이블을 먼저 생성해주세요</p></div>
+                            : (
+                                <div>
+                                    <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">팀별 경기 수</p>
+                                    <div className="grid grid-cols-3 gap-2 mb-5">
+                                        {statsData.teams.map((t,i)=>(
+                                            <div key={t} className="bg-white border border-slate-100 rounded-2xl p-3 text-center shadow-sm">
+                                                <span className={`inline-flex w-8 h-8 rounded-xl font-black text-sm items-center justify-center mb-2 ${getTeamBadge(i)}`}>{t}</span>
+                                                <p className="text-2xl font-black text-slate-800">{statsData.totalMatches[t]}</p>
+                                                <p className="text-[10px] text-slate-400">경기</p>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">매치업 횟수</p>
+                                    <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-xs font-black text-center">
+                                                <thead>
+                                                    <tr>
+                                                        <th className="p-2 text-slate-400">vs</th>
+                                                        {statsData.teams.map(t=><th key={t} className="p-2"><span className={`inline-flex w-7 h-7 rounded-lg text-xs items-center justify-center ${getTeamBadge(statsData.teams.indexOf(t))}`}>{t}</span></th>)}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {statsData.teams.map((t1,i)=>(
+                                                        <tr key={t1}>
+                                                            <td className="p-2"><span className={`inline-flex w-7 h-7 rounded-lg text-xs items-center justify-center ${getTeamBadge(i)}`}>{t1}</span></td>
+                                                            {statsData.teams.map(t2=>(
+                                                                <td key={t2} className={`p-2 ${t1===t2?'text-slate-200':'text-slate-700'}`}>
+                                                                    {t1===t2?'-':statsData.matchupCounts[t1]?.[t2]||0}
+                                                                </td>
+                                                            ))}
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        }
+                    </div>
+                )}
+            </main>
+
+            {/* 기록 불러오기 모달 */}
+            {isLoadModalOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50" onClick={()=>setIsLoadModalOpen(false)}>
+                    <div className="bg-white rounded-t-3xl p-6 w-full max-w-sm shadow-2xl max-h-[80vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
+                        <h2 className="text-xl font-black text-slate-800 mb-4">과거 기록 불러오기</h2>
+                        {savedSchedules.length===0
+                            ? <p className="text-center text-slate-400 py-8">저장된 기록이 없습니다</p>
+                            : savedSchedules.map(s=>(
+                                <div key={s.id} className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-100 rounded-2xl mb-2">
+                                    <div className="flex-1">
+                                        <p className="font-black text-slate-800 text-sm">{s.meetingDate}</p>
+                                        <p className="text-xs text-slate-400 mt-0.5">{s.schedule?.list?.length||0}라운드 · {s.config?.courtCount||0}구장</p>
+                                    </div>
+                                    <button onClick={()=>{setSchedule(s.schedule);setConfig(p=>({...p,...s.config}));setCompletedMatches(new Set(s.completedMatches||[]));setView('results');setIsLoadModalOpen(false);}} className="px-3 py-2 bg-pink-500 text-white rounded-xl font-black text-xs">불러오기</button>
+                                    <button onClick={()=>showConfirm('삭제','이 기록을 삭제하시겠습니까?',async()=>await getCol('match_schedules').doc(s.id).delete())} className="p-2 bg-red-50 text-red-400 rounded-xl"><Icon.Trash size={12}/></button>
+                                </div>
+                            ))
+                        }
+                        <button onClick={()=>setIsLoadModalOpen(false)} className="w-full py-3 text-slate-400 text-sm mt-2">닫기</button>
+                    </div>
+                </div>
+            )}
+
+            {/* 프리셋 추가 모달 */}
+            {isPresetModalOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={()=>setIsPresetModalOpen(false)}>
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={e=>e.stopPropagation()}>
+                        <h2 className="text-xl font-black text-slate-800 mb-4">구장 프리셋 추가</h2>
+                        <div className="space-y-3 mb-4">
+                            <input type="text" placeholder="프리셋 이름 (예: 강남 풋살장)" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                                value={presetForm.name} onChange={e=>setPresetForm(p=>({...p,name:e.target.value}))}/>
+                            <div className="flex items-center gap-2">
+                                <p className="text-sm font-black text-slate-600">구장 수:</p>
+                                <button onClick={()=>{if(presetForm.courtCount>1){const fn=[...presetForm.fieldNames];fn.pop();const ft=[...presetForm.fieldTypes];ft.pop();setPresetForm(p=>({...p,courtCount:p.courtCount-1,fieldNames:fn,fieldTypes:ft}));}}} className="p-2 rounded-lg bg-slate-100"><Icon.Minus size={14}/></button>
+                                <span className="font-black text-lg w-6 text-center">{presetForm.courtCount}</span>
+                                <button onClick={()=>{if(presetForm.courtCount<6){const fn=[...presetForm.fieldNames,`${presetForm.courtCount+1}구장`];const ft=[...presetForm.fieldTypes,'6vs6'];setPresetForm(p=>({...p,courtCount:p.courtCount+1,fieldNames:fn,fieldTypes:ft}));}}} className="p-2 rounded-lg bg-slate-100"><Icon.Plus size={14}/></button>
+                            </div>
+                            {presetForm.fieldNames.map((name,i)=>(
+                                <div key={i} className="flex gap-2">
+                                    <input type="text" className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-black" value={name}
+                                        onChange={e=>{const fn=[...presetForm.fieldNames];fn[i]=e.target.value;setPresetForm(p=>({...p,fieldNames:fn}));}}/>
+                                    <select className="bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-black"
+                                        value={presetForm.fieldTypes[i]} onChange={e=>{const ft=[...presetForm.fieldTypes];ft[i]=e.target.value;setPresetForm(p=>({...p,fieldTypes:ft}));}}>
+                                        <option value="6vs6">6vs6</option><option value="5vs5">5vs5</option>
+                                    </select>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={()=>setIsPresetModalOpen(false)} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
+                            <button onClick={savePreset} className="flex-1 py-3 bg-pink-500 text-white rounded-2xl font-black text-sm">저장</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 알림 모달 */}
+            {alertModal.show && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-zoom-in">
+                        <h3 className="font-black text-lg text-slate-800 mb-2">{alertModal.title}</h3>
+                        <p className="text-sm text-slate-500 whitespace-pre-line mb-5">{alertModal.content}</p>
+                        <div className="flex gap-2">
+                            {alertModal.type==='confirm'&&<button onClick={()=>setAlertModal(p=>({...p,show:false}))} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>}
+                            <button onClick={()=>{if(alertModal.onConfirm)alertModal.onConfirm();setAlertModal(p=>({...p,show:false}));}} className="flex-1 py-3 bg-pink-500 text-white rounded-2xl font-black text-sm">
+                                {alertModal.type==='confirm'?'확인':'닫기'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

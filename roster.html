@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#f8fafc">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <title>모이다 - 명단 관리</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <style>
+        @font-face{font-family:'Esamanru';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10@1.0/GongGothicMedium.woff') format('woff');font-weight:normal}
+        @font-face{font-family:'Esamanru';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10@1.0/GongGothicBold.woff') format('woff');font-weight:700}
+        body{font-family:'Esamanru',sans-serif!important;-webkit-tap-highlight-color:transparent;background:#f8fafc;user-select:none;overscroll-behavior-y:none;-webkit-font-smoothing:antialiased;touch-action:manipulation}
+        .animate-zoom-in{animation:zoomIn 0.2s ease-out}
+        .animate-fade-in{animation:fadeIn 0.2s ease-out}
+        @keyframes zoomIn{from{opacity:0;transform:scale(0.98)}to{opacity:1;transform:scale(1)}}
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        button:active{transform:scale(0.95);opacity:0.8}
+        #loading-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.5s}
+        .no-scrollbar::-webkit-scrollbar{display:none}.no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+        select,input{outline:none;transition:border-color 0.2s}
+        select:focus,input:focus{border-color:#3b82f6!important}
+        select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.75rem center;background-size:1rem}
+        .dragging-item{opacity:0.4;border:2px dashed #3b82f6!important;background:#eff6ff!important}
+    </style>
+</head>
+<body>
+<div id="loading-screen">
+    <div class="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+    <p class="mt-4 font-bold text-slate-500 italic">모이다 연결 중...</p>
+</div>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useMemo } = React;
+
+const STAFF_ROLES = ['회장','매니저','총무','부총무'];
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBYykNZVf20LLQ-YIIeA2TKz9DSBsypRZM",
+    authDomain: "moida-otpfc.firebaseapp.com",
+    projectId: "moida-otpfc",
+    storageBucket: "moida-otpfc.firebasestorage.app",
+    messagingSenderId: "407991675090",
+    appId: "1:407991675090:web:df9f7d8a7c93a6eb5ae50b"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const APP_ID = 'moida-otpfc';
+const getCol = (n) => db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection(n);
+const getMonthlyCol = () => getCol('monthly_checks');
+const getMemberCol = () => getCol('members');
+
+const getRoleBadgeClass = (role) => {
+    switch(role){case '회장':return 'bg-slate-900 text-white';case '매니저':return 'bg-blue-600 text-white';case '총무':return 'bg-green-600 text-white';case '부총무':return 'bg-green-100 text-green-700';default:return 'bg-slate-100 text-slate-400';}
+};
+const getLevelColor = (l) => {
+    const n=parseInt(l)>6?parseInt(l)-6:parseInt(l);
+    return ['','bg-rose-500 text-white','bg-orange-500 text-white','bg-amber-400 text-slate-800','bg-emerald-500 text-white','bg-blue-500 text-white','bg-violet-500 text-white'][n]||'bg-slate-400 text-white';
+};
+const formatBirth = (b) => {
+    if(!b)return '생일미입력';
+    const c=String(b).replace(/[^0-9]/g,'');
+    if(c.length===8)return `${c.substring(0,4)}.${c.substring(4,6)}.${c.substring(6,8)}`;
+    if(c.length===6){const yy=parseInt(c.substring(0,2));return `${yy<50?'20':'19'}${c.substring(0,2)}.${c.substring(2,4)}.${c.substring(4,6)}`;}
+    return b;
+};
+const formatBirthInput = (v) => {
+    const d=String(v||'').replace(/[^0-9]/g,'');
+    if(d.length<=4)return d;
+    if(d.length<=6)return `${d.slice(0,4)}.${d.slice(4)}`;
+    return `${d.slice(0,4)}.${d.slice(4,6)}.${d.slice(6,8)}`;
+};
+const formatPhoneInput = (v) => {
+    const d=String(v||'').replace(/[^0-9]/g,'');
+    if(d.length<=3)return d;
+    if(d.length<=7)return `${d.slice(0,3)}-${d.slice(3)}`;
+    return `${d.slice(0,3)}-${d.slice(3,7)}-${d.slice(7,11)}`;
+};
+const getMembershipStatus = (member, targetMonthStr) => {
+    if(!member.membershipType||member.membershipType==='monthly'||!member.membershipEndDate)return null;
+    const end=new Date(member.membershipEndDate);
+    const endMonth=new Date(end.getFullYear(),end.getMonth(),1);
+    const[y,m]=targetMonthStr.split('-').map(Number);
+    const current=new Date(y,m-1,1);
+    if(current>endMonth)return{active:false,msg:'만료됨',type:member.membershipType==='half_year'?'반년':'1년'};
+    let monthsRemaining=(endMonth.getFullYear()-current.getFullYear())*12+(endMonth.getMonth()-current.getMonth())+1;
+    const maxRest=member.membershipType==='half_year'?3:6;
+    const usedRest=member.totalRestMonths||0;
+    const endDateFormatted=`${end.getFullYear().toString().slice(2)}.${String(end.getMonth()+1).padStart(2,'0')}.${String(end.getDate()).padStart(2,'0')}`;
+    return{active:true,remaining:monthsRemaining,type:member.membershipType==='half_year'?'반년':'1년',endDate:member.membershipEndDate,endDateFormatted,maxRest,usedRest,remainingRest:maxRest-usedRest};
+};
+const getMemberStatusType = (member, statuses, reasons, targetMonthStr) => {
+    if(STAFF_ROLES.includes(member.role))return 'staff';
+    if(member.isSpecialRest&&targetMonthStr>=(member.specialRestStartMonth||'0000-00'))return 'special';
+    const status=statuses[member.id];
+    const membershipInfo=getMembershipStatus(member,targetMonthStr);
+    if(membershipInfo&&membershipInfo.active){if(status==='rest')return 'rest';return membershipInfo.type==='반년'?'half':'full';}
+    if(status==='paid')return 'monthly';
+    if(status==='rest')return reasons[member.id]?'special':'rest';
+    return 'unpaid';
+};
+const calculateEndDate = (startMonthStr, durationMonths) => {
+    if(!startMonthStr)return '';
+    const[y,m]=startMonthStr.split('-').map(Number);
+    const end=new Date(y,m-1+durationMonths+1,0);
+    return `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
+};
+const extendEndDate = (currentEndDateStr,monthsToAdd=1) => {
+    if(!currentEndDateStr)return '';
+    const[y,m]=currentEndDateStr.split('-').map(Number);
+    const end=new Date(y,m+monthsToAdd,0);
+    return `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
+};
+
+const Icon = {
+    Home:({size=18,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+    UserPlus:({size=18,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>,
+    Edit:({size=16,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+    Trash:({size=16,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+    ChevronLeft:({size=20,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="15 18 9 12 15 6"/></svg>,
+    ChevronRight:({size=20,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>,
+    Check:({size=14,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>,
+    Refresh:({size=16,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M21 21v-5h-5"/></svg>,
+    Coffee:({size=14,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>,
+    Heart:({size=12,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>,
+};
+
+function App() {
+    const [members, setMembers] = useState([]);
+    const [alertModal, setAlertModal] = useState({show:false,title:'',content:'',type:'info',onConfirm:null});
+    const [subTab, setSubTab] = useState(()=>sessionStorage.getItem('moida_roster_tab')||'directory');
+    const [targetMonth, setTargetMonth] = useState(()=>{
+        const s=sessionStorage.getItem('moida_target_month');
+        if(s)return s;
+        const n=new Date();
+        return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`;
+    });
+    const [filterCategory, setFilterCategory] = useState('all');
+    const [monthlyStatuses, setMonthlyStatuses] = useState({});
+    const [monthlyReasons, setMonthlyReasons] = useState({});
+    const [monthlyPaymentDates, setMonthlyPaymentDates] = useState({});
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [newMember, setNewMember] = useState({name:'',birth:'',gender:'남성',position:'all',level:'4',role:'회원',coupleId:'',joinDate:'',address:'',phone:''});
+    const [editingMember, setEditingMember] = useState(null);
+    const [resigningMember, setResigningMember] = useState(null);
+    const [resignForm, setResignForm] = useState({date:'',reason:'',isForced:false});
+    const [selectedMember, setSelectedMember] = useState(null);
+    const [actionStep, setActionStep] = useState('main');
+    const [selectedAction, setSelectedAction] = useState(null);
+    const [paymentDateInput, setPaymentDateInput] = useState('');
+    const [manualEndDate, setManualEndDate] = useState('');
+    const [specialRestReason, setSpecialRestReason] = useState('');
+    const [tempRestCount, setTempRestCount] = useState(0);
+
+    const activeMembers = useMemo(()=>members.filter(m=>!m.isResigned),[members]);
+    const resignedMembers = useMemo(()=>members.filter(m=>m.isResigned),[members]);
+
+    useEffect(()=>{sessionStorage.setItem('moida_roster_tab',subTab);},[subTab]);
+    useEffect(()=>{sessionStorage.setItem('moida_target_month',targetMonth);},[targetMonth]);
+
+    const filteredMembers = useMemo(()=>{
+        let list=[...activeMembers].sort((a,b)=>a.name.localeCompare(b.name));
+        if(filterCategory!=='all'){
+            list=list.filter(m=>{
+                const type=getMemberStatusType(m,monthlyStatuses,monthlyReasons,targetMonth);
+                return type===filterCategory;
+            });
+        }
+        return list;
+    },[activeMembers,filterCategory,monthlyStatuses,monthlyReasons,targetMonth]);
+
+    const filterCounts = useMemo(()=>{
+        const counts={all:activeMembers.length,monthly:0,half:0,full:0,rest:0,special:0,unpaid:0};
+        activeMembers.forEach(m=>{
+            const type=getMemberStatusType(m,monthlyStatuses,monthlyReasons,targetMonth);
+            if(type!=='staff'&&counts[type]!==undefined)counts[type]++;
+        });
+        return counts;
+    },[activeMembers,monthlyStatuses,monthlyReasons,targetMonth]);
+
+    const showAlert=(title,content,type='info',onConfirm=null)=>setAlertModal({show:true,title,content,type,onConfirm});
+    const showConfirm=(title,content,onConfirm)=>setAlertModal({show:true,title,content,type:'confirm',onConfirm});
+
+    const moveMonth=(offset)=>{
+        const[y,m]=targetMonth.split('-').map(Number);
+        const d=new Date(y,m-1+offset,1);
+        setTargetMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+        setFilterCategory('all');
+    };
+
+    const handleAddMember = async () => {
+        if(!newMember.name.trim())return showAlert('알림','이름을 입력해주세요.');
+        try {
+            await getMemberCol().add({...newMember,birth:String(newMember.birth).replace(/[^0-9]/g,''),createdAt:new Date().toISOString()});
+            setNewMember({name:'',birth:'',gender:'남성',position:'all',level:'4',role:'회원',coupleId:'',joinDate:''});
+            setIsAddModalOpen(false);
+            showAlert('성공','회원이 등록되었습니다.');
+        } catch(e){showAlert('오류','등록 실패');}
+    };
+
+    const handleUpdateMember = async () => {
+        try {
+            await getMemberCol().doc(editingMember.id).update({...editingMember,birth:String(editingMember.birth||'').replace(/[^0-9]/g,'')});
+            setEditingMember(null);
+            showAlert('완료','정보가 수정되었습니다.');
+        } catch(e){showAlert('오류','수정 실패');}
+    };
+
+    const handleResignConfirm = async () => {
+        if(!resignForm.date)return showAlert('알림','탈퇴 일자를 선택해주세요.');
+        try {
+            await getMemberCol().doc(resigningMember.id).update({isResigned:true,resignDate:resignForm.date,resignReason:resignForm.reason||'사유 미작성',isForcedResign:resignForm.isForced});
+            setResigningMember(null);
+            showAlert('성공',`${resigningMember.name}님이 탈퇴 처리되었습니다.`);
+        } catch(e){showAlert('오류','탈퇴 처리 실패');}
+    };
+
+    const handleMemberClick = (m) => {
+        setSelectedMember(m);
+        setActionStep('main');
+        setSelectedAction(null);
+        const today=new Date();
+        const offset=today.getTimezoneOffset()*60000;
+        setPaymentDateInput((new Date(today-offset)).toISOString().split('T')[0]);
+        setSpecialRestReason(monthlyReasons[m.id]||'');
+        setTempRestCount(m.totalRestMonths||0);
+        setManualEndDate(m.membershipEndDate||'');
+    };
+
+    const processAction = async (actionType) => {
+        if(!selectedMember||!targetMonth)return;
+        try {
+            const batch=db.batch();
+            const monthRef=getMonthlyCol().doc(targetMonth);
+            const memberRef=getMemberCol().doc(selectedMember.id);
+            const mid=selectedMember.id;
+            if(actionType==='monthly_paid'){
+                batch.set(monthRef,{statuses:{[mid]:'paid'},paymentDates:{[mid]:paymentDateInput},updatedAt:new Date().toISOString()},{merge:true});
+                batch.update(monthRef,{[`reasons.${mid}`]:firebase.firestore.FieldValue.delete()});
+                batch.update(memberRef,{membershipType:'monthly',membershipStartDate:'',membershipEndDate:'',totalRestMonths:0});
+            } else if(actionType==='start_half'){
+                const finalEnd=manualEndDate||calculateEndDate(targetMonth,6);
+                batch.update(memberRef,{membershipType:'half_year',membershipStartDate:`${targetMonth}-01`,membershipEndDate:finalEnd,totalRestMonths:0});
+                batch.set(monthRef,{paymentDates:{[mid]:paymentDateInput},updatedAt:new Date().toISOString()},{merge:true});
+                batch.update(monthRef,{[`statuses.${mid}`]:firebase.firestore.FieldValue.delete(),[`reasons.${mid}`]:firebase.firestore.FieldValue.delete()});
+            } else if(actionType==='start_full'){
+                const finalEnd=manualEndDate||calculateEndDate(targetMonth,12);
+                batch.update(memberRef,{membershipType:'full_year',membershipStartDate:`${targetMonth}-01`,membershipEndDate:finalEnd,totalRestMonths:0});
+                batch.set(monthRef,{paymentDates:{[mid]:paymentDateInput},updatedAt:new Date().toISOString()},{merge:true});
+                batch.update(monthRef,{[`statuses.${mid}`]:firebase.firestore.FieldValue.delete(),[`reasons.${mid}`]:firebase.firestore.FieldValue.delete()});
+            } else if(actionType==='rest'){
+                const isLong=selectedMember.membershipType==='half_year'||selectedMember.membershipType==='full_year';
+                if(selectedMember.membershipType==='half_year'&&(selectedMember.totalRestMonths||0)>=3)return showAlert('알림','반년납 최대 3회 휴식');
+                if(selectedMember.membershipType==='full_year'&&(selectedMember.totalRestMonths||0)>=6)return showAlert('알림','1년납 최대 6회 휴식');
+                batch.set(monthRef,{statuses:{[mid]:'rest'},updatedAt:new Date().toISOString()},{merge:true});
+                if(isLong){
+                    const nextEnd=extendEndDate(selectedMember.membershipEndDate,1);
+                    batch.update(memberRef,{membershipEndDate:nextEnd,totalRestMonths:firebase.firestore.FieldValue.increment(1)});
+                    batch.update(monthRef,{[`reasons.${mid}`]:firebase.firestore.FieldValue.delete(),[`paymentDates.${mid}`]:firebase.firestore.FieldValue.delete()});
+                } else {
+                    batch.set(monthRef,{paymentDates:{[mid]:paymentDateInput},updatedAt:new Date().toISOString()},{merge:true});
+                    batch.update(monthRef,{[`reasons.${mid}`]:firebase.firestore.FieldValue.delete()});
+                }
+            } else if(actionType==='cancel_rest'){
+                batch.update(monthRef,{[`statuses.${mid}`]:firebase.firestore.FieldValue.delete(),[`reasons.${mid}`]:firebase.firestore.FieldValue.delete(),[`paymentDates.${mid}`]:firebase.firestore.FieldValue.delete()});
+                if(selectedMember.membershipType==='half_year'||selectedMember.membershipType==='full_year'){
+                    const prevEnd=extendEndDate(selectedMember.membershipEndDate,-1);
+                    batch.update(memberRef,{membershipEndDate:prevEnd,totalRestMonths:firebase.firestore.FieldValue.increment(-1)});
+                }
+            } else if(actionType==='special_rest'){
+                batch.update(memberRef,{isSpecialRest:true,specialRestReason:specialRestReason||'특별 휴식',specialRestStartMonth:targetMonth});
+                batch.update(monthRef,{[`statuses.${mid}`]:firebase.firestore.FieldValue.delete(),[`reasons.${mid}`]:firebase.firestore.FieldValue.delete(),[`paymentDates.${mid}`]:firebase.firestore.FieldValue.delete()});
+            } else if(actionType==='cancel_special_rest'){
+                const startMonth=selectedMember.specialRestStartMonth;
+                let monthsToExtend=0;
+                if(startMonth){const[sy,sm]=startMonth.split('-').map(Number);const[ty,tm]=targetMonth.split('-').map(Number);monthsToExtend=(ty-sy)*12+(tm-sm);}
+                const updates={isSpecialRest:false,specialRestReason:firebase.firestore.FieldValue.delete(),specialRestStartMonth:firebase.firestore.FieldValue.delete()};
+                if(monthsToExtend>0&&(selectedMember.membershipType==='half_year'||selectedMember.membershipType==='full_year'))updates.membershipEndDate=extendEndDate(selectedMember.membershipEndDate,monthsToExtend);
+                batch.update(memberRef,updates);
+            } else if(actionType==='end_membership'){
+                batch.update(memberRef,{membershipType:'monthly',membershipStartDate:'',membershipEndDate:'',totalRestMonths:0});
+                batch.update(monthRef,{[`statuses.${mid}`]:firebase.firestore.FieldValue.delete(),[`reasons.${mid}`]:firebase.firestore.FieldValue.delete()});
+            } else if(actionType==='clear'){
+                batch.update(monthRef,{[`statuses.${mid}`]:firebase.firestore.FieldValue.delete(),[`reasons.${mid}`]:firebase.firestore.FieldValue.delete(),[`paymentDates.${mid}`]:firebase.firestore.FieldValue.delete()});
+            } else if(actionType==='update_longterm_info'){
+                batch.update(memberRef,{membershipEndDate:manualEndDate,totalRestMonths:tempRestCount});
+                batch.set(monthRef,{paymentDates:{[mid]:paymentDateInput},updatedAt:new Date().toISOString()},{merge:true});
+            }
+            await batch.commit();
+            setSelectedMember(null);
+            showAlert('성공','상태가 반영되었습니다.');
+        } catch(e){console.error(e);showAlert('오류','처리 실패');}
+    };
+
+    useEffect(()=>{
+        const init=async()=>{
+            try{await auth.signInAnonymously();}catch(e){console.error(e);}
+            finally{
+                const l=document.getElementById('loading-screen');
+                if(l){l.style.opacity='0';setTimeout(()=>{if(l)l.style.display='none';},500);}
+            }
+        };
+        init();
+        if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+        const unsubAuth=auth.onAuthStateChanged(u=>{
+            if(u) getMemberCol().onSnapshot(snap=>setMembers(snap.docs.map(d=>({id:d.id,...d.data()}))));
+        });
+        return()=>unsubAuth();
+    },[]);
+
+    useEffect(()=>{
+        if(!targetMonth)return;
+        const unsub=getMonthlyCol().doc(targetMonth).onSnapshot(doc=>{
+            if(doc.exists){
+                const data=doc.data();
+                setMonthlyStatuses(data.statuses||{});
+                setMonthlyReasons(data.reasons||{});
+                setMonthlyPaymentDates(data.paymentDates||{});
+            } else {
+                setMonthlyStatuses({});setMonthlyReasons({});setMonthlyPaymentDates({});
+            }
+        });
+        return()=>unsub();
+    },[targetMonth]);
+
+    const statusConfig = {
+        staff:{label:'운영진',color:'bg-slate-900 text-white'},
+        monthly:{label:'월납',color:'bg-emerald-500 text-white'},
+        half:{label:'반년납',color:'bg-blue-500 text-white'},
+        full:{label:'1년납',color:'bg-indigo-600 text-white'},
+        rest:{label:'휴식',color:'bg-amber-400 text-slate-800'},
+        special:{label:'특별휴식',color:'bg-orange-400 text-white'},
+        unpaid:{label:'미납',color:'bg-rose-500 text-white'},
+    };
+
+    const filterButtons = [
+        {key:'all',label:`전체 ${filterCounts.all}`},
+        {key:'monthly',label:`월납 ${filterCounts.monthly}`},
+        {key:'half',label:`반년 ${filterCounts.half}`},
+        {key:'full',label:`1년 ${filterCounts.full}`},
+        {key:'rest',label:`휴식 ${filterCounts.rest}`},
+        {key:'unpaid',label:`미납 ${filterCounts.unpaid}`},
+    ];
+
+    return (
+        <div className="min-h-screen pb-32 text-slate-900">
+            <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 h-16 flex items-center px-4 shadow-sm">
+                <div className="max-w-5xl mx-auto w-full flex justify-between items-center">
+                    <div className="flex items-center gap-1">
+                        {[['directory','명단'],['monthly','회비']].map(([v,l])=>(
+                            <button key={v} onClick={()=>setSubTab(v)} className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${subTab===v?'bg-pink-500 text-white shadow-lg':'text-slate-400 hover:text-slate-600'}`}>{l}</button>
+                        ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button onClick={()=>setIsAddModalOpen(true)} className="p-2.5 rounded-xl bg-pink-50 text-pink-500"><Icon.UserPlus size={18}/></button>
+                        <button onClick={()=>window.location.reload()} className="p-2.5 rounded-xl bg-slate-50 text-slate-400"><Icon.Refresh size={16}/></button>
+                        <button onClick={()=>window.location.href='index.html'} className="p-2.5 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"><Icon.Home size={18}/></button>
+                    </div>
+                </div>
+            </nav>
+
+            <main className="p-4 max-w-5xl mx-auto animate-zoom-in">
+
+                {/* ===== 명단 탭 ===== */}
+                {subTab==='directory' && (
+                    <div>
+                        <div className="mb-3 flex items-center justify-between">
+                            <p className="text-xs font-black text-slate-500 uppercase tracking-widest">활동 회원 {activeMembers.length}명</p>
+                        </div>
+                        <div className="space-y-2">
+                            {activeMembers.sort((a,b)=>a.name.localeCompare(b.name)).map(m=>(
+                                <div key={m.id} className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center gap-3">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-black text-slate-800">{m.name}</span>
+                                            {m.gender==='여성'&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg">W</span>}
+                                            {STAFF_ROLES.includes(m.role)&&<span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg ${getRoleBadgeClass(m.role)}`}>{m.role}</span>}
+                                            {m.coupleId&&<span className="text-[10px] font-black text-pink-400 flex items-center gap-0.5"><Icon.Heart size={9}/>{members.find(p=>p.id===m.coupleId)?.name||'?'}</span>}
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${getLevelColor(m.level)}`}>Lv.{m.level}</span>
+                                            <span className="text-[10px] text-slate-400">{formatBirth(m.birth)}</span>
+                                            {m.position&&m.position!=='all'&&<span className="text-[10px] text-slate-400">{m.position}</span>}
+                                            {m.address&&<span className="text-[10px] text-slate-400">📍 {m.address}</span>}
+                                        </div>
+                                        <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                                            {m.phone&&<span className="text-[10px] text-slate-400">{formatPhoneInput(m.phone)}</span>}
+                                            {m.joinDate&&<span className="text-[10px] text-slate-400">가입 {m.joinDate}</span>}
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-1.5 flex-shrink-0">
+                                        <button onClick={()=>setEditingMember({...m})} className="p-2 rounded-xl bg-blue-50 text-blue-500"><Icon.Edit size={14}/></button>
+                                        <button onClick={()=>{setResigningMember(m);setResignForm({date:'',reason:'',isForced:false});}} className="p-2 rounded-xl bg-red-50 text-red-400"><Icon.Trash size={14}/></button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {resignedMembers.length>0&&(
+                            <div className="mt-6">
+                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 px-1">탈퇴 회원 {resignedMembers.length}명</p>
+                                {resignedMembers.sort((a,b)=>a.name.localeCompare(b.name)).map(m=>(
+                                    <div key={m.id} className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-xl mb-1.5 opacity-60">
+                                        <span className="font-black text-slate-400 text-sm">{m.name}</span>
+                                        <span className="text-[10px] text-slate-400">{m.resignDate}</span>
+                                        {m.isForcedResign&&<span className="text-[9px] px-1.5 py-0.5 bg-red-100 text-red-500 rounded-lg font-black">강제탈퇴</span>}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ===== 회비 탭 ===== */}
+                {subTab==='monthly' && (
+                    <div>
+                        {/* 월 선택 */}
+                        <div className="flex items-center justify-between mb-4 bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+                            <button onClick={()=>moveMonth(-1)} className="p-2 rounded-xl bg-slate-100 text-slate-600"><Icon.ChevronLeft size={18}/></button>
+                            <p className="font-black text-lg text-slate-800">{targetMonth.replace('-','년 ')}월</p>
+                            <button onClick={()=>moveMonth(1)} className="p-2 rounded-xl bg-slate-100 text-slate-600"><Icon.ChevronRight size={18}/></button>
+                        </div>
+
+                        {/* 필터 버튼 */}
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-4">
+                            {filterButtons.map(f=>(
+                                <button key={f.key} onClick={()=>setFilterCategory(f.key)}
+                                    className={`shrink-0 px-3 py-1.5 rounded-xl font-black text-xs transition-all ${filterCategory===f.key?'bg-pink-500 text-white shadow':'bg-white border border-slate-200 text-slate-500'}`}>
+                                    {f.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* 회원 목록 */}
+                        <div className="space-y-2">
+                            {filteredMembers.map(m=>{
+                                const statusType=getMemberStatusType(m,monthlyStatuses,monthlyReasons,targetMonth);
+                                const cfg=statusConfig[statusType]||statusConfig.unpaid;
+                                const info=getMembershipStatus(m,targetMonth);
+                                const payDate=monthlyPaymentDates[m.id];
+                                return (
+                                    <button key={m.id} onClick={()=>handleMemberClick(m)}
+                                        className="w-full flex items-center gap-3 p-4 bg-white border border-slate-100 rounded-2xl text-left hover:border-pink-200 transition-all">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-black text-slate-800">{m.name}</span>
+                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg ${cfg.color}`}>{cfg.label}</span>
+                                            </div>
+                                            {info?.active&&<p className="text-[10px] text-slate-400 mt-0.5">만료: {info.endDateFormatted} · 잔여휴식 {info.remainingRest}회</p>}
+                                            {payDate&&<p className="text-[10px] text-slate-400 mt-0.5">납부일: {payDate}</p>}
+                                            {m.isSpecialRest&&<p className="text-[10px] text-orange-400 mt-0.5">특별휴식: {m.specialRestReason}</p>}
+                                        </div>
+                                        <Icon.ChevronRight size={16} className="text-slate-300 flex-shrink-0"/>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+            </main>
+
+            {/* ===== 회비 액션 모달 ===== */}
+            {selectedMember && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50" onClick={()=>setSelectedMember(null)}>
+                    <div className="bg-white rounded-t-3xl p-6 w-full max-w-sm shadow-2xl" onClick={e=>e.stopPropagation()}>
+                        <div className="flex items-center gap-3 mb-5">
+                            <div className="flex-1">
+                                <p className="font-black text-lg text-slate-800">{selectedMember.name}</p>
+                                <p className="text-xs text-slate-400">{selectedMember.role} · Lv.{selectedMember.level}</p>
+                            </div>
+                            <button onClick={()=>setSelectedMember(null)} className="text-slate-400 text-2xl leading-none">×</button>
+                        </div>
+
+                        {actionStep==='main' && (
+                            <div className="space-y-2">
+                                {/* 납부일 */}
+                                <div className="bg-slate-50 rounded-2xl p-3 mb-3">
+                                    <p className="text-[10px] font-black text-slate-400 mb-1">납부일</p>
+                                    <input type="date" className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-black"
+                                        value={paymentDateInput} onChange={e=>setPaymentDateInput(e.target.value)}/>
+                                </div>
+                                {!STAFF_ROLES.includes(selectedMember.role)&&[
+                                    {action:'monthly_paid',label:'월납 납부',color:'bg-emerald-500 text-white'},
+                                    {action:'start_half',label:'반년납 시작',color:'bg-blue-500 text-white'},
+                                    {action:'start_full',label:'1년납 시작',color:'bg-indigo-600 text-white'},
+                                    {action:'rest',label:'휴식 처리',color:'bg-amber-400 text-slate-800'},
+                                    {action:'cancel_rest',label:'휴식 취소',color:'bg-slate-200 text-slate-600'},
+                                    {action:'special_rest',label:'특별휴식',color:'bg-orange-400 text-white'},
+                                    selectedMember.isSpecialRest&&{action:'cancel_special_rest',label:'특별휴식 해제',color:'bg-slate-200 text-slate-600'},
+                                    {action:'clear',label:'상태 초기화',color:'bg-rose-100 text-rose-600'},
+                                ].filter(Boolean).map(item=>(
+                                    <button key={item.action} onClick={()=>{
+                                        if(item.action==='start_half'){setManualEndDate(calculateEndDate(targetMonth,6));setActionStep('form');setSelectedAction('start_half');}
+                                        else if(item.action==='start_full'){setManualEndDate(calculateEndDate(targetMonth,12));setActionStep('form');setSelectedAction('start_full');}
+                                        else if(item.action==='special_rest'){setActionStep('form');setSelectedAction('special_rest');}
+                                        else processAction(item.action);
+                                    }} className={`w-full py-3 rounded-2xl font-black text-sm ${item.color}`}>{item.label}</button>
+                                ))}
+                            </div>
+                        )}
+
+                        {actionStep==='form' && selectedAction==='start_half' && (
+                            <div className="space-y-3">
+                                <p className="font-black text-slate-700">반년납 설정</p>
+                                <div>
+                                    <p className="text-xs text-slate-400 mb-1">만료일</p>
+                                    <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                                        value={manualEndDate} onChange={e=>setManualEndDate(e.target.value)}/>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={()=>setActionStep('main')} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
+                                    <button onClick={()=>processAction('start_half')} className="flex-1 py-3 bg-blue-500 text-white rounded-2xl font-black text-sm">확정</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {actionStep==='form' && selectedAction==='start_full' && (
+                            <div className="space-y-3">
+                                <p className="font-black text-slate-700">1년납 설정</p>
+                                <div>
+                                    <p className="text-xs text-slate-400 mb-1">만료일</p>
+                                    <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                                        value={manualEndDate} onChange={e=>setManualEndDate(e.target.value)}/>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={()=>setActionStep('main')} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
+                                    <button onClick={()=>processAction('start_full')} className="flex-1 py-3 bg-indigo-600 text-white rounded-2xl font-black text-sm">확정</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {actionStep==='form' && selectedAction==='special_rest' && (
+                            <div className="space-y-3">
+                                <p className="font-black text-slate-700">특별 휴식 사유</p>
+                                <input type="text" placeholder="예: 부상, 해외 출장..." className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                                    value={specialRestReason} onChange={e=>setSpecialRestReason(e.target.value)}/>
+                                <div className="flex gap-2">
+                                    <button onClick={()=>setActionStep('main')} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
+                                    <button onClick={()=>processAction('special_rest')} className="flex-1 py-3 bg-orange-400 text-white rounded-2xl font-black text-sm">확정</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* 회원 추가 모달 */}
+            {isAddModalOpen && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={()=>setIsAddModalOpen(false)}>
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl overflow-y-auto max-h-[90vh]" onClick={e=>e.stopPropagation()}>
+                        <h2 className="text-xl font-black text-slate-800 mb-4">회원 추가</h2>
+                        <div className="space-y-3">
+                            {[
+                                {label:'이름',key:'name',type:'text',placeholder:'이름 입력'},
+                                {label:'생년월일',key:'birth',type:'text',placeholder:'예: 19900101',fmt:formatBirthInput},
+                                {label:'전화번호',key:'phone',type:'text',placeholder:'010-0000-0000',fmt:formatPhoneInput},
+                                {label:'거주지',key:'address',type:'text',placeholder:'예: 화성시 반월동'},
+                                {label:'가입일',key:'joinDate',type:'date'},
+                            ].map(f=>(
+                                <div key={f.key}>
+                                    <p className="text-xs font-black text-slate-500 mb-1">{f.label}</p>
+                                    <input type={f.type} placeholder={f.placeholder||''} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                                        value={f.fmt?f.fmt(newMember[f.key]||''):newMember[f.key]||''} onChange={e=>setNewMember(p=>({...p,[f.key]:f.fmt?f.fmt(e.target.value):e.target.value}))}/>
+                                </div>
+                            ))}
+                            {[
+                                {label:'성별',key:'gender',opts:['남성','여성']},
+                                {label:'역할',key:'role',opts:['회원',...STAFF_ROLES]},
+                                {label:'레벨',key:'level',opts:['1','2','3','4','5','6','7','8','9','10','11','12']},
+                                {label:'포지션',key:'position',opts:['all','피보','아라','픽소','골레이로']},
+                            ].map(f=>(
+                                <div key={f.key}>
+                                    <p className="text-xs font-black text-slate-500 mb-1">{f.label}</p>
+                                    <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black pr-8"
+                                        value={newMember[f.key]} onChange={e=>setNewMember(p=>({...p,[f.key]:e.target.value}))}>
+                                        {f.opts.map(o=><option key={o} value={o}>{o}</option>)}
+                                    </select>
+                                </div>
+                            ))}
+                            <div>
+                                <p className="text-xs font-black text-slate-500 mb-1">커플 연결</p>
+                                <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black pr-8"
+                                    value={newMember.coupleId} onChange={e=>setNewMember(p=>({...p,coupleId:e.target.value}))}>
+                                    <option value="">없음</option>
+                                    {activeMembers.map(m=><option key={m.id} value={m.id}>{m.name}{m.gender==='여성'?' (W)':''}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 mt-5">
+                            <button onClick={()=>setIsAddModalOpen(false)} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
+                            <button onClick={handleAddMember} className="flex-1 py-3 bg-pink-500 text-white rounded-2xl font-black text-sm">등록</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 회원 수정 모달 */}
+            {editingMember && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={()=>setEditingMember(null)}>
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl overflow-y-auto max-h-[90vh]" onClick={e=>e.stopPropagation()}>
+                        <h2 className="text-xl font-black text-slate-800 mb-4">회원 정보 수정</h2>
+                        <div className="space-y-3">
+                            {[
+                                {label:'이름',key:'name',type:'text'},
+                                {label:'생년월일',key:'birth',type:'text',fmt:formatBirthInput},
+                                {label:'전화번호',key:'phone',type:'text',placeholder:'010-0000-0000',fmt:formatPhoneInput},
+                                {label:'거주지',key:'address',type:'text',placeholder:'예: 화성시 반월동'},
+                                {label:'가입일',key:'joinDate',type:'date'},
+                            ].map(f=>(
+                                <div key={f.key}>
+                                    <p className="text-xs font-black text-slate-500 mb-1">{f.label}</p>
+                                    <input type={f.type} placeholder={f.placeholder||''} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                                        value={f.fmt?f.fmt(editingMember[f.key]||''):editingMember[f.key]||''} onChange={e=>setEditingMember(p=>({...p,[f.key]:f.fmt?f.fmt(e.target.value):e.target.value}))}/>
+                                </div>
+                            ))}
+                            {[
+                                {label:'성별',key:'gender',opts:['남성','여성']},
+                                {label:'역할',key:'role',opts:['회원',...STAFF_ROLES]},
+                                {label:'레벨',key:'level',opts:['1','2','3','4','5','6','7','8','9','10','11','12']},
+                                {label:'포지션',key:'position',opts:['all','피보','아라','픽소','골레이로']},
+                            ].map(f=>(
+                                <div key={f.key}>
+                                    <p className="text-xs font-black text-slate-500 mb-1">{f.label}</p>
+                                    <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black pr-8"
+                                        value={editingMember[f.key]||''} onChange={e=>setEditingMember(p=>({...p,[f.key]:e.target.value}))}>
+                                        {f.opts.map(o=><option key={o} value={o}>{o}</option>)}
+                                    </select>
+                                </div>
+                            ))}
+                            <div>
+                                <p className="text-xs font-black text-slate-500 mb-1">커플 연결</p>
+                                <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black pr-8"
+                                    value={editingMember.coupleId||''} onChange={e=>setEditingMember(p=>({...p,coupleId:e.target.value}))}>
+                                    <option value="">없음</option>
+                                    {activeMembers.filter(m=>m.id!==editingMember.id).map(m=><option key={m.id} value={m.id}>{m.name}{m.gender==='여성'?' (W)':''}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 mt-5">
+                            <button onClick={()=>setEditingMember(null)} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
+                            <button onClick={handleUpdateMember} className="flex-1 py-3 bg-pink-500 text-white rounded-2xl font-black text-sm">저장</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 탈퇴 모달 */}
+            {resigningMember && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={()=>setResigningMember(null)}>
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={e=>e.stopPropagation()}>
+                        <h2 className="text-xl font-black text-slate-800 mb-1">탈퇴 처리</h2>
+                        <p className="text-sm text-slate-500 mb-4">{resigningMember.name}</p>
+                        <div className="space-y-3">
+                            <div>
+                                <p className="text-xs font-black text-slate-500 mb-1">탈퇴 일자</p>
+                                <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                                    value={resignForm.date} onChange={e=>setResignForm(p=>({...p,date:e.target.value}))}/>
+                            </div>
+                            <div>
+                                <p className="text-xs font-black text-slate-500 mb-1">사유</p>
+                                <input type="text" placeholder="선택 사항" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                                    value={resignForm.reason} onChange={e=>setResignForm(p=>({...p,reason:e.target.value}))}/>
+                            </div>
+                            <button onClick={()=>setResignForm(p=>({...p,isForced:!p.isForced}))}
+                                className={`w-full py-2.5 rounded-xl font-black text-xs border transition-all ${resignForm.isForced?'bg-red-500 text-white border-red-500':'bg-white border-slate-200 text-slate-500'}`}>
+                                {resignForm.isForced?'✓ 강제 탈퇴':'강제 탈퇴'}
+                            </button>
+                        </div>
+                        <div className="flex gap-2 mt-5">
+                            <button onClick={()=>setResigningMember(null)} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
+                            <button onClick={handleResignConfirm} className="flex-1 py-3 bg-red-500 text-white rounded-2xl font-black text-sm">탈퇴 처리</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 알림 모달 */}
+            {alertModal.show && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-zoom-in">
+                        <h3 className="font-black text-lg text-slate-800 mb-2">{alertModal.title}</h3>
+                        <p className="text-sm text-slate-500 whitespace-pre-line mb-5">{alertModal.content}</p>
+                        <div className="flex gap-2">
+                            {alertModal.type==='confirm'&&<button onClick={()=>setAlertModal(p=>({...p,show:false}))} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>}
+                            <button onClick={()=>{if(alertModal.onConfirm)alertModal.onConfirm();setAlertModal(p=>({...p,show:false}));}} className="flex-1 py-3 bg-pink-500 text-white rounded-2xl font-black text-sm">
+                                {alertModal.type==='confirm'?'확인':'닫기'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

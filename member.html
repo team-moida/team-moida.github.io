@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <title>모이다 - 회원</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #0f172a;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            overscroll-behavior-y: none;
+        }
+        .animate-in { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        .pulse-ring { animation: pulseRing 2s infinite; }
+        @keyframes pulseRing { 0%{transform:scale(1);opacity:1} 70%{transform:scale(1.4);opacity:0} 100%{transform:scale(1.4);opacity:0} }
+        button:active { transform: scale(0.96); opacity: 0.85; }
+        input:focus { outline: none; }
+        .card { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+        .card-white { background: white; }
+        .no-scrollbar::-webkit-scrollbar{display:none}
+        .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+        select { appearance: none; }
+        .tab-bar { background: rgba(15,23,42,0.95); border-top: 1px solid rgba(255,255,255,0.08); }
+    </style>
+</head>
+<body class="min-h-screen">
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBYykNZVf20LLQ-YIIeA2TKz9DSBsypRZM",
+    authDomain: "moida-otpfc.firebaseapp.com",
+    projectId: "moida-otpfc",
+    storageBucket: "moida-otpfc.firebasestorage.app",
+    messagingSenderId: "407991675090",
+    appId: "1:407991675090:web:df9f7d8a7c93a6eb5ae50b"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const APP_ID = 'moida-otpfc';
+const getCol = (n) => db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection(n);
+
+// 거리 계산 (Haversine)
+const calcDistance = (lat1, lng1, lat2, lng2) => {
+    const R = 6371000;
+    const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2-lat1) * Math.PI / 180, Δλ = (lng2-lng1) * Math.PI / 180;
+    const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+};
+
+// URL 파라미터 파싱
+const getUrlParams = () => {
+    const params = new URLSearchParams(window.location.search);
+    return { token: params.get('token'), date: params.get('date') };
+};
+
+const getTeamBadge = (idx) => ['bg-pink-500','bg-sky-400','bg-lime-400','bg-yellow-400','bg-blue-600','bg-red-500'][idx] || 'bg-slate-500';
+const getTeamName = (idx) => String.fromCharCode(65+idx);
+const getTeamColorName = (idx) => ['핑크','하늘','연두','노랑','파랑','빨강'][idx] || '';
+
+function App() {
+    // 앱 상태
+    const [appView, setAppView] = useState('loading'); // loading | login | app
+    const [tab, setTab] = useState('home');
+
+    // 회원 데이터
+    const [memberData, setMemberData] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('moida_member_data')); } catch(e) { return null; }
+    });
+    const [memberInfo, setMemberInfo] = useState(null); // Firestore members doc
+
+    // 로그인 폼
+    const [loginForm, setLoginForm] = useState({ name:'', birth:'' });
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+    // Firebase 데이터
+    const [meetingSettings, setMeetingSettings] = useState(null);
+    const [teamDraftData, setTeamDraftData] = useState(null);
+    const [scheduleData, setScheduleData] = useState(null);
+    const [mySession, setMySession] = useState(null); // 오늘 내 출석 세션
+
+    // GPS 상태
+    const [gpsStatus, setGpsStatus] = useState('idle'); // idle | checking | within | outside | no_location | error
+    const [distance, setDistance] = useState(null);
+    const [isCheckingIn, setIsCheckingIn] = useState(false);
+
+    // QR 상태
+    const [qrStatus, setQrStatus] = useState('idle'); // idle | processing | success | error
+    const [qrMessage, setQrMessage] = useState('');
+
+    // 알림
+    const [toast, setToast] = useState({ show:false, msg:'', type:'info' });
+    const showToast = (msg, type='info') => {
+        setToast({show:true,msg,type});
+        setTimeout(()=>setToast(p=>({...p,show:false})),3000);
+    };
+
+    // URL에 QR 토큰이 있는지 확인
+    const urlParams = useMemo(() => getUrlParams(), []);
+
+    // Firebase 인증
+    useEffect(() => {
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+        auth.signInAnonymously().catch(e=>console.error(e));
+    }, []);
+
+    // 설정 읽기
+    useEffect(() => {
+        const unsub = getCol('settings').doc('meeting_schedule_v2').onSnapshot(doc => {
+            if (doc.exists) setMeetingSettings(doc.data());
+        });
+        return () => unsub();
+    }, []);
+
+    // 팀 편성 읽기
+    useEffect(() => {
+        const unsub = getCol('team_drafts')
+            .where('isConfirmed', '==', true)
+            .orderBy('createdAt', 'desc')
+            .limit(1)
+            .onSnapshot(snap => {
+                setTeamDraftData(snap.empty ? null : snap.docs[0].data());
+            });
+        return () => unsub();
+    }, []);
+
+    // 매치 테이블 읽기
+    useEffect(() => {
+        const unsub = getCol('match_schedules')
+            .orderBy('createdAt', 'desc')
+            .limit(1)
+            .onSnapshot(snap => {
+                setScheduleData(snap.empty ? null : snap.docs[0].data());
+            });
+        return () => unsub();
+    }, []);
+
+    // 내 출석 세션 읽기
+    useEffect(() => {
+        if (!memberData?.memberId || !meetingSettings?.date) return;
+        const unsub = getCol('weekly_session')
+            .where('memberId', '==', memberData.memberId)
+            .where('date', '==', meetingSettings.date)
+            .onSnapshot(snap => {
+                setMySession(snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() });
+            });
+        return () => unsub();
+    }, [memberData, meetingSettings]);
+
+    // members 문서 읽기
+    useEffect(() => {
+        if (!memberData?.memberId) return;
+        const unsub = getCol('members').doc(memberData.memberId).onSnapshot(doc => {
+            if (doc.exists) setMemberInfo({ id: doc.id, ...doc.data() });
+        });
+        return () => unsub();
+    }, [memberData]);
+
+    // 초기 앱 뷰 설정
+    useEffect(() => {
+        if (memberData?.memberId) setAppView('app');
+        else setAppView('login');
+    }, []);
+
+    // QR 토큰 처리 (URL에 token 있는 경우)
+    const handleQRAttendance = useCallback(async () => {
+        if (!urlParams.token || !urlParams.date) return;
+        if (!memberData?.memberId) { setQrMessage('회원 등록 후 이용 가능합니다.'); setQrStatus('error'); return; }
+        setQrStatus('processing');
+        setTab('attend');
+        try {
+            const tokenDoc = await getCol('qr_tokens').doc(urlParams.date).get();
+            if (!tokenDoc.exists) { setQrMessage('유효하지 않은 QR코드입니다.'); setQrStatus('error'); return; }
+            const tokenData = tokenDoc.data();
+
+            if (tokenData.token !== urlParams.token) { setQrMessage('QR 코드가 일치하지 않습니다.'); setQrStatus('error'); return; }
+
+            const now = new Date();
+            if (now < new Date(tokenData.validFrom)) { setQrMessage(`아직 출석 시간이 아닙니다.\n출석 가능 시간: ${new Date(tokenData.validFrom).toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'})}`); setQrStatus('error'); return; }
+            if (now > new Date(tokenData.validUntil)) { setQrMessage('QR 코드 유효 시간이 지났습니다.'); setQrStatus('error'); return; }
+
+            const usedBy = tokenData.usedBy || [];
+            if (usedBy.includes(memberData.memberId)) { setQrMessage('이미 QR 출석이 완료되었습니다.'); setQrStatus('success'); return; }
+
+            // 세션 출석 처리
+            const sessionSnap = await getCol('weekly_session')
+                .where('memberId', '==', memberData.memberId)
+                .where('date', '==', urlParams.date)
+                .get();
+            if (sessionSnap.empty) { setQrMessage('오늘 선정 명단에 없습니다.\n관리자에게 문의하세요.'); setQrStatus('error'); return; }
+
+            const sessionDoc = sessionSnap.docs[0];
+            if (sessionDoc.data().checkedIn) { setQrMessage('이미 출석 처리되었습니다.'); setQrStatus('success'); return; }
+
+            const now2 = new Date();
+            const [sy,sm,sd] = urlParams.date.split('-');
+            const startTime = meetingSettings?.start || '08:00';
+            const [shr,smin] = startTime.split(':');
+            const meetingStart = new Date(sy,sm-1,sd,parseInt(shr),parseInt(smin),0);
+            const lateThreshold = new Date(meetingStart.getTime() + 60000);
+            const status = now2 >= lateThreshold ? '지각' : '정상';
+            const timeStr = now2.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+
+            const batch = db.batch();
+            batch.update(getCol('weekly_session').doc(sessionDoc.id), { checkedIn:true, checkInTime:timeStr, status });
+            batch.update(getCol('qr_tokens').doc(urlParams.date), { usedBy: firebase.firestore.FieldValue.arrayUnion(memberData.memberId) });
+            await batch.commit();
+
+            setQrMessage(`출석 완료! (${status})\n${timeStr}`);
+            setQrStatus('success');
+
+            // URL 파라미터 제거
+            window.history.replaceState({}, '', window.location.pathname);
+        } catch(e) {
+            console.error(e);
+            setQrMessage('오류가 발생했습니다: ' + e.message);
+            setQrStatus('error');
+        }
+    }, [urlParams, memberData, meetingSettings]);
+
+    useEffect(() => {
+        if (urlParams.token && appView === 'app') handleQRAttendance();
+    }, [urlParams.token, appView]);
+
+    // 로그인
+    const handleLogin = async () => {
+        if (!loginForm.name.trim()) return showToast('이름을 입력해주세요.', 'error');
+        const birth6 = loginForm.birth.replace(/[^0-9]/g, '').slice(0, 6);
+        if (birth6.length !== 6) return showToast('생년월일 6자리(YYMMDD)를 입력해주세요.', 'error');
+        setIsLoggingIn(true);
+        try {
+            const snap = await getCol('members').where('name', '==', loginForm.name.trim()).get();
+            let found = null;
+            snap.forEach(doc => {
+                const data = doc.data();
+                if (data.isResigned) return;
+                const b = String(data.birth || '');
+                if (b.substring(2) === birth6 || b === birth6) found = { id: doc.id, ...data };
+            });
+            if (!found) return showToast('이름 또는 생년월일이 일치하지 않습니다.', 'error');
+            const newMemberData = { memberId: found.id, name: found.name, role: found.role || '회원' };
+            localStorage.setItem('moida_member_data', JSON.stringify(newMemberData));
+            setMemberData(newMemberData);
+            setAppView('app');
+        } catch(e) { showToast('로그인 실패: ' + e.message, 'error'); }
+        finally { setIsLoggingIn(false); }
+    };
+
+    // 로그아웃
+    const handleLogout = () => {
+        localStorage.removeItem('moida_member_data');
+        setMemberData(null);
+        setMemberInfo(null);
+        setLoginForm({ name:'', birth:'' });
+        setAppView('login');
+    };
+
+    // GPS 출석 체크
+    const handleGPSCheckIn = async () => {
+        if (!memberData?.memberId) return;
+        setGpsStatus('checking');
+        if (!navigator.geolocation) { setGpsStatus('error'); showToast('이 기기는 GPS를 지원하지 않습니다.', 'error'); return; }
+
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            const { latitude, longitude } = pos.coords;
+            const locationLat = meetingSettings?.locationLat;
+            const locationLng = meetingSettings?.locationLng;
+
+            if (!locationLat || !locationLng) {
+                setGpsStatus('no_location');
+                showToast('관리자가 모임 장소를 아직 설정하지 않았습니다.', 'error');
+                return;
+            }
+
+            const dist = calcDistance(latitude, longitude, locationLat, locationLng);
+            setDistance(Math.round(dist));
+            const radius = meetingSettings?.locationRadius || 100;
+
+            if (dist <= radius) {
+                setGpsStatus('within');
+            } else {
+                setGpsStatus('outside');
+            }
+        }, (err) => {
+            setGpsStatus('error');
+            const msg = err.code === 1 ? '위치 권한을 허용해주세요.' : err.code === 2 ? 'GPS 신호를 찾을 수 없습니다.' : '위치 확인 시간이 초과되었습니다.';
+            showToast(msg, 'error');
+        }, { timeout: 10000, maximumAge: 0, enableHighAccuracy: true });
+    };
+
+    const handleGPSAttend = async () => {
+        if (!mySession) return showToast('오늘 선정 명단에 없습니다. 관리자에게 문의하세요.', 'error');
+        if (mySession.checkedIn) return showToast('이미 출석 처리되었습니다.', 'info');
+        setIsCheckingIn(true);
+        try {
+            const now = new Date();
+            const[sy,sm,sd] = meetingSettings.date.split('-');
+            const[shr,smin] = meetingSettings.start.split(':');
+            const meetingStart = new Date(sy,sm-1,sd,parseInt(shr),parseInt(smin),0);
+            const allowFrom = new Date(meetingStart.getTime() - 60*60*1000);
+            if (now < allowFrom) { showToast('아직 출석 가능 시간이 아닙니다.', 'error'); setIsCheckingIn(false); return; }
+            const lateThreshold = new Date(meetingStart.getTime() + 60000);
+            const status = now >= lateThreshold ? '지각' : '정상';
+            const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+            await getCol('weekly_session').doc(mySession.id).update({ checkedIn:true, checkInTime:timeStr, status });
+            showToast(`출석 완료! ${status} (${timeStr})`, 'success');
+        } catch(e) { showToast('출석 실패: ' + e.message, 'error'); }
+        finally { setIsCheckingIn(false); }
+    };
+
+    // 내 팀 정보
+    const myTeamInfo = useMemo(() => {
+        if (!teamDraftData?.teams || !memberData?.memberId) return null;
+        for (let i = 0; i < teamDraftData.teams.length; i++) {
+            const team = teamDraftData.teams[i];
+            const foundIdx = team.members.findIndex(m => m.memberId === memberData.memberId || m.id === memberData.memberId);
+            if (foundIdx !== -1) return { teamIdx: i, teamName: getTeamName(i), members: team.members, jerseyNumber: foundIdx + 1 };
+        }
+        return null;
+    }, [teamDraftData, memberData]);
+
+    // ============================
+    // 뷰 렌더링
+    // ============================
+
+    // 로딩
+    if (appView === 'loading') return (
+        <div className="min-h-screen flex flex-col items-center justify-center">
+            <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-slate-400 text-sm font-medium">모이다 연결 중...</p>
+        </div>
+    );
+
+    // 로그인 화면
+    if (appView === 'login') return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-5">
+            <div className="w-full max-w-sm animate-in">
+                <div className="text-center mb-8">
+                    <img src="icon.png" alt="OTP FC" className="w-20 h-20 object-contain mx-auto mb-4" onError={e=>e.target.style.display='none'}/>
+                    <h1 className="text-3xl font-black text-white">모이다</h1>
+                    <p className="text-pink-400 text-xs mt-1 tracking-widest">OTP FC 회원 앱</p>
+                </div>
+
+                <div className="bg-white rounded-3xl p-6 shadow-2xl">
+                    <h2 className="text-xl font-black text-slate-800 mb-1">회원 로그인</h2>
+                    <p className="text-xs text-slate-400 mb-5">이름과 생년월일 뒤 6자리를 입력하세요.</p>
+
+                    <div className="space-y-3">
+                        <div>
+                            <p className="text-xs font-black text-slate-500 mb-1">이름</p>
+                            <input type="text" placeholder="실명 입력" style={{userSelect:'text'}}
+                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-black focus:border-pink-400 transition-colors"
+                                value={loginForm.name} onChange={e=>setLoginForm(p=>({...p,name:e.target.value}))}
+                                onKeyDown={e=>e.key==='Enter'&&handleLogin()}/>
+                        </div>
+                        <div>
+                            <p className="text-xs font-black text-slate-500 mb-1">생년월일 <span className="font-normal text-slate-400">YYMMDD · 예) 900101</span></p>
+                            <input type="text" placeholder="900101" maxLength="6" style={{userSelect:'text'}}
+                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-black focus:border-pink-400 transition-colors"
+                                value={loginForm.birth} onChange={e=>setLoginForm(p=>({...p,birth:e.target.value.replace(/[^0-9]/g,'')}))}
+                                onKeyDown={e=>e.key==='Enter'&&handleLogin()}/>
+                        </div>
+                    </div>
+
+                    <button onClick={handleLogin} disabled={isLoggingIn}
+                        className="w-full mt-5 py-4 bg-pink-500 text-white rounded-2xl font-black text-base shadow-lg shadow-pink-200 disabled:opacity-50">
+                        {isLoggingIn ? '확인 중...' : '로그인'}
+                    </button>
+                </div>
+            </div>
+
+            {toast.show && (
+                <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 px-5 py-3 rounded-full text-sm font-black shadow-xl transition-all z-50 ${toast.type==='error'?'bg-red-500 text-white':'bg-emerald-500 text-white'}`}>
+                    {toast.msg}
+                </div>
+            )}
+        </div>
+    );
+
+    // ============================
+    // 메인 회원 앱
+    // ============================
+    const memberName = memberInfo?.name || memberData?.name || '회원';
+    const myTeamIdx = myTeamInfo?.teamIdx ?? -1;
+
+    return (
+        <div className="min-h-screen pb-24 text-white">
+            {/* 헤더 */}
+            <div className="px-5 pt-12 pb-6" style={{background:'linear-gradient(160deg,#1e1b4b,#0f172a)'}}>
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <p className="text-pink-400 text-xs tracking-widest uppercase font-bold">OTP FC</p>
+                        <h1 className="text-2xl font-black mt-0.5">{memberName} 님</h1>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5">
+                        <div className="flex gap-1.5">
+                            <button onClick={()=>window.location.href='index.html'} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-all">🏠</button>
+                            <button onClick={handleLogout} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-all">로그아웃</button>
+                        </div>
+                        <img src="icon.png" alt="OTP FC" className="w-10 h-10 object-contain opacity-70" onError={e=>e.target.style.display='none'}/>
+                    </div>
+                </div>
+
+                {/* 오늘 모임 정보 */}
+                {meetingSettings && (
+                    <div className="card rounded-2xl p-4 mt-2">
+                        <p className="text-[10px] text-pink-400 font-black uppercase tracking-widest mb-2">다음 모임</p>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="font-black text-lg">{meetingSettings.date}</p>
+                                <p className="text-slate-400 text-xs mt-0.5">{meetingSettings.start} ~ {meetingSettings.end}</p>
+                                {meetingSettings.location && <p className="text-slate-400 text-xs mt-0.5">📍 {meetingSettings.location}</p>}
+                            </div>
+                            {mySession?.checkedIn
+                                ? <div className="bg-emerald-500 px-4 py-2 rounded-xl text-sm font-black">✓ 출석</div>
+                                : myTeamInfo
+                                    ? <div className={`${getTeamBadge(myTeamIdx)} px-3 py-2 rounded-xl text-sm font-black text-center`}>
+                                        <div>{myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</div>
+                                        <div className="text-[10px] opacity-80">{getTeamColorName(myTeamIdx)} 조끼</div>
+                                      </div>
+                                    : <div className="bg-slate-700 px-4 py-2 rounded-xl text-xs font-black text-slate-400">미편성</div>
+                            }
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* 탭 콘텐츠 */}
+            <div className="px-4 pt-4">
+
+                {/* ===== 홈 탭 ===== */}
+                {tab === 'home' && (
+                    <div className="animate-in space-y-3">
+                        {/* 빠른 출석 */}
+                        <button onClick={()=>setTab('attend')} className="w-full card rounded-3xl p-5 text-left active:scale-98 transition-all">
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 bg-pink-500/20 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">📍</div>
+                                <div>
+                                    <p className="font-black text-lg">출석 체크</p>
+                                    <p className="text-slate-400 text-xs mt-0.5">GPS 또는 QR로 출석</p>
+                                </div>
+                                <div className="ml-auto text-slate-600 text-xl">›</div>
+                            </div>
+                        </button>
+
+                        {/* 내 팀 */}
+                        {myTeamInfo ? (
+                            <div className="card rounded-3xl p-5">
+                                <p className="text-xs font-black text-pink-400 uppercase tracking-widest mb-3">내 팀</p>
+                                <div className="flex items-center gap-3 mb-3">
+                                    <span className={`w-10 h-10 rounded-xl font-black text-lg flex items-center justify-center ${getTeamBadge(myTeamIdx)} text-white flex-shrink-0`}>{myTeamInfo.jerseyNumber}</span>
+                                    <div>
+                                        <p className="font-black text-lg leading-tight">{myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</p>
+                                        <p className="text-xs text-slate-400">{getTeamColorName(myTeamIdx)} 조끼 · {myTeamInfo.members.length}명</p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {myTeamInfo.members.map((m,i)=>(
+                                        <span key={i} className={`px-3 py-1.5 rounded-xl text-xs font-black ${m.memberId===memberData?.memberId?'bg-pink-500 text-white':'bg-white/10 text-slate-300'}`}>
+                                            <span className="opacity-60 mr-0.5">{i+1}.</span>{m.name}{m.gender==='여성'&&<span className="ml-1 opacity-60">W</span>}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="card rounded-3xl p-5 text-center text-slate-500">
+                                <p className="text-2xl mb-2">⚡</p>
+                                <p className="font-black text-sm">아직 팀이 편성되지 않았습니다</p>
+                            </div>
+                        )}
+
+                        {/* 출석 현황 */}
+                        {mySession && (
+                            <div className={`rounded-3xl p-5 ${mySession.checkedIn?'bg-emerald-900/30 border border-emerald-500/30':'card'}`}>
+                                <p className="text-xs font-black text-emerald-400 uppercase tracking-widest mb-2">오늘 출석 현황</p>
+                                {mySession.checkedIn
+                                    ? <div><p className="font-black text-lg text-emerald-400">✓ 출석 완료</p><p className="text-slate-400 text-sm mt-1">{mySession.checkInTime} · {mySession.status}</p></div>
+                                    : <p className="text-slate-400 font-black">미출석 · 출석탭에서 체크인하세요</p>
+                                }
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ===== 팀 탭 ===== */}
+                {tab === 'team' && (
+                    <div className="animate-in">
+                        {!teamDraftData
+                            ? <div className="text-center py-20 text-slate-600"><p className="text-4xl mb-3">⚡</p><p className="font-black">팀 편성 전입니다</p></div>
+                            : (
+                                <div>
+                                    <div className="text-center mb-4">
+                                        <p className="text-xs text-slate-500 uppercase tracking-widest font-black">{teamDraftData.meetingDate} 팀 편성</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {teamDraftData.teams.map((team, teamIdx)=>(
+                                            <div key={teamIdx} className={`rounded-2xl p-4 border ${teamIdx===myTeamIdx?'border-pink-500 bg-pink-900/20':'card border-white/10'}`}>
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <span className={`w-8 h-8 rounded-xl font-black text-sm flex items-center justify-center text-white ${getTeamBadge(teamIdx)}`}>{getTeamName(teamIdx)}</span>
+                                                    {teamIdx===myTeamIdx&&<span className="text-[9px] font-black text-pink-400 uppercase">내 팀</span>}
+                                                </div>
+                                                {team.members.map((m,mi)=>(
+                                                    <div key={mi} className={`text-xs py-1 font-black flex items-center gap-1 ${m.memberId===memberData?.memberId?'text-pink-400':'text-slate-400'}`}>
+                                                        <span className="opacity-50 w-4 text-right flex-shrink-0">{mi+1}.</span>
+                                                        <span>{m.name}{m.gender==='여성'&&' W'}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )
+                        }
+                    </div>
+                )}
+
+                {/* ===== 매치 탭 ===== */}
+                {tab === 'match' && (
+                    <div className="animate-in">
+                        {!scheduleData
+                            ? <div className="text-center py-20 text-slate-600"><p className="text-4xl mb-3">🏟️</p><p className="font-black">매치 테이블 준비 중</p></div>
+                            : (
+                                <div>
+                                    <div className="text-center mb-4">
+                                        <p className="text-xs text-slate-500 uppercase tracking-widest font-black">{scheduleData.meetingDate}</p>
+                                        <p className="text-[10px] text-slate-600 mt-1">{scheduleData.schedule?.list?.length}라운드</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {scheduleData.schedule?.list?.map((session,si)=>{
+                                            const myTeamName = myTeamInfo?.teamName;
+                                            const hasMyTeam = myTeamName && session.matches.some(m=>m.match.includes(myTeamName));
+                                            const isResting = myTeamName && session.resting?.includes(myTeamName);
+                                            return (
+                                                <div key={si} className={`rounded-2xl p-4 border ${hasMyTeam?'border-pink-500/50 bg-pink-900/15':isResting?'border-amber-500/30 bg-amber-900/10':'card border-white/8'}`}>
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <p className="text-xs font-black text-slate-400">{session.time}</p>
+                                                        {hasMyTeam&&<span className="text-[9px] font-black text-pink-400 bg-pink-500/20 px-2 py-0.5 rounded-full">내 경기</span>}
+                                                        {isResting&&<span className="text-[9px] font-black text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-full">휴식</span>}
+                                                    </div>
+                                                    {session.matches.map((m,mi)=>{
+                                                        const[t1,t2]=m.match;
+                                                        const t1Idx=t1.charCodeAt(0)-65;
+                                                        const t2Idx=t2.charCodeAt(0)-65;
+                                                        const isMyMatch=myTeamName&&(t1===myTeamName||t2===myTeamName);
+                                                        return (
+                                                            <div key={mi} className="flex items-center gap-2 mb-1.5 last:mb-0">
+                                                                <span className="text-[9px] text-slate-600 w-10 shrink-0">{scheduleData.config?.fieldNames?.[m.fieldIdx]||`${m.fieldIdx+1}구장`}</span>
+                                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-black text-white ${getTeamBadge(t1Idx)} ${isMyMatch&&t1===myTeamName?'ring-2 ring-white/50':''}`}>{t1}</span>
+                                                                <span className="text-slate-600 text-xs">vs</span>
+                                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-black text-white ${getTeamBadge(t2Idx)} ${isMyMatch&&t2===myTeamName?'ring-2 ring-white/50':''}`}>{t2}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )
+                        }
+                    </div>
+                )}
+
+                {/* ===== 출석 탭 ===== */}
+                {tab === 'attend' && (
+                    <div className="animate-in space-y-4">
+
+                        {/* 현재 출석 상태 */}
+                        {mySession?.checkedIn && (
+                            <div className="bg-emerald-900/30 border border-emerald-500/30 rounded-3xl p-5 text-center">
+                                <p className="text-4xl mb-2">✅</p>
+                                <p className="font-black text-xl text-emerald-400">출석 완료!</p>
+                                <p className="text-slate-400 text-sm mt-1">{mySession.checkInTime} · {mySession.status}</p>
+                            </div>
+                        )}
+
+                        {/* QR 처리 결과 */}
+                        {qrStatus !== 'idle' && (
+                            <div className={`rounded-3xl p-5 text-center border ${qrStatus==='success'?'bg-emerald-900/30 border-emerald-500/30':qrStatus==='processing'?'card border-white/10':'bg-red-900/30 border-red-500/30'}`}>
+                                {qrStatus==='processing' && <><div className="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p className="font-black text-slate-300">QR 확인 중...</p></>}
+                                {qrStatus==='success' && <><p className="text-3xl mb-2">🎉</p><p className="font-black text-emerald-400 whitespace-pre-line">{qrMessage}</p></>}
+                                {qrStatus==='error' && <><p className="text-3xl mb-2">⚠️</p><p className="font-black text-red-400 whitespace-pre-line">{qrMessage}</p></>}
+                            </div>
+                        )}
+
+                        {/* GPS 출석 */}
+                        {!mySession?.checkedIn && (
+                            <div className="card rounded-3xl p-5">
+                                <p className="text-xs font-black text-pink-400 uppercase tracking-widest mb-4">GPS 출석</p>
+
+                                {gpsStatus==='idle' && (
+                                    <div className="text-center">
+                                        <p className="text-slate-400 text-sm mb-4">모임 장소 근처에 있다면<br/>아래 버튼으로 위치를 확인하세요.</p>
+                                        <button onClick={handleGPSCheckIn} className="w-full py-4 bg-pink-500 text-white rounded-2xl font-black text-base shadow-lg shadow-pink-900/30">
+                                            📍 위치 확인하기
+                                        </button>
+                                    </div>
+                                )}
+
+                                {gpsStatus==='checking' && (
+                                    <div className="text-center py-4">
+                                        <div className="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                                        <p className="text-slate-400 font-black">GPS 확인 중...</p>
+                                    </div>
+                                )}
+
+                                {gpsStatus==='within' && (
+                                    <div className="text-center">
+                                        <div className="relative w-20 h-20 mx-auto mb-4">
+                                            <div className="absolute inset-0 bg-pink-500/20 rounded-full pulse-ring"></div>
+                                            <div className="w-20 h-20 bg-pink-500 rounded-full flex items-center justify-center text-3xl">📍</div>
+                                        </div>
+                                        <p className="font-black text-emerald-400 text-lg mb-1">모임 장소 근처!</p>
+                                        <p className="text-slate-400 text-sm mb-4">{distance}m 거리</p>
+                                        <button onClick={handleGPSAttend} disabled={isCheckingIn}
+                                            className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-base shadow-lg disabled:opacity-50">
+                                            {isCheckingIn ? '출석 처리 중...' : '✓ 출석 체크'}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {gpsStatus==='outside' && (
+                                    <div className="text-center">
+                                        <p className="text-3xl mb-2">🚶</p>
+                                        <p className="font-black text-yellow-400 text-lg mb-1">아직 멀리 있습니다</p>
+                                        <p className="text-slate-400 text-sm mb-4">현재 {distance}m 거리<br/>100m 이내로 이동해주세요.</p>
+                                        <button onClick={handleGPSCheckIn} className="w-full py-3 bg-slate-700 text-white rounded-2xl font-black text-sm">
+                                            🔄 다시 확인
+                                        </button>
+                                    </div>
+                                )}
+
+                                {gpsStatus==='no_location' && (
+                                    <div className="text-center">
+                                        <p className="text-3xl mb-2">⚙️</p>
+                                        <p className="font-black text-slate-300 mb-1">장소 미설정</p>
+                                        <p className="text-slate-500 text-xs">관리자가 모임 장소 GPS를 설정하지 않았습니다.<br/>QR 출석을 이용해주세요.</p>
+                                    </div>
+                                )}
+
+                                {gpsStatus==='error' && (
+                                    <div className="text-center">
+                                        <p className="text-3xl mb-2">⚠️</p>
+                                        <p className="font-black text-red-400 mb-3">위치 확인 실패</p>
+                                        <button onClick={()=>setGpsStatus('idle')} className="px-5 py-2.5 bg-slate-700 text-white rounded-xl font-black text-sm">다시 시도</button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* QR 출석 안내 */}
+                        {!mySession?.checkedIn && (
+                            <div className="card rounded-3xl p-5">
+                                <p className="text-xs font-black text-violet-400 uppercase tracking-widest mb-3">QR 출석</p>
+                                <div className="flex items-start gap-4">
+                                    <div className="w-12 h-12 bg-violet-500/20 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">📷</div>
+                                    <div>
+                                        <p className="font-black text-slate-200 text-sm mb-1">관리자 QR 스캔</p>
+                                        <p className="text-slate-500 text-xs leading-relaxed">관리자가 보여주는 QR코드를<br/>기본 카메라 앱으로 스캔하면<br/>자동으로 출석됩니다.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* 하단 탭바 */}
+            <div className="tab-bar fixed bottom-0 left-0 right-0 z-50 pb-safe">
+                <div className="flex justify-around items-center h-16 max-w-sm mx-auto px-6">
+                    {[
+                        {key:'home',label:'홈',emoji:'🏠'},
+                        {key:'team',label:'팀',emoji:'⚡'},
+                        {key:'match',label:'매치',emoji:'🏟️'},
+                        {key:'attend',label:'출석',emoji:'📍'},
+                    ].map(({key,label,emoji})=>(
+                        <button key={key} onClick={()=>setTab(key)}
+                            className={`flex flex-col items-center justify-center w-14 h-12 rounded-xl transition-all ${tab===key?'bg-pink-500/20 text-pink-400':'text-slate-600'}`}>
+                            <span className="text-lg leading-none">{emoji}</span>
+                            <span className={`text-[9px] font-black mt-0.5 ${tab===key?'text-pink-400':'text-slate-600'}`}>{label}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* 토스트 알림 */}
+            {toast.show && (
+                <div className={`fixed bottom-20 left-1/2 -translate-x-1/2 px-5 py-3 rounded-full text-sm font-black shadow-xl z-50 whitespace-nowrap transition-all ${toast.type==='error'?'bg-red-500 text-white':toast.type==='success'?'bg-emerald-500 text-white':'bg-slate-700 text-white'}`}>
+                    {toast.msg}
+                </div>
+            )}
+        </div>
+    );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

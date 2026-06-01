@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#f8fafc">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <title>모이다 - 팀 편성</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @font-face{font-family:'Esamanru';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10@1.0/GongGothicMedium.woff') format('woff');font-weight:normal}
+        @font-face{font-family:'Esamanru';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10@1.0/GongGothicBold.woff') format('woff');font-weight:700}
+        body{font-family:'Esamanru',sans-serif!important;background:#f8fafc;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none;-webkit-font-smoothing:antialiased;touch-action:manipulation}
+        .animate-zoom-in{animation:zoomIn 0.2s ease-out}
+        .animate-fade-in{animation:fadeIn 0.3s ease-out}
+        @keyframes zoomIn{from{opacity:0;transform:scale(0.98)}to{opacity:1;transform:scale(1)}}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        button:active{transform:scale(0.96);opacity:0.9}
+        #loading-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.5s}
+        .no-scrollbar::-webkit-scrollbar{display:none}.no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+        .dragging{opacity:0.3;border:2px dashed #3b82f6!important;background:#eff6ff!important;transform:scale(0.96)}
+        .drop-target{border-color:#ec4899!important;background:#fdf2f8!important;transform:scale(1.01)}
+        select,input{outline:none}
+        select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.75rem center;background-size:1rem}
+    </style>
+</head>
+<body>
+<div id="loading-screen">
+    <div class="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+    <p class="mt-4 font-bold text-slate-500 italic">모이다 연결 중...</p>
+</div>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useMemo, useRef } = React;
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBYykNZVf20LLQ-YIIeA2TKz9DSBsypRZM",
+    authDomain: "moida-otpfc.firebaseapp.com",
+    projectId: "moida-otpfc",
+    storageBucket: "moida-otpfc.firebasestorage.app",
+    messagingSenderId: "407991675090",
+    appId: "1:407991675090:web:df9f7d8a7c93a6eb5ae50b"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const APP_ID = 'moida-otpfc';
+const getCol = (n) => db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection(n);
+
+// 레벨 포인트 (균등 배분 기준)
+const getLevelPoints = (level) => {
+    const l = parseInt(level);
+    const n = l > 6 ? l - 6 : l;
+    return [0,15,11,8,5,3,1][n] || 1;
+};
+
+const getLevelColor = (level) => {
+    const l = parseInt(level);
+    const n = l > 6 ? l - 6 : l;
+    return ['','bg-rose-500 text-white','bg-orange-500 text-white','bg-amber-400 text-slate-800','bg-emerald-500 text-white','bg-blue-500 text-white','bg-violet-500 text-white'][n] || 'bg-slate-400 text-white';
+};
+
+const getTeamBadge = (idx) => ['bg-pink-500 text-white','bg-sky-400 text-white','bg-lime-400 text-slate-800','bg-yellow-400 text-slate-800','bg-blue-600 text-white','bg-red-500 text-white'][idx] || 'bg-slate-500 text-white';
+const getTeamCard = (idx) => ['bg-pink-50 border-pink-200','bg-sky-50 border-sky-200','bg-lime-50 border-lime-200','bg-yellow-50 border-yellow-200','bg-blue-50 border-blue-200','bg-red-50 border-red-200'][idx] || 'bg-slate-50 border-slate-200';
+const getTeamName = (idx) => String.fromCharCode(65+idx);
+
+const shuffleArray = (arr) => {
+    const a = [...arr];
+    for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+    return a;
+};
+
+const Icon = {
+    Home:({size=18,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+    Refresh:({size=18,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>,
+    Check:({size=14,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>,
+    Save:({size=16,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
+    Trash:({size=16,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+    Camera:({size=16,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
+    Folder:({size=16,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>,
+};
+
+function App() {
+    const [members, setMembers] = useState([]);
+    const [sessionData, setSessionData] = useState([]);
+    const [savedDrafts, setSavedDrafts] = useState([]);
+    const [confirmedHistory, setConfirmedHistory] = useState([]);
+    const [meetingDate, setMeetingDate] = useState('');
+    const [meetingTime, setMeetingTime] = useState({start:'',end:''});
+    const [syncManagerName, setSyncManagerName] = useState('');
+    const [maxLimit, setMaxLimit] = useState(18);
+    const [monthlyStatuses, setMonthlyStatuses] = useState({});
+    const [excludedIds, setExcludedIds] = useState([]);
+    const [teamingSettings, setTeamingSettings] = useState({teamCount:3,keepCouples:true,avoidOverlap:true});
+    const [teams, setTeams] = useState([]);
+    const [isConfirmed, setIsConfirmed] = useState(false);
+    const [activeTab, setActiveTab] = useState('generator');
+    const [user, setUser] = useState(null);
+    const [alertModal, setAlertModal] = useState({show:false,title:'',content:'',type:'info',onConfirm:null});
+    const [draggedItem, setDraggedItem] = useState(null);
+    const [isCapturing, setIsCapturing] = useState(false);
+    const [previewDraft, setPreviewDraft] = useState(null);
+    const [displayedMeetingDate, setDisplayedMeetingDate] = useState('');
+    const [storageSubTab, setStorageSubTab] = useState('confirmed');
+
+    const showAlert = (title,content,type='info',onConfirm=null) => setAlertModal({show:true,title,content,type,onConfirm});
+    const showConfirm = (title,content,onConfirm) => setAlertModal({show:true,title,content,type:'confirm',onConfirm});
+
+    const today = (()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
+    const isPastMeeting = !!(displayedMeetingDate && displayedMeetingDate < today);
+
+    const saveDraft = async () => {
+        try {
+            const now=new Date();
+            await getCol('team_drafts').add({
+                meetingDate:displayedMeetingDate||meetingDate,
+                meetingTimeRange:`${meetingTime.start} ~ ${meetingTime.end}`,
+                createdAt:now.toISOString(),
+                timeLabel:now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),
+                teams,managerName:syncManagerName,isConfirmed:false
+            });
+            showAlert('저장완료','임시 저장되었습니다.');
+        } catch(e){showAlert('오류','임시 저장 실패');}
+    };
+
+    const loadDraft = (draft) => {
+        setTeams(draft.teams||[]);
+        setIsConfirmed(draft.isConfirmed||false);
+        setDisplayedMeetingDate(draft.meetingDate||'');
+        setPreviewDraft(null);
+        setActiveTab('results');
+    };
+
+    // 이전 확정 기록 중복 체크
+    const pastTeammatesMap = useMemo(() => {
+        const map = {};
+        if(confirmedHistory[0]?.teams){
+            confirmedHistory[0].teams.forEach(team => {
+                const ids = team.members.map(m=>m.memberId||m.id);
+                ids.forEach(id1 => {
+                    if(!map[id1])map[id1]=new Set();
+                    ids.forEach(id2 => { if(id1!==id2)map[id1].add(id2); });
+                });
+            });
+        }
+        return map;
+    }, [confirmedHistory]);
+
+    // 출석 회원 목록
+    const allAttendees = useMemo(() => {
+        if(!meetingDate)return [];
+        const[y,m]=meetingDate.split('-');
+        const targetMonth=`${y}-${m}`;
+        return sessionData.filter(s => {
+            if(!s.date||s.date.trim()!==meetingDate.trim()||s.status==='노쇼')return false;
+            if(s.isGuest)return true;
+            const mi=members.find(mm=>mm.id===s.memberId);
+            if(!mi)return true;
+            if(mi.isResigned)return false;
+            if(mi.isSpecialRest&&targetMonth>=(mi.specialRestStartMonth||'0000-00'))return false;
+            if(monthlyStatuses[s.memberId]==='rest')return false;
+            return true;
+        }).sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||'')||a.name.localeCompare(b.name));
+    }, [sessionData, meetingDate, members, monthlyStatuses]);
+
+    const entryList = useMemo(()=>allAttendees.slice(0,maxLimit),[allAttendees,maxLimit]);
+    const activeSelectedList = useMemo(()=>entryList.filter(p=>!excludedIds.includes(p.memberId||p.id)),[entryList,excludedIds]);
+
+    const unassignedMembers = useMemo(()=>{
+        if(teams.length===0)return[];
+        const assignedIds=new Set();
+        teams.forEach(t=>t.members.forEach(m=>assignedIds.add(m.memberId||m.id)));
+        return allAttendees.filter(a=>!assignedIds.has(a.memberId||a.id)&&!excludedIds.includes(a.memberId||a.id)).map(p=>{
+            const mi=members.find(mm=>mm.id===p.memberId)||{};
+            const lvl=parseInt(mi.level||p.level||4);
+            return{...p,name:mi.name||p.name,level:lvl,points:getLevelPoints(lvl),coupleId:mi.coupleId||'',gender:mi.gender||p.gender||'남성',isGuest:p.isGuest||false};
+        });
+    },[allAttendees,teams,members,excludedIds]);
+
+    // 팀 생성 알고리즘
+    const generateTeams = () => {
+        const{teamCount,keepCouples,avoidOverlap}=teamingSettings;
+        const total=activeSelectedList.length;
+        if(total<teamCount){return showAlert('알림',`선정 인원(${total}명)이 팀 수(${teamCount})보다 적습니다.`);}
+        localStorage.removeItem('moida_confirmed_teams');
+        setIsConfirmed(false);
+
+        let pool=activeSelectedList.map(p=>{
+            const mi=members.find(mm=>mm.id===p.memberId)||{};
+            const lvl=parseInt(mi.level||p.level||4);
+            return{...p,name:mi.name||p.name,level:lvl,tierOrder:mi.tierOrder??99,points:getLevelPoints(lvl),coupleId:mi.coupleId||'',gender:mi.gender||p.gender||'남성',isGuest:p.isGuest||false};
+        });
+
+        let units=[];
+        const processedIds=new Set();
+        if(keepCouples){
+            pool.forEach(p=>{
+                if(!processedIds.has(p.id)){
+                    if(p.coupleId){
+                        const partner=pool.find(o=>o.memberId===p.coupleId&&!processedIds.has(o.id));
+                        if(partner){
+                            units.push({members:[p,partner],totalPoints:p.points+partner.points,maxMemberPoints:Math.max(p.points,partner.points),isCouple:true});
+                            processedIds.add(p.id);processedIds.add(partner.id);return;
+                        }
+                    }
+                    units.push({members:[p],totalPoints:p.points,maxMemberPoints:p.points,isCouple:false});
+                    processedIds.add(p.id);
+                }
+            });
+        } else {
+            units=pool.map(p=>({members:[p],totalPoints:p.points,maxMemberPoints:p.points,isCouple:false}));
+        }
+
+        units=shuffleArray(units);
+        units.sort((a,b)=>b.maxMemberPoints-a.maxMemberPoints||b.totalPoints-a.totalPoints);
+
+        const baseCapacity=Math.floor(total/teamCount);
+        const remainder=total%teamCount;
+        const resultTeams=Array.from({length:teamCount},(_,i)=>({id:i,members:[],scoreSum:0,capacity:baseCapacity+(i<remainder?1:0)}));
+
+        const getOverlapCount=(teamMembers)=>{
+            let count=0;
+            for(let i=0;i<teamMembers.length;i++){
+                const pastSet=pastTeammatesMap[teamMembers[i].memberId||teamMembers[i].id];
+                if(pastSet){for(let j=i+1;j<teamMembers.length;j++){if(pastSet.has(teamMembers[j].memberId||teamMembers[j].id))count++;}}
+            }
+            return count;
+        };
+
+        units.forEach(unit=>{
+            const required=unit.members.length;
+            let candidates=resultTeams.filter(t=>t.members.length+required<=t.capacity);
+            if(candidates.length===0)candidates=[...resultTeams];
+            candidates.sort((a,b)=>{
+                if(avoidOverlap){
+                    let oA=0,oB=0;
+                    unit.members.forEach(m=>{
+                        const ps=pastTeammatesMap[m.memberId||m.id];
+                        if(ps){a.members.forEach(am=>{if(ps.has(am.memberId||am.id))oA++;});b.members.forEach(bm=>{if(ps.has(bm.memberId||bm.id))oB++;});}
+                    });
+                    const diff=Math.abs(a.scoreSum-b.scoreSum);
+                    if(diff<=2.5&&oA!==oB)return oA-oB;
+                }
+                return a.scoreSum!==b.scoreSum?a.scoreSum-b.scoreSum:Math.random()-0.5;
+            });
+            const target=candidates[0];
+            target.members.push(...unit.members);
+            target.scoreSum+=unit.totalPoints;
+        });
+
+        // 최적화 (swap)
+        let improved=true,iters=0;
+        while(improved&&iters<150){
+            improved=false;iters++;
+            resultTeams.sort((a,b)=>b.scoreSum-a.scoreSum);
+            const strong=resultTeams[0],weak=resultTeams[resultTeams.length-1];
+            const scoreDiff=strong.scoreSum-weak.scoreSum;
+            let bestSwap=null,bestScoreDiff=scoreDiff;
+            for(let i=0;i<strong.members.length;i++){
+                for(let j=0;j<weak.members.length;j++){
+                    const m1=strong.members[i],m2=weak.members[j];
+                    if(keepCouples&&(m1.coupleId||m2.coupleId))continue;
+                    const newStrong=strong.scoreSum-m1.points+m2.points;
+                    const newWeak=weak.scoreSum-m2.points+m1.points;
+                    const newDiff=Math.abs(newStrong-newWeak);
+                    if(newDiff<bestScoreDiff){bestScoreDiff=newDiff;bestSwap={si:i,wi:j};}
+                }
+            }
+            if(bestSwap){
+                const m1=strong.members[bestSwap.si],m2=weak.members[bestSwap.wi];
+                strong.members[bestSwap.si]=m2;weak.members[bestSwap.wi]=m1;
+                strong.scoreSum=strong.scoreSum-m1.points+m2.points;
+                weak.scoreSum=weak.scoreSum-m2.points+m1.points;
+                improved=true;
+            }
+        }
+
+        // 여성 3번,6번 배치
+        const reorderGender=(members)=>{
+            const size=members.length;
+            if(size===0)return[];
+            const females=[...members.filter(m=>m.gender==='여성')];
+            const others=[...members.filter(m=>m.gender!=='여성')];
+            const result=new Array(size).fill(null);
+            if(females.length>0&&size>2)result[2]=females.shift();
+            if(females.length>0&&size>5)result[5]=females.shift();
+            for(let i=0;i<size;i++){
+                if(result[i]===null){
+                    if(others.length>0)result[i]=others.shift();
+                    else if(females.length>0)result[i]=females.shift();
+                }
+            }
+            return result.filter(m=>m!==null);
+        };
+
+        resultTeams.sort((a,b)=>a.id-b.id);
+        const finalTeams=resultTeams.map(t=>{
+            t.members.sort((a,b)=>a.level!==b.level?a.level-b.level:(a.tierOrder||99)-(b.tierOrder||99));
+            return{members:reorderGender(t.members),scoreSum:t.scoreSum};
+        });
+
+        setDisplayedMeetingDate(meetingDate);
+        setTeams(finalTeams);
+        setActiveTab('results');
+    };
+
+    const confirmTeams = async () => {
+        setIsConfirmed(true);
+        localStorage.setItem('moida_confirmed_teams',JSON.stringify({teams,meetingDate:displayedMeetingDate||meetingDate,updatedAt:new Date().toISOString()}));
+        try {
+            const now=new Date();
+            const draftsRef=getCol('team_drafts');
+            const snap=await draftsRef.where('meetingDate','==',meetingDate).where('isConfirmed','==',true).get();
+            if(!snap.empty){
+                await draftsRef.doc(snap.docs[0].id).update({teams,updatedAt:now.toISOString(),managerName:syncManagerName});
+                showAlert('업데이트','기존 확정 기록을 업데이트했습니다.');
+            } else {
+                await draftsRef.add({
+                    meetingDate,meetingTimeRange:`${meetingTime.start} ~ ${meetingTime.end}`,
+                    createdAt:now.toISOString(),timeLabel:now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),
+                    teams,managerName:syncManagerName,isConfirmed:true
+                });
+                showAlert('확정 완료','편성이 확정되어 출결 시스템에 반영됩니다.');
+            }
+        } catch(e){ showAlert('오류','서버 저장 실패 (로컬에는 저장됨)'); }
+    };
+
+    const resetTeams = () => {
+        showConfirm('편성 초기화','현재 편성을 초기화하시겠습니까?', ()=>{
+            setTeams([]);setIsConfirmed(false);
+            localStorage.removeItem('moida_confirmed_teams');
+            setDisplayedMeetingDate('');
+            setActiveTab('generator');
+        });
+    };
+
+    const reGenerateTeams = () => {
+        if(isConfirmed){
+            showConfirm('재편성 확인','이미 확정된 편성입니다.\n재편성하면 확정이 취소됩니다. 계속할까요?', generateTeams);
+        } else {
+            generateTeams();
+        }
+    };
+
+    // 드래그 앤 드롭 (PC)
+    const handleDragStart = (e, teamIdx, memberIdx) => {
+        setDraggedItem({teamIdx,memberIdx});
+        e.dataTransfer.effectAllowed='move';
+    };
+
+    const handleDropOnTeam = (e, targetTeamIdx) => {
+        e.preventDefault();
+        if(!draggedItem||draggedItem.teamIdx===targetTeamIdx)return;
+        const newTeams=[...teams.map(t=>({...t,members:[...t.members]}))];
+        const moved=newTeams[draggedItem.teamIdx].members.splice(draggedItem.memberIdx,1)[0];
+        newTeams[targetTeamIdx].members.push(moved);
+        newTeams[draggedItem.teamIdx].scoreSum=newTeams[draggedItem.teamIdx].members.reduce((s,m)=>s+m.points,0);
+        newTeams[targetTeamIdx].scoreSum=newTeams[targetTeamIdx].members.reduce((s,m)=>s+m.points,0);
+        setTeams(newTeams);
+        setDraggedItem(null);
+    };
+
+    const handleDropOnMember = (e, targetTeamIdx, targetMemberIdx) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if(!draggedItem)return;
+        if(draggedItem.teamIdx===targetTeamIdx&&draggedItem.memberIdx===targetMemberIdx)return;
+        const newTeams=[...teams.map(t=>({...t,members:[...t.members]}))];
+        const moved=newTeams[draggedItem.teamIdx].members.splice(draggedItem.memberIdx,1)[0];
+        if(draggedItem.teamIdx===targetTeamIdx){
+            const adjustedIdx=targetMemberIdx>draggedItem.memberIdx?targetMemberIdx-1:targetMemberIdx;
+            newTeams[targetTeamIdx].members.splice(adjustedIdx,0,moved);
+        } else {
+            newTeams[targetTeamIdx].members.splice(targetMemberIdx,0,moved);
+            newTeams[draggedItem.teamIdx].scoreSum=newTeams[draggedItem.teamIdx].members.reduce((s,m)=>s+m.points,0);
+            newTeams[targetTeamIdx].scoreSum=newTeams[targetTeamIdx].members.reduce((s,m)=>s+m.points,0);
+        }
+        setTeams(newTeams);
+        setDraggedItem(null);
+    };
+
+    const handleCapture = async () => {
+        setIsCapturing(true);
+        await new Promise(r=>setTimeout(r,200));
+        try {
+            const el=document.getElementById('teams-capture-area');
+            if(!el)return;
+            const canvas=await window.html2canvas(el,{scale:2,backgroundColor:'#f8fafc',useCORS:true});
+            const link=document.createElement('a');
+            link.download=`모이다_팀편성_${meetingDate}.jpg`;
+            link.href=canvas.toDataURL('image/jpeg',0.92);
+            link.click();
+        } catch(e){showAlert('오류','캡쳐 실패');}
+        finally{setIsCapturing(false);}
+    };
+
+    useEffect(()=>{
+        const saved=localStorage.getItem('moida_confirmed_teams');
+        if(saved){try{const p=JSON.parse(saved);setTeams(p.teams);setIsConfirmed(true);if(p.meetingDate)setDisplayedMeetingDate(p.meetingDate);setActiveTab('results');}catch(e){}}
+    },[]);
+
+    useEffect(()=>{
+        const init=async()=>{
+            try{await auth.signInAnonymously();}catch(e){console.error(e);}
+            finally{const l=document.getElementById('loading-screen');if(l){l.style.opacity='0';setTimeout(()=>{if(l)l.style.display='none';},500);}}
+        };
+        init();
+        if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+        const unsubAuth=auth.onAuthStateChanged(u=>{
+            if(!u)return;
+            setUser(u);
+            getCol('members').onSnapshot(snap=>setMembers(snap.docs.map(d=>({id:d.id,...d.data()}))));
+            getCol('weekly_session').onSnapshot(snap=>setSessionData(snap.docs.map(d=>({id:d.id,...d.data()}))));
+            getCol('settings').onSnapshot(snap=>{
+                const v2=snap.docs.find(d=>d.id==='meeting_schedule_v2');
+                const data=v2?.data();
+                if(data){
+                    setMeetingDate(data.date||'');
+                    setMeetingTime({start:data.start||'',end:data.end||''});
+                    setSyncManagerName(data.managerName||'');
+                    const lim=parseInt(data.maxLimit||18);
+                    setMaxLimit(lim);
+                    setTeamingSettings(prev=>({...prev,teamCount:Math.max(2,Math.round(lim/6))}));
+                }
+            });
+            getCol('team_drafts').onSnapshot(snap=>{
+                const all=snap.docs.map(d=>({id:d.id,...d.data()}));
+                setSavedDrafts(all.filter(d=>!d.isConfirmed).sort((a,b)=>b.createdAt.localeCompare(a.createdAt)));
+                setConfirmedHistory(all.filter(d=>d.isConfirmed).sort((a,b)=>b.meetingDate.localeCompare(a.meetingDate)));
+            });
+        });
+        return()=>unsubAuth();
+    },[]);
+
+    useEffect(()=>{
+        if(!meetingDate)return;
+        const[y,m]=meetingDate.split('-');
+        const docKey=`${y}-${m}`;
+        const unsub=getCol('monthly_checks').doc(docKey).onSnapshot(doc=>{
+            setMonthlyStatuses(doc.exists?(doc.data().statuses||{}):{});
+        });
+        return()=>unsub();
+    },[meetingDate]);
+
+    const levelStats=useMemo(()=>{
+        const s={1:0,2:0,3:0,4:0,5:0,6:0};
+        activeSelectedList.forEach(p=>{const mi=members.find(mm=>mm.id===p.memberId)||{};const l=parseInt(mi.level||p.level||0);if(l>0){const n=l>6?l-6:l;if(s[n]!==undefined)s[n]++;}});
+        return s;
+    },[activeSelectedList,members]);
+
+    return (
+        <div className="min-h-screen pb-32 text-slate-900">
+            {/* 네비게이션 */}
+            <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 h-16 flex items-center px-4 shadow-sm">
+                <div className="max-w-5xl mx-auto w-full flex justify-between items-center">
+                    <div className="flex items-center gap-1">
+                        {[['generator','편성'],['results','결과'],['storage','기록']].map(([v,l])=>(
+                            <button key={v} onClick={()=>setActiveTab(v)} className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${activeTab===v?'bg-pink-500 text-white shadow-lg':'text-slate-400 hover:text-slate-600'}`}>{l}</button>
+                        ))}
+                    </div>
+                    <div className="flex gap-2">
+                        {teams.length>0&&<button onClick={handleCapture} className="p-2.5 rounded-xl bg-slate-50 text-slate-400"><Icon.Camera size={16}/></button>}
+                        <button onClick={()=>window.location.reload()} className="p-2.5 rounded-xl bg-slate-50 text-slate-400"><Icon.Refresh size={16}/></button>
+                        <button onClick={()=>window.location.href='index.html'} className="p-2.5 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"><Icon.Home size={18}/></button>
+                    </div>
+                </div>
+            </nav>
+
+            <main className="p-4 max-w-5xl mx-auto animate-zoom-in">
+
+                {/* ===== 편성 탭 ===== */}
+                {activeTab==='generator' && (
+                    <div>
+                        {/* 날짜 및 인원 현황 */}
+                        <div className="bg-white border border-slate-100 rounded-3xl p-5 mb-4 shadow-sm">
+                            <div className="flex items-center justify-between mb-3">
+                                <div>
+                                    <p className="text-xs font-black text-pink-500 uppercase tracking-widest">모임 날짜</p>
+                                    <p className="text-xl font-black text-slate-800 mt-0.5">{meetingDate||'날짜 미설정'}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-2xl font-black text-slate-800">{activeSelectedList.length}명</p>
+                                    <p className="text-[10px] text-slate-400">편성 대상</p>
+                                </div>
+                            </div>
+                            {/* 레벨 분포 */}
+                            <div className="flex gap-1 flex-wrap">
+                                {Object.entries(levelStats).map(([lvl,count])=>count>0&&(
+                                    <span key={lvl} className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${getLevelColor(lvl)}`}>{lvl}단계:{count}명</span>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 팀 수 설정 */}
+                        <div className="bg-white border border-slate-100 rounded-3xl p-5 mb-4 shadow-sm">
+                            <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">편성 설정</p>
+                            <div className="grid grid-cols-3 gap-3 mb-4">
+                                {[2,3,4,5,6].slice(0,5).map(n=>(
+                                    <button key={n} onClick={()=>setTeamingSettings(p=>({...p,teamCount:n}))}
+                                        className={`py-3 rounded-2xl font-black text-sm transition-all ${teamingSettings.teamCount===n?'bg-pink-500 text-white shadow':'bg-slate-50 border border-slate-200 text-slate-600'}`}>
+                                        {n}팀
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="space-y-2">
+                                {[
+                                    {key:'keepCouples',label:'커플 같은 팀 유지'},
+                                    {key:'avoidOverlap',label:'지난 주 팀메이트 중복 회피'},
+                                ].map(opt=>(
+                                    <button key={opt.key} onClick={()=>setTeamingSettings(p=>({...p,[opt.key]:!p[opt.key]}))}
+                                        className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all ${teamingSettings[opt.key]?'bg-pink-50 border-pink-200':'bg-white border-slate-200'}`}>
+                                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${teamingSettings[opt.key]?'bg-pink-500 border-pink-500':'border-slate-300'}`}>
+                                            {teamingSettings[opt.key]&&<Icon.Check size={10} className="text-white"/>}
+                                        </div>
+                                        <span className="text-sm font-black text-slate-700">{opt.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 편성 대상 인원 */}
+                        {entryList.length>0 && (
+                            <div className="bg-white border border-slate-100 rounded-3xl p-5 mb-4 shadow-sm">
+                                <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">편성 대상 (클릭하여 제외)</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {entryList.map(p=>{
+                                        const mi=members.find(mm=>mm.id===p.memberId)||{};
+                                        const lvl=mi.level||p.level;
+                                        const isExcluded=excludedIds.includes(p.memberId||p.id);
+                                        return (
+                                            <button key={p.id} onClick={()=>setExcludedIds(prev=>prev.includes(p.memberId||p.id)?prev.filter(id=>id!==p.memberId&&id!==p.id):[...prev,p.memberId||p.id])}
+                                                className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 border transition-all ${isExcluded?'bg-slate-100 border-slate-200 opacity-40 line-through':'bg-white border-slate-200 hover:border-pink-300'}`}>
+                                                <span>{mi.name||p.name}</span>
+                                                {(mi.gender||p.gender)==='여성'&&<span className="text-pink-400">W</span>}
+                                                {p.isGuest&&<span className="text-[9px] px-1 bg-slate-700 text-white rounded">G</span>}
+                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${getLevelColor(lvl)}`}>{lvl}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        <button onClick={generateTeams} disabled={activeSelectedList.length<teamingSettings.teamCount}
+                            className="w-full py-4 bg-slate-900 text-white rounded-3xl font-black text-lg shadow-xl disabled:opacity-30">
+                            ⚡ 팀 자동 편성
+                        </button>
+                    </div>
+                )}
+
+                {/* ===== 결과 탭 ===== */}
+                {activeTab==='results' && (
+                    <div>
+                        {teams.length===0
+                            ? <div className="text-center py-20 text-slate-300"><p className="text-4xl mb-3">⚡</p><p className="font-black">편성 탭에서 팀을 생성해주세요</p></div>
+                            : (
+                                <div>
+                                    {displayedMeetingDate && (
+                                        <div className={`rounded-2xl p-3 mb-3 flex items-center justify-between ${isPastMeeting?'bg-slate-100 border border-slate-200':'bg-blue-50 border border-blue-100'}`}>
+                                            <div>
+                                                <p className="font-black text-slate-800 text-sm">{displayedMeetingDate} 팀 편성</p>
+                                                <p className={`text-[10px] mt-0.5 ${isPastMeeting?'text-slate-400':'text-blue-500'}`}>
+                                                    {isPastMeeting?'종료된 모임 · 열람 전용':'편집 가능'}
+                                                </p>
+                                            </div>
+                                            {isPastMeeting&&<span className="text-[10px] font-black px-2 py-1 bg-slate-200 text-slate-500 rounded-lg">열람</span>}
+                                        </div>
+                                    )}
+
+                                    {isConfirmed && (
+                                        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 mb-4 text-center">
+                                            <p className="text-emerald-600 font-black text-sm">✓ 확정됨 · 출결 시스템에 반영되었습니다</p>
+                                        </div>
+                                    )}
+
+                                    <div id="teams-capture-area" className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                                        {teams.map((team,teamIdx)=>(
+                                            <div key={teamIdx}
+                                                className={`rounded-3xl border-2 p-4 ${getTeamCard(teamIdx)} transition-all`}
+                                                onDragOver={!isPastMeeting?e=>e.preventDefault():undefined}
+                                                onDrop={!isPastMeeting?e=>handleDropOnTeam(e,teamIdx):undefined}>
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <span className={`w-8 h-8 rounded-xl font-black text-sm flex items-center justify-center ${getTeamBadge(teamIdx)}`}>{getTeamName(teamIdx)}</span>
+                                                    <div>
+                                                        <p className="text-[10px] font-black text-slate-500">{team.members.length}명</p>
+                                                        <p className="text-[10px] text-slate-400">{team.scoreSum}pt</p>
+                                                    </div>
+                                                </div>
+                                                {team.members.map((m,mi)=>(
+                                                    <div key={mi} draggable={!isPastMeeting}
+                                                        onDragStart={!isPastMeeting?e=>handleDragStart(e,teamIdx,mi):undefined}
+                                                        onDragOver={!isPastMeeting?e=>e.preventDefault():undefined}
+                                                        onDrop={!isPastMeeting?e=>handleDropOnMember(e,teamIdx,mi):undefined}
+                                                        className={`flex items-center gap-1.5 p-2 mb-1 bg-white/70 rounded-xl border border-transparent transition-all ${!isPastMeeting?'cursor-grab active:cursor-grabbing hover:border-pink-200':''} ${draggedItem?.teamIdx===teamIdx&&draggedItem?.memberIdx===mi?'dragging':''}`}>
+                                                        <span className="text-[9px] font-black text-slate-400 w-4 text-right flex-shrink-0">{mi+1}</span>
+                                                        <span className="font-black text-xs text-slate-800 flex-1">{m.name}</span>
+                                                        {m.gender==='여성'&&<span className="text-[8px] text-pink-400 font-black">W</span>}
+                                                        {m.isGuest&&<span className="text-[8px] bg-slate-700 text-white px-1 rounded font-black">G</span>}
+                                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${getLevelColor(m.level)}`}>{m.level}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {unassignedMembers.length>0 && (
+                                        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
+                                            <p className="text-xs font-black text-amber-600 mb-2">미편성 ({unassignedMembers.length}명)</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {unassignedMembers.map(m=>(
+                                                    <span key={m.id} className="text-xs font-black px-2 py-1 bg-white rounded-lg border border-amber-200 text-slate-700">{m.name}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {isPastMeeting ? (
+                                        <button onClick={()=>setActiveTab('storage')} className="w-full py-3.5 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">← 목록으로</button>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            <div className="flex gap-2">
+                                                <button onClick={resetTeams} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">초기화</button>
+                                                <button onClick={reGenerateTeams} className="flex-1 py-3 bg-violet-500 text-white rounded-2xl font-black text-sm shadow-lg">🔄 재편성</button>
+                                                <button onClick={saveDraft} className="flex-1 py-3 bg-amber-400 text-slate-800 rounded-2xl font-black text-sm shadow-lg">💾 임시저장</button>
+                                            </div>
+                                            <button onClick={confirmTeams} disabled={isConfirmed}
+                                                className={`w-full py-3.5 rounded-2xl font-black text-sm shadow-lg ${isConfirmed?'bg-emerald-500 text-white opacity-70':'bg-pink-500 text-white'}`}>
+                                                {isConfirmed?'✓ 확정됨':'확정하기'}
+                                            </button>
+                                        </div>
+                                    )}
+                                    {!isPastMeeting&&<p className="text-[10px] text-slate-400 text-center mt-2">팀 카드를 다른 팀으로 드래그하여 수동 조정 가능</p>}
+                                </div>
+                            )
+                        }
+                    </div>
+                )}
+
+                {/* ===== 기록 탭 ===== */}
+                {activeTab==='storage' && (
+                    <div>
+                        {/* 서브탭 */}
+                        <div className="flex gap-2 mb-4">
+                            {[['confirmed','✓ 확정 기록',confirmedHistory.length],['draft','💾 임시 저장',savedDrafts.length]].map(([v,l,cnt])=>(
+                                <button key={v} onClick={()=>setStorageSubTab(v)}
+                                    className={`flex-1 py-2.5 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-1.5 ${storageSubTab===v?'bg-pink-500 text-white shadow':'bg-white border border-slate-200 text-slate-500'}`}>
+                                    {l}
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-lg font-black ${storageSubTab===v?'bg-white/20 text-white':'bg-slate-100 text-slate-400'}`}>{cnt}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* 확정 기록 */}
+                        {storageSubTab==='confirmed' && (
+                            confirmedHistory.length===0
+                                ? <div className="text-center py-20 text-slate-300"><p className="text-4xl mb-3">📋</p><p className="font-black">확정된 기록이 없습니다</p></div>
+                                : confirmedHistory.map(d=>(
+                                    <div key={d.id} className="flex items-center gap-2 p-4 bg-white border border-emerald-100 rounded-2xl mb-2">
+                                        <div className="flex-1">
+                                            <p className="font-black text-slate-800 text-sm">{d.meetingDate}</p>
+                                            <p className="text-xs text-slate-400 mt-0.5">{d.meetingTimeRange}</p>
+                                            <span className="text-[9px] font-black px-1.5 py-0.5 bg-emerald-100 text-emerald-600 rounded-lg mt-1 inline-block">{d.teams?.length||0}팀 확정</span>
+                                        </div>
+                                        <button onClick={()=>setPreviewDraft(d)} className="px-3 py-1.5 bg-pink-50 text-pink-500 rounded-xl font-black text-xs">미리보기</button>
+                                    </div>
+                                ))
+                        )}
+
+                        {/* 임시 저장 */}
+                        {storageSubTab==='draft' && (
+                            savedDrafts.length===0
+                                ? <div className="text-center py-20 text-slate-300"><p className="text-4xl mb-3">💾</p><p className="font-black">임시 저장된 기록이 없습니다</p></div>
+                                : savedDrafts.map(d=>(
+                                    <div key={d.id} className="flex items-center gap-2 p-4 bg-white border border-slate-100 rounded-2xl mb-2">
+                                        <div className="flex-1">
+                                            <p className="font-black text-slate-800 text-sm">{d.meetingDate}</p>
+                                            <p className="text-xs text-slate-400 mt-0.5">{d.timeLabel}</p>
+                                        </div>
+                                        <button onClick={()=>setPreviewDraft(d)} className="px-3 py-1.5 bg-pink-50 text-pink-500 rounded-xl font-black text-xs">미리보기</button>
+                                        <button onClick={()=>showConfirm('삭제','이 기록을 삭제하시겠습니까?',async()=>{await getCol('team_drafts').doc(d.id).delete();})} className="p-2 bg-red-50 text-red-400 rounded-xl"><Icon.Trash size={14}/></button>
+                                    </div>
+                                ))
+                        )}
+                    </div>
+                )}
+            </main>
+
+            {/* 미리보기 모달 */}
+            {previewDraft && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50" onClick={()=>setPreviewDraft(null)}>
+                    <div className="bg-white rounded-t-3xl p-5 w-full max-w-lg shadow-2xl no-scrollbar overflow-y-auto" style={{maxHeight:'82vh'}} onClick={e=>e.stopPropagation()}>
+                        <div className="flex items-start justify-between mb-4">
+                            <div>
+                                <p className="font-black text-xl text-slate-800">{previewDraft.meetingDate}</p>
+                                <p className="text-xs text-slate-400 mt-0.5">{previewDraft.meetingTimeRange}</p>
+                                <div className="flex items-center gap-2 mt-1.5">
+                                    {previewDraft.isConfirmed
+                                        ? <span className="text-[10px] font-black px-2 py-0.5 bg-emerald-100 text-emerald-600 rounded-lg">확정됨</span>
+                                        : <span className="text-[10px] font-black px-2 py-0.5 bg-amber-100 text-amber-600 rounded-lg">임시저장</span>
+                                    }
+                                    {previewDraft.meetingDate < today && <span className="text-[10px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 rounded-lg">종료된 모임</span>}
+                                </div>
+                            </div>
+                            <button onClick={()=>setPreviewDraft(null)} className="text-slate-400 text-3xl leading-none ml-2">×</button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 mb-4">
+                            {(previewDraft.teams||[]).map((team,teamIdx)=>(
+                                <div key={teamIdx} className={`rounded-2xl border-2 p-3 ${getTeamCard(teamIdx)}`}>
+                                    <div className="flex items-center gap-1.5 mb-2">
+                                        <span className={`w-6 h-6 rounded-lg font-black text-xs flex items-center justify-center ${getTeamBadge(teamIdx)}`}>{getTeamName(teamIdx)}</span>
+                                        <span className="text-[10px] font-black text-slate-500">{team.members.length}명 · {team.scoreSum}pt</span>
+                                    </div>
+                                    {team.members.map((m,mi)=>(
+                                        <div key={mi} className="flex items-center gap-1 py-0.5">
+                                            <span className="text-[9px] text-slate-400 w-3 text-right flex-shrink-0">{mi+1}</span>
+                                            <span className="text-[10px] font-black text-slate-700 flex-1">{m.name}</span>
+                                            {m.gender==='여성'&&<span className="text-[9px] text-pink-400 font-black">W</span>}
+                                            <span className={`text-[8px] font-black px-1 rounded ${getLevelColor(m.level)}`}>{m.level}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+
+                        <button onClick={()=>loadDraft(previewDraft)}
+                            className="w-full py-3.5 bg-pink-500 text-white rounded-2xl font-black text-sm shadow-lg">
+                            {previewDraft.meetingDate < today ? '열람하기' : '불러오기'}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* 알림 모달 */}
+            {alertModal.show && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-zoom-in">
+                        <h3 className="font-black text-lg text-slate-800 mb-2">{alertModal.title}</h3>
+                        <p className="text-sm text-slate-500 whitespace-pre-line mb-5">{alertModal.content}</p>
+                        <div className="flex gap-2">
+                            {alertModal.type==='confirm'&&<button onClick={()=>setAlertModal(p=>({...p,show:false}))} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>}
+                            <button onClick={()=>{if(alertModal.onConfirm)alertModal.onConfirm();setAlertModal(p=>({...p,show:false}));}} className="flex-1 py-3 bg-pink-500 text-white rounded-2xl font-black text-sm">
+                                {alertModal.type==='confirm'?'확인':'닫기'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
