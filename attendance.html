@@ -696,14 +696,10 @@ function App() {
             const allowFromStr = allowFrom.toLocaleTimeString('ko-KR',{hour12:false,hour:'2-digit',minute:'2-digit'});
             return showAlert('출석 불가',`출석 가능 시간: ${participant.date} ${allowFromStr}~${meetingTimes.end}`);
         }
-        // 출석 기준:
-        // - 정상: 시작 ~ 시작+1분
-        // - 지각: 시작+1분 초과 ~ 종료
-        // - 노쇼: 종료 이후 체크인
-        const [ehr,emin] = meetingTimes.end.split(':');
-        const meetingEnd = new Date(sy,sm-1,sd,ehr,emin,0);
+        // 수동 체크인: 정상(시작~시작+1분) / 지각(그 외)
+        // 노쇼는 자동 처리(useEffect)에서만 부여 — 수동 체크인은 항상 출석 인정
         const normalThreshold = new Date(meetingStart.getTime() + 60000); // 시작 + 1분
-        const finalStatus = now > meetingEnd ? '노쇼' : now <= normalThreshold ? '정상' : '지각';
+        const finalStatus = now <= normalThreshold ? '정상' : '지각';
         const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
         try {
             await getSessionCol().doc(participant.id).update({ checkedIn:true, checkInTime:timeStr, status:finalStatus });
