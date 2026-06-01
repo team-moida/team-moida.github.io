@@ -612,7 +612,29 @@ function App() {
             const endH = String(endTime.getHours()).padStart(2,'0');
             const endM = String(endTime.getMinutes()).padStart(2,'0');
 
-            const updatedTimes = {...meetingTimes, date: todayStr, start: `${h}:${m}`, end: `${endH}:${endM}`, testMode: true};
+            // 현재 GPS 위치 취득 (테스트용)
+            let testLat = meetingTimes.locationLat || null;
+            let testLng = meetingTimes.locationLng || null;
+            let testLocation = meetingTimes.location || '';
+            let gpsMsg = '';
+            if (navigator.geolocation) {
+                try {
+                    const pos = await new Promise((resolve, reject) =>
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 8000 })
+                    );
+                    testLat = pos.coords.latitude;
+                    testLng = pos.coords.longitude;
+                    testLocation = '📍 테스트 현재위치';
+                    gpsMsg = `\nGPS: 현재위치 자동 설정됨 (${testLat.toFixed(5)}, ${testLng.toFixed(5)})`;
+                } catch(e) {
+                    gpsMsg = '\nGPS: 위치 취득 실패 — 기존 장소 유지';
+                }
+            } else {
+                gpsMsg = '\nGPS: 미지원 브라우저 — 기존 장소 유지';
+            }
+
+            const updatedTimes = {...meetingTimes, date: todayStr, start: `${h}:${m}`, end: `${endH}:${endM}`,
+                location: testLocation, locationLat: testLat, locationLng: testLng, testMode: true};
             setMeetingTimes(updatedTimes);
             await getSettingsCol().doc('meeting_schedule_v2').update({...updatedTimes});
             setTestMode(true);
@@ -632,7 +654,7 @@ function App() {
                             isGuest:false, team:'', createdAt:new Date().toISOString()
                         })));
                     }
-                    showAlert('테스트 모드 활성화', `${toAdd.length}명 자동 선정됨\n\n모임 시작: ${h}:${m} (지금부터 5분 후)\n모임 종료: ${endH}:${endM}\n\n6분 내 출석 → 정상\n6분 이후 또는 [지각 전환] → 지각\n[노쇼 전환] → 미출석자 노쇼 처리`);
+                    showAlert('테스트 모드 활성화', `${toAdd.length}명 자동 선정됨\n\n모임 시작: ${h}:${m} (지금부터 5분 후)\n모임 종료: ${endH}:${endM}\n\n6분 내 출석 → 정상\n6분 이후 또는 [지각 전환] → 지각\n[노쇼 전환] → 미출석자 노쇼 처리${gpsMsg}`);
                 } catch(e) {
                     console.error('테스트 인원 선정 실패:', e);
                     showAlert('알림', '인원 자동 선정 실패');
