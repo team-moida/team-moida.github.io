@@ -461,6 +461,7 @@ function App() {
     const [currentQRToken, setCurrentQRToken] = useState('');
     const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
     const qrCanvasRef = useRef(null);
+    const hasAutoNoShowRef = useRef(false);
 
 
 
@@ -918,6 +919,23 @@ function App() {
         const [hr,min] = meetingTimes.end.split(':');
         return currentTime >= new Date(y,m-1,d,hr,min,0);
     }, [meetingTimes, currentTime]);
+
+    // 모임 종료 시 미출석 인원 자동 노쇼 처리
+    useEffect(() => {
+        if (!isMeetingOver || hasAutoNoShowRef.current) return;
+        const lim = testMode ? activeParticipants.length : (meetingTimes.maxLimit || 18);
+        const toNoShow = activeParticipants.slice(0, lim).filter(p => !p.checkedIn && p.status !== '노쇼');
+        hasAutoNoShowRef.current = true;
+        if (toNoShow.length === 0) return;
+        const batch = db.batch();
+        toNoShow.forEach(p => batch.update(getSessionCol().doc(p.id), { status: '노쇼' }));
+        batch.commit().catch(e => console.error('자동 노쇼 처리 실패:', e));
+    }, [isMeetingOver]);
+
+    // 날짜 변경 시 자동 노쇼 플래그 초기화
+    useEffect(() => {
+        hasAutoNoShowRef.current = false;
+    }, [meetingTimes.date]);
 
     const limit = testMode ? activeParticipants.length : (meetingTimes.maxLimit || 18);
     const activeList = activeParticipants.slice(0, limit);
