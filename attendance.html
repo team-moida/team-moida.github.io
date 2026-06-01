@@ -685,7 +685,8 @@ function App() {
                     } catch(e) { showAlert('오류', '데이터 복원 실패'); }
                 });
             } else {
-                setTestMode(false);
+                // 다른 기기(모바일)에서 켠 경우 — Firestore만 업데이트하면 onSnapshot으로 자동 동기화
+                updateMeetingTimeSettings({...meetingTimes, testMode: false});
                 showAlert('테스트 모드 해제', '테스트 모드가 비활성화되었습니다.');
             }
         }
@@ -891,7 +892,13 @@ function App() {
                 getMemberCol().onSnapshot(snap => setMembers(snap.docs.map(d=>({id:d.id,...d.data()}))));
                 getSessionCol().onSnapshot(snap => setSessionData(snap.docs.map(d=>({id:d.id,...d.data()}))));
                 getHistoryCol().onSnapshot(snap => setHistory(snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.date.localeCompare(a.date))));
-                getSettingsCol().doc('meeting_schedule_v2').onSnapshot(doc => { if(doc.exists) setMeetingTimes(prev=>({...prev,...doc.data()})); });
+                getSettingsCol().doc('meeting_schedule_v2').onSnapshot(doc => {
+                    if(doc.exists) {
+                        const data = doc.data();
+                        setMeetingTimes(prev=>({...prev,...data}));
+                        setTestMode(!!data.testMode);
+                    }
+                });
                 getTeamDraftsCol().orderBy('createdAt','desc').limit(1).onSnapshot(snap => { setTeamData(snap.empty?null:snap.docs[0].data()); });
                 getPendingCol().where('status','==','pending').onSnapshot(snap => setPendingRegistrations(snap.docs.map(d=>({id:d.id,...d.data()}))));
             }
