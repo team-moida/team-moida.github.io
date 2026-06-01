@@ -461,7 +461,7 @@ function App() {
     const qrCanvasRef = useRef(null);
     const [testMode, setTestMode] = useState(() => localStorage.getItem('moida_test_mode') === 'true');
     const [testTimeOffset, setTestTimeOffset] = useState(0); // 0=현재, 30=지각(+30분), 120=노쇼(+120분)
-    const toggleTestMode = () => {
+    const toggleTestMode = async () => {
         const n = !testMode;
         setTestMode(n);
         setTestTimeOffset(0);
@@ -471,7 +471,23 @@ function App() {
             const todayStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
             const h = String(d.getHours()).padStart(2,'0');
             const m = String(d.getMinutes()).padStart(2,'0');
-            setMeetingTimes({...meetingTimes, date: todayStr, start: `${h}:${m}`});
+            const updatedTimes = {...meetingTimes, date: todayStr, start: `${h}:${m}`};
+            setMeetingTimes(updatedTimes);
+
+            // 자동 인원 선정
+            setTimeout(async () => {
+                try {
+                    const toAdd = activeMembers.filter(m => !sessionData.some(p => p.memberId === m.id && p.date === todayStr));
+                    if (toAdd.length > 0) {
+                        await Promise.all(toAdd.map(m => getSessionCol().add({
+                            memberId:m.id, name:m.name, gender:m.gender, level:m.level,
+                            date:todayStr, checkedIn:false, checkInTime:null, status:'미출석',
+                            isGuest:false, team:'', createdAt:new Date().toISOString()
+                        })));
+                        showAlert('테스트 모드 활성화', `오늘(${todayStr}) 기준 ${toAdd.length}명 자동 선정됨\n\n🧪 테스트 모드 활성화!\nQR 시간 제한이 해제됩니다.`);
+                    }
+                } catch(e) { console.error('테스트 인원 선정 실패:', e); }
+            }, 100);
         }
     };
 
