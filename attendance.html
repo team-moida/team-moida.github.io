@@ -460,7 +460,20 @@ function App() {
     const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
     const qrCanvasRef = useRef(null);
     const [testMode, setTestMode] = useState(() => localStorage.getItem('moida_test_mode') === 'true');
-    const toggleTestMode = () => { const n = !testMode; setTestMode(n); localStorage.setItem('moida_test_mode', n ? 'true' : ''); };
+    const [testTimeOffset, setTestTimeOffset] = useState(0); // 0=현재, 30=지각(+30분), 120=노쇼(+120분)
+    const toggleTestMode = () => {
+        const n = !testMode;
+        setTestMode(n);
+        setTestTimeOffset(0);
+        localStorage.setItem('moida_test_mode', n ? 'true' : '');
+        if (n) {
+            const d = new Date();
+            const todayStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            const h = String(d.getHours()).padStart(2,'0');
+            const m = String(d.getMinutes()).padStart(2,'0');
+            setMeetingTimes({...meetingTimes, date: todayStr, start: `${h}:${m}`});
+        }
+    };
 
     const hourOptions = useMemo(() => Array.from({length:24},(_,i)=>String(i).padStart(2,'0')),[]);
     const minuteOptions = useMemo(() => Array.from({length:12},(_,i)=>String(i*5).padStart(2,'0')),[]);
@@ -608,12 +621,15 @@ function App() {
         const limit = meetingTimes.maxLimit || 18;
         const rank = activeParticipants.findIndex(p => p.id === participant.id) + 1;
         if (rank > limit) return showAlert('대기자 안내',`선착순(${limit}명) 마감되었습니다.`);
-        const now = new Date();
+        let now = new Date();
+        if (testMode) {
+            now = new Date(now.getTime() + testTimeOffset * 60 * 1000);
+        }
         const [sy,sm,sd] = participant.date.split('-');
         const [shr,smin] = meetingTimes.start.split(':');
         const meetingStart = new Date(sy,sm-1,sd,shr,smin,0);
         const allowFrom = new Date(meetingStart.getTime() - 60*60*1000);
-        if (now < allowFrom) {
+        if (!testMode && now < allowFrom) {
             const allowFromStr = allowFrom.toLocaleTimeString('ko-KR',{hour12:false,hour:'2-digit',minute:'2-digit'});
             return showAlert('출석 불가',`출석 가능 시간: ${participant.date} ${allowFromStr}~${meetingTimes.end}`);
         }
@@ -910,6 +926,24 @@ function App() {
                     <div>
                         <CurrentTimeClock />
 
+                        {/* 테스트 모드 시간 전환 */}
+                        {testMode && (
+                            <div className="flex gap-2 justify-center mb-4 animate-zoom-in">
+                                <button onClick={()=>setTestTimeOffset(0)}
+                                    className={`px-4 py-2 rounded-xl font-black text-sm transition-all ${testTimeOffset===0?'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40':'bg-white border border-slate-200 text-slate-600'}`}>
+                                    ⏰ 현재
+                                </button>
+                                <button onClick={()=>setTestTimeOffset(30)}
+                                    className={`px-4 py-2 rounded-xl font-black text-sm transition-all ${testTimeOffset===30?'bg-yellow-500 text-white shadow-lg shadow-yellow-500/40':'bg-white border border-slate-200 text-slate-600'}`}>
+                                    ⏱️ 지각 (+30분)
+                                </button>
+                                <button onClick={()=>setTestTimeOffset(120)}
+                                    className={`px-4 py-2 rounded-xl font-black text-sm transition-all ${testTimeOffset===120?'bg-red-500 text-white shadow-lg shadow-red-500/40':'bg-white border border-slate-200 text-slate-600'}`}>
+                                    ❌ 노쇼 (+120분)
+                                </button>
+                            </div>
+                        )}
+
                         {/* 모임 정보 카드 */}
                         <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 mb-4">
                             <div className="flex items-center justify-between mb-4">
@@ -937,6 +971,23 @@ function App() {
                                     <p className="text-[10px] text-slate-400 mt-0.5">대기</p>
                                 </div>
                             </div>
+                            {/* 출석 상태 통계 */}
+                            {activeList.some(p => p.checkedIn) && (
+                                <div className="flex gap-2 text-center mt-3 pt-3 border-t border-slate-100">
+                                    <div className="flex-1 bg-emerald-50 rounded-xl p-2">
+                                        <p className="text-xl font-black text-emerald-600">{activeList.filter(p=>p.checkedIn && p.status==='정상').length}</p>
+                                        <p className="text-[9px] text-emerald-500 mt-0.5">정상</p>
+                                    </div>
+                                    <div className="flex-1 bg-yellow-50 rounded-xl p-2">
+                                        <p className="text-xl font-black text-yellow-600">{activeList.filter(p=>p.checkedIn && p.status==='지각').length}</p>
+                                        <p className="text-[9px] text-yellow-500 mt-0.5">지각</p>
+                                    </div>
+                                    <div className="flex-1 bg-red-50 rounded-xl p-2">
+                                        <p className="text-xl font-black text-red-600">{activeList.filter(p=>!p.checkedIn).length}</p>
+                                        <p className="text-[9px] text-red-500 mt-0.5">노쇼</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* 팀별 출석 현황 */}
