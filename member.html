@@ -284,6 +284,8 @@ function App() {
         setAppView('login');
     };
 
+    const toggleTestMode = () => setTestMode(prev => !prev);
+
     // GPS 출석 체크
     const handleGPSCheckIn = async () => {
         if (!memberData?.memberId) return;
@@ -627,9 +629,7 @@ function App() {
                                         <p className="font-black text-red-400 whitespace-pre-line">{qrMessage}</p>
                                         {urlParams.token && (
                                             <button onClick={() => {
-                                                testModeRef.current = true;
                                                 setTestMode(true);
-                                                localStorage.setItem('moida_test_mode', 'true');
                                                 setQrStatus('processing');
                                                 handleQRAttendance();
                                             }} className="mt-4 text-xs text-amber-400 font-black px-5 py-2.5 rounded-xl bg-amber-400/15 block mx-auto">
