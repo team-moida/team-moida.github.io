@@ -1126,10 +1126,17 @@ function App() {
                                                         </div>
                                                         <p className="font-black text-slate-800 text-sm leading-tight">{p.name}</p>
                                                         <p className="text-[9px] font-black text-slate-500 mt-0.5">{p.jerseyNumber}번 · Lv.{p.level}</p>
-                                                        {p.checkedIn
-                                                            ? <p className="text-[9px] text-emerald-600 font-black mt-0.5">✓ {p.checkInTime}</p>
-                                                            : <p className="text-[9px] text-slate-400 mt-0.5">미출석</p>
-                                                        }
+                                                        {p.checkedIn ? (
+                                                            p.status === '정상' ? (
+                                                                <p className="text-[9px] text-emerald-600 font-black mt-0.5">✓ 정상 · {p.checkInTime}</p>
+                                                            ) : p.status === '지각' ? (
+                                                                <p className="text-[9px] text-yellow-600 font-black mt-0.5">⚠️ 지각 · {p.checkInTime}</p>
+                                                            ) : (
+                                                                <p className="text-[9px] text-red-600 font-black mt-0.5">✗ 노쇼 · {p.checkInTime}</p>
+                                                            )
+                                                        ) : (
+                                                            <p className="text-[9px] text-slate-400 mt-0.5">미출석</p>
+                                                        )}
                                                     </div>
                                                 </button>
                                             ))}
@@ -1151,7 +1158,15 @@ function App() {
                                                             {p.gender==='여성'&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg">W</span>}
                                                             {p.isGuest&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-slate-800 text-white rounded-lg">G</span>}
                                                         </div>
-                                                        {p.checkedIn&&<p className="text-[10px] text-emerald-500 mt-0.5">✓ {p.checkInTime} · {p.status}</p>}
+                                                        {p.checkedIn && (
+                                                            p.status === '정상' ? (
+                                                                <p className="text-[10px] text-emerald-600 font-black mt-0.5">✓ 정상 · {p.checkInTime}</p>
+                                                            ) : p.status === '지각' ? (
+                                                                <p className="text-[10px] text-yellow-600 font-black mt-0.5">⚠️ 지각 · {p.checkInTime}</p>
+                                                            ) : (
+                                                                <p className="text-[10px] text-red-600 font-black mt-0.5">✗ 노쇼 · {p.checkInTime}</p>
+                                                            )
+                                                        )}
                                                     </div>
                                                     {!p.checkedIn
                                                         ? <span className="text-xs font-black text-slate-300 flex-shrink-0">체크인 →</span>
@@ -1176,7 +1191,15 @@ function App() {
                                                 {p.gender==='여성'&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg">W</span>}
                                                 {p.isGuest&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-slate-800 text-white rounded-lg">G</span>}
                                             </div>
-                                            {p.checkedIn && <p className="text-[10px] text-emerald-500 mt-0.5">✓ {p.checkInTime} · {p.status}</p>}
+                                            {p.checkedIn && (
+                                                p.status === '정상' ? (
+                                                    <p className="text-[10px] text-emerald-600 font-black mt-0.5">✓ 정상 · {p.checkInTime}</p>
+                                                ) : p.status === '지각' ? (
+                                                    <p className="text-[10px] text-yellow-600 font-black mt-0.5">⚠️ 지각 · {p.checkInTime}</p>
+                                                ) : (
+                                                    <p className="text-[10px] text-red-600 font-black mt-0.5">✗ 노쇼 · {p.checkInTime}</p>
+                                                )
+                                            )}
                                         </div>
                                         {!p.checkedIn
                                             ? <span className="text-xs font-black text-slate-300 flex-shrink-0">체크인 →</span>
