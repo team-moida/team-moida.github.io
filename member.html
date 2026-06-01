@@ -91,10 +91,8 @@ function App() {
     // 로그인 폼
     const [loginForm, setLoginForm] = useState({ name:'', birth:'' });
     const [isLoggingIn, setIsLoggingIn] = useState(false);
-    const [testMode, setTestMode] = useState(() => localStorage.getItem('moida_test_mode') === 'true');
-    const testModeRef = useRef(localStorage.getItem('moida_test_mode') === 'true');
-    useEffect(() => { testModeRef.current = testMode; }, [testMode]);
-    const toggleTestMode = () => { const n = !testMode; testModeRef.current = n; setTestMode(n); localStorage.setItem('moida_test_mode', n ? 'true' : ''); };
+    const [testMode, setTestMode] = useState(false);
+    const [testTimeOffset, setTestTimeOffset] = useState(0);
 
     // Firebase 데이터
     const [meetingSettings, setMeetingSettings] = useState(null);
@@ -127,10 +125,15 @@ function App() {
         auth.signInAnonymously().catch(e=>console.error(e));
     }, []);
 
-    // 설정 읽기
+    // 설정 읽기 (testMode/testTimeOffset 포함)
     useEffect(() => {
         const unsub = getCol('settings').doc('meeting_schedule_v2').onSnapshot(doc => {
-            if (doc.exists) setMeetingSettings(doc.data());
+            if (doc.exists) {
+                const data = doc.data();
+                setMeetingSettings(data);
+                setTestMode(data.testMode ?? false);
+                setTestTimeOffset(data.testTimeOffset ?? 0);
+            }
         });
         return () => unsub();
     }, []);
@@ -198,8 +201,11 @@ function App() {
 
             if (tokenData.token !== urlParams.token) { setQrMessage('QR 코드가 일치하지 않습니다.'); setQrStatus('error'); return; }
 
-            const now = new Date();
-            if (!testModeRef.current) {
+            let now = new Date();
+            if (testMode) {
+                now = new Date(now.getTime() + testTimeOffset * 60 * 1000);
+            }
+            if (!testMode) {
                 if (now < new Date(tokenData.validFrom)) { setQrMessage(`아직 출석 시간이 아닙니다.\n출석 가능 시간: ${new Date(tokenData.validFrom).toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'})}`); setQrStatus('error'); return; }
                 if (now > new Date(tokenData.validUntil)) { setQrMessage('QR 코드 유효 시간이 지났습니다.'); setQrStatus('error'); return; }
             }
@@ -217,14 +223,13 @@ function App() {
             const sessionDoc = sessionSnap.docs[0];
             if (sessionDoc.data().checkedIn) { setQrMessage('이미 출석 처리되었습니다.'); setQrStatus('success'); return; }
 
-            const now2 = new Date();
             const [sy,sm,sd] = urlParams.date.split('-');
             const startTime = meetingSettings?.start || '08:00';
             const [shr,smin] = startTime.split(':');
             const meetingStart = new Date(sy,sm-1,sd,parseInt(shr),parseInt(smin),0);
             const lateThreshold = new Date(meetingStart.getTime() + 60000);
-            const status = now2 >= lateThreshold ? '지각' : '정상';
-            const timeStr = now2.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+            const status = now >= lateThreshold ? '지각' : '정상';
+            const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
 
             const batch = db.batch();
             batch.update(getCol('weekly_session').doc(sessionDoc.id), { checkedIn:true, checkInTime:timeStr, status });
@@ -283,7 +288,15 @@ function App() {
     // GPS 출석 체크
     const handleGPSCheckIn = async () => {
         if (!memberData?.memberId) return;
-        if (testMode) { setGpsStatus('within'); setDistance(0); return; }
+        if (testMode) {
+            setGpsStatus('within');
+            setDistance(0);
+            setIsCheckingIn(true);
+            setTimeout(() => {
+                handleGPSCheckInSubmit(testTimeOffset);
+            }, 800);
+            return;
+        }
         setGpsStatus('checking');
         if (!navigator.geolocation) { setGpsStatus('error'); showToast('이 기기는 GPS를 지원하지 않습니다.', 'error'); return; }
 
@@ -314,17 +327,19 @@ function App() {
         }, { timeout: 10000, maximumAge: 0, enableHighAccuracy: true });
     };
 
-    const handleGPSAttend = async () => {
+    const handleGPSCheckInSubmit = async (offset = 0) => {
         if (!mySession) return showToast('오늘 선정 명단에 없습니다. 관리자에게 문의하세요.', 'error');
         if (mySession.checkedIn) return showToast('이미 출석 처리되었습니다.', 'info');
-        setIsCheckingIn(true);
         try {
-            const now = new Date();
+            let now = new Date();
+            if (testMode) {
+                now = new Date(now.getTime() + offset * 60 * 1000);
+            }
             const[sy,sm,sd] = meetingSettings.date.split('-');
             const[shr,smin] = meetingSettings.start.split(':');
             const meetingStart = new Date(sy,sm-1,sd,parseInt(shr),parseInt(smin),0);
             const allowFrom = new Date(meetingStart.getTime() - 60*60*1000);
-            if (now < allowFrom) { showToast('아직 출석 가능 시간이 아닙니다.', 'error'); setIsCheckingIn(false); return; }
+            if (!testMode && now < allowFrom) { showToast('아직 출석 가능 시간이 아닙니다.', 'error'); return; }
             const lateThreshold = new Date(meetingStart.getTime() + 60000);
             const status = now >= lateThreshold ? '지각' : '정상';
             const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
@@ -332,6 +347,11 @@ function App() {
             showToast(`출석 완료! ${status} (${timeStr})`, 'success');
         } catch(e) { showToast('출석 실패: ' + e.message, 'error'); }
         finally { setIsCheckingIn(false); }
+    };
+
+    const handleGPSAttend = async () => {
+        setIsCheckingIn(false);
+        await handleGPSCheckInSubmit(0);
     };
 
     // 내 팀 정보

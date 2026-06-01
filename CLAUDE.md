@@ -77,6 +77,17 @@
 - **코드 전달 전 반드시 검수** — 이전에 검색창 클릭 안 되는 버그가 있었음
 - 기능 구현 후 직접 검토 후 전달할 것
 
+### 크로스 플랫폼 호환성 (필수)
+- **모든 기능은 다음 환경에서 작동해야 함** (이 규칙은 무조건 지켜야 함):
+  - PC: Windows, macOS
+  - 모바일: Android, iOS
+  - 태블릿: Android, iOS
+- 터치 이벤트 / 마우스 이벤트 모두 지원 (Pointer Events 권장)
+- 반응형 레이아웃: viewport 설정 필수, 미디어 쿼리 활용
+- 작은 화면에서 탭/버튼 크기 최소 44×44px (터치 UX)
+- 장시간 사용 시 배터리 고려: 불필요한 스크롤 리스너, 애니메이션 최소화
+- 모바일 키보드 자동 팝업 제어: input focus 시 유의
+
 ### CSS/스타일
 - `body`에 `user-select: none` 전역 적용됨 → **모달 input에는 반드시 `userSelect:'text'` 명시**
 - Tailwind CDN 사용 중 → z-index 문제 시 **inline style로 처리** (Tailwind z-index 클래스 우선순위 문제)

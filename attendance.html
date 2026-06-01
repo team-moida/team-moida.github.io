@@ -459,13 +459,29 @@ function App() {
     const [currentQRToken, setCurrentQRToken] = useState('');
     const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
     const qrCanvasRef = useRef(null);
-    const [testMode, setTestMode] = useState(() => localStorage.getItem('moida_test_mode') === 'true');
+    const [testMode, setTestMode] = useState(false);
     const [testTimeOffset, setTestTimeOffset] = useState(0); // 0=현재, 30=지각(+30분), 120=노쇼(+120분)
+
+    // Firestore에서 testMode/testTimeOffset 읽기
+    useEffect(() => {
+        const unsub = getSettingsCol().doc('meeting_schedule_v2').onSnapshot(doc => {
+            if (doc.exists) {
+                const data = doc.data();
+                setTestMode(data.testMode ?? false);
+                setTestTimeOffset(data.testTimeOffset ?? 0);
+            }
+        });
+        return () => unsub();
+    }, []);
+
+    const updateTestModeSettings = async (newTestMode, newOffset) => {
+        try {
+            await getSettingsCol().doc('meeting_schedule_v2').update({ testMode: newTestMode, testTimeOffset: newOffset });
+        } catch(e) { console.error('테스트 모드 설정 실패:', e); }
+    };
+
     const toggleTestMode = async () => {
         const n = !testMode;
-        setTestMode(n);
-        setTestTimeOffset(0);
-        localStorage.setItem('moida_test_mode', n ? 'true' : '');
         if (n) {
             const d = new Date();
             const todayStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -473,6 +489,7 @@ function App() {
             const m = String(d.getMinutes()).padStart(2,'0');
             const updatedTimes = {...meetingTimes, date: todayStr, start: `${h}:${m}`};
             setMeetingTimes(updatedTimes);
+            await updateTestModeSettings(true, 0);
 
             // 자동 인원 선정
             setTimeout(async () => {
@@ -484,10 +501,13 @@ function App() {
                             date:todayStr, checkedIn:false, checkInTime:null, status:'미출석',
                             isGuest:false, team:'', createdAt:new Date().toISOString()
                         })));
-                        showAlert('테스트 모드 활성화', `오늘(${todayStr}) 기준 ${toAdd.length}명 자동 선정됨\n\n🧪 테스트 모드 활성화!\nQR 시간 제한이 해제됩니다.`);
+                        showAlert('테스트 모드 활성화', `오늘(${todayStr}) 기준 ${toAdd.length}명 자동 선정됨\n\n🧪 테스트 모드 활성화!\n시간 버튼으로 정상/지각/노쇼를 테스트하세요.`);
                     }
                 } catch(e) { console.error('테스트 인원 선정 실패:', e); }
             }, 100);
+        } else {
+            await updateTestModeSettings(false, 0);
+            showAlert('테스트 모드 해제', '테스트 모드가 비활성화되었습니다.');
         }
     };
 
@@ -945,15 +965,15 @@ function App() {
                         {/* 테스트 모드 시간 전환 */}
                         {testMode && (
                             <div className="flex gap-2 justify-center mb-4 animate-zoom-in">
-                                <button onClick={()=>setTestTimeOffset(0)}
+                                <button onClick={()=>updateTestModeSettings(true, 0)}
                                     className={`px-4 py-2 rounded-xl font-black text-sm transition-all ${testTimeOffset===0?'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40':'bg-white border border-slate-200 text-slate-600'}`}>
                                     ⏰ 현재
                                 </button>
-                                <button onClick={()=>setTestTimeOffset(30)}
+                                <button onClick={()=>updateTestModeSettings(true, 30)}
                                     className={`px-4 py-2 rounded-xl font-black text-sm transition-all ${testTimeOffset===30?'bg-yellow-500 text-white shadow-lg shadow-yellow-500/40':'bg-white border border-slate-200 text-slate-600'}`}>
                                     ⏱️ 지각 (+30분)
                                 </button>
-                                <button onClick={()=>setTestTimeOffset(120)}
+                                <button onClick={()=>updateTestModeSettings(true, 120)}
                                     className={`px-4 py-2 rounded-xl font-black text-sm transition-all ${testTimeOffset===120?'bg-red-500 text-white shadow-lg shadow-red-500/40':'bg-white border border-slate-200 text-slate-600'}`}>
                                     ❌ 노쇼 (+120분)
                                 </button>
