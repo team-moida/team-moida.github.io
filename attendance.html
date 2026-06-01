@@ -505,29 +505,38 @@ function App() {
             // 자동 인원 선정 (1초 대기 후 실행 - members 로드 대기)
             setTimeout(async () => {
                 try {
+                    console.log('테스트 모드 인원 선정 시작');
+                    console.log('members 개수:', members.length);
+
                     // 활성 회원 (탈퇴 안 한 사람들)
                     const activeMemberList = members.filter(m => !m.isResigned);
+                    console.log('활성 회원 개수:', activeMemberList.length);
 
                     // 이미 오늘 선정된 회원들
                     const sessionSnap = await getSessionCol().where('date', '==', todayStr).get();
+                    console.log('기존 선정자:', sessionSnap.size);
                     const existingIds = new Set(sessionSnap.docs.map(d => d.data().memberId));
 
                     // 선정되지 않은 회원들
                     const toAdd = activeMemberList.filter(m => !existingIds.has(m.id));
+                    console.log('새로 선정할 인원:', toAdd.length);
 
                     if (toAdd.length > 0) {
+                        console.log('인원 선정 중...');
                         await Promise.all(toAdd.map(m => getSessionCol().add({
                             memberId:m.id, name:m.name, gender:m.gender, level:m.level,
                             date:todayStr, checkedIn:false, checkInTime:null, status:'미출석',
                             isGuest:false, team:'', createdAt:new Date().toISOString()
                         })));
+                        console.log('인원 선정 완료!');
                         showAlert('테스트 모드 활성화', `${toAdd.length}명 자동 선정됨\n\n🧪 테스트 모드 활성화!\n아래 버튼으로 출석 기준을 설정하세요.\n• ⏰ 정상: 현재 시간이 정상 범위\n• ⏱️ 지각: 현재 시간이 지각 범위\n• ❌ 노쇼: 종료 후 상태`);
                     } else {
+                        console.log('선정할 인원 없음');
                         showAlert('테스트 모드 활성화', '🧪 테스트 모드 활성화!\n기준에 따라 출석을 테스트하세요.');
                     }
                 } catch(e) {
                     console.error('테스트 인원 선정 실패:', e);
-                    showAlert('알림', '인원 자동 선정 실패. 수동으로 선정하세요.');
+                    showAlert('알림', '인원 자동 선정 실패. 수동으로 선정하세요. 콘솔 확인: ' + e.message);
                 }
             }, 1000);
         } else {
