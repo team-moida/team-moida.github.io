@@ -1117,8 +1117,11 @@ function App() {
                                             {group.members.map(p => (
                                                 <button key={p.id} onClick={()=>setModal({type:'checkin',data:p})}
                                                     className={`relative overflow-hidden rounded-2xl border-2 p-3 text-left transition-all ${getTeamColorClass(group.teamIdx)}`}>
-                                                    {/* 출석 시 상단 녹색 스트라이프 */}
-                                                    {p.checkedIn && <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:'#10b981'}}/>}
+                                                    {/* 상단 스트라이프: 노쇼=빨강, 정상/지각=초록 */}
+                                                    {p.status === '노쇼'
+                                                        ? <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:'#ef4444'}}/>
+                                                        : p.checkedIn && <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:'#10b981'}}/>
+                                                    }
                                                     {/* 흐린 번호 배경 */}
                                                     <span style={{position:'absolute',bottom:'-8px',right:'4px',fontSize:'72px',fontWeight:'900',opacity:0.1,lineHeight:1,pointerEvents:'none',userSelect:'none'}}>{p.jerseyNumber}</span>
                                                     <div className="relative">
@@ -1129,18 +1132,20 @@ function App() {
                                                             </div>
                                                             {p.checkedIn
                                                                 ? <span className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0"><Icon.Check size={10} className="text-white"/></span>
-                                                                : <span className="text-slate-300 text-base leading-none">›</span>
+                                                                : p.status === '노쇼'
+                                                                    ? <span className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 text-white text-[9px] font-black">✗</span>
+                                                                    : <span className="text-slate-300 text-base leading-none">›</span>
                                                             }
                                                         </div>
                                                         <p className="font-black text-slate-800 text-sm leading-tight">{p.name}</p>
                                                         <p className="text-[9px] font-black text-slate-500 mt-0.5">{p.jerseyNumber}번 · Lv.{p.level}</p>
-                                                        {p.checkedIn ? (
+                                                        {p.status === '노쇼' ? (
+                                                            <p className="text-[9px] text-red-600 font-black mt-0.5">✗ 노쇼</p>
+                                                        ) : p.checkedIn ? (
                                                             p.status === '정상' ? (
                                                                 <p className="text-[9px] text-emerald-600 font-black mt-0.5">✓ 정상 · {p.checkInTime}</p>
-                                                            ) : p.status === '지각' ? (
-                                                                <p className="text-[9px] text-yellow-600 font-black mt-0.5">⚠️ 지각 · {p.checkInTime}</p>
                                                             ) : (
-                                                                <p className="text-[9px] text-red-600 font-black mt-0.5">✗ 노쇼 · {p.checkInTime}</p>
+                                                                <p className="text-[9px] text-yellow-600 font-black mt-0.5">⚠️ 지각 · {p.checkInTime}</p>
                                                             )
                                                         ) : (
                                                             <p className="text-[9px] text-slate-400 mt-0.5">미출석</p>
@@ -1159,26 +1164,28 @@ function App() {
                                         <div className="space-y-1.5">
                                             {unassignedActive.map(p => (
                                                 <button key={p.id} onClick={()=>setModal({type:'checkin',data:p})}
-                                                    className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${p.checkedIn?'bg-emerald-50 border-emerald-200':'bg-white border-slate-100 hover:border-pink-200'}`}>
+                                                    className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${p.status==='노쇼'?'bg-red-50 border-red-200':p.checkedIn?'bg-emerald-50 border-emerald-200':'bg-white border-slate-100 hover:border-pink-200'}`}>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-1.5">
                                                             <span className="font-black text-sm text-slate-800">{p.name}</span>
                                                             {p.gender==='여성'&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg">W</span>}
                                                             {p.isGuest&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-slate-800 text-white rounded-lg">G</span>}
                                                         </div>
-                                                        {p.checkedIn && (
+                                                        {p.status === '노쇼' ? (
+                                                            <p className="text-[10px] text-red-600 font-black mt-0.5">✗ 노쇼</p>
+                                                        ) : p.checkedIn ? (
                                                             p.status === '정상' ? (
                                                                 <p className="text-[10px] text-emerald-600 font-black mt-0.5">✓ 정상 · {p.checkInTime}</p>
-                                                            ) : p.status === '지각' ? (
-                                                                <p className="text-[10px] text-yellow-600 font-black mt-0.5">⚠️ 지각 · {p.checkInTime}</p>
                                                             ) : (
-                                                                <p className="text-[10px] text-red-600 font-black mt-0.5">✗ 노쇼 · {p.checkInTime}</p>
+                                                                <p className="text-[10px] text-yellow-600 font-black mt-0.5">⚠️ 지각 · {p.checkInTime}</p>
                                                             )
-                                                        )}
+                                                        ) : null}
                                                     </div>
-                                                    {!p.checkedIn
-                                                        ? <span className="text-xs font-black text-slate-300 flex-shrink-0">체크인 →</span>
-                                                        : <span className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0"><Icon.Check size={12} className="text-white"/></span>
+                                                    {p.status === '노쇼'
+                                                        ? <span className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-black">✗</span>
+                                                        : p.checkedIn
+                                                            ? <span className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0"><Icon.Check size={12} className="text-white"/></span>
+                                                            : <span className="text-xs font-black text-slate-300 flex-shrink-0">체크인 →</span>
                                                     }
                                                 </button>
                                             ))}
@@ -1191,7 +1198,7 @@ function App() {
                                 <p className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">출석 명단 ({limit}명 선착순)</p>
                                 {activeList.map((p, idx) => (
                                     <button key={p.id} onClick={()=>setModal({type:'checkin',data:p})}
-                                        className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${p.checkedIn?'bg-emerald-50 border-emerald-200':'bg-white border-slate-100 hover:border-pink-200'}`}>
+                                        className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${p.status==='노쇼'?'bg-red-50 border-red-200':p.checkedIn?'bg-emerald-50 border-emerald-200':'bg-white border-slate-100 hover:border-pink-200'}`}>
                                         <span className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 text-xs font-black flex items-center justify-center flex-shrink-0">{idx+1}</span>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-1.5">
@@ -1199,19 +1206,21 @@ function App() {
                                                 {p.gender==='여성'&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg">W</span>}
                                                 {p.isGuest&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-slate-800 text-white rounded-lg">G</span>}
                                             </div>
-                                            {p.checkedIn && (
+                                            {p.status === '노쇼' ? (
+                                                <p className="text-[10px] text-red-600 font-black mt-0.5">✗ 노쇼</p>
+                                            ) : p.checkedIn ? (
                                                 p.status === '정상' ? (
                                                     <p className="text-[10px] text-emerald-600 font-black mt-0.5">✓ 정상 · {p.checkInTime}</p>
-                                                ) : p.status === '지각' ? (
-                                                    <p className="text-[10px] text-yellow-600 font-black mt-0.5">⚠️ 지각 · {p.checkInTime}</p>
                                                 ) : (
-                                                    <p className="text-[10px] text-red-600 font-black mt-0.5">✗ 노쇼 · {p.checkInTime}</p>
+                                                    <p className="text-[10px] text-yellow-600 font-black mt-0.5">⚠️ 지각 · {p.checkInTime}</p>
                                                 )
-                                            )}
+                                            ) : null}
                                         </div>
-                                        {!p.checkedIn
-                                            ? <span className="text-xs font-black text-slate-300 flex-shrink-0">체크인 →</span>
-                                            : <span className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0"><Icon.Check size={12} className="text-white" /></span>
+                                        {p.status === '노쇼'
+                                            ? <span className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-black">✗</span>
+                                            : p.checkedIn
+                                                ? <span className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0"><Icon.Check size={12} className="text-white" /></span>
+                                                : <span className="text-xs font-black text-slate-300 flex-shrink-0">체크인 →</span>
                                         }
                                     </button>
                                 ))}
