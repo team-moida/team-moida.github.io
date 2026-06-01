@@ -543,6 +543,19 @@ function App() {
         getSettingsCol().doc('meeting_schedule_v2').set(newData);
     };
 
+    const handleTestSelect = async () => {
+        const d = new Date();
+        const todayStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        await updateMeetingTimeSettings({...meetingTimes, date: todayStr});
+        const toAdd = activeMembers.filter(m => !m.isResigned && !sessionData.some(p => p.memberId === m.id && p.date === todayStr));
+        await Promise.all(toAdd.map(m => getSessionCol().add({
+            memberId:m.id, name:m.name, gender:m.gender, level:m.level,
+            date:todayStr, checkedIn:false, checkInTime:null, status:'미출석',
+            isGuest:false, team:'', createdAt:new Date().toISOString()
+        })));
+        showAlert('테스트 선정 완료', `오늘(${todayStr}) 기준 ${toAdd.length}명 선정됨`);
+    };
+
     const toggleParticipant = async (member) => {
         const existing = sessionData.find(p => p.memberId === member.id && p.date === meetingTimes.date);
         if (existing) { await getSessionCol().doc(existing.id).delete(); }
@@ -1132,6 +1145,9 @@ function App() {
                             <div className="flex gap-2">
                                 <button onClick={()=>setIsGuestModalOpen(true)} className="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-black rounded-xl flex items-center gap-1">
                                     <Icon.UserPlus size={12} /> 게스트
+                                </button>
+                                <button onClick={handleTestSelect} className="px-3 py-1.5 bg-amber-50 text-amber-600 text-xs font-black rounded-xl flex items-center gap-1">
+                                    🧪 테스트
                                 </button>
                                 <button onClick={handleResetSelection} className="px-3 py-1.5 bg-red-50 text-red-500 text-xs font-black rounded-xl flex items-center gap-1">
                                     <Icon.RotateCcw size={12} /> 초기화
