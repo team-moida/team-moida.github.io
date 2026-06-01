@@ -602,8 +602,8 @@ function App() {
                 sessionIds: sessionData.filter(p => p.date === meetingTimes.date).map(p => p.id)
             });
 
-            // 테스트 모드: 현재 + 10분이 정상 범위에 들어옴
-            const startTime = new Date(d.getTime() - 10*60*1000); // 현재 - 10분
+            // 테스트 모드: 현재를 모임 시작 시간으로 설정 → 지금 출석하면 "정상" ✓
+            const startTime = new Date(d.getTime()); // 현재
             const endTime = new Date(startTime.getTime() + 2*60*60*1000 + 10*60*1000); // 시작 + 2시간 10분
 
             const h = String(startTime.getHours()).padStart(2,'0');
