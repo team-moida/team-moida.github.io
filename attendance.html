@@ -1024,10 +1024,20 @@ function App() {
                                     const h = String(d.getHours()).padStart(2,'0');
                                     const m = String(d.getMinutes()).padStart(2,'0');
                                     setMeetingTimes({...meetingTimes, start: `${h}:${m}`, end: `${String(d.getHours() + 1).padStart(2,'0')}:${m}`});
-                                    await getSettingsCol().doc('meeting_schedule_v2').update({ start: `${h}:${m}`, end: `${String(d.getHours() + 1).padStart(2,'0')}:${m}` });
+
+                                    // 미출석 인원 자동 노쇼 처리
+                                    try {
+                                        const batch = db.batch();
+                                        activeList.filter(p => !p.checkedIn).forEach(p => {
+                                            batch.update(getSessionCol().doc(p.id), { status: '노쇼' });
+                                        });
+                                        await getSettingsCol().doc('meeting_schedule_v2').update({ start: `${h}:${m}`, end: `${String(d.getHours() + 1).padStart(2,'0')}:${m}` });
+                                        await batch.commit();
+                                        showAlert('노쇼 처리 완료', `미출석 ${activeList.filter(p => !p.checkedIn).length}명이 노쇼로 처리되었습니다.`);
+                                    } catch(e) { showAlert('오류', '노쇼 처리 실패'); }
                                 }}
                                     className={`px-4 py-2 rounded-xl font-black text-sm transition-all bg-red-500 text-white shadow-lg shadow-red-500/40`}>
-                                    ❌ 노쇼 (2시간 전)
+                                    ❌ 노쇼 처리
                                 </button>
                             </div>
                         )}
