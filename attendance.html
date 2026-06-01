@@ -617,6 +617,7 @@ function App() {
             let testLng = meetingTimes.locationLng || null;
             let testLocation = meetingTimes.location || '';
             let gpsMsg = '';
+            let gpsOk = false;
             if (navigator.geolocation) {
                 try {
                     const pos = await new Promise((resolve, reject) =>
@@ -626,6 +627,7 @@ function App() {
                     testLng = pos.coords.longitude;
                     testLocation = '📍 테스트 현재위치';
                     gpsMsg = `\nGPS: 현재위치 자동 설정됨 (${testLat.toFixed(5)}, ${testLng.toFixed(5)})`;
+                    gpsOk = true;
                 } catch(e) {
                     gpsMsg = '\nGPS: 위치 취득 실패 — 기존 장소 유지';
                 }
@@ -638,6 +640,7 @@ function App() {
             setMeetingTimes(updatedTimes);
             await getSettingsCol().doc('meeting_schedule_v2').update({...updatedTimes});
             setTestMode(true);
+            if (gpsOk) setIsLocationPickerOpen(true);
 
             // 자동 인원 선정
             setTimeout(async () => {
