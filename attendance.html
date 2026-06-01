@@ -603,9 +603,9 @@ function App() {
                 sessionIds: sessionData.filter(p => p.date === meetingTimes.date).map(p => p.id)
             });
 
-            // 테스트 모드: 현재를 모임 시작 시간으로 설정 → 지금 출석하면 "정상" ✓
-            const startTime = new Date(d.getTime()); // 현재
-            const endTime = new Date(startTime.getTime() + 2*60*60*1000 + 10*60*1000); // 시작 + 2시간 10분
+            // 테스트 모드: 5분 후 시작, 3분 모임 → 6분 내 출석하면 "정상"
+            const startTime = new Date(d.getTime() + 5*60*1000); // now + 5분
+            const endTime = new Date(startTime.getTime() + 3*60*1000); // start + 3분
 
             const h = String(startTime.getHours()).padStart(2,'0');
             const m = String(startTime.getMinutes()).padStart(2,'0');
@@ -632,7 +632,7 @@ function App() {
                             isGuest:false, team:'', createdAt:new Date().toISOString()
                         })));
                     }
-                    showAlert('테스트 모드 활성화', `${toAdd.length}명 자동 선정됨\n\n현재가 정상 출석 범위입니다.\n아래 버튼으로 상태를 변경하세요.`);
+                    showAlert('테스트 모드 활성화', `${toAdd.length}명 자동 선정됨\n\n모임 시작: ${h}:${m} (지금부터 5분 후)\n모임 종료: ${endH}:${endM}\n\n6분 내 출석 → 정상\n6분 이후 또는 [지각 전환] → 지각\n[노쇼 전환] → 미출석자 노쇼 처리`);
                 } catch(e) {
                     console.error('테스트 인원 선정 실패:', e);
                     showAlert('알림', '인원 자동 선정 실패');
@@ -1011,8 +1011,9 @@ function App() {
                             <div className="flex gap-2 justify-center mb-4 animate-zoom-in">
                                 <button onClick={async ()=>{
                                     const d = new Date();
-                                    const startTime = new Date(d.getTime() - 10*60*1000);
-                                    const endTime = new Date(startTime.getTime() + 2*60*60*1000 + 10*60*1000);
+                                    // 시작을 now - 2분으로 → now > start+1분 이므로 지각 조건
+                                    const startTime = new Date(d.getTime() - 2*60*1000);
+                                    const endTime = new Date(startTime.getTime() + 3*60*1000);
                                     const h = String(startTime.getHours()).padStart(2,'0');
                                     const m = String(startTime.getMinutes()).padStart(2,'0');
                                     const endH = String(endTime.getHours()).padStart(2,'0');
@@ -1020,51 +1021,23 @@ function App() {
                                     const updated = {...meetingTimes, start: `${h}:${m}`, end: `${endH}:${endM}`};
                                     setMeetingTimes(updated);
                                     await getSettingsCol().doc('meeting_schedule_v2').update(updated);
-                                    showAlert('정상 출석 범위', `시작: ${h}:${m}\n지금 출석하면 "정상" ✓`);
+                                    showAlert('지각 시간으로 전환', `시작: ${h}:${m}\n지금 출석하면 "지각" ⚠️`);
                                 }}
-                                    className={`px-4 py-2 rounded-xl font-black text-sm transition-all bg-emerald-500 text-white shadow-lg shadow-emerald-500/40`}>
-                                    ⏰ 정상
+                                    className="px-4 py-2 rounded-xl font-black text-sm bg-yellow-500 text-white shadow-lg shadow-yellow-500/40">
+                                    ⏱️ 지각 시간 전환
                                 </button>
                                 <button onClick={async ()=>{
-                                    const d = new Date();
-                                    const startTime = new Date(d.getTime() - 70*60*1000); // 현재 - 1시간 10분
-                                    const endTime = new Date(startTime.getTime() + 2*60*60*1000 + 10*60*1000);
-                                    const h = String(startTime.getHours()).padStart(2,'0');
-                                    const m = String(startTime.getMinutes()).padStart(2,'0');
-                                    const endH = String(endTime.getHours()).padStart(2,'0');
-                                    const endM = String(endTime.getMinutes()).padStart(2,'0');
-                                    const updated = {...meetingTimes, start: `${h}:${m}`, end: `${endH}:${endM}`};
-                                    setMeetingTimes(updated);
-                                    await getSettingsCol().doc('meeting_schedule_v2').update(updated);
-                                    showAlert('지각 범위', `시작: ${h}:${m}\n지금 출석하면 "지각" ⚠️`);
-                                }}
-                                    className={`px-4 py-2 rounded-xl font-black text-sm transition-all bg-yellow-500 text-white shadow-lg shadow-yellow-500/40`}>
-                                    ⏱️ 지각
-                                </button>
-                                <button onClick={async ()=>{
-                                    const d = new Date();
-                                    const endTime = new Date(d.getTime() - 1000); // 현재 - 1초
-                                    const startTime = new Date(endTime.getTime() - 2*60*60*1000 - 10*60*1000);
-                                    const h = String(startTime.getHours()).padStart(2,'0');
-                                    const m = String(startTime.getMinutes()).padStart(2,'0');
-                                    const endH = String(endTime.getHours()).padStart(2,'0');
-                                    const endM = String(endTime.getMinutes()).padStart(2,'0');
-                                    const updated = {...meetingTimes, start: `${h}:${m}`, end: `${endH}:${endM}`};
-                                    setMeetingTimes(updated);
-
-                                    // 미출석 인원 노쇼 처리
+                                    const noShowList = activeList.filter(p => !p.checkedIn && p.status !== '노쇼');
+                                    if (noShowList.length === 0) { showAlert('알림', '미출석 인원이 없습니다.'); return; }
                                     try {
                                         const batch = db.batch();
-                                        activeList.filter(p => !p.checkedIn).forEach(p => {
-                                            batch.update(getSessionCol().doc(p.id), { status: '노쇼' });
-                                        });
-                                        batch.update(getSettingsCol().doc('meeting_schedule_v2'), updated);
+                                        noShowList.forEach(p => batch.update(getSessionCol().doc(p.id), { status: '노쇼' }));
                                         await batch.commit();
-                                        showAlert('노쇼 처리', `미출석 ${activeList.filter(p => !p.checkedIn).length}명이 노쇼로 처리됨 ✗`);
+                                        showAlert('노쇼 처리', `미출석 ${noShowList.length}명이 노쇼로 처리됨 ✗`);
                                     } catch(e) { showAlert('오류', '노쇼 처리 실패'); }
                                 }}
-                                    className={`px-4 py-2 rounded-xl font-black text-sm transition-all bg-red-500 text-white shadow-lg shadow-red-500/40`}>
-                                    ❌ 노쇼
+                                    className="px-4 py-2 rounded-xl font-black text-sm bg-red-500 text-white shadow-lg shadow-red-500/40">
+                                    ❌ 노쇼 시간 전환
                                 </button>
                             </div>
                         )}
