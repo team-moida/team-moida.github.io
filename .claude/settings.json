@@ -5,13 +5,24 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd 'c:/Users/nakdo/moida' && git add -A && git diff --cached --quiet || (git commit -m '모이다 자동 업데이트' && git push)",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && git add -A && git diff --cached --quiet || (git commit -m '모이다 자동 업데이트' && git push)",
             "shell": "bash",
             "timeout": 30,
             "statusMessage": "GitHub에 자동 업로드 중..."
           }
         ]
       }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m *)",
+      "Bash(git push*)",
+      "Bash(git config *)",
+      "Bash(git rev-parse *)",
+      "Bash(git diff *)",
+      "Bash(git -C * status)"
     ]
   }
 }

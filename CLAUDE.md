@@ -5,9 +5,15 @@
 아마추어 혼성 풋살팀 **OTP FC**의 운영 관리 웹앱 **"모이다"**
 
 - **GitHub Pages 호스팅**: `https://nakdo0415-crypto.github.io/moida/`
-- **로컬 경로**: `D:\LSH\관리 어플\`
+- **로컬 경로**: `c:\Users\nakdo\moida` (집/사무실 공통)
 - **Firebase 프로젝트**: `moida-otpfc` (Firestore + Anonymous Auth)
-- **배포 방법**: GitHub 웹 편집기로 직접 push (Git CLI 미설치)
+- **배포 방법**: Claude Code Stop 훅 자동 커밋 & 푸시 (대화 종료 시 자동 반영)
+
+### 자동 배포 설정 (`.claude/settings.json`)
+- Claude Code 대화가 끝날 때마다 `git add -A → git commit → git push` 자동 실행
+- 훅 경로는 `git rev-parse --show-toplevel` 기준 → **집/사무실 경로 달라도 동일 동작**
+- 설정 파일이 git에 포함되므로 `git pull` 한 번이면 사무실도 동일 환경 적용됨
+- `settings.local.json`은 머신별 오버라이드용 — 현재 비어 있음 (공통 설정만 사용)
 
 ---
 
