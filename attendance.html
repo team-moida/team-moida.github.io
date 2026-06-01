@@ -452,6 +452,8 @@ function App() {
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(!localStorage.getItem('moida_manager'));
     const [loginForm, setLoginForm] = useState({ name:'' });
     const [setupTabMonthlyMembers, setSetupTabMonthlyMembers] = useState([]);
+    const [testMode, setTestMode] = useState(false);
+    const [testModeBackup, setTestModeBackup] = useState(null);
     const [isPasswordChangeModalOpen, setIsPasswordChangeModalOpen] = useState(false);
     const [passwordForm, setPasswordForm] = useState({ current:'', next:'', confirm:'' });
     // QR 관련 상태
@@ -587,6 +589,82 @@ function App() {
         setView('attendance');
     };
 
+    const toggleTestMode = async () => {
+        const n = !testMode;
+        if (n) {
+            // 테스트 모드 ON
+            const d = new Date();
+            const todayStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+            // 현재 모임 일정 백업
+            setTestModeBackup({
+                meetingTimes: {...meetingTimes},
+                sessionIds: sessionData.filter(p => p.date === meetingTimes.date).map(p => p.id)
+            });
+
+            // 테스트 모드: 현재 + 10분이 정상 범위에 들어옴
+            const startTime = new Date(d.getTime() - 10*60*1000); // 현재 - 10분
+            const endTime = new Date(startTime.getTime() + 2*60*60*1000 + 10*60*1000); // 시작 + 2시간 10분
+
+            const h = String(startTime.getHours()).padStart(2,'0');
+            const m = String(startTime.getMinutes()).padStart(2,'0');
+            const endH = String(endTime.getHours()).padStart(2,'0');
+            const endM = String(endTime.getMinutes()).padStart(2,'0');
+
+            const updatedTimes = {...meetingTimes, date: todayStr, start: `${h}:${m}`, end: `${endH}:${endM}`, testMode: true};
+            setMeetingTimes(updatedTimes);
+            await getSettingsCol().doc('meeting_schedule_v2').update({...updatedTimes});
+            setTestMode(true);
+
+            // 자동 인원 선정
+            setTimeout(async () => {
+                try {
+                    const activeMemberList = members.filter(m => !m.isResigned);
+                    const sessionSnap = await getSessionCol().where('date', '==', todayStr).get();
+                    const existingIds = new Set(sessionSnap.docs.map(d => d.data().memberId));
+                    const toAdd = activeMemberList.filter(m => !existingIds.has(m.id));
+
+                    if (toAdd.length > 0) {
+                        await Promise.all(toAdd.map(m => getSessionCol().add({
+                            memberId:m.id, name:m.name, gender:m.gender, level:m.level,
+                            date:todayStr, checkedIn:false, checkInTime:null, status:'미출석',
+                            isGuest:false, team:'', createdAt:new Date().toISOString()
+                        })));
+                    }
+                    showAlert('테스트 모드 활성화', `${toAdd.length}명 자동 선정됨\n\n현재가 정상 출석 범위입니다.\n아래 버튼으로 상태를 변경하세요.`);
+                } catch(e) {
+                    console.error('테스트 인원 선정 실패:', e);
+                    showAlert('알림', '인원 자동 선정 실패');
+                }
+            }, 500);
+        } else {
+            // 테스트 모드 OFF
+            if (testModeBackup) {
+                showConfirm('테스트 모드 종료', '테스트 데이터를 삭제하고 복원하시겠습니까?', async () => {
+                    try {
+                        const d = new Date();
+                        const todayStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+                        const testData = sessionData.filter(p => p.date === todayStr);
+                        const batch = db.batch();
+                        testData.forEach(p => batch.delete(getSessionCol().doc(p.id)));
+                        batch.update(getSettingsCol().doc('meeting_schedule_v2'), {...testModeBackup.meetingTimes, testMode: false});
+                        await batch.commit();
+
+                        setMeetingTimes(testModeBackup.meetingTimes);
+                        setTestModeBackup(null);
+                        setTestMode(false);
+
+                        showAlert('테스트 모드 종료', '테스트 데이터가 삭제되고 복원되었습니다.');
+                    } catch(e) { showAlert('오류', '데이터 복원 실패'); }
+                });
+            } else {
+                setTestMode(false);
+                showAlert('테스트 모드 해제', '테스트 모드가 비활성화되었습니다.');
+            }
+        }
+    };
+
     const handlePasswordChange = async () => {
         const { current, next, confirm } = passwordForm;
         const defaultPw = loggedInManager.birth ? loggedInManager.birth.substring(2,8) : '000000';
@@ -613,7 +691,7 @@ function App() {
         const [shr,smin] = meetingTimes.start.split(':');
         const meetingStart = new Date(sy,sm-1,sd,shr,smin,0);
         const allowFrom = new Date(meetingStart.getTime() - 60*60*1000);
-        if (!testMode && now < allowFrom) {
+        if (now < allowFrom) {
             const allowFromStr = allowFrom.toLocaleTimeString('ko-KR',{hour12:false,hour:'2-digit',minute:'2-digit'});
             return showAlert('출석 불가',`출석 가능 시간: ${participant.date} ${allowFromStr}~${meetingTimes.end}`);
         }
@@ -892,6 +970,10 @@ function App() {
                             </button>
                             <button onClick={()=>window.location.reload()} className="p-2.5 rounded-xl bg-slate-50 text-slate-400"><Icon.Refresh size={18} /></button>
                             <button onClick={handleLogout} className="p-2.5 rounded-xl bg-red-50 text-red-500"><Icon.LogOut size={18} /></button>
+                            <button onClick={toggleTestMode} title="테스트 모드"
+                                className={`p-2.5 rounded-xl font-black transition-all ${testMode ? 'bg-amber-400 text-white shadow-lg shadow-amber-400/40' : 'bg-slate-50 text-slate-400'}`}>
+                                🧪
+                            </button>
                             <button onClick={()=>window.location.href='index.html'} className="p-2.5 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"><Icon.Home size={18}/></button>
                         </div>
                     </div>
@@ -904,6 +986,68 @@ function App() {
                 {view === 'attendance' && !isAppLocked && (
                     <div>
                         <CurrentTimeClock />
+
+                        {testMode && (
+                            <div className="flex gap-2 justify-center mb-4 animate-zoom-in">
+                                <button onClick={async ()=>{
+                                    const d = new Date();
+                                    const startTime = new Date(d.getTime() - 10*60*1000);
+                                    const endTime = new Date(startTime.getTime() + 2*60*60*1000 + 10*60*1000);
+                                    const h = String(startTime.getHours()).padStart(2,'0');
+                                    const m = String(startTime.getMinutes()).padStart(2,'0');
+                                    const endH = String(endTime.getHours()).padStart(2,'0');
+                                    const endM = String(endTime.getMinutes()).padStart(2,'0');
+                                    const updated = {...meetingTimes, start: `${h}:${m}`, end: `${endH}:${endM}`};
+                                    setMeetingTimes(updated);
+                                    await getSettingsCol().doc('meeting_schedule_v2').update(updated);
+                                    showAlert('정상 출석 범위', `시작: ${h}:${m}\n지금 출석하면 "정상" ✓`);
+                                }}
+                                    className={`px-4 py-2 rounded-xl font-black text-sm transition-all bg-emerald-500 text-white shadow-lg shadow-emerald-500/40`}>
+                                    ⏰ 정상
+                                </button>
+                                <button onClick={async ()=>{
+                                    const d = new Date();
+                                    const startTime = new Date(d.getTime() - 70*60*1000); // 현재 - 1시간 10분
+                                    const endTime = new Date(startTime.getTime() + 2*60*60*1000 + 10*60*1000);
+                                    const h = String(startTime.getHours()).padStart(2,'0');
+                                    const m = String(startTime.getMinutes()).padStart(2,'0');
+                                    const endH = String(endTime.getHours()).padStart(2,'0');
+                                    const endM = String(endTime.getMinutes()).padStart(2,'0');
+                                    const updated = {...meetingTimes, start: `${h}:${m}`, end: `${endH}:${endM}`};
+                                    setMeetingTimes(updated);
+                                    await getSettingsCol().doc('meeting_schedule_v2').update(updated);
+                                    showAlert('지각 범위', `시작: ${h}:${m}\n지금 출석하면 "지각" ⚠️`);
+                                }}
+                                    className={`px-4 py-2 rounded-xl font-black text-sm transition-all bg-yellow-500 text-white shadow-lg shadow-yellow-500/40`}>
+                                    ⏱️ 지각
+                                </button>
+                                <button onClick={async ()=>{
+                                    const d = new Date();
+                                    const endTime = new Date(d.getTime() - 1000); // 현재 - 1초
+                                    const startTime = new Date(endTime.getTime() - 2*60*60*1000 - 10*60*1000);
+                                    const h = String(startTime.getHours()).padStart(2,'0');
+                                    const m = String(startTime.getMinutes()).padStart(2,'0');
+                                    const endH = String(endTime.getHours()).padStart(2,'0');
+                                    const endM = String(endTime.getMinutes()).padStart(2,'0');
+                                    const updated = {...meetingTimes, start: `${h}:${m}`, end: `${endH}:${endM}`};
+                                    setMeetingTimes(updated);
+
+                                    // 미출석 인원 노쇼 처리
+                                    try {
+                                        const batch = db.batch();
+                                        activeList.filter(p => !p.checkedIn).forEach(p => {
+                                            batch.update(getSessionCol().doc(p.id), { status: '노쇼' });
+                                        });
+                                        batch.update(getSettingsCol().doc('meeting_schedule_v2'), updated);
+                                        await batch.commit();
+                                        showAlert('노쇼 처리', `미출석 ${activeList.filter(p => !p.checkedIn).length}명이 노쇼로 처리됨 ✗`);
+                                    } catch(e) { showAlert('오류', '노쇼 처리 실패'); }
+                                }}
+                                    className={`px-4 py-2 rounded-xl font-black text-sm transition-all bg-red-500 text-white shadow-lg shadow-red-500/40`}>
+                                    ❌ 노쇼
+                                </button>
+                            </div>
+                        )}
 
 
                         {/* 모임 정보 카드 */}

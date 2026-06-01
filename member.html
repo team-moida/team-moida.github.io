@@ -91,6 +91,7 @@ function App() {
     // 로그인 폼
     const [loginForm, setLoginForm] = useState({ name:'', birth:'' });
     const [isLoggingIn, setIsLoggingIn] = useState(false);
+    const [testMode, setTestMode] = useState(false);
 
     // Firebase 데이터
     const [meetingSettings, setMeetingSettings] = useState(null);
@@ -123,10 +124,14 @@ function App() {
         auth.signInAnonymously().catch(e=>console.error(e));
     }, []);
 
-    // 설정 읽기
+    // 설정 읽기 (testMode 포함)
     useEffect(() => {
         const unsub = getCol('settings').doc('meeting_schedule_v2').onSnapshot(doc => {
-            if (doc.exists) setMeetingSettings(doc.data());
+            if (doc.exists) {
+                const data = doc.data();
+                setMeetingSettings(data);
+                setTestMode(data.testMode ?? false);
+            }
         });
         return () => unsub();
     }, []);
@@ -195,8 +200,10 @@ function App() {
             if (tokenData.token !== urlParams.token) { setQrMessage('QR 코드가 일치하지 않습니다.'); setQrStatus('error'); return; }
 
             const now = new Date();
-            if (now < new Date(tokenData.validFrom)) { setQrMessage(`아직 출석 시간이 아닙니다.\n출석 가능 시간: ${new Date(tokenData.validFrom).toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'})}`); setQrStatus('error'); return; }
-            if (now > new Date(tokenData.validUntil)) { setQrMessage('QR 코드 유효 시간이 지났습니다.'); setQrStatus('error'); return; }
+            if (!testMode) {
+                if (now < new Date(tokenData.validFrom)) { setQrMessage(`아직 출석 시간이 아닙니다.\n출석 가능 시간: ${new Date(tokenData.validFrom).toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'})}`); setQrStatus('error'); return; }
+                if (now > new Date(tokenData.validUntil)) { setQrMessage('QR 코드 유효 시간이 지났습니다.'); setQrStatus('error'); return; }
+            }
 
             const usedBy = tokenData.usedBy || [];
             if (usedBy.includes(memberData.memberId)) { setQrMessage('이미 QR 출석이 완료되었습니다.'); setQrStatus('success'); return; }
@@ -320,7 +327,7 @@ function App() {
             const[shr,smin] = meetingSettings.start.split(':');
             const meetingStart = new Date(sy,sm-1,sd,parseInt(shr),parseInt(smin),0);
             const allowFrom = new Date(meetingStart.getTime() - 60*60*1000);
-            if (now < allowFrom) { showToast('아직 출석 가능 시간이 아닙니다.', 'error'); setIsCheckingIn(false); return; }
+            if (!testMode && now < allowFrom) { showToast('아직 출석 가능 시간이 아닙니다.', 'error'); setIsCheckingIn(false); return; }
             // 출석 기준:
             // - 정상: 시작 ~ 시작+1분
             // - 지각: 시작+1분 초과 ~ 종료
