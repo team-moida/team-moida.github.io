@@ -917,15 +917,26 @@ function App() {
     }, [meetingTimes, currentTime]);
 
     // 모임 종료 시 미출석 인원 자동 노쇼 처리
+    // Firestore 직접 조회 → stale React state로 인한 경쟁 조건 방지
     useEffect(() => {
         if (!isMeetingOver || hasAutoNoShowRef.current) return;
-        const lim = testMode ? activeParticipants.length : (meetingTimes.maxLimit || 18);
-        const toNoShow = activeParticipants.slice(0, lim).filter(p => !p.checkedIn && p.status !== '노쇼');
+        if (!meetingTimes.date) return;
         hasAutoNoShowRef.current = true;
-        if (toNoShow.length === 0) return;
-        const batch = db.batch();
-        toNoShow.forEach(p => batch.update(getSessionCol().doc(p.id), { status: '노쇼' }));
-        batch.commit().catch(e => console.error('자동 노쇼 처리 실패:', e));
+        const lim = meetingTimes.maxLimit || 18;
+        const date = meetingTimes.date;
+        (async () => {
+            try {
+                const snap = await getSessionCol().where('date', '==', date).get();
+                const sorted = snap.docs
+                    .map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || '') || a.name.localeCompare(b.name));
+                const toNoShow = sorted.slice(0, lim).filter(p => !p.checkedIn && p.status !== '노쇼');
+                if (toNoShow.length === 0) return;
+                const batch = db.batch();
+                toNoShow.forEach(p => batch.update(getSessionCol().doc(p.id), { status: '노쇼' }));
+                await batch.commit();
+            } catch(e) { console.error('자동 노쇼 처리 실패:', e); }
+        })();
     }, [isMeetingOver]);
 
     // 날짜 변경 시 자동 노쇼 플래그 초기화
