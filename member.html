@@ -91,6 +91,8 @@ function App() {
     // 로그인 폼
     const [loginForm, setLoginForm] = useState({ name:'', birth:'' });
     const [isLoggingIn, setIsLoggingIn] = useState(false);
+    const [testMode, setTestMode] = useState(() => localStorage.getItem('moida_test_mode') === 'true');
+    const toggleTestMode = () => { const n = !testMode; setTestMode(n); localStorage.setItem('moida_test_mode', n ? 'true' : ''); };
 
     // Firebase 데이터
     const [meetingSettings, setMeetingSettings] = useState(null);
@@ -195,8 +197,10 @@ function App() {
             if (tokenData.token !== urlParams.token) { setQrMessage('QR 코드가 일치하지 않습니다.'); setQrStatus('error'); return; }
 
             const now = new Date();
-            if (now < new Date(tokenData.validFrom)) { setQrMessage(`아직 출석 시간이 아닙니다.\n출석 가능 시간: ${new Date(tokenData.validFrom).toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'})}`); setQrStatus('error'); return; }
-            if (now > new Date(tokenData.validUntil)) { setQrMessage('QR 코드 유효 시간이 지났습니다.'); setQrStatus('error'); return; }
+            if (!testMode) {
+                if (now < new Date(tokenData.validFrom)) { setQrMessage(`아직 출석 시간이 아닙니다.\n출석 가능 시간: ${new Date(tokenData.validFrom).toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'})}`); setQrStatus('error'); return; }
+                if (now > new Date(tokenData.validUntil)) { setQrMessage('QR 코드 유효 시간이 지났습니다.'); setQrStatus('error'); return; }
+            }
 
             const usedBy = tokenData.usedBy || [];
             if (usedBy.includes(memberData.memberId)) { setQrMessage('이미 QR 출석이 완료되었습니다.'); setQrStatus('success'); return; }
@@ -277,6 +281,7 @@ function App() {
     // GPS 출석 체크
     const handleGPSCheckIn = async () => {
         if (!memberData?.memberId) return;
+        if (testMode) { setGpsStatus('within'); setDistance(0); return; }
         setGpsStatus('checking');
         if (!navigator.geolocation) { setGpsStatus('error'); showToast('이 기기는 GPS를 지원하지 않습니다.', 'error'); return; }
 
@@ -323,19 +328,6 @@ function App() {
             const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
             await getCol('weekly_session').doc(mySession.id).update({ checkedIn:true, checkInTime:timeStr, status });
             showToast(`출석 완료! ${status} (${timeStr})`, 'success');
-        } catch(e) { showToast('출석 실패: ' + e.message, 'error'); }
-        finally { setIsCheckingIn(false); }
-    };
-
-    const handleTestAttend = async () => {
-        if (!mySession) return showToast('오늘 선정 명단에 없습니다. 관리자에게 문의하세요.', 'error');
-        if (mySession.checkedIn) return showToast('이미 출석 처리되었습니다.', 'info');
-        setIsCheckingIn(true);
-        try {
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
-            await getCol('weekly_session').doc(mySession.id).update({ checkedIn:true, checkInTime:timeStr, status:'정상' });
-            showToast(`테스트 출석 완료! (${timeStr})`, 'success');
         } catch(e) { showToast('출석 실패: ' + e.message, 'error'); }
         finally { setIsCheckingIn(false); }
     };
@@ -417,6 +409,11 @@ function App() {
 
     return (
         <div className="min-h-screen pb-24 text-white">
+            {testMode && (
+                <div style={{background:'#fbbf24',position:'sticky',top:0,zIndex:50}} className="text-amber-900 text-xs font-black text-center py-2 px-4">
+                    🧪 테스트 모드 — GPS·QR 시간 제한 해제됨. 우측 상단 🧪 버튼으로 끄세요.
+                </div>
+            )}
             {/* 헤더 */}
             <div className="px-5 pt-12 pb-6" style={{background:'linear-gradient(160deg,#1e1b4b,#0f172a)'}}>
                 <div className="flex items-center justify-between mb-4">
@@ -428,6 +425,10 @@ function App() {
                         <div className="flex gap-1.5">
                             <button onClick={()=>window.location.href='index.html'} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-all">🏠</button>
                             <button onClick={handleLogout} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-all">로그아웃</button>
+                            <button onClick={toggleTestMode} title="테스트 모드"
+                                className={`text-[10px] font-black px-2.5 py-1 rounded-lg transition-all ${testMode ? 'bg-amber-400 text-amber-900' : 'bg-white/10 text-slate-500'}`}>
+                                🧪
+                            </button>
                         </div>
                         <img src="icon.png" alt="OTP FC" className="w-10 h-10 object-contain opacity-70" onError={e=>e.target.style.display='none'}/>
                     </div>
@@ -678,12 +679,6 @@ function App() {
                                     </div>
                                 )}
 
-                                <div className="mt-4 pt-3 border-t border-white/10 text-center">
-                                    <button onClick={handleTestAttend} disabled={isCheckingIn}
-                                        className="text-xs text-amber-400 font-black px-4 py-2 rounded-xl bg-amber-400/10">
-                                        🧪 테스트 출석 (GPS 무시)
-                                    </button>
-                                </div>
                             </div>
                         )}
 

@@ -459,6 +459,8 @@ function App() {
     const [currentQRToken, setCurrentQRToken] = useState('');
     const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
     const qrCanvasRef = useRef(null);
+    const [testMode, setTestMode] = useState(() => localStorage.getItem('moida_test_mode') === 'true');
+    const toggleTestMode = () => { const n = !testMode; setTestMode(n); localStorage.setItem('moida_test_mode', n ? 'true' : ''); };
 
     const hourOptions = useMemo(() => Array.from({length:24},(_,i)=>String(i).padStart(2,'0')),[]);
     const minuteOptions = useMemo(() => Array.from({length:12},(_,i)=>String(i*5).padStart(2,'0')),[]);
@@ -886,12 +888,21 @@ function App() {
                             </button>
                             <button onClick={()=>window.location.reload()} className="p-2.5 rounded-xl bg-slate-50 text-slate-400"><Icon.Refresh size={18} /></button>
                             <button onClick={handleLogout} className="p-2.5 rounded-xl bg-red-50 text-red-500"><Icon.LogOut size={18} /></button>
+                            <button onClick={toggleTestMode} title="테스트 모드"
+                                className={`p-2.5 rounded-xl text-sm font-black transition-all ${testMode ? 'bg-amber-400 text-white shadow-lg shadow-amber-400/40' : 'bg-slate-50 text-slate-400'}`}>
+                                🧪
+                            </button>
                             <button onClick={()=>window.location.href='index.html'} className="p-2.5 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"><Icon.Home size={18}/></button>
                         </div>
                     </div>
                 </nav>
             )}
 
+            {testMode && (
+                <div style={{background:'#fbbf24'}} className="text-amber-900 text-xs font-black text-center py-2 px-4 sticky top-16 z-40">
+                    🧪 테스트 모드 활성화 — GPS·QR 시간 제한이 해제됩니다. 우측 상단 🧪 버튼으로 끄세요.
+                </div>
+            )}
             <main className={`p-4 max-w-6xl mx-auto animate-zoom-in ${isAppLocked?'pt-16':''}`}>
 
                 {/* ===== 출석 탭 ===== */}
