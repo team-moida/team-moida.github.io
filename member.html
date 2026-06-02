@@ -264,8 +264,10 @@ function App() {
     }, []);
 
     // 내 출석 세션 읽기
+    // 의존성: meetingSettings?.date만 감시 → 날짜 변경 시 즉시 null 초기화 후 새 리스너 구독
     useEffect(() => {
         if (!memberData?.memberId || !meetingSettings?.date) return;
+        setMySession(null); // 날짜 바뀌면 이전 출석 기록 즉시 초기화
         const unsub = getCol('weekly_session')
             .where('memberId', '==', memberData.memberId)
             .where('date', '==', meetingSettings.date)
@@ -273,7 +275,7 @@ function App() {
                 setMySession(snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() });
             });
         return () => unsub();
-    }, [memberData, meetingSettings]);
+    }, [memberData?.memberId, meetingSettings?.date]);
 
     // members 문서 읽기
     useEffect(() => {
