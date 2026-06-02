@@ -598,10 +598,11 @@ function App() {
             const d = new Date();
             const todayStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
-            // 현재 모임 일정 백업
-            setTestModeBackup({
-                meetingTimes: {...meetingTimes},
-                sessionIds: sessionData.filter(p => p.date === meetingTimes.date).map(p => p.id)
+            // 현재 모임 일정 백업 (React state + Firestore 양쪽 — 새로고침 대비)
+            setTestModeBackup({ meetingTimes: {...meetingTimes} });
+            await getSettingsCol().doc('test_backup').set({
+                originalSettings: {...meetingTimes},
+                createdAt: new Date().toISOString()
             });
 
             // 테스트 모드: 12분 후 시작, 5분 모임
@@ -667,30 +668,44 @@ function App() {
             }, 500);
         } else {
             // 테스트 모드 OFF
-            if (testModeBackup) {
-                showConfirm('테스트 모드 종료', '테스트 데이터를 삭제하고 복원하시겠습니까?', async () => {
-                    try {
-                        const d = new Date();
-                        const todayStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            showConfirm('테스트 모드 종료', '테스트 데이터를 삭제하고 복원하시겠습니까?', async () => {
+                try {
+                    const testDate = meetingTimes.date; // 현재 테스트 중인 날짜
 
-                        const testData = sessionData.filter(p => p.date === todayStr);
-                        const batch = db.batch();
-                        testData.forEach(p => batch.delete(getSessionCol().doc(p.id)));
-                        batch.update(getSettingsCol().doc('meeting_schedule_v2'), {...testModeBackup.meetingTimes, testMode: false});
-                        await batch.commit();
+                    // 원본 설정: React state 우선, 없으면 Firestore 백업에서 복원
+                    let originalSettings = testModeBackup?.meetingTimes || null;
+                    if (!originalSettings) {
+                        const backupDoc = await getSettingsCol().doc('test_backup').get();
+                        if (backupDoc.exists) originalSettings = backupDoc.data().originalSettings;
+                    }
 
-                        setMeetingTimes(testModeBackup.meetingTimes);
-                        setTestModeBackup(null);
-                        setTestMode(false);
+                    // Firestore에서 직접 조회 — stale React state 방지
+                    const sessionSnap = await getSessionCol().where('date', '==', testDate).get();
 
-                        showAlert('테스트 모드 종료', '테스트 데이터가 삭제되고 복원되었습니다.');
-                    } catch(e) { showAlert('오류', '데이터 복원 실패'); }
-                });
-            } else {
-                // 다른 기기(모바일)에서 켠 경우 — Firestore만 업데이트하면 onSnapshot으로 자동 동기화
-                updateMeetingTimeSettings({...meetingTimes, testMode: false});
-                showAlert('테스트 모드 해제', '테스트 모드가 비활성화되었습니다.');
-            }
+                    const batch = db.batch();
+                    // 테스트 세션 전체 삭제
+                    sessionSnap.docs.forEach(d => batch.delete(getSessionCol().doc(d.id)));
+                    // 테스트용 QR 토큰 삭제
+                    batch.delete(getQRCol().doc(testDate));
+                    // 백업 문서 삭제
+                    batch.delete(getSettingsCol().doc('test_backup'));
+                    // 원본 설정 복원 (백업 없으면 다음 일요일로 날짜 진행)
+                    const restoredSettings = originalSettings
+                        ? {...originalSettings, testMode: false}
+                        : {...meetingTimes, testMode: false, date: getNextSundayFromDate(testDate), managerId:'', managerName:''};
+                    batch.set(getSettingsCol().doc('meeting_schedule_v2'), restoredSettings);
+
+                    await batch.commit();
+
+                    setMeetingTimes(restoredSettings);
+                    setTestModeBackup(null);
+                    setTestMode(false);
+                    showAlert('테스트 모드 종료', '테스트 데이터가 모두 삭제되고 복원되었습니다.');
+                } catch(e) {
+                    console.error(e);
+                    showAlert('오류', '데이터 복원 실패: ' + e.message);
+                }
+            });
         }
     };
 
