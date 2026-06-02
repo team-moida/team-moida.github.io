@@ -829,8 +829,8 @@ function App() {
         if (!testMode && now > meetingEnd) {
             return showAlert('출석 불가','모임이 종료되었습니다.\n자동 노쇼 처리되었습니다.');
         }
-        // 정상: 06:50~07:51 / 지각: 07:51~10:00
-        const normalThreshold = new Date(meetingStart.getTime() - 9*60*1000);
+        // 정상: start-70분~start-10분 / 지각: start-10분:01~종료
+        const normalThreshold = new Date(meetingStart.getTime() - 10*60*1000);
         const finalStatus = now <= normalThreshold ? '정상' : '지각';
         const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
         try {
