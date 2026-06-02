@@ -466,10 +466,15 @@ function App() {
     const toggleTestMode = async () => {
         const newVal = !testMode;
         try {
+            // 테스트 모드 OFF: 내 세션 먼저 삭제 (날짜가 그대로여도 출석 상태 초기화)
+            if (!newVal && mySession?.id) {
+                await getCol('weekly_session').doc(mySession.id).delete();
+                setMySession(null);
+            }
             await getCol('settings').doc('meeting_schedule_v2').update({ testMode: newVal });
             // setTestMode는 onSnapshot이 호출함
         } catch(e) {
-            setTestMode(newVal); // Firestore 실패 시 로컬 fallback
+            setTestMode(newVal);
         }
     };
 

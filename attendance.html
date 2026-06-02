@@ -734,6 +734,8 @@ function App() {
 
                     await batch.commit();
 
+                    // 로컬 sessionData에서 테스트 세션 즉시 제거 (onSnapshot 지연 방지)
+                    setSessionData(prev => prev.filter(p => p.date !== testDate));
                     setMeetingTimes(restoredSettings);
                     setTestModeBackup(null);
                     setTestMode(false);
