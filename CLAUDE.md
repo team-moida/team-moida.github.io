@@ -107,6 +107,20 @@
 - 오늘 날짜: `new Date()`로 로컬 기준 YYYY-MM-DD 계산 (UTC `toISOString()` 사용 금지 — 시차 오류)
 - `isPastMeeting`: `displayedMeetingDate < today` (문자열 비교, 둘 다 YYYY-MM-DD 형식)
 
+### 출석 판정 기준 (모임 08:00 시작 기준 예시)
+| 상태 | 체크인 시간 | 계산식 |
+|------|------------|--------|
+| 정상 | 06:50:00 ~ 07:51:00 | `allowFrom(시작-70분)` ~ `normalThreshold(시작-9분)` |
+| 지각 | 07:51:01 ~ 10:00:00 | `normalThreshold` 초과 ~ `meetingEnd` |
+| 노쇼 | 미체크인 | 모임 종료 시 자동 처리 |
+| 노쇼(1만원) | 전날 22:00 이후 통보 | 운영진 수동 설정 |
+| 노쇼(2만원) | 당일 00:00~모임 직전 통보 | 운영진 수동 설정 |
+
+- `allowFrom = meetingStart - 70분` (체크인 창 열림)
+- `normalThreshold = meetingStart - 9분` (정상/지각 경계)
+- `meetingEnd` 이후 수동 체크인 불가 (자동 노쇼 처리 완료)
+- 테스트 모드: 시작 12분 후, 종료 시작+5분 → 지금부터 3분 이내=정상, 3분 초과=지각
+
 ### 로그인 (member.html)
 - 이름 + YYMMDD 6자리 생년월일로 로그인
 - Firestore `members`에서 name 쿼리 → `birth.substring(2)` 비교

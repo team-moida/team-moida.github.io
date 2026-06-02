@@ -603,9 +603,10 @@ function App() {
                 sessionIds: sessionData.filter(p => p.date === meetingTimes.date).map(p => p.id)
             });
 
-            // 테스트 모드: 5분 후 시작, 3분 모임 → 6분 내 출석하면 "정상"
-            const startTime = new Date(d.getTime() + 5*60*1000); // now + 5분
-            const endTime = new Date(startTime.getTime() + 3*60*1000); // start + 3분
+            // 테스트 모드: 12분 후 시작, 5분 모임
+            // → 지금부터 3분(=12-9)이내 체크인 → "정상", 3분 이후 → "지각"
+            const startTime = new Date(d.getTime() + 12*60*1000); // now + 12분
+            const endTime = new Date(startTime.getTime() + 5*60*1000); // start + 5분
 
             const h = String(startTime.getHours()).padStart(2,'0');
             const m = String(startTime.getMinutes()).padStart(2,'0');
@@ -657,7 +658,7 @@ function App() {
                             isGuest:false, team:'', createdAt:new Date().toISOString()
                         })));
                     }
-                    showAlert('테스트 모드 활성화', `${toAdd.length}명 자동 선정됨\n\n모임 시작: ${h}:${m} (지금부터 5분 후)\n모임 종료: ${endH}:${endM}\n\n6분 내 출석 → 정상\n6분 이후 또는 [지각 전환] → 지각\n[노쇼 전환] → 미출석자 노쇼 처리${gpsMsg}`);
+                    showAlert('테스트 모드 활성화', `${toAdd.length}명 자동 선정됨\n\n모임 시작: ${h}:${m} (지금부터 12분 후)\n모임 종료: ${endH}:${endM}\n\n지금부터 3분 이내 체크인 → 정상 ✓\n3분 이후 또는 [지각 전환] → 지각 ⚠️\n[노쇼 전환] → 미출석자 노쇼 처리 ✗${gpsMsg}`);
                 } catch(e) {
                     console.error('테스트 인원 선정 실패:', e);
                     showAlert('알림', '인원 자동 선정 실패');
@@ -716,15 +717,21 @@ function App() {
         const now = new Date();
         const [sy,sm,sd] = participant.date.split('-');
         const [shr,smin] = meetingTimes.start.split(':');
-        const meetingStart = new Date(sy,sm-1,sd,shr,smin,0);
-        const allowFrom = new Date(meetingStart.getTime() - 60*60*1000);
-        if (now < allowFrom) {
+        const [ehr,emin] = meetingTimes.end.split(':');
+        const meetingStart = new Date(sy,sm-1,sd,parseInt(shr),parseInt(smin),0);
+        const meetingEnd   = new Date(sy,sm-1,sd,parseInt(ehr),parseInt(emin),0);
+        // 체크인 허용: 시작 70분 전(06:50) ~ 종료(10:00)
+        const allowFrom = new Date(meetingStart.getTime() - 70*60*1000);
+        if (!testMode && now < allowFrom) {
             const allowFromStr = allowFrom.toLocaleTimeString('ko-KR',{hour12:false,hour:'2-digit',minute:'2-digit'});
             return showAlert('출석 불가',`출석 가능 시간: ${participant.date} ${allowFromStr}~${meetingTimes.end}`);
         }
-        // 수동 체크인: 정상(시작~시작+1분) / 지각(그 외)
-        // 노쇼는 자동 처리(useEffect)에서만 부여 — 수동 체크인은 항상 출석 인정
-        const normalThreshold = new Date(meetingStart.getTime() + 60000); // 시작 + 1분
+        if (!testMode && now > meetingEnd) {
+            return showAlert('출석 불가','모임이 종료되었습니다.\n자동 노쇼 처리되었습니다.');
+        }
+        // 정상: allowFrom ~ 시작 9분 전(07:51:00)
+        // 지각: 시작 9분 전 초과 ~ 종료
+        const normalThreshold = new Date(meetingStart.getTime() - 9*60*1000);
         const finalStatus = now <= normalThreshold ? '정상' : '지각';
         const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
         try {
@@ -1050,7 +1057,7 @@ function App() {
                             <div className="flex gap-2 justify-center mb-4 animate-zoom-in">
                                 <button onClick={async ()=>{
                                     const d = new Date();
-                                    // 시작을 now - 2분으로 → now > start+1분 이므로 지각 조건
+                                    // 시작을 now - 2분으로 → normalThreshold(start-9분) = now-11분 이므로 지각 조건
                                     const startTime = new Date(d.getTime() - 2*60*1000);
                                     const endTime = new Date(startTime.getTime() + 3*60*1000);
                                     const h = String(startTime.getHours()).padStart(2,'0');
