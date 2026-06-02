@@ -461,7 +461,7 @@ function App() {
     const [historySortKey, setHistorySortKey] = useState('time');
     const [historySortOrder, setHistorySortOrder] = useState('asc');
     const [meetingTimes, setMeetingTimes] = useState({
-        date: getThisSunday(), start:'07:50', end:'10:00', location:'', locationLat:null, locationLng:null, locationRadius:100, managerId:'', managerName:'', maxLimit:18, enableQR:false
+        date: getThisSunday(), start:'08:00', end:'10:00', location:'', locationLat:null, locationLng:null, locationRadius:100, managerId:'', managerName:'', maxLimit:18, enableQR:false
     });
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isAppLocked, setIsAppLocked] = useState(false);
@@ -561,7 +561,7 @@ function App() {
             const [startH,startM] = meetingTimes.start.split(':');
             const [endH,endM] = meetingTimes.end.split(':');
             const meetingStartTs = new Date(sy,sm-1,sd, parseInt(startH), parseInt(startM), 0);
-            const validFrom = new Date(meetingStartTs.getTime() - 60*60*1000).toISOString(); // 시작 60분 전
+            const validFrom = new Date(meetingStartTs.getTime() - 10*60*1000).toISOString(); // 시작 10분 전
             const validUntil = new Date(sy,sm-1,sd, parseInt(endH), parseInt(endM), 0).toISOString();
             await getQRCol().doc(date).set({ token, date, validFrom, validUntil, createdAt:new Date().toISOString(), usedBy:[] });
             setCurrentQRToken(token);
@@ -820,8 +820,8 @@ function App() {
         const [ehr,emin] = (meetingTimes.end||'10:00').split(':');
         const meetingStart = new Date(sy,sm-1,sd,parseInt(shr),parseInt(smin),0);
         const meetingEnd   = new Date(sy,sm-1,sd,parseInt(ehr),parseInt(emin),0);
-        // 체크인 허용: 시작 60분 전(06:50) ~ 종료(10:00)
-        const allowFrom = new Date(meetingStart.getTime() - 60*60*1000);
+        // 체크인 허용: 시작 10분 전(07:50) ~ 종료(10:00)
+        const allowFrom = new Date(meetingStart.getTime() - 10*60*1000);
         if (!testMode && now < allowFrom) {
             const allowFromStr = allowFrom.toLocaleTimeString('ko-KR',{hour12:false,hour:'2-digit',minute:'2-digit'});
             return showAlert('출석 불가',`출석 가능 시간: ${participant.date} ${allowFromStr}~${meetingTimes.end}`);
@@ -829,9 +829,8 @@ function App() {
         if (!testMode && now > meetingEnd) {
             return showAlert('출석 불가','모임이 종료되었습니다.\n자동 노쇼 처리되었습니다.');
         }
-        // 정상: allowFrom ~ 시작 9분 전(07:51:00)
-        // 지각: 시작 9분 전 초과 ~ 종료
-        const normalThreshold = new Date(meetingStart.getTime() - 9*60*1000);
+        // 정상: 시작 전(07:50~08:00) / 지각: 시작 이후(08:00~종료)
+        const normalThreshold = meetingStart;
         const finalStatus = now <= normalThreshold ? '정상' : '지각';
         const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
         try {
