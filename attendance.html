@@ -461,7 +461,7 @@ function App() {
     const [historySortKey, setHistorySortKey] = useState('time');
     const [historySortOrder, setHistorySortOrder] = useState('asc');
     const [meetingTimes, setMeetingTimes] = useState({
-        date: getThisSunday(), start:'08:00', end:'10:00', location:'', locationLat:null, locationLng:null, locationRadius:100, managerId:'', managerName:'', maxLimit:18, enableQR:false
+        date: getThisSunday(), start:'07:50', end:'10:00', location:'', locationLat:null, locationLng:null, locationRadius:100, managerId:'', managerName:'', maxLimit:18, enableQR:false
     });
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isAppLocked, setIsAppLocked] = useState(false);
@@ -487,6 +487,7 @@ function App() {
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(!localStorage.getItem('moida_manager'));
     const [loginForm, setLoginForm] = useState({ name:'' });
     const [setupTabMonthlyMembers, setSetupTabMonthlyMembers] = useState([]);
+    const [setupTabRestMembers, setSetupTabRestMembers] = useState([]);
     const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
     const [testMode, setTestMode] = useState(false);
     const [testModeBackup, setTestModeBackup] = useState(null);
@@ -599,6 +600,25 @@ function App() {
         showAlert('테스트 선정 완료', `오늘(${todayStr}) 기준 ${toAdd.length}명 선정됨`);
     };
 
+    const { normalMembers, guestEligibleMembers } = useMemo(() => {
+        const monthStr = meetingTimes.date ? meetingTimes.date.substring(0, 7) : '';
+        const normal = [];
+        const guestEligible = [];
+        activeMembers.filter(m => !m.isResigned).sort((a,b)=>a.name.localeCompare(b.name)).forEach(member => {
+            if (STAFF_ROLES.includes(member.role)) { normal.push(member); return; }
+            if (member.isSpecialRest) { guestEligible.push(member); return; }
+            const isResting = setupTabRestMembers.includes(member.id);
+            if (isResting) {
+                const info = getMembershipStatus(member, monthStr);
+                if (info?.active) guestEligible.push(member);
+                return;
+            }
+            if (!setupTabMonthlyMembers.includes(member.id)) return;
+            normal.push(member);
+        });
+        return { normalMembers: normal, guestEligibleMembers: guestEligible };
+    }, [activeMembers, setupTabRestMembers, setupTabMonthlyMembers, meetingTimes.date]);
+
     const toggleParticipant = async (member) => {
         const existing = sessionData.find(p => p.memberId === member.id && p.date === meetingTimes.date);
         if (existing) { await getSessionCol().doc(existing.id).delete(); }
@@ -607,6 +627,18 @@ function App() {
                 memberId:member.id, name:member.name, gender:member.gender, level:member.level,
                 date:meetingTimes.date, checkedIn:false, checkInTime:null, status:'미출석',
                 isGuest:false, team:'', createdAt:new Date().toISOString()
+            });
+        }
+    };
+
+    const toggleParticipantAsGuest = async (member) => {
+        const existing = sessionData.find(p => p.memberId === member.id && p.date === meetingTimes.date);
+        if (existing) { await getSessionCol().doc(existing.id).delete(); }
+        else {
+            await getSessionCol().add({
+                memberId:member.id, name:member.name, gender:member.gender, level:member.level,
+                date:meetingTimes.date, checkedIn:false, checkInTime:null, status:'미출석',
+                isGuest:true, team:'', createdAt:new Date().toISOString()
             });
         }
     };
@@ -988,9 +1020,15 @@ function App() {
         const docKey = `${y}-${m}`;
         const unsub = getMonthlyCol().doc(docKey).onSnapshot(doc => {
             let validMembers = [];
+            const restMembers = [];
             if (doc.exists) {
                 const data = doc.data();
-                if (data.statuses) validMembers = Object.keys(data.statuses).filter(id=>data.statuses[id]==='paid');
+                if (data.statuses) {
+                    validMembers = Object.keys(data.statuses).filter(id=>data.statuses[id]==='paid');
+                    Object.entries(data.statuses).forEach(([id, status]) => {
+                        if (status === 'rest') restMembers.push(id);
+                    });
+                }
                 else if (data.memberIds) validMembers = data.memberIds;
             }
             activeMembers.forEach(member => {
@@ -999,6 +1037,7 @@ function App() {
                 else if (info?.active) { if(!validMembers.includes(member.id)) validMembers.push(member.id); }
             });
             setSetupTabMonthlyMembers(validMembers);
+            setSetupTabRestMembers(restMembers);
         });
         return () => unsub();
     }, [meetingTimes.date, members]);
@@ -1522,24 +1561,47 @@ function App() {
                         </div>
 
                         <div className="space-y-1.5">
-                            {activeMembers.filter(m=>!m.isResigned).sort((a,b)=>a.name.localeCompare(b.name)).map(member => {
+                            {normalMembers.map(member => {
                                 const isSelected = sessionData.some(p=>p.memberId===member.id&&p.date===meetingTimes.date);
-                                const isEligible = setupTabMonthlyMembers.includes(member.id);
                                 return (
                                     <button key={member.id} onClick={()=>toggleParticipant(member)}
-                                        className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-teal-50 border-teal-300':'bg-white border-slate-100 hover:border-slate-200'} ${!isEligible&&!STAFF_ROLES.includes(member.role)?'opacity-50':''}`}>
+                                        className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-teal-50 border-teal-300':'bg-white border-slate-100 hover:border-slate-200'}`}>
                                         <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSelected?'bg-teal-500 border-teal-500':'border-slate-300'}`}>
                                             {isSelected&&<Icon.Check size={10} className="text-white" />}
                                         </div>
                                         <span className="font-black text-sm text-slate-800 flex-1">{member.name}</span>
                                         {member.gender==='여성'&&<span className="text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
                                         {STAFF_ROLES.includes(member.role)&&<span className={`text-[9px] px-1.5 py-0.5 rounded-lg font-black ${getRoleBadgeClass(member.role)}`}>{member.role}</span>}
-                                        {!isEligible&&!STAFF_ROLES.includes(member.role)&&<span className="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-lg font-black">미납</span>}
                                         <span className="text-[9px] font-black text-slate-400">Lv.{member.level}</span>
                                     </button>
                                 );
                             })}
                         </div>
+
+                        {guestEligibleMembers.length > 0 && (
+                            <div className="mt-4">
+                                <p className="text-xs font-black text-orange-500 uppercase tracking-widest mb-2 px-1">게스트 참여 가능</p>
+                                <div className="space-y-1.5">
+                                    {guestEligibleMembers.map(member => {
+                                        const isSelected = sessionData.some(p=>p.memberId===member.id&&p.date===meetingTimes.date);
+                                        const msType = getMembershipStatus(member, meetingTimes.date?.substring(0,7)||'')?.type;
+                                        const badge = member.isSpecialRest ? '특별휴식' : (msType==='반년'?'반년납 휴식':'1년납 휴식');
+                                        return (
+                                            <button key={member.id} onClick={()=>toggleParticipantAsGuest(member)}
+                                                className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-orange-50 border-orange-300':'bg-white border-slate-100 hover:border-slate-200'}`}>
+                                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSelected?'bg-orange-400 border-orange-400':'border-slate-300'}`}>
+                                                    {isSelected&&<Icon.Check size={10} className="text-white" />}
+                                                </div>
+                                                <span className="font-black text-sm text-slate-800 flex-1">{member.name}</span>
+                                                {member.gender==='여성'&&<span className="text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
+                                                <span className="text-[9px] px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-lg font-black">{badge}</span>
+                                                <span className="text-[9px] font-black text-slate-400">Lv.{member.level}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
