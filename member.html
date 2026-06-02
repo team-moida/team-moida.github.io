@@ -16,6 +16,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -36,6 +37,8 @@
         .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
         select { appearance: none; }
         .tab-bar { background: rgba(15,23,42,0.95); border-top: 1px solid rgba(255,255,255,0.08); }
+        .qr-scan-line { animation: scanLine 2s ease-in-out infinite; }
+        @keyframes scanLine { 0%{top:8px} 50%{top:calc(100% - 10px)} 100%{top:8px} }
     </style>
 </head>
 <body class="min-h-screen">
@@ -77,6 +80,105 @@ const getTeamBadge = (idx) => ['bg-pink-500','bg-sky-400','bg-lime-400','bg-yell
 const getTeamName = (idx) => String.fromCharCode(65+idx);
 const getTeamColorName = (idx) => ['핑크','하늘','연두','노랑','파랑','빨강'][idx] || '';
 
+// ─── 인앱 QR 스캐너 모달 ──────────────────────────────────────────────────────
+const QRScannerModal = ({ isOpen, onScan, onClose }) => {
+    const videoRef = useRef(null);
+    const canvasRef = useRef(null);
+    const streamRef = useRef(null);
+    const rafRef = useRef(null);
+    const [camError, setCamError] = useState('');
+
+    useEffect(() => {
+        if (!isOpen) return;
+        setCamError('');
+        let active = true;
+
+        navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        }).then(stream => {
+            if (!active) { stream.getTracks().forEach(t => t.stop()); return; }
+            streamRef.current = stream;
+            const video = videoRef.current;
+            if (!video) return;
+            video.srcObject = stream;
+            video.play().then(() => {
+                const scan = () => {
+                    if (!active || !videoRef.current || !canvasRef.current) return;
+                    const v = videoRef.current;
+                    if (v.readyState === v.HAVE_ENOUGH_DATA) {
+                        const c = canvasRef.current;
+                        c.width = v.videoWidth; c.height = v.videoHeight;
+                        const ctx = c.getContext('2d');
+                        ctx.drawImage(v, 0, 0);
+                        const img = ctx.getImageData(0, 0, c.width, c.height);
+                        try {
+                            const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+                            if (code?.data) { onScan(code.data); return; }
+                        } catch(_) {}
+                    }
+                    rafRef.current = requestAnimationFrame(scan);
+                };
+                rafRef.current = requestAnimationFrame(scan);
+            }).catch(() => setCamError('카메라를 시작할 수 없습니다.'));
+        }).catch(err => {
+            if (!active) return;
+            setCamError(err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError'
+                ? '카메라 권한을 허용해주세요.\n설정 › 브라우저 › 카메라'
+                : '카메라를 사용할 수 없습니다.');
+        });
+
+        return () => {
+            active = false;
+            if (rafRef.current) cancelAnimationFrame(rafRef.current);
+            if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
+        };
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    return (
+        <div style={{ position:'fixed', inset:0, zIndex:9999, background:'#000', display:'flex', flexDirection:'column' }}>
+            {camError ? (
+                <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, textAlign:'center' }}>
+                    <p style={{ fontSize:52, marginBottom:16 }}>📷</p>
+                    <p style={{ color:'#f87171', fontWeight:900, fontSize:15, marginBottom:8, whiteSpace:'pre-line' }}>{camError}</p>
+                    <button onClick={onClose} style={{ marginTop:24, padding:'12px 32px', background:'#334155', color:'white', border:'none', borderRadius:20, fontWeight:900, fontSize:14 }}>닫기</button>
+                </div>
+            ) : (
+                <>
+                    <video ref={videoRef} autoPlay playsInline muted
+                        style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} />
+                    <canvas ref={canvasRef} style={{ display:'none' }} />
+
+                    {/* 반투명 오버레이 */}
+                    <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+                        {/* 스캔 가이드 박스 */}
+                        <div style={{ position:'relative', width:240, height:240 }}>
+                            {/* 네 모서리 */}
+                            {[{top:0,left:0,borderTop:'3px solid #ec4899',borderLeft:'3px solid #ec4899',borderRadius:'6px 0 0 0'},
+                              {top:0,right:0,borderTop:'3px solid #ec4899',borderRight:'3px solid #ec4899',borderRadius:'0 6px 0 0'},
+                              {bottom:0,left:0,borderBottom:'3px solid #ec4899',borderLeft:'3px solid #ec4899',borderRadius:'0 0 0 6px'},
+                              {bottom:0,right:0,borderBottom:'3px solid #ec4899',borderRight:'3px solid #ec4899',borderRadius:'0 0 6px 0'}
+                            ].map((s,i) => <div key={i} style={{ position:'absolute', width:30, height:30, ...s }} />)}
+                            {/* 스캔 라인 */}
+                            <div className="qr-scan-line" style={{ position:'absolute', left:6, right:6, height:2, background:'linear-gradient(90deg,transparent,#ec4899,transparent)', borderRadius:1 }} />
+                        </div>
+                        <p style={{ color:'white', fontWeight:900, fontSize:14, marginTop:20, textShadow:'0 1px 4px rgba(0,0,0,0.9)' }}>
+                            QR코드를 네모 안에 맞춰주세요
+                        </p>
+                    </div>
+
+                    {/* 닫기 버튼 */}
+                    <button onClick={onClose} style={{ position:'absolute', top:20, left:16, zIndex:10, background:'rgba(0,0,0,0.5)', border:'1px solid rgba(255,255,255,0.2)', color:'white', padding:'8px 18px', borderRadius:20, fontWeight:900, fontSize:13, backdropFilter:'blur(8px)' }}>
+                        ← 닫기
+                    </button>
+                </>
+            )}
+        </div>
+    );
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
 function App() {
     // 앱 상태
     const [appView, setAppView] = useState('loading'); // loading | login | app
@@ -107,6 +209,8 @@ function App() {
     // QR 상태
     const [qrStatus, setQrStatus] = useState('idle'); // idle | processing | success | error
     const [qrMessage, setQrMessage] = useState('');
+    const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+    const [lastScannedQR, setLastScannedQR] = useState({ token:null, date:null });
 
     // 알림
     const [toast, setToast] = useState({ show:false, msg:'', type:'info' });
@@ -186,66 +290,82 @@ function App() {
         else setAppView('login');
     }, []);
 
-    // QR 토큰 처리 (URL에 token 있는 경우)
-    const handleQRAttendance = useCallback(async () => {
-        if (!urlParams.token || !urlParams.date) return;
-        if (!memberData?.memberId) { setQrMessage('회원 등록 후 이용 가능합니다.'); setQrStatus('error'); return; }
+    // QR 토큰 공통 처리 (URL 방식 + 인앱 스캔 공유)
+    const processQRToken = useCallback(async (token, date) => {
+        if (!token || !date) return;
+        if (!memberData?.memberId) { setQrMessage('로그인 후 이용 가능합니다.'); setQrStatus('error'); return; }
         setQrStatus('processing');
         setTab('attend');
         try {
-            const tokenDoc = await getCol('qr_tokens').doc(urlParams.date).get();
+            const tokenDoc = await getCol('qr_tokens').doc(date).get();
             if (!tokenDoc.exists) { setQrMessage('유효하지 않은 QR코드입니다.'); setQrStatus('error'); return; }
             const tokenData = tokenDoc.data();
-
-            if (tokenData.token !== urlParams.token) { setQrMessage('QR 코드가 일치하지 않습니다.'); setQrStatus('error'); return; }
+            if (tokenData.token !== token) { setQrMessage('QR 코드가 일치하지 않습니다.'); setQrStatus('error'); return; }
 
             const now = new Date();
             if (!testMode) {
-                if (now < new Date(tokenData.validFrom)) { setQrMessage(`아직 출석 시간이 아닙니다.\n출석 가능 시간: ${new Date(tokenData.validFrom).toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'})}`); setQrStatus('error'); return; }
+                if (now < new Date(tokenData.validFrom)) { setQrMessage(`아직 출석 시간이 아닙니다.\n출석 가능: ${new Date(tokenData.validFrom).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`); setQrStatus('error'); return; }
                 if (now > new Date(tokenData.validUntil)) { setQrMessage('QR 코드 유효 시간이 지났습니다.'); setQrStatus('error'); return; }
             }
 
             const usedBy = tokenData.usedBy || [];
             if (usedBy.includes(memberData.memberId)) { setQrMessage('이미 QR 출석이 완료되었습니다.'); setQrStatus('success'); return; }
 
-            // 세션 출석 처리
             const sessionSnap = await getCol('weekly_session')
                 .where('memberId', '==', memberData.memberId)
-                .where('date', '==', urlParams.date)
+                .where('date', '==', date)
                 .get();
             if (sessionSnap.empty) { setQrMessage('오늘 선정 명단에 없습니다.\n관리자에게 문의하세요.'); setQrStatus('error'); return; }
 
             const sessionDoc = sessionSnap.docs[0];
             if (sessionDoc.data().checkedIn) { setQrMessage('이미 출석 처리되었습니다.'); setQrStatus('success'); return; }
 
-            const [sy,sm,sd] = urlParams.date.split('-');
+            const [sy,sm,sd] = date.split('-');
             // state 로딩 타이밍 이슈 방지: Firestore에서 직접 조회
             const settingsDoc = await getCol('settings').doc('meeting_schedule_v2').get();
             const startStr = settingsDoc.exists ? (settingsDoc.data().start || '08:00') : '08:00';
             const [shr,smin] = startStr.split(':');
             const meetingStart = new Date(sy,sm-1,sd,parseInt(shr),parseInt(smin),0);
-            // 정상: allowFrom(시작-70분) ~ 시작-9분(07:51)
-            // 지각: 시작-9분 초과 ~ 종료
+            // 정상: allowFrom(시작-70분) ~ 시작-9분  /  지각: 이후 ~ 종료
             const normalThreshold = new Date(meetingStart.getTime() - 9*60*1000);
             const status = now <= normalThreshold ? '정상' : '지각';
             const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
 
             const batch = db.batch();
             batch.update(getCol('weekly_session').doc(sessionDoc.id), { checkedIn:true, checkInTime:timeStr, status });
-            batch.update(getCol('qr_tokens').doc(urlParams.date), { usedBy: firebase.firestore.FieldValue.arrayUnion(memberData.memberId) });
+            batch.update(getCol('qr_tokens').doc(date), { usedBy: firebase.firestore.FieldValue.arrayUnion(memberData.memberId) });
             await batch.commit();
 
             setQrMessage(`출석 완료! (${status})\n${timeStr}`);
             setQrStatus('success');
-
-            // URL 파라미터 제거
-            window.history.replaceState({}, '', window.location.pathname);
         } catch(e) {
             console.error(e);
             setQrMessage('오류가 발생했습니다: ' + e.message);
             setQrStatus('error');
         }
-    }, [urlParams, memberData, testMode]);
+    }, [memberData, testMode]);
+
+    // URL 파라미터로 진입한 경우 (외부 카메라 앱 스캔)
+    const handleQRAttendance = useCallback(async () => {
+        if (!urlParams.token || !urlParams.date) return;
+        await processQRToken(urlParams.token, urlParams.date);
+        window.history.replaceState({}, '', window.location.pathname);
+    }, [urlParams, processQRToken]);
+
+    // 인앱 카메라로 스캔한 경우
+    const handleInAppQRScan = useCallback((scannedUrl) => {
+        setIsQRScannerOpen(false);
+        try {
+            const url = new URL(scannedUrl);
+            const token = url.searchParams.get('token');
+            const date = url.searchParams.get('date');
+            if (!token || !date) { setQrMessage('올바른 모이다 QR코드가 아닙니다.'); setQrStatus('error'); setTab('attend'); return; }
+            setLastScannedQR({ token, date });
+            processQRToken(token, date);
+        } catch(_) {
+            setQrMessage('QR코드를 읽을 수 없습니다.'); setQrStatus('error'); setTab('attend');
+        }
+    }, [processQRToken]);
 
     useEffect(() => {
         if (urlParams.token && appView === 'app') handleQRAttendance();
@@ -627,12 +747,14 @@ function App() {
                                     <>
                                         <p className="text-3xl mb-2">⚠️</p>
                                         <p className="font-black text-red-400 whitespace-pre-line">{qrMessage}</p>
-                                        {urlParams.token && (
+                                        <button onClick={()=>{setQrStatus('idle');setIsQRScannerOpen(true);}} className="mt-3 text-xs text-violet-400 font-black px-5 py-2.5 rounded-xl bg-violet-400/15 block mx-auto">
+                                            📷 다시 스캔하기
+                                        </button>
+                                        {(urlParams.token || lastScannedQR.token) && (
                                             <button onClick={() => {
                                                 setTestMode(true);
-                                                setQrStatus('processing');
-                                                handleQRAttendance();
-                                            }} className="mt-4 text-xs text-amber-400 font-black px-5 py-2.5 rounded-xl bg-amber-400/15 block mx-auto">
+                                                processQRToken(urlParams.token || lastScannedQR.token, urlParams.date || lastScannedQR.date);
+                                            }} className="mt-2 text-xs text-amber-400 font-black px-5 py-2.5 rounded-xl bg-amber-400/15 block mx-auto">
                                                 🧪 테스트 모드로 재시도
                                             </button>
                                         )}
@@ -707,17 +829,16 @@ function App() {
                             </div>
                         )}
 
-                        {/* QR 출석 안내 */}
+                        {/* QR 출석 버튼 */}
                         {!mySession?.checkedIn && (
                             <div className="card rounded-3xl p-5">
                                 <p className="text-xs font-black text-violet-400 uppercase tracking-widest mb-3">QR 출석</p>
-                                <div className="flex items-start gap-4">
-                                    <div className="w-12 h-12 bg-violet-500/20 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">📷</div>
-                                    <div>
-                                        <p className="font-black text-slate-200 text-sm mb-1">관리자 QR 스캔</p>
-                                        <p className="text-slate-500 text-xs leading-relaxed">관리자가 보여주는 QR코드를<br/>기본 카메라 앱으로 스캔하면<br/>자동으로 출석됩니다.</p>
-                                    </div>
-                                </div>
+                                <button onClick={()=>setIsQRScannerOpen(true)}
+                                    className="w-full py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 text-white"
+                                    style={{ background:'linear-gradient(135deg,#7c3aed,#a855f7)' }}>
+                                    <span style={{fontSize:20}}>📷</span> QR 스캔하기
+                                </button>
+                                <p className="text-slate-600 text-xs text-center mt-2">관리자가 보여주는 QR코드를 스캔하세요</p>
                             </div>
                         )}
                     </div>
@@ -748,6 +869,13 @@ function App() {
                     {toast.msg}
                 </div>
             )}
+
+            {/* 인앱 QR 스캐너 */}
+            <QRScannerModal
+                isOpen={isQRScannerOpen}
+                onScan={handleInAppQRScan}
+                onClose={()=>setIsQRScannerOpen(false)}
+            />
         </div>
     );
 }
