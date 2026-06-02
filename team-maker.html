@@ -29,14 +29,14 @@
         #loading-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.5s}
         .no-scrollbar::-webkit-scrollbar{display:none}.no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
         .dragging{opacity:0.3;border:2px dashed #3b82f6!important;background:#eff6ff!important;transform:scale(0.96)}
-        .drop-target{border-color:#ec4899!important;background:#fdf2f8!important;transform:scale(1.01)}
+        .drop-target{border-color:#14b8a6!important;background:#f0fdfa!important;transform:scale(1.01)}
         select,input{outline:none}
         select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.75rem center;background-size:1rem}
     </style>
 </head>
 <body>
 <div id="loading-screen">
-    <div class="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+    <div class="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
     <p class="mt-4 font-bold text-slate-500 italic">모이다 연결 중...</p>
 </div>
 <div id="root"></div>
@@ -465,7 +465,7 @@ function App() {
                 <div className="max-w-5xl mx-auto w-full flex justify-between items-center">
                     <div className="flex items-center gap-1">
                         {[['generator','편성'],['results','결과'],['storage','기록']].map(([v,l])=>(
-                            <button key={v} onClick={()=>setActiveTab(v)} className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${activeTab===v?'bg-pink-500 text-white shadow-lg':'text-slate-400 hover:text-slate-600'}`}>{l}</button>
+                            <button key={v} onClick={()=>setActiveTab(v)} className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${activeTab===v?'bg-teal-500 text-white shadow-lg':'text-slate-400 hover:text-slate-600'}`}>{l}</button>
                         ))}
                     </div>
                     <div className="flex gap-2">
@@ -485,7 +485,7 @@ function App() {
                         <div className="bg-white border border-slate-100 rounded-3xl p-5 mb-4 shadow-sm">
                             <div className="flex items-center justify-between mb-3">
                                 <div>
-                                    <p className="text-xs font-black text-pink-500 uppercase tracking-widest">모임 날짜</p>
+                                    <p className="text-xs font-black text-teal-500 uppercase tracking-widest">모임 날짜</p>
                                     <p className="text-xl font-black text-slate-800 mt-0.5">{meetingDate||'날짜 미설정'}</p>
                                 </div>
                                 <div className="text-right">
@@ -507,7 +507,7 @@ function App() {
                             <div className="grid grid-cols-3 gap-3 mb-4">
                                 {[2,3,4,5,6].slice(0,5).map(n=>(
                                     <button key={n} onClick={()=>setTeamingSettings(p=>({...p,teamCount:n}))}
-                                        className={`py-3 rounded-2xl font-black text-sm transition-all ${teamingSettings.teamCount===n?'bg-pink-500 text-white shadow':'bg-slate-50 border border-slate-200 text-slate-600'}`}>
+                                        className={`py-3 rounded-2xl font-black text-sm transition-all ${teamingSettings.teamCount===n?'bg-teal-500 text-white shadow':'bg-slate-50 border border-slate-200 text-slate-600'}`}>
                                         {n}팀
                                     </button>
                                 ))}
@@ -518,8 +518,8 @@ function App() {
                                     {key:'avoidOverlap',label:'지난 주 팀메이트 중복 회피'},
                                 ].map(opt=>(
                                     <button key={opt.key} onClick={()=>setTeamingSettings(p=>({...p,[opt.key]:!p[opt.key]}))}
-                                        className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all ${teamingSettings[opt.key]?'bg-pink-50 border-pink-200':'bg-white border-slate-200'}`}>
-                                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${teamingSettings[opt.key]?'bg-pink-500 border-pink-500':'border-slate-300'}`}>
+                                        className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all ${teamingSettings[opt.key]?'bg-teal-50 border-teal-200':'bg-white border-slate-200'}`}>
+                                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${teamingSettings[opt.key]?'bg-teal-500 border-teal-500':'border-slate-300'}`}>
                                             {teamingSettings[opt.key]&&<Icon.Check size={10} className="text-white"/>}
                                         </div>
                                         <span className="text-sm font-black text-slate-700">{opt.label}</span>
@@ -539,7 +539,7 @@ function App() {
                                         const isExcluded=excludedIds.includes(p.memberId||p.id);
                                         return (
                                             <button key={p.id} onClick={()=>setExcludedIds(prev=>prev.includes(p.memberId||p.id)?prev.filter(id=>id!==p.memberId&&id!==p.id):[...prev,p.memberId||p.id])}
-                                                className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 border transition-all ${isExcluded?'bg-slate-100 border-slate-200 opacity-40 line-through':'bg-white border-slate-200 hover:border-pink-300'}`}>
+                                                className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 border transition-all ${isExcluded?'bg-slate-100 border-slate-200 opacity-40 line-through':'bg-white border-slate-200 hover:border-teal-300'}`}>
                                                 <span>{mi.name||p.name}</span>
                                                 {(mi.gender||p.gender)==='여성'&&<span className="text-pink-400">W</span>}
                                                 {p.isGuest&&<span className="text-[9px] px-1 bg-slate-700 text-white rounded">G</span>}
@@ -552,7 +552,7 @@ function App() {
                         )}
 
                         <button onClick={generateTeams} disabled={activeSelectedList.length<teamingSettings.teamCount}
-                            className="w-full py-4 bg-slate-900 text-white rounded-3xl font-black text-lg shadow-xl disabled:opacity-30">
+                            className="w-full py-4 bg-teal-500 text-white rounded-3xl font-black text-lg shadow-xl disabled:opacity-30">
                             ⚡ 팀 자동 편성
                         </button>
                     </div>
@@ -601,7 +601,7 @@ function App() {
                                                         onDragStart={!isPastMeeting?e=>handleDragStart(e,teamIdx,mi):undefined}
                                                         onDragOver={!isPastMeeting?e=>e.preventDefault():undefined}
                                                         onDrop={!isPastMeeting?e=>handleDropOnMember(e,teamIdx,mi):undefined}
-                                                        className={`flex items-center gap-1.5 p-2 mb-1 bg-white/70 rounded-xl border border-transparent transition-all ${!isPastMeeting?'cursor-grab active:cursor-grabbing hover:border-pink-200':''} ${draggedItem?.teamIdx===teamIdx&&draggedItem?.memberIdx===mi?'dragging':''}`}>
+                                                        className={`flex items-center gap-1.5 p-2 mb-1 bg-white/70 rounded-xl border border-transparent transition-all ${!isPastMeeting?'cursor-grab active:cursor-grabbing hover:border-teal-200':''} ${draggedItem?.teamIdx===teamIdx&&draggedItem?.memberIdx===mi?'dragging':''}`}>
                                                         <span className="text-[9px] font-black text-slate-400 w-4 text-right flex-shrink-0">{mi+1}</span>
                                                         <span className="font-black text-xs text-slate-800 flex-1">{m.name}</span>
                                                         {m.gender==='여성'&&<span className="text-[8px] text-pink-400 font-black">W</span>}
@@ -634,7 +634,7 @@ function App() {
                                                 <button onClick={saveDraft} className="flex-1 py-3 bg-amber-400 text-slate-800 rounded-2xl font-black text-sm shadow-lg">💾 임시저장</button>
                                             </div>
                                             <button onClick={confirmTeams} disabled={isConfirmed}
-                                                className={`w-full py-3.5 rounded-2xl font-black text-sm shadow-lg ${isConfirmed?'bg-emerald-500 text-white opacity-70':'bg-pink-500 text-white'}`}>
+                                                className={`w-full py-3.5 rounded-2xl font-black text-sm shadow-lg ${isConfirmed?'bg-emerald-500 text-white opacity-70':'bg-teal-500 text-white'}`}>
                                                 {isConfirmed?'✓ 확정됨':'확정하기'}
                                             </button>
                                         </div>
@@ -653,7 +653,7 @@ function App() {
                         <div className="flex gap-2 mb-4">
                             {[['confirmed','✓ 확정 기록',confirmedHistory.length],['draft','💾 임시 저장',savedDrafts.length]].map(([v,l,cnt])=>(
                                 <button key={v} onClick={()=>setStorageSubTab(v)}
-                                    className={`flex-1 py-2.5 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-1.5 ${storageSubTab===v?'bg-pink-500 text-white shadow':'bg-white border border-slate-200 text-slate-500'}`}>
+                                    className={`flex-1 py-2.5 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-1.5 ${storageSubTab===v?'bg-teal-500 text-white shadow':'bg-white border border-slate-200 text-slate-500'}`}>
                                     {l}
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded-lg font-black ${storageSubTab===v?'bg-white/20 text-white':'bg-slate-100 text-slate-400'}`}>{cnt}</span>
                                 </button>
@@ -671,7 +671,7 @@ function App() {
                                             <p className="text-xs text-slate-400 mt-0.5">{d.meetingTimeRange}</p>
                                             <span className="text-[9px] font-black px-1.5 py-0.5 bg-emerald-100 text-emerald-600 rounded-lg mt-1 inline-block">{d.teams?.length||0}팀 확정</span>
                                         </div>
-                                        <button onClick={()=>setPreviewDraft(d)} className="px-3 py-1.5 bg-pink-50 text-pink-500 rounded-xl font-black text-xs">미리보기</button>
+                                        <button onClick={()=>setPreviewDraft(d)} className="px-3 py-1.5 bg-teal-50 text-teal-500 rounded-xl font-black text-xs">미리보기</button>
                                     </div>
                                 ))
                         )}
@@ -686,7 +686,7 @@ function App() {
                                             <p className="font-black text-slate-800 text-sm">{d.meetingDate}</p>
                                             <p className="text-xs text-slate-400 mt-0.5">{d.timeLabel}</p>
                                         </div>
-                                        <button onClick={()=>setPreviewDraft(d)} className="px-3 py-1.5 bg-pink-50 text-pink-500 rounded-xl font-black text-xs">미리보기</button>
+                                        <button onClick={()=>setPreviewDraft(d)} className="px-3 py-1.5 bg-teal-50 text-teal-500 rounded-xl font-black text-xs">미리보기</button>
                                         <button onClick={()=>showConfirm('삭제','이 기록을 삭제하시겠습니까?',async()=>{await getCol('team_drafts').doc(d.id).delete();})} className="p-2 bg-red-50 text-red-400 rounded-xl"><Icon.Trash size={14}/></button>
                                     </div>
                                 ))
@@ -734,7 +734,7 @@ function App() {
                         </div>
 
                         <button onClick={()=>loadDraft(previewDraft)}
-                            className="w-full py-3.5 bg-pink-500 text-white rounded-2xl font-black text-sm shadow-lg">
+                            className="w-full py-3.5 bg-teal-500 text-white rounded-2xl font-black text-sm shadow-lg">
                             {previewDraft.meetingDate < today ? '열람하기' : '불러오기'}
                         </button>
                     </div>
@@ -749,7 +749,7 @@ function App() {
                         <p className="text-sm text-slate-500 whitespace-pre-line mb-5">{alertModal.content}</p>
                         <div className="flex gap-2">
                             {alertModal.type==='confirm'&&<button onClick={()=>setAlertModal(p=>({...p,show:false}))} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>}
-                            <button onClick={()=>{if(alertModal.onConfirm)alertModal.onConfirm();setAlertModal(p=>({...p,show:false}));}} className="flex-1 py-3 bg-pink-500 text-white rounded-2xl font-black text-sm">
+                            <button onClick={()=>{if(alertModal.onConfirm)alertModal.onConfirm();setAlertModal(p=>({...p,show:false}));}} className="flex-1 py-3 bg-teal-500 text-white rounded-2xl font-black text-sm">
                                 {alertModal.type==='confirm'?'확인':'닫기'}
                             </button>
                         </div>

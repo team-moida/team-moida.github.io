@@ -35,7 +35,7 @@
 </head>
 <body>
 <div id="loading-screen">
-    <div class="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+    <div class="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
     <p class="mt-4 font-bold text-slate-500 italic">모이다 연결 중...</p>
 </div>
 <div id="root"></div>
@@ -247,7 +247,7 @@ function App() {
 
     if(loading)return(
         <div className="h-screen flex items-center justify-center">
-            <div className="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
     );
 
@@ -257,12 +257,12 @@ function App() {
                 <div className="max-w-5xl mx-auto w-full flex justify-between items-center">
                     <div className="flex items-center gap-1">
                         {[['setup','설정'],['results','매치표'],['stats','통계']].map(([v,l])=>(
-                            <button key={v} onClick={()=>setView(v)} className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${view===v?'bg-pink-500 text-white shadow-lg':'text-slate-400 hover:text-slate-600'}`}>{l}</button>
+                            <button key={v} onClick={()=>setView(v)} className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${view===v?'bg-teal-500 text-white shadow-lg':'text-slate-400 hover:text-slate-600'}`}>{l}</button>
                         ))}
                     </div>
                     <div className="flex gap-2">
                         {schedule.list.length>0&&<button onClick={saveMatchSchedule} disabled={isSaving} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-blue-600"><Icon.Save size={16}/></button>}
-                        {schedule.list.length>0&&<button onClick={handleCapture} disabled={isCapturing} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-pink-500"><Icon.Camera size={16}/></button>}
+                        {schedule.list.length>0&&<button onClick={handleCapture} disabled={isCapturing} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-teal-500"><Icon.Camera size={16}/></button>}
                         <button onClick={()=>window.location.reload()} className="p-2.5 rounded-xl bg-slate-50 text-slate-400"><Icon.Refresh size={16}/></button>
                         <button onClick={()=>window.location.href='index.html'} className="p-2.5 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"><Icon.Home size={18}/></button>
                     </div>
@@ -280,7 +280,7 @@ function App() {
                         </button>
 
                         <div className="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm mb-4">
-                            <p className="text-xs font-black text-pink-500 uppercase tracking-widest mb-4">기본 설정</p>
+                            <p className="text-xs font-black text-teal-500 uppercase tracking-widest mb-4">기본 설정</p>
                             <div className="space-y-4">
                                 <div>
                                     <p className="text-[10px] font-black text-slate-400 mb-1">모임 날짜</p>
@@ -329,23 +329,23 @@ function App() {
                         {/* 구장 설정 */}
                         <div className="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm mb-4">
                             <div className="flex items-center justify-between mb-4">
-                                <p className="text-xs font-black text-pink-500 uppercase tracking-widest">구장 프리셋</p>
-                                <button onClick={()=>setIsPresetModalOpen(true)} className="px-3 py-1.5 bg-pink-50 text-pink-500 rounded-xl text-xs font-black">+ 추가</button>
+                                <p className="text-xs font-black text-teal-500 uppercase tracking-widest">구장 프리셋</p>
+                                <button onClick={()=>setIsPresetModalOpen(true)} className="px-3 py-1.5 bg-teal-50 text-teal-500 rounded-xl text-xs font-black">+ 추가</button>
                             </div>
                             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-3">
-                                <button onClick={()=>setSelectedPresetId('manual')} className={`shrink-0 px-4 py-2.5 rounded-2xl font-black text-xs border-2 transition-all ${selectedPresetId==='manual'?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-500 border-slate-200'}`}>직접 입력</button>
+                                <button onClick={()=>setSelectedPresetId('manual')} className={`shrink-0 px-4 py-2.5 rounded-2xl font-black text-xs border-2 transition-all ${selectedPresetId==='manual'?'bg-teal-500 text-white border-teal-500':'bg-white text-slate-500 border-slate-200'}`}>직접 입력</button>
                                 {presets.map(p=>(
-                                    <button key={p.id} onClick={()=>handlePresetSelect(p)} className={`shrink-0 px-4 py-2.5 rounded-2xl font-black text-xs border-2 transition-all ${selectedPresetId===p.id?'bg-pink-500 text-white border-pink-500':'bg-white text-slate-600 border-slate-200'}`}>{p.name}</button>
+                                    <button key={p.id} onClick={()=>handlePresetSelect(p)} className={`shrink-0 px-4 py-2.5 rounded-2xl font-black text-xs border-2 transition-all ${selectedPresetId===p.id?'bg-teal-500 text-white border-teal-500':'bg-white text-slate-600 border-slate-200'}`}>{p.name}</button>
                                 ))}
                             </div>
 
                             {selectedPresetId!=='manual' && (
-                                <div className="bg-pink-50 rounded-2xl p-4 mb-3">
-                                    <p className="text-xs font-black text-pink-600 mb-2">세부 구장 선택</p>
+                                <div className="bg-teal-50 rounded-2xl p-4 mb-3">
+                                    <p className="text-xs font-black text-teal-600 mb-2">세부 구장 선택</p>
                                     <div className="flex flex-wrap gap-2">
                                         {presets.find(p=>p.id===selectedPresetId)?.fieldNames.map((name,i)=>(
                                             <button key={i} onClick={()=>handleToggleSubCourt(i)}
-                                                className={`px-3 py-2 rounded-xl font-black text-xs border transition-all ${presetToggles[i]?'bg-pink-500 text-white border-pink-500':'bg-white text-slate-500 border-slate-200'}`}>
+                                                className={`px-3 py-2 rounded-xl font-black text-xs border transition-all ${presetToggles[i]?'bg-teal-500 text-white border-teal-500':'bg-white text-slate-500 border-slate-200'}`}>
                                                 {name}
                                             </button>
                                         ))}
@@ -374,7 +374,7 @@ function App() {
                             )}
 
                             <div className="flex items-center gap-3 p-3.5 rounded-2xl border border-slate-200 cursor-pointer" onClick={()=>setConfig(p=>({...p,strictCourtSize:!p.strictCourtSize}))}>
-                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${config.strictCourtSize?'bg-pink-500 border-pink-500':'border-slate-300'}`}>
+                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${config.strictCourtSize?'bg-teal-500 border-teal-500':'border-slate-300'}`}>
                                     {config.strictCourtSize&&<Icon.Check size={10} className="text-white"/>}
                                 </div>
                                 <p className="text-xs font-black text-slate-700">5vs5 구장에 6명 이상 팀 배정 제외</p>
@@ -389,7 +389,7 @@ function App() {
                         )}
 
                         <button onClick={generateMatchTable} disabled={config.courtCount===0}
-                            className="w-full py-4 bg-slate-900 text-white rounded-3xl font-black text-lg shadow-xl disabled:opacity-30">
+                            className="w-full py-4 bg-teal-500 text-white rounded-3xl font-black text-lg shadow-xl disabled:opacity-30">
                             🏟️ 매치 테이블 생성
                         </button>
                     </div>
@@ -507,7 +507,7 @@ function App() {
                                         <p className="font-black text-slate-800 text-sm">{s.meetingDate}</p>
                                         <p className="text-xs text-slate-400 mt-0.5">{s.schedule?.list?.length||0}라운드 · {s.config?.courtCount||0}구장</p>
                                     </div>
-                                    <button onClick={()=>{setSchedule(s.schedule);setConfig(p=>({...p,...s.config}));setCompletedMatches(new Set(s.completedMatches||[]));setView('results');setIsLoadModalOpen(false);}} className="px-3 py-2 bg-pink-500 text-white rounded-xl font-black text-xs">불러오기</button>
+                                    <button onClick={()=>{setSchedule(s.schedule);setConfig(p=>({...p,...s.config}));setCompletedMatches(new Set(s.completedMatches||[]));setView('results');setIsLoadModalOpen(false);}} className="px-3 py-2 bg-teal-500 text-white rounded-xl font-black text-xs">불러오기</button>
                                     <button onClick={()=>showConfirm('삭제','이 기록을 삭제하시겠습니까?',async()=>await getCol('match_schedules').doc(s.id).delete())} className="p-2 bg-red-50 text-red-400 rounded-xl"><Icon.Trash size={12}/></button>
                                 </div>
                             ))
@@ -544,7 +544,7 @@ function App() {
                         </div>
                         <div className="flex gap-2">
                             <button onClick={()=>setIsPresetModalOpen(false)} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
-                            <button onClick={savePreset} className="flex-1 py-3 bg-pink-500 text-white rounded-2xl font-black text-sm">저장</button>
+                            <button onClick={savePreset} className="flex-1 py-3 bg-teal-500 text-white rounded-2xl font-black text-sm">저장</button>
                         </div>
                     </div>
                 </div>
@@ -558,7 +558,7 @@ function App() {
                         <p className="text-sm text-slate-500 whitespace-pre-line mb-5">{alertModal.content}</p>
                         <div className="flex gap-2">
                             {alertModal.type==='confirm'&&<button onClick={()=>setAlertModal(p=>({...p,show:false}))} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>}
-                            <button onClick={()=>{if(alertModal.onConfirm)alertModal.onConfirm();setAlertModal(p=>({...p,show:false}));}} className="flex-1 py-3 bg-pink-500 text-white rounded-2xl font-black text-sm">
+                            <button onClick={()=>{if(alertModal.onConfirm)alertModal.onConfirm();setAlertModal(p=>({...p,show:false}));}} className="flex-1 py-3 bg-teal-500 text-white rounded-2xl font-black text-sm">
                                 {alertModal.type==='confirm'?'확인':'닫기'}
                             </button>
                         </div>

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#f0fdfa">
     <title>모이다 - OTP FC</title>
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
@@ -16,7 +16,7 @@
     <style>
         * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
         body {
-            background: linear-gradient(145deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            background: #f8fafc;
             min-height: 100vh;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             user-select: none;
@@ -43,29 +43,29 @@
 
         <!-- 로고 -->
         <div class="flex flex-col items-center mb-8">
-            <div class="w-28 h-28 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-4 shadow-2xl shadow-pink-500/20">
+            <div class="w-28 h-28 rounded-full bg-white border border-slate-100 flex items-center justify-center mb-4 shadow-lg shadow-teal-100">
                 <img src="icon.png" alt="OTP FC" class="w-24 h-24 object-contain drop-shadow-lg"
                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                 <div style="display:none" class="w-full h-full flex items-center justify-center text-4xl">⚽</div>
             </div>
-            <h1 class="text-5xl font-black text-white tracking-tight">모이다</h1>
-            <p class="text-pink-400 text-[11px] mt-2 tracking-[0.3em] uppercase font-medium">One Two Pass Futsal Club</p>
+            <h1 class="text-5xl font-black text-slate-800 tracking-tight">모이다</h1>
+            <p class="text-teal-600 text-[11px] mt-2 tracking-[0.3em] uppercase font-bold">One Two Pass Futsal Club</p>
         </div>
 
         <!-- 로그인 폼 -->
         <div id="login-view" style="display:none;" class="fade-in">
             <div id="login-form-wrap">
                 <input id="login-name" type="text" placeholder="이름"
-                    style="user-select:text;-webkit-user-select:text;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.15);color:white;"
-                    class="w-full rounded-2xl px-4 py-4 mb-3 text-base transition-colors placeholder:text-slate-500"
+                    style="user-select:text;-webkit-user-select:text;background:#f8fafc;border:1.5px solid #e2e8f0;color:#1e293b;"
+                    class="w-full rounded-2xl px-4 py-4 mb-3 text-base transition-colors placeholder:text-slate-400"
                     onkeydown="if(event.key==='Enter') document.getElementById('login-birth').focus()">
                 <input id="login-birth" type="tel" placeholder="생년월일 6자리 (YYMMDD)"
-                    style="user-select:text;-webkit-user-select:text;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.15);color:white;"
+                    style="user-select:text;-webkit-user-select:text;background:#f8fafc;border:1.5px solid #e2e8f0;color:#1e293b;"
                     maxlength="6" inputmode="numeric"
-                    class="w-full rounded-2xl px-4 py-4 mb-4 text-base transition-colors placeholder:text-slate-500"
+                    class="w-full rounded-2xl px-4 py-4 mb-4 text-base transition-colors placeholder:text-slate-400"
                     onkeydown="if(event.key==='Enter') doLogin()">
                 <button onclick="doLogin()" id="login-btn"
-                    class="card w-full py-4 bg-pink-500 hover:bg-pink-400 text-white rounded-2xl font-black text-base shadow-lg shadow-pink-500/30">
+                    class="card w-full py-4 bg-teal-500 hover:bg-teal-400 text-white rounded-2xl font-black text-base shadow-lg shadow-teal-200">
                     로그인
                 </button>
             </div>
@@ -74,70 +74,70 @@
         <!-- 관리자/운영진 허브 -->
         <div id="admin-view" style="display:none;" class="fade-in">
             <!-- 인사말 -->
-            <div class="flex items-center justify-between mb-5 bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
+            <div class="flex items-center justify-between mb-5 bg-white border border-slate-100 rounded-2xl px-4 py-3 shadow-sm">
                 <div>
-                    <p class="text-white font-bold text-base" id="greeting-name"></p>
+                    <p class="text-slate-800 font-bold text-base" id="greeting-name"></p>
                     <p class="text-slate-400 text-xs mt-0.5" id="greeting-role"></p>
                 </div>
-                <button onclick="doLogout()" class="text-slate-400 text-xs border border-slate-700 rounded-xl px-3 py-1.5 active:opacity-70">
+                <button onclick="doLogout()" class="text-slate-500 text-xs border border-slate-200 rounded-xl px-3 py-1.5 active:opacity-70">
                     로그아웃
                 </button>
             </div>
 
             <!-- 내 회원 앱 -->
-            <a href="member.html" class="card flex items-center gap-4 bg-blue-500/15 border border-blue-500/30 rounded-2xl p-4 mb-5 block">
-                <div class="w-11 h-11 bg-blue-500/20 rounded-xl flex items-center justify-center text-xl flex-shrink-0">👤</div>
+            <a href="member.html" class="card flex items-center gap-4 bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-5 block">
+                <div class="w-11 h-11 bg-blue-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">👤</div>
                 <div class="flex-1 min-w-0">
-                    <p class="text-white font-black text-sm">내 회원 앱</p>
-                    <p class="text-blue-400 text-xs mt-0.5">출석 체크 · 팀 확인</p>
+                    <p class="text-slate-800 font-black text-sm">내 회원 앱</p>
+                    <p class="text-blue-500 text-xs mt-0.5">출석 체크 · 팀 확인</p>
                 </div>
-                <div class="text-slate-500 text-xl">›</div>
+                <div class="text-slate-400 text-xl">›</div>
             </a>
 
             <!-- 관리 메뉴 -->
-            <p class="text-slate-600 text-[10px] font-bold tracking-widest uppercase mb-2 px-1">관리</p>
+            <p class="text-slate-400 text-[10px] font-bold tracking-widest uppercase mb-2 px-1">관리</p>
             <div class="space-y-2.5">
-                <a href="attendance.html" class="card flex items-center gap-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl p-4 block">
-                    <div class="w-11 h-11 bg-emerald-500/20 rounded-xl flex items-center justify-center text-xl flex-shrink-0">✅</div>
+                <a href="attendance.html" class="card flex items-center gap-4 bg-emerald-50 border border-emerald-100 rounded-2xl p-4 block">
+                    <div class="w-11 h-11 bg-emerald-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">✅</div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-white font-black text-sm">출결 관리</p>
-                        <p class="text-emerald-400 text-xs mt-0.5">출석 체크 · 선정 · 기록</p>
+                        <p class="text-slate-800 font-black text-sm">출결 관리</p>
+                        <p class="text-emerald-600 text-xs mt-0.5">출석 체크 · 선정 · 기록</p>
                     </div>
-                    <div class="text-slate-500 text-xl">›</div>
+                    <div class="text-slate-400 text-xl">›</div>
                 </a>
-                <a href="roster.html" class="card flex items-center gap-4 bg-pink-500/15 border border-pink-500/30 rounded-2xl p-4 block">
-                    <div class="w-11 h-11 bg-pink-500/20 rounded-xl flex items-center justify-center text-xl flex-shrink-0">📋</div>
+                <a href="roster.html" class="card flex items-center gap-4 bg-teal-50 border border-teal-100 rounded-2xl p-4 block">
+                    <div class="w-11 h-11 bg-teal-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">📋</div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-white font-black text-sm">명단 · 회비 관리</p>
-                        <p class="text-pink-400 text-xs mt-0.5">회원 정보 · 납부 현황</p>
+                        <p class="text-slate-800 font-black text-sm">명단 · 회비 관리</p>
+                        <p class="text-teal-600 text-xs mt-0.5">회원 정보 · 납부 현황</p>
                     </div>
-                    <div class="text-slate-500 text-xl">›</div>
+                    <div class="text-slate-400 text-xl">›</div>
                 </a>
-                <a href="team-maker.html" class="card flex items-center gap-4 bg-violet-500/15 border border-violet-500/30 rounded-2xl p-4 block">
-                    <div class="w-11 h-11 bg-violet-500/20 rounded-xl flex items-center justify-center text-xl flex-shrink-0">⚡</div>
+                <a href="team-maker.html" class="card flex items-center gap-4 bg-violet-50 border border-violet-100 rounded-2xl p-4 block">
+                    <div class="w-11 h-11 bg-violet-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">⚡</div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-white font-black text-sm">팀 편성</p>
-                        <p class="text-violet-400 text-xs mt-0.5">자동 균등 팀 편성</p>
+                        <p class="text-slate-800 font-black text-sm">팀 편성</p>
+                        <p class="text-violet-600 text-xs mt-0.5">자동 균등 팀 편성</p>
                     </div>
-                    <div class="text-slate-500 text-xl">›</div>
+                    <div class="text-slate-400 text-xl">›</div>
                 </a>
-                <a href="match.html" class="card flex items-center gap-4 bg-rose-500/15 border border-rose-500/30 rounded-2xl p-4 block">
-                    <div class="w-11 h-11 bg-rose-500/20 rounded-xl flex items-center justify-center text-xl flex-shrink-0">🏟️</div>
+                <a href="match.html" class="card flex items-center gap-4 bg-rose-50 border border-rose-100 rounded-2xl p-4 block">
+                    <div class="w-11 h-11 bg-rose-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">🏟️</div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-white font-black text-sm">매치 테이블</p>
-                        <p class="text-rose-400 text-xs mt-0.5">경기 일정 자동 편성</p>
+                        <p class="text-slate-800 font-black text-sm">매치 테이블</p>
+                        <p class="text-rose-500 text-xs mt-0.5">경기 일정 자동 편성</p>
                     </div>
-                    <div class="text-slate-500 text-xl">›</div>
+                    <div class="text-slate-400 text-xl">›</div>
                 </a>
             </div>
         </div>
 
         <!-- 로딩 -->
         <div id="loading-view" class="flex justify-center py-6">
-            <div class="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full spin"></div>
+            <div class="w-6 h-6 border-2 border-teal-500 border-t-transparent rounded-full spin"></div>
         </div>
 
-        <p class="text-center text-slate-700 text-[10px] mt-8">모이다 v1.0 · OTP FC © 2025</p>
+        <p class="text-center text-slate-400 text-[10px] mt-8">모이다 v1.0 · OTP FC © 2025</p>
     </div>
 
     <!-- 토스트 -->
