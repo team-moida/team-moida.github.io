@@ -38,14 +38,14 @@
         .custom-scrollbar::-webkit-scrollbar{width:5px} .custom-scrollbar::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
         .no-scrollbar::-webkit-scrollbar{display:none} .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
         select,input{outline:none;transition:border-color 0.2s}
-        select:focus,input:focus{border-color:#3b82f6!important}
+        select:focus,input:focus{border-color:#14b8a6!important}
         select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.75rem center;background-size:1rem}
         #qr-canvas-area canvas { margin: 0 auto; }
     </style>
 </head>
 <body>
 <div id="loading-screen">
-    <div class="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+    <div class="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
     <p class="mt-4 font-bold text-slate-500 italic">모이다 연결 중...</p>
 </div>
 <div id="root"></div>
@@ -1009,12 +1009,12 @@ function App() {
     // ===================== RENDER =====================
     if (isLoginModalOpen && !isAppLocked) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
+            <div className="min-h-screen bg-gradient-to-br from-teal-50 to-slate-100 flex items-center justify-center p-4">
                 <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm animate-zoom-in">
                     <div className="flex flex-col items-center mb-6">
                         <img src="icon.png" alt="OTP FC" className="w-16 h-16 object-contain mb-3" onError={e=>e.target.style.display='none'} />
                         <h1 className="text-2xl font-black text-slate-800">모이다</h1>
-                        <p className="text-xs text-pink-500 mt-1">출결 관리 시스템</p>
+                        <p className="text-xs text-teal-600 font-black mt-1">출결 관리 시스템</p>
                     </div>
                     <p className="text-sm font-black text-slate-600 mb-3">운영진 로그인</p>
                     <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black mb-4"
@@ -1022,7 +1022,7 @@ function App() {
                         <option value="">-- 이름 선택 --</option>
                         {managers.map(m => <option key={m.id} value={m.name}>{m.name} ({m.role})</option>)}
                     </select>
-                    <button onClick={handleLogin} className="w-full py-3 bg-pink-500 text-white rounded-xl font-black text-sm shadow-lg">로그인</button>
+                    <button onClick={handleLogin} className="w-full py-3 bg-teal-500 text-white rounded-xl font-black text-sm shadow-lg">로그인</button>
                 </div>
             </div>
         );
@@ -1035,7 +1035,7 @@ function App() {
                     <div className="max-w-5xl mx-auto w-full flex justify-between items-center">
                         <div className="flex items-center gap-1">
                             {['attendance','setup','history_list'].map(v => (
-                                <button key={v} onClick={()=>setView(v)} className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${view===v?'bg-pink-500 text-white shadow-lg':'text-slate-400 hover:text-slate-600'}`}>
+                                <button key={v} onClick={()=>setView(v)} className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${view===v?'bg-teal-500 text-white shadow-lg':'text-slate-400 hover:text-slate-600'}`}>
                                     {v==='attendance'?'출석':v==='setup'?'선정':'기록'}
                                 </button>
                             ))}
@@ -1113,7 +1113,7 @@ function App() {
                         <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 mb-4">
                             <div className="flex items-center justify-between mb-4">
                                 <div>
-                                    <p className="text-xs font-black text-pink-500 uppercase tracking-widest">Next Meeting</p>
+                                    <p className="text-xs font-black text-teal-500 uppercase tracking-widest">Next Meeting</p>
                                     <p className="text-xl font-black text-slate-800 mt-0.5">{meetingTimes.date}</p>
                                 </div>
                                 <div className="text-right">
@@ -1123,9 +1123,9 @@ function App() {
                                 </div>
                             </div>
                             <div className="flex gap-2 text-center">
-                                <div className="flex-1 bg-pink-50 rounded-2xl p-3">
-                                    <p className="text-2xl font-black text-pink-500">{activeList.length}</p>
-                                    <p className="text-[10px] text-pink-400 mt-0.5">선정</p>
+                                <div className="flex-1 bg-teal-50 rounded-2xl p-3">
+                                    <p className="text-2xl font-black text-teal-500">{activeList.length}</p>
+                                    <p className="text-[10px] text-teal-400 mt-0.5">선정</p>
                                 </div>
                                 <div className="flex-1 bg-emerald-50 rounded-2xl p-3">
                                     <p className="text-2xl font-black text-emerald-500">{checkedInCount}</p>
@@ -1223,7 +1223,7 @@ function App() {
                                         <div className="space-y-1.5">
                                             {unassignedActive.map(p => (
                                                 <button key={p.id} onClick={()=>setModal({type:'checkin',data:p})}
-                                                    className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${p.status==='노쇼'?'bg-red-50 border-red-200':p.checkedIn?'bg-emerald-50 border-emerald-200':'bg-white border-slate-100 hover:border-pink-200'}`}>
+                                                    className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${p.status==='노쇼'?'bg-red-50 border-red-200':p.checkedIn?'bg-emerald-50 border-emerald-200':'bg-white border-slate-100 hover:border-teal-200'}`}>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-1.5">
                                                             <span className="font-black text-sm text-slate-800">{p.name}</span>
@@ -1257,7 +1257,7 @@ function App() {
                                 <p className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">출석 명단 ({limit}명 선착순)</p>
                                 {activeList.map((p, idx) => (
                                     <button key={p.id} onClick={()=>setModal({type:'checkin',data:p})}
-                                        className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${p.status==='노쇼'?'bg-red-50 border-red-200':p.checkedIn?'bg-emerald-50 border-emerald-200':'bg-white border-slate-100 hover:border-pink-200'}`}>
+                                        className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${p.status==='노쇼'?'bg-red-50 border-red-200':p.checkedIn?'bg-emerald-50 border-emerald-200':'bg-white border-slate-100 hover:border-teal-200'}`}>
                                         <span className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 text-xs font-black flex items-center justify-center flex-shrink-0">{idx+1}</span>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-1.5">
@@ -1309,7 +1309,7 @@ function App() {
                         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur border-t">
                             <div className="max-w-5xl mx-auto flex gap-2">
                                 <button onClick={saveAndResetCurrent} disabled={isPending||activeList.length===0}
-                                    className="flex-1 py-3.5 bg-slate-900 text-white rounded-2xl font-black text-sm disabled:opacity-30">
+                                    className="flex-1 py-3.5 bg-teal-500 text-white rounded-2xl font-black text-sm disabled:opacity-30">
                                     {isPending?'처리 중...':'기록 확정 →'}
                                 </button>
                             </div>
@@ -1321,7 +1321,7 @@ function App() {
                 {view === 'setup' && (
                     <div>
                         <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 mb-4">
-                            <p className="text-xs font-black text-pink-500 uppercase tracking-widest mb-4">모임 설정</p>
+                            <p className="text-xs font-black text-teal-500 uppercase tracking-widest mb-4">모임 설정</p>
                             <div className="space-y-3">
                                 <div>
                                     <label className="text-[10px] font-black text-slate-400 uppercase">날짜</label>
@@ -1363,7 +1363,7 @@ function App() {
                                             value={meetingTimes.location||''} onChange={e=>updateMeetingTimeSettings({...meetingTimes,location:e.target.value})} />
                                         <button
                                             onClick={() => setIsLocationPickerOpen(true)}
-                                            className={`shrink-0 px-3 py-2.5 rounded-xl text-sm font-black border transition-all active:scale-95 ${meetingTimes.locationLat ? 'bg-pink-500 text-white border-pink-500' : 'bg-slate-100 text-slate-500 border-slate-200'}`}
+                                            className={`shrink-0 px-3 py-2.5 rounded-xl text-sm font-black border transition-all active:scale-95 ${meetingTimes.locationLat ? 'bg-teal-500 text-white border-teal-500' : 'bg-slate-100 text-slate-500 border-slate-200'}`}
                                             title="지도에서 장소 선택">
                                             <Icon.MapPin size={16} />
                                         </button>
@@ -1386,7 +1386,7 @@ function App() {
                                             {[30,50,100,150,200].map(r => (
                                                 <button key={r}
                                                     onClick={() => updateMeetingTimeSettings({...meetingTimes, locationRadius: r})}
-                                                    className={`flex-1 py-2 rounded-xl text-xs font-black border transition-all active:scale-95 ${(meetingTimes.locationRadius||100)===r ? 'bg-pink-500 text-white border-pink-500' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
+                                                    className={`flex-1 py-2 rounded-xl text-xs font-black border transition-all active:scale-95 ${(meetingTimes.locationRadius||100)===r ? 'bg-teal-500 text-white border-teal-500' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
                                                     {r}m
                                                 </button>
                                             ))}
@@ -1419,7 +1419,7 @@ function App() {
                                         <input type="text" className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black" readOnly
                                             value={meetingTimes.managerName||''} placeholder="미지정" />
                                         <button onClick={()=>updateMeetingTimeSettings({...meetingTimes,managerId:loggedInManager?.id||'',managerName:loggedInManager?.name||''})}
-                                            className="px-4 py-2.5 bg-pink-500 text-white rounded-xl text-xs font-black">내가 담당</button>
+                                            className="px-4 py-2.5 bg-teal-500 text-white rounded-xl text-xs font-black">내가 담당</button>
                                     </div>
                                 </div>
                             </div>
@@ -1447,8 +1447,8 @@ function App() {
                                 const isEligible = setupTabMonthlyMembers.includes(member.id);
                                 return (
                                     <button key={member.id} onClick={()=>toggleParticipant(member)}
-                                        className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-pink-50 border-pink-300':'bg-white border-slate-100 hover:border-slate-200'} ${!isEligible&&!STAFF_ROLES.includes(member.role)?'opacity-50':''}`}>
-                                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSelected?'bg-pink-500 border-pink-500':'border-slate-300'}`}>
+                                        className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-teal-50 border-teal-300':'bg-white border-slate-100 hover:border-slate-200'} ${!isEligible&&!STAFF_ROLES.includes(member.role)?'opacity-50':''}`}>
+                                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSelected?'bg-teal-500 border-teal-500':'border-slate-300'}`}>
                                             {isSelected&&<Icon.Check size={10} className="text-white" />}
                                         </div>
                                         <span className="font-black text-sm text-slate-800 flex-1">{member.name}</span>
@@ -1471,13 +1471,13 @@ function App() {
                             ? <div className="text-center py-16 text-slate-300"><p className="text-4xl mb-3">📚</p><p className="font-black">기록이 없습니다</p></div>
                             : history.map(h => (
                                 <button key={h.id} onClick={()=>{setSelectedHistoryDetail(h);setHistorySortKey('time');setHistorySortOrder('asc');}}
-                                    className="w-full flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl mb-2 text-left hover:border-pink-200 transition-all">
+                                    className="w-full flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl mb-2 text-left hover:border-teal-200 transition-all">
                                     <div>
                                         <p className="font-black text-slate-800">{h.date}</p>
                                         <p className="text-xs text-slate-400 mt-0.5">{h.meetingTime} · {h.location}</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-xs font-black text-pink-500">{h.present}명 출석</p>
+                                        <p className="text-xs font-black text-teal-500">{h.present}명 출석</p>
                                         <p className="text-[10px] text-slate-400 mt-0.5">총 {h.total}명</p>
                                     </div>
                                 </button>
@@ -1500,7 +1500,7 @@ function App() {
 
                         <div className="bg-white border border-slate-100 rounded-2xl p-4 mb-4">
                             <div className="grid grid-cols-3 gap-3 text-center mb-4">
-                                <div><p className="text-xl font-black text-pink-500">{selectedHistoryDetail.present}</p><p className="text-[10px] text-slate-400">출석</p></div>
+                                <div><p className="text-xl font-black text-teal-500">{selectedHistoryDetail.present}</p><p className="text-[10px] text-slate-400">출석</p></div>
                                 <div><p className="text-xl font-black text-slate-700">{selectedHistoryDetail.total}</p><p className="text-[10px] text-slate-400">전체</p></div>
                                 <div><p className="text-xl font-black text-slate-400">{selectedHistoryDetail.total - selectedHistoryDetail.present}</p><p className="text-[10px] text-slate-400">미출석</p></div>
                             </div>
@@ -1510,7 +1510,7 @@ function App() {
                                 <Icon.MapPin size={12} className="text-slate-400" />
                                 {isEditingLocation
                                     ? <><input className="flex-1 text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1" value={editLocationValue} onChange={e=>setEditLocationValue(e.target.value)} />
-                                        <button onClick={handleUpdateLocation} className="text-xs px-2 py-1 bg-pink-500 text-white rounded-lg">저장</button>
+                                        <button onClick={handleUpdateLocation} className="text-xs px-2 py-1 bg-teal-500 text-white rounded-lg">저장</button>
                                         <button onClick={()=>setIsEditingLocation(false)} className="text-xs px-2 py-1 bg-slate-100 text-slate-500 rounded-lg">취소</button></>
                                     : <><span className="text-xs text-slate-600 flex-1">{selectedHistoryDetail.location}</span>
                                         {selectedHistoryDetail.locationLat && (
@@ -1527,7 +1527,7 @@ function App() {
                         <div className="flex gap-2 mb-3">
                             {[['time','시간순'],['status','상태순']].map(([k,l]) => (
                                 <button key={k} onClick={()=>{if(historySortKey===k&&k==='status')setHistorySortOrder(o=>o==='asc'?'desc':'asc');setHistorySortKey(k);}}
-                                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${historySortKey===k?'bg-pink-500 text-white':'bg-white border border-slate-200 text-slate-500'}`}>
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${historySortKey===k?'bg-teal-500 text-white':'bg-white border border-slate-200 text-slate-500'}`}>
                                     {l} {historySortKey===k&&k==='status'&&(historySortOrder==='asc'?'↑':'↓')}
                                 </button>
                             ))}
@@ -1566,7 +1566,7 @@ function App() {
                         <p className="text-xs text-center text-slate-400 mb-6">{modal.data.gender} · Lv.{modal.data.level}</p>
                         {modal.data.checkedIn
                             ? <div className="text-center"><p className="text-emerald-500 font-black text-lg">✓ 이미 출석됨</p><p className="text-slate-400 text-sm mt-1">{modal.data.checkInTime} · {modal.data.status}</p></div>
-                            : <button onClick={()=>handleCheckIn(modal.data)} className="w-full py-4 bg-pink-500 text-white rounded-2xl font-black text-lg shadow-lg">출석 체크</button>
+                            : <button onClick={()=>handleCheckIn(modal.data)} className="w-full py-4 bg-teal-500 text-white rounded-2xl font-black text-lg shadow-lg">출석 체크</button>
                         }
                         <button onClick={()=>setModal({type:null,data:null})} className="w-full py-3 text-slate-400 text-sm mt-3">닫기</button>
                     </div>
@@ -1597,7 +1597,7 @@ function App() {
                         </div>
                         <div className="flex gap-2 mt-4">
                             <button onClick={()=>setIsGuestModalOpen(false)} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
-                            <button onClick={handleAddGuest} className="flex-1 py-3 bg-pink-500 text-white rounded-2xl font-black text-sm">추가</button>
+                            <button onClick={handleAddGuest} className="flex-1 py-3 bg-teal-500 text-white rounded-2xl font-black text-sm">추가</button>
                         </div>
                     </div>
                 </div>
@@ -1611,7 +1611,7 @@ function App() {
                         <div className="grid grid-cols-2 gap-2">
                             {['정상','지각','노쇼','대기'].map(status => (
                                 <button key={status} onClick={()=>handleHistoryStatusUpdate(status)}
-                                    className="py-3 rounded-2xl font-black text-sm border border-slate-200 hover:bg-pink-50 hover:border-pink-300 transition-all">
+                                    className="py-3 rounded-2xl font-black text-sm border border-slate-200 hover:bg-teal-50 hover:border-teal-300 transition-all">
                                     {status}
                                 </button>
                             ))}
@@ -1627,7 +1627,7 @@ function App() {
                     <div className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl text-center" onClick={e=>e.stopPropagation()}>
                         <h2 className="text-xl font-black text-slate-800 mb-1">QR 출석 코드</h2>
                         <p className="text-xs text-slate-400 mb-2">{meetingTimes.date} · {meetingTimes.start}~{meetingTimes.end}</p>
-                        <p className="text-[10px] text-pink-500 font-black mb-5">모임 시간 내에만 유효합니다</p>
+                        <p className="text-[10px] text-teal-500 font-black mb-5">모임 시간 내에만 유효합니다</p>
                         <div id="qr-canvas-area" className="flex justify-center mb-5"></div>
                         <p className="text-xs text-slate-400 mb-4">회원에게 이 화면을 보여주세요.<br/>카메라로 스캔하면 출석됩니다.</p>
                         <button onClick={()=>setIsQRModalOpen(false)} className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">닫기</button>
@@ -1655,7 +1655,7 @@ function App() {
                                     </div>
                                     <div className="flex gap-2">
                                         <button onClick={()=>handleRejectPending(p)} className="flex-1 py-2 bg-slate-200 text-slate-600 rounded-xl font-black text-xs">거절</button>
-                                        <button onClick={()=>handleApprovePending(p)} className="flex-1 py-2 bg-pink-500 text-white rounded-xl font-black text-xs">승인</button>
+                                        <button onClick={()=>handleApprovePending(p)} className="flex-1 py-2 bg-teal-500 text-white rounded-xl font-black text-xs">승인</button>
                                     </div>
                                 </div>
                             ))
@@ -1676,7 +1676,7 @@ function App() {
                                 <button onClick={()=>setAlertModal(p=>({...p,show:false}))} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
                             )}
                             <button onClick={()=>{ if(alertModal.onConfirm)alertModal.onConfirm(); setAlertModal(p=>({...p,show:false})); }}
-                                className="flex-1 py-3 bg-pink-500 text-white rounded-2xl font-black text-sm">
+                                className="flex-1 py-3 bg-teal-500 text-white rounded-2xl font-black text-sm">
                                 {alertModal.type==='confirm'?'확인':'닫기'}
                             </button>
                         </div>
