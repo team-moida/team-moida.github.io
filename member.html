@@ -378,8 +378,8 @@ function App() {
             const startStr = settingsDoc.exists ? (settingsDoc.data().start || '08:00') : '08:00';
             const [shr,smin] = startStr.split(':');
             const meetingStart = new Date(sy,sm-1,sd,parseInt(shr),parseInt(smin),0);
-            // 정상: start-70분~start-10분 / 지각: start-10분:01~종료
-            const normalThreshold = new Date(meetingStart.getTime() - 10*60*1000);
+            // 정상: start-70분~start-9분(07:51) / 지각: 07:51:01~종료 (+1분 여유)
+            const normalThreshold = new Date(meetingStart.getTime() - 9*60*1000);
             const status = now <= normalThreshold ? '정상' : '지각';
             const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
 
@@ -525,7 +525,7 @@ function App() {
             const allowFrom = new Date(meetingStart.getTime() - 70*60*1000);
             if (!testMode && now < allowFrom) { showToast('아직 출석 가능 시간이 아닙니다.', 'error'); setIsCheckingIn(false); return; }
             if (!testMode && now > meetingEnd) { showToast('모임이 종료되었습니다.\n자동 노쇼 처리되었습니다.', 'error'); setIsCheckingIn(false); return; }
-            const normalThreshold = new Date(meetingStart.getTime() - 10*60*1000);
+            const normalThreshold = new Date(meetingStart.getTime() - 9*60*1000);
             const status = now <= normalThreshold ? '정상' : '지각';
             const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
             await getCol('weekly_session').doc(mySession.id).update({ checkedIn:true, checkInTime:timeStr, status });
