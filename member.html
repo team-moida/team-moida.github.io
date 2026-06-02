@@ -429,7 +429,7 @@ function App() {
             setDistance(Math.round(dist));
             const radius = meetingSettings?.locationRadius || 100;
 
-            if (dist <= radius) {
+            if (testMode || dist <= radius) {
                 setGpsStatus('within');
             } else {
                 setGpsStatus('outside');
