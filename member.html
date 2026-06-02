@@ -815,7 +815,7 @@ function App() {
                                     <div className="text-center">
                                         <p className="text-3xl mb-2">⚙️</p>
                                         <p className="font-black text-slate-300 mb-1">장소 미설정</p>
-                                        <p className="text-slate-500 text-xs">관리자가 모임 장소 GPS를 설정하지 않았습니다.<br/>QR 출석을 이용해주세요.</p>
+                                        <p className="text-slate-500 text-xs">관리자가 모임 장소 GPS를 설정하지 않았습니다.<br/>{meetingSettings?.enableQR ? 'QR 출석을 이용해주세요.' : '관리자에게 문의해주세요.'}</p>
                                     </div>
                                 )}
 
@@ -830,8 +830,8 @@ function App() {
                             </div>
                         )}
 
-                        {/* QR 출석 버튼 */}
-                        {!mySession?.checkedIn && (
+                        {/* QR 출석 버튼 — 관리자가 enableQR 활성화 시에만 표시 */}
+                        {!mySession?.checkedIn && meetingSettings?.enableQR && (
                             <div className="card rounded-3xl p-5">
                                 <p className="text-xs font-black text-violet-400 uppercase tracking-widest mb-3">QR 출석</p>
                                 <button onClick={()=>setIsQRScannerOpen(true)}

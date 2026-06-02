@@ -426,7 +426,7 @@ function App() {
     const [historySortKey, setHistorySortKey] = useState('time');
     const [historySortOrder, setHistorySortOrder] = useState('asc');
     const [meetingTimes, setMeetingTimes] = useState({
-        date: getThisSunday(), start:'08:00', end:'10:00', location:'', locationLat:null, locationLng:null, managerId:'', managerName:'', maxLimit:18
+        date: getThisSunday(), start:'08:00', end:'10:00', location:'', locationLat:null, locationLng:null, managerId:'', managerName:'', maxLimit:18, enableQR:false
     });
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isAppLocked, setIsAppLocked] = useState(false);
@@ -1380,6 +1380,20 @@ function App() {
                                                 className="text-[10px] text-slate-300 hover:text-red-400 font-black ml-auto">좌표 삭제</button>
                                         </div>
                                     )}
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase">출석 방식</label>
+                                    <div className="mt-1.5 flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
+                                        <div>
+                                            <p className="text-sm font-black text-slate-700">QR 출석 허용</p>
+                                            <p className="text-[10px] text-slate-400 mt-0.5">GPS가 기본입니다. QR을 추가로 허용할 수 있습니다.</p>
+                                        </div>
+                                        <button
+                                            onClick={() => updateMeetingTimeSettings({...meetingTimes, enableQR: !meetingTimes.enableQR})}
+                                            className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${meetingTimes.enableQR ? 'bg-violet-500' : 'bg-slate-300'}`}>
+                                            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${meetingTimes.enableQR ? 'translate-x-6' : 'translate-x-0.5'}`}></span>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="text-[10px] font-black text-slate-400 uppercase">선착순 인원</label>
