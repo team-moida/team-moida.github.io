@@ -1174,6 +1174,19 @@ function App() {
                                     <p className="text-[10px] text-slate-400 mt-0.5">대기</p>
                                 </div>
                             </div>
+                            {/* 출석률 진행 바 */}
+                            {activeList.length > 0 && (
+                                <div className="mt-3 pt-3 border-t border-slate-100">
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <span className="text-[10px] font-black text-slate-400">출석률</span>
+                                        <span className="text-[10px] font-black text-emerald-500">{checkedInCount}/{activeList.length} · {Math.round(checkedInCount/activeList.length*100)}%</span>
+                                    </div>
+                                    <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full transition-all duration-700"
+                                            style={{width:`${Math.round(checkedInCount/activeList.length*100)}%`,background:checkedInCount===0?'#e2e8f0':'linear-gradient(90deg,#14b8a6,#10b981)'}}/>
+                                    </div>
+                                </div>
+                            )}
                             {/* 출석 상태 통계 */}
                             {activeList.some(p => p.checkedIn) && (
                                 <div className="flex gap-2 text-center mt-3 pt-3 border-t border-slate-100">
@@ -1358,6 +1371,20 @@ function App() {
                 {/* ===== 선정 탭 ===== */}
                 {view === 'setup' && (
                     <div>
+                        {/* sticky 인원 카운터 */}
+                        <div style={{position:'sticky',top:64,zIndex:40,margin:'0 -1rem',padding:'10px 1rem',background:darkMode?'rgba(15,23,42,0.96)':'rgba(248,250,252,0.96)',backdropFilter:'blur(8px)',borderBottom:`1px solid ${darkMode?'#334155':'#e2e8f0'}`,boxShadow:'0 1px 6px rgba(0,0,0,0.06)',marginBottom:16}}>
+                            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',maxWidth:'72rem',margin:'0 auto'}}>
+                                <span style={{fontSize:10,fontWeight:900,color:'#94a3b8',textTransform:'uppercase',letterSpacing:'0.1em'}}>선정 인원</span>
+                                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                                    <span style={{fontSize:15,fontWeight:900,color:activeParticipants.length>=(meetingTimes.maxLimit||18)?'#14b8a6':darkMode?'#f1f5f9':'#1e293b'}}>
+                                        {activeParticipants.length} / {meetingTimes.maxLimit||18}명
+                                    </span>
+                                    {activeParticipants.length>=(meetingTimes.maxLimit||18)&&(
+                                        <span style={{fontSize:9,fontWeight:900,padding:'2px 8px',background:'#ccfbf1',color:'#0d9488',borderRadius:6}}>마감</span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                         <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 mb-4">
                             <p className="text-xs font-black text-teal-500 uppercase tracking-widest mb-4">모임 설정</p>
                             <div className="space-y-3">

@@ -109,50 +109,40 @@
                 </button>
             </div>
 
-            <!-- 내 회원 앱 -->
-            <a href="member.html" class="card flex items-center gap-4 bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-5 block">
-                <div class="w-11 h-11 bg-blue-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">👤</div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-slate-800 font-black text-sm">내 회원 앱</p>
-                    <p class="text-blue-500 text-xs mt-0.5">출석 체크 · 팀 확인</p>
+            <!-- 내 회원 앱 (크게) -->
+            <a href="member.html" class="card block bg-blue-50 border border-blue-100 rounded-3xl p-5 mb-5">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">👤</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-slate-800 font-black text-xl">내 회원 앱</p>
+                        <p class="text-blue-500 text-sm mt-1">출석 체크 · 팀 확인 · 매치 일정</p>
+                    </div>
+                    <div class="text-slate-400 text-2xl">›</div>
                 </div>
-                <div class="text-slate-400 text-xl">›</div>
             </a>
 
-            <!-- 관리 메뉴 -->
-            <p class="text-slate-400 text-[10px] font-bold tracking-widest uppercase mb-2 px-1">관리</p>
-            <div class="space-y-2.5">
-                <a href="attendance.html" class="card flex items-center gap-4 bg-emerald-50 border border-emerald-100 rounded-2xl p-4 block">
-                    <div class="w-11 h-11 bg-emerald-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">✅</div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-slate-800 font-black text-sm">출결 관리</p>
-                        <p class="text-emerald-600 text-xs mt-0.5">출석 체크 · 선정 · 기록</p>
-                    </div>
-                    <div class="text-slate-400 text-xl">›</div>
+            <!-- 관리 메뉴 (2열 그리드) -->
+            <p class="text-slate-400 text-[10px] font-bold tracking-widest uppercase mb-3 px-1">관리</p>
+            <div class="grid grid-cols-2 gap-3">
+                <a href="attendance.html" class="card flex flex-col items-center bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-center block">
+                    <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-2xl mb-3">✅</div>
+                    <p class="text-slate-800 font-black text-sm">출결 관리</p>
+                    <p class="text-emerald-600 text-xs mt-1">출석 · 선정 · 기록</p>
                 </a>
-                <a href="roster.html" class="card flex items-center gap-4 bg-teal-50 border border-teal-100 rounded-2xl p-4 block">
-                    <div class="w-11 h-11 bg-teal-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">📋</div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-slate-800 font-black text-sm">명단 · 회비 관리</p>
-                        <p class="text-teal-600 text-xs mt-0.5">회원 정보 · 납부 현황</p>
-                    </div>
-                    <div class="text-slate-400 text-xl">›</div>
+                <a href="roster.html" class="card flex flex-col items-center bg-teal-50 border border-teal-100 rounded-2xl p-4 text-center block">
+                    <div class="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center text-2xl mb-3">📋</div>
+                    <p class="text-slate-800 font-black text-sm">명단 · 회비</p>
+                    <p class="text-teal-600 text-xs mt-1">회원정보 · 납부현황</p>
                 </a>
-                <a href="team-maker.html" class="card flex items-center gap-4 bg-violet-50 border border-violet-100 rounded-2xl p-4 block">
-                    <div class="w-11 h-11 bg-violet-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">⚡</div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-slate-800 font-black text-sm">팀 편성</p>
-                        <p class="text-violet-600 text-xs mt-0.5">자동 균등 팀 편성</p>
-                    </div>
-                    <div class="text-slate-400 text-xl">›</div>
+                <a href="team-maker.html" class="card flex flex-col items-center bg-violet-50 border border-violet-100 rounded-2xl p-4 text-center block">
+                    <div class="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center text-2xl mb-3">⚡</div>
+                    <p class="text-slate-800 font-black text-sm">팀 편성</p>
+                    <p class="text-violet-600 text-xs mt-1">자동 균등 편성</p>
                 </a>
-                <a href="match.html" class="card flex items-center gap-4 bg-rose-50 border border-rose-100 rounded-2xl p-4 block">
-                    <div class="w-11 h-11 bg-rose-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">🏟️</div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-slate-800 font-black text-sm">매치 테이블</p>
-                        <p class="text-rose-500 text-xs mt-0.5">경기 일정 자동 편성</p>
-                    </div>
-                    <div class="text-slate-400 text-xl">›</div>
+                <a href="match.html" class="card flex flex-col items-center bg-rose-50 border border-rose-100 rounded-2xl p-4 text-center block">
+                    <div class="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center text-2xl mb-3">🏟️</div>
+                    <p class="text-slate-800 font-black text-sm">매치 테이블</p>
+                    <p class="text-rose-500 text-xs mt-1">경기일정 편성</p>
                 </a>
             </div>
         </div>

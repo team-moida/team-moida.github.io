@@ -243,6 +243,24 @@ function App() {
     const [qrMessage, setQrMessage] = useState('');
     const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
     const [lastScannedQR, setLastScannedQR] = useState({ token:null, date:null });
+    const [nowTime, setNowTime] = useState(() => new Date());
+    useEffect(() => { const t = setInterval(() => setNowTime(new Date()), 30000); return () => clearInterval(t); }, []);
+
+    const meetingDayInfo = useMemo(() => {
+        if (!meetingSettings?.date || !meetingSettings?.start) return null;
+        const [my,mm,md] = meetingSettings.date.split('-').map(Number);
+        const [sh,sm] = meetingSettings.start.split(':').map(Number);
+        const meetingStart = new Date(my,mm-1,md,sh,sm,0);
+        const today0 = new Date(nowTime.getFullYear(),nowTime.getMonth(),nowTime.getDate(),0,0,0);
+        const meetDay0 = new Date(my,mm-1,md,0,0,0);
+        const dDays = Math.round((meetDay0-today0)/(1000*60*60*24));
+        if (dDays < 0) return { type:'past' };
+        if (dDays > 0) return { type:'future', label:`D-${dDays}` };
+        const minsUntil = Math.round((meetingStart-nowTime)/60000);
+        if (minsUntil > 60) return { type:'today', label:`${Math.floor(minsUntil/60)}시간 ${minsUntil%60}분 후` };
+        if (minsUntil > 0) return { type:'today', label:`${minsUntil}분 후 시작`, urgent: minsUntil <= 30 };
+        return { type:'started', label:'모임 중' };
+    }, [meetingSettings, nowTime]);
 
     // 알림
     const [toast, setToast] = useState({ show:false, msg:'', type:'info' });
@@ -648,11 +666,19 @@ function App() {
                         <button onClick={()=>setTab('attend')} className="w-full card rounded-3xl p-5 text-left active:scale-98 transition-all">
                             <div className="flex items-center gap-4">
                                 <div className="w-14 h-14 bg-teal-100 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">📍</div>
-                                <div>
+                                <div className="flex-1 min-w-0">
                                     <p className="font-black text-lg">출석 체크</p>
                                     <p className="text-slate-400 text-xs mt-0.5">GPS 또는 QR로 출석</p>
                                 </div>
-                                <div className="ml-auto text-slate-600 text-xl">›</div>
+                                {meetingDayInfo && meetingDayInfo.type !== 'past' && (
+                                    <div className={`flex-shrink-0 text-center px-3 py-1.5 rounded-xl text-xs font-black ${
+                                        meetingDayInfo.type==='started'?'bg-emerald-100 text-emerald-600':
+                                        meetingDayInfo.urgent?'bg-rose-100 text-rose-600':
+                                        meetingDayInfo.type==='today'?'bg-teal-100 text-teal-600':
+                                        'bg-slate-100 text-slate-500'}`}>
+                                        {meetingDayInfo.label}
+                                    </div>
+                                )}
                             </div>
                         </button>
 
@@ -684,13 +710,40 @@ function App() {
 
                         {/* 출석 현황 */}
                         {mySession && (
-                            <div className={`rounded-3xl p-5 ${mySession.checkedIn?'bg-emerald-50 border border-emerald-200':'card'}`}>
-                                <p className="text-xs font-black text-emerald-400 uppercase tracking-widest mb-2">오늘 출석 현황</p>
-                                {mySession.checkedIn
-                                    ? <div><p className="font-black text-lg text-emerald-400">✓ 출석 완료</p><p className="text-slate-400 text-sm mt-1">{mySession.checkInTime} · {mySession.status}</p></div>
-                                    : <p className="text-slate-400 font-black">미출석 · 출석탭에서 체크인하세요</p>
-                                }
-                            </div>
+                            mySession.checkedIn ? (
+                                <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-5">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">✅</div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-black text-xl text-emerald-600">출석 완료</p>
+                                            <p className="text-emerald-400 text-xs">{meetingSettings?.date}</p>
+                                        </div>
+                                        <span className={`flex-shrink-0 text-xs font-black px-3 py-1.5 rounded-xl ${mySession.status==='정상'?'bg-emerald-500 text-white':'bg-yellow-400 text-slate-800'}`}>
+                                            {mySession.status}
+                                        </span>
+                                    </div>
+                                    <div className="bg-white/60 rounded-2xl p-3 flex items-center justify-between">
+                                        <span className="text-slate-500 text-xs font-black">{memberName}</span>
+                                        <span className="text-slate-700 font-black text-sm">{mySession.checkInTime}</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="card rounded-3xl p-5">
+                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">오늘 출석 현황</p>
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-slate-500 font-black text-sm">미출석</p>
+                                        <button onClick={()=>setTab('attend')} className="text-xs font-black px-3 py-2 bg-teal-100 text-teal-600 rounded-xl active:scale-95">
+                                            출석하기 →
+                                        </button>
+                                    </div>
+                                    {meetingDayInfo?.type === 'today' && (
+                                        <p className={`text-xs font-black mt-2 ${meetingDayInfo.urgent?'text-rose-500':'text-teal-500'}`}>⏰ {meetingDayInfo.label}</p>
+                                    )}
+                                    {meetingDayInfo?.type === 'started' && (
+                                        <p className="text-xs font-black mt-2 text-emerald-500">🏃 모임이 진행 중입니다</p>
+                                    )}
+                                </div>
+                            )
                         )}
                     </div>
                 )}
@@ -699,7 +752,11 @@ function App() {
                 {tab === 'team' && (
                     <div className="animate-in">
                         {!teamDraftData
-                            ? <div className="text-center py-20 text-slate-600"><p className="text-4xl mb-3">⚡</p><p className="font-black">팀 편성 전입니다</p></div>
+                            ? <div className="text-center py-20 text-slate-500">
+                                <p className="text-5xl mb-4">⚡</p>
+                                <p className="font-black text-lg mb-2">아직 팀이 편성되지 않았습니다</p>
+                                <p className="text-sm text-slate-400">운영진이 팀 편성을 완료하면<br/>여기에 표시됩니다</p>
+                              </div>
                             : (
                                 <div>
                                     <div className="text-center mb-4">
@@ -731,7 +788,11 @@ function App() {
                 {tab === 'match' && (
                     <div className="animate-in">
                         {!scheduleData
-                            ? <div className="text-center py-20 text-slate-600"><p className="text-4xl mb-3">🏟️</p><p className="font-black">매치 테이블 준비 중</p></div>
+                            ? <div className="text-center py-20 text-slate-500">
+                                <p className="text-5xl mb-4">🏟️</p>
+                                <p className="font-black text-lg mb-2">매치 테이블 준비 중</p>
+                                <p className="text-sm text-slate-400">팀 편성이 확정되면<br/>경기 일정이 공개됩니다</p>
+                              </div>
                             : (
                                 <div>
                                     <div className="text-center mb-4">
@@ -840,8 +901,19 @@ function App() {
                                             <div className="absolute inset-0 bg-teal-100 rounded-full pulse-ring"></div>
                                             <div className="w-20 h-20 bg-teal-500 rounded-full flex items-center justify-center text-3xl">📍</div>
                                         </div>
-                                        <p className="font-black text-emerald-400 text-lg mb-1">모임 장소 근처!</p>
-                                        <p className="text-slate-400 text-sm mb-4">{distance}m 거리</p>
+                                        <p className="font-black text-emerald-400 text-lg mb-3">모임 장소 근처!</p>
+                                        {distance !== null && (
+                                            <div className="mb-4 px-2">
+                                                <div className="flex justify-between text-[10px] font-black mb-1.5">
+                                                    <span className="text-emerald-400">✓ 인정 범위 내</span>
+                                                    <span className="text-slate-400">{distance}m / {meetingSettings?.locationRadius||100}m</span>
+                                                </div>
+                                                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-emerald-400 rounded-full transition-all duration-700"
+                                                        style={{width:`${Math.max(10, Math.round((1 - distance/(meetingSettings?.locationRadius||100))*100))}%`}}/>
+                                                </div>
+                                            </div>
+                                        )}
                                         <button onClick={handleGPSAttend} disabled={isCheckingIn}
                                             className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-base shadow-lg disabled:opacity-50">
                                             {isCheckingIn ? '출석 처리 중...' : '✓ 출석 체크'}
@@ -852,8 +924,20 @@ function App() {
                                 {gpsStatus==='outside' && (
                                     <div className="text-center">
                                         <p className="text-3xl mb-2">🚶</p>
-                                        <p className="font-black text-yellow-400 text-lg mb-1">아직 멀리 있습니다</p>
-                                        <p className="text-slate-400 text-sm mb-4">현재 {distance}m 거리<br/>100m 이내로 이동해주세요.</p>
+                                        <p className="font-black text-yellow-500 text-lg mb-3">아직 멀리 있습니다</p>
+                                        {distance !== null && (
+                                            <div className="mb-4 px-2">
+                                                <div className="flex justify-between text-[10px] font-black mb-1.5">
+                                                    <span className="text-yellow-500">현재 {distance}m</span>
+                                                    <span className="text-slate-400">{meetingSettings?.locationRadius||100}m 이내 필요</span>
+                                                </div>
+                                                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-yellow-400 rounded-full transition-all duration-700"
+                                                        style={{width:`${Math.min(90, Math.round(distance/((meetingSettings?.locationRadius||100)*3)*100))}%`}}/>
+                                                </div>
+                                                <p className="text-[10px] text-slate-400 mt-1.5">{Math.max(0, distance-(meetingSettings?.locationRadius||100))}m 더 이동하면 출석 가능</p>
+                                            </div>
+                                        )}
                                         <button onClick={handleGPSCheckIn} className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">
                                             🔄 다시 확인
                                         </button>
