@@ -219,14 +219,14 @@ function App() {
             if (sessionDoc.data().checkedIn) { setQrMessage('이미 출석 처리되었습니다.'); setQrStatus('success'); return; }
 
             const [sy,sm,sd] = urlParams.date.split('-');
-            const startTime = meetingSettings?.start || '08:00';
-            const [shr,smin] = startTime.split(':');
+            // state 로딩 타이밍 이슈 방지: Firestore에서 직접 조회
+            const settingsDoc = await getCol('settings').doc('meeting_schedule_v2').get();
+            const startStr = settingsDoc.exists ? (settingsDoc.data().start || '08:00') : '08:00';
+            const [shr,smin] = startStr.split(':');
             const meetingStart = new Date(sy,sm-1,sd,parseInt(shr),parseInt(smin),0);
-            // 출석 기준:
-            // - 정상: 시작 ~ 시작+1분
-            // - 지각: 시작+1분 초과 ~ 종료
-            // - 노쇼: 미출석
-            const normalThreshold = new Date(meetingStart.getTime() + 60000);
+            // 정상: allowFrom(시작-70분) ~ 시작-9분(07:51)
+            // 지각: 시작-9분 초과 ~ 종료
+            const normalThreshold = new Date(meetingStart.getTime() - 9*60*1000);
             const status = now <= normalThreshold ? '정상' : '지각';
             const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
 
@@ -245,7 +245,7 @@ function App() {
             setQrMessage('오류가 발생했습니다: ' + e.message);
             setQrStatus('error');
         }
-    }, [urlParams, memberData, meetingSettings]);
+    }, [urlParams, memberData, testMode]);
 
     useEffect(() => {
         if (urlParams.token && appView === 'app') handleQRAttendance();
