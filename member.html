@@ -406,7 +406,15 @@ function App() {
         setAppView('login');
     };
 
-    const toggleTestMode = () => setTestMode(prev => !prev);
+    const toggleTestMode = async () => {
+        const newVal = !testMode;
+        try {
+            await getCol('settings').doc('meeting_schedule_v2').update({ testMode: newVal });
+            // setTestMode는 onSnapshot이 호출함
+        } catch(e) {
+            setTestMode(newVal); // Firestore 실패 시 로컬 fallback
+        }
+    };
 
     // GPS 출석 체크
     const handleGPSCheckIn = async () => {
@@ -752,8 +760,9 @@ function App() {
                                             📷 다시 스캔하기
                                         </button>
                                         {(urlParams.token || lastScannedQR.token) && (
-                                            <button onClick={() => {
-                                                setTestMode(true);
+                                            <button onClick={async () => {
+                                                try { await getCol('settings').doc('meeting_schedule_v2').update({ testMode: true }); }
+                                                catch(e) { setTestMode(true); }
                                                 processQRToken(urlParams.token || lastScannedQR.token, urlParams.date || lastScannedQR.date);
                                             }} className="mt-2 text-xs text-amber-400 font-black px-5 py-2.5 rounded-xl bg-amber-400/15 block mx-auto">
                                                 🧪 테스트 모드로 재시도
