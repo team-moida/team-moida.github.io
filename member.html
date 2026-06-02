@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#f0fdfa">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
     <title>모이다 - 회원</title>
@@ -20,7 +20,7 @@
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: #0f172a;
+            background: #f8fafc;
             -webkit-tap-highlight-color: transparent;
             user-select: none;
             overscroll-behavior-y: none;
@@ -31,12 +31,12 @@
         @keyframes pulseRing { 0%{transform:scale(1);opacity:1} 70%{transform:scale(1.4);opacity:0} 100%{transform:scale(1.4);opacity:0} }
         button:active { transform: scale(0.96); opacity: 0.85; }
         input:focus { outline: none; }
-        .card { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+        .card { background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .card-white { background: white; }
         .no-scrollbar::-webkit-scrollbar{display:none}
         .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
         select { appearance: none; }
-        .tab-bar { background: rgba(15,23,42,0.95); border-top: 1px solid rgba(255,255,255,0.08); }
+        .tab-bar { background: rgba(255,255,255,0.95); border-top: 1px solid #e2e8f0; backdrop-filter: blur(10px); }
         .qr-scan-line { animation: scanLine 2s ease-in-out infinite; }
         @keyframes scanLine { 0%{top:8px} 50%{top:calc(100% - 10px)} 100%{top:8px} }
     </style>
@@ -490,7 +490,7 @@ function App() {
     // 로딩
     if (appView === 'loading') return (
         <div className="min-h-screen flex flex-col items-center justify-center">
-            <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4"></div>
             <p className="text-slate-400 text-sm font-medium">모이다 연결 중...</p>
         </div>
     );
@@ -501,8 +501,8 @@ function App() {
             <div className="w-full max-w-sm animate-in">
                 <div className="text-center mb-8">
                     <img src="icon.png" alt="OTP FC" className="w-20 h-20 object-contain mx-auto mb-4" onError={e=>e.target.style.display='none'}/>
-                    <h1 className="text-3xl font-black text-white">모이다</h1>
-                    <p className="text-pink-400 text-xs mt-1 tracking-widest">OTP FC 회원 앱</p>
+                    <h1 className="text-3xl font-black text-slate-800">모이다</h1>
+                    <p className="text-teal-600 text-xs mt-1 tracking-widest font-black">OTP FC 회원 앱</p>
                 </div>
 
                 <div className="bg-white rounded-3xl p-6 shadow-2xl">
@@ -513,21 +513,21 @@ function App() {
                         <div>
                             <p className="text-xs font-black text-slate-500 mb-1">이름</p>
                             <input type="text" placeholder="실명 입력" style={{userSelect:'text'}}
-                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-black focus:border-pink-400 transition-colors"
+                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-black focus:border-teal-400 transition-colors"
                                 value={loginForm.name} onChange={e=>setLoginForm(p=>({...p,name:e.target.value}))}
                                 onKeyDown={e=>e.key==='Enter'&&handleLogin()}/>
                         </div>
                         <div>
                             <p className="text-xs font-black text-slate-500 mb-1">생년월일 <span className="font-normal text-slate-400">YYMMDD · 예) 900101</span></p>
                             <input type="text" placeholder="900101" maxLength="6" style={{userSelect:'text'}}
-                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-black focus:border-pink-400 transition-colors"
+                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-black focus:border-teal-400 transition-colors"
                                 value={loginForm.birth} onChange={e=>setLoginForm(p=>({...p,birth:e.target.value.replace(/[^0-9]/g,'')}))}
                                 onKeyDown={e=>e.key==='Enter'&&handleLogin()}/>
                         </div>
                     </div>
 
                     <button onClick={handleLogin} disabled={isLoggingIn}
-                        className="w-full mt-5 py-4 bg-pink-500 text-white rounded-2xl font-black text-base shadow-lg shadow-pink-200 disabled:opacity-50">
+                        className="w-full mt-5 py-4 bg-teal-500 text-white rounded-2xl font-black text-base shadow-lg shadow-teal-200 disabled:opacity-50">
                         {isLoggingIn ? '확인 중...' : '로그인'}
                     </button>
                 </div>
@@ -548,25 +548,25 @@ function App() {
     const myTeamIdx = myTeamInfo?.teamIdx ?? -1;
 
     return (
-        <div className="min-h-screen pb-24 text-white">
+        <div className="min-h-screen pb-24 text-slate-800">
             {testMode && (
                 <div style={{background:'#fbbf24',position:'sticky',top:0,zIndex:50}} className="text-amber-900 text-xs font-black text-center py-2 px-4">
                     🧪 테스트 모드 — GPS·QR 시간 제한 해제됨. 우측 상단 🧪 버튼으로 끄세요.
                 </div>
             )}
             {/* 헤더 */}
-            <div className="px-5 pt-12 pb-6" style={{background:'linear-gradient(160deg,#1e1b4b,#0f172a)'}}>
+            <div className="px-5 pt-12 pb-6" style={{background:'linear-gradient(160deg,#f0fdfa,#e6fffa)'}}>
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <p className="text-pink-400 text-xs tracking-widest uppercase font-bold">OTP FC</p>
-                        <h1 className="text-2xl font-black mt-0.5">{memberName} 님</h1>
+                        <p className="text-teal-600 text-xs tracking-widest uppercase font-bold">OTP FC</p>
+                        <h1 className="text-2xl font-black text-slate-800 mt-0.5">{memberName} 님</h1>
                     </div>
                     <div className="flex flex-col items-end gap-1.5">
                         <div className="flex gap-1.5">
-                            <button onClick={()=>window.location.href='index.html'} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-all">🏠</button>
-                            <button onClick={handleLogout} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-all">로그아웃</button>
+                            <button onClick={()=>window.location.href='index.html'} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all">🏠</button>
+                            <button onClick={handleLogout} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all">로그아웃</button>
                             <button onClick={toggleTestMode} title="테스트 모드"
-                                className={`text-[10px] font-black px-2.5 py-1 rounded-lg transition-all ${testMode ? 'bg-amber-400 text-amber-900' : 'bg-white/10 text-slate-500'}`}>
+                                className={`text-[10px] font-black px-2.5 py-1 rounded-lg transition-all ${testMode ? 'bg-amber-400 text-amber-900' : 'bg-slate-200/70 text-slate-500'}`}>
                                 🧪
                             </button>
                         </div>
@@ -577,7 +577,7 @@ function App() {
                 {/* 오늘 모임 정보 */}
                 {meetingSettings && (
                     <div className="card rounded-2xl p-4 mt-2">
-                        <p className="text-[10px] text-pink-400 font-black uppercase tracking-widest mb-2">다음 모임</p>
+                        <p className="text-[10px] text-teal-500 font-black uppercase tracking-widest mb-2">다음 모임</p>
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="font-black text-lg">{meetingSettings.date}</p>
@@ -591,7 +591,7 @@ function App() {
                                         <div>{myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</div>
                                         <div className="text-[10px] opacity-80">{getTeamColorName(myTeamIdx)} 조끼</div>
                                       </div>
-                                    : <div className="bg-slate-700 px-4 py-2 rounded-xl text-xs font-black text-slate-400">미편성</div>
+                                    : <div className="bg-slate-100 px-4 py-2 rounded-xl text-xs font-black text-slate-400">미편성</div>
                             }
                         </div>
                     </div>
@@ -607,7 +607,7 @@ function App() {
                         {/* 빠른 출석 */}
                         <button onClick={()=>setTab('attend')} className="w-full card rounded-3xl p-5 text-left active:scale-98 transition-all">
                             <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 bg-pink-500/20 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">📍</div>
+                                <div className="w-14 h-14 bg-teal-100 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">📍</div>
                                 <div>
                                     <p className="font-black text-lg">출석 체크</p>
                                     <p className="text-slate-400 text-xs mt-0.5">GPS 또는 QR로 출석</p>
@@ -619,7 +619,7 @@ function App() {
                         {/* 내 팀 */}
                         {myTeamInfo ? (
                             <div className="card rounded-3xl p-5">
-                                <p className="text-xs font-black text-pink-400 uppercase tracking-widest mb-3">내 팀</p>
+                                <p className="text-xs font-black text-teal-500 uppercase tracking-widest mb-3">내 팀</p>
                                 <div className="flex items-center gap-3 mb-3">
                                     <span className={`w-10 h-10 rounded-xl font-black text-lg flex items-center justify-center ${getTeamBadge(myTeamIdx)} text-white flex-shrink-0`}>{myTeamInfo.jerseyNumber}</span>
                                     <div>
@@ -629,7 +629,7 @@ function App() {
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {myTeamInfo.members.map((m,i)=>(
-                                        <span key={i} className={`px-3 py-1.5 rounded-xl text-xs font-black ${m.memberId===memberData?.memberId?'bg-pink-500 text-white':'bg-white/10 text-slate-300'}`}>
+                                        <span key={i} className={`px-3 py-1.5 rounded-xl text-xs font-black ${m.memberId===memberData?.memberId?'bg-teal-500 text-white':'bg-slate-100 text-slate-600'}`}>
                                             <span className="opacity-60 mr-0.5">{i+1}.</span>{m.name}{m.gender==='여성'&&<span className="ml-1 opacity-60">W</span>}
                                         </span>
                                     ))}
@@ -667,13 +667,13 @@ function App() {
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         {teamDraftData.teams.map((team, teamIdx)=>(
-                                            <div key={teamIdx} className={`rounded-2xl p-4 border ${teamIdx===myTeamIdx?'border-pink-500 bg-pink-900/20':'card border-white/10'}`}>
+                                            <div key={teamIdx} className={`rounded-2xl p-4 border ${teamIdx===myTeamIdx?'border-teal-500 bg-teal-50':'card border-slate-100'}`}>
                                                 <div className="flex items-center gap-2 mb-3">
                                                     <span className={`w-8 h-8 rounded-xl font-black text-sm flex items-center justify-center text-white ${getTeamBadge(teamIdx)}`}>{getTeamName(teamIdx)}</span>
-                                                    {teamIdx===myTeamIdx&&<span className="text-[9px] font-black text-pink-400 uppercase">내 팀</span>}
+                                                    {teamIdx===myTeamIdx&&<span className="text-[9px] font-black text-teal-500 uppercase">내 팀</span>}
                                                 </div>
                                                 {team.members.map((m,mi)=>(
-                                                    <div key={mi} className={`text-xs py-1 font-black flex items-center gap-1 ${m.memberId===memberData?.memberId?'text-pink-400':'text-slate-400'}`}>
+                                                    <div key={mi} className={`text-xs py-1 font-black flex items-center gap-1 ${m.memberId===memberData?.memberId?'text-teal-500':'text-slate-400'}`}>
                                                         <span className="opacity-50 w-4 text-right flex-shrink-0">{mi+1}.</span>
                                                         <span>{m.name}{m.gender==='여성'&&' W'}</span>
                                                     </div>
@@ -704,10 +704,10 @@ function App() {
                                             const hasMyTeam = myTeamName && session.matches.some(m=>m.match.includes(myTeamName));
                                             const isResting = myTeamName && session.resting?.includes(myTeamName);
                                             return (
-                                                <div key={si} className={`rounded-2xl p-4 border ${hasMyTeam?'border-pink-500/50 bg-pink-900/15':isResting?'border-amber-500/30 bg-amber-900/10':'card border-white/8'}`}>
+                                                <div key={si} className={`rounded-2xl p-4 border ${hasMyTeam?'border-teal-300 bg-teal-50':isResting?'border-amber-200 bg-amber-50':'card border-slate-100'}`}>
                                                     <div className="flex items-center gap-2 mb-3">
                                                         <p className="text-xs font-black text-slate-400">{session.time}</p>
-                                                        {hasMyTeam&&<span className="text-[9px] font-black text-pink-400 bg-pink-500/20 px-2 py-0.5 rounded-full">내 경기</span>}
+                                                        {hasMyTeam&&<span className="text-[9px] font-black text-teal-500 bg-teal-100 px-2 py-0.5 rounded-full">내 경기</span>}
                                                         {isResting&&<span className="text-[9px] font-black text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-full">휴식</span>}
                                                     </div>
                                                     {session.matches.map((m,mi)=>{
@@ -718,9 +718,9 @@ function App() {
                                                         return (
                                                             <div key={mi} className="flex items-center gap-2 mb-1.5 last:mb-0">
                                                                 <span className="text-[9px] text-slate-600 w-10 shrink-0">{scheduleData.config?.fieldNames?.[m.fieldIdx]||`${m.fieldIdx+1}구장`}</span>
-                                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-black text-white ${getTeamBadge(t1Idx)} ${isMyMatch&&t1===myTeamName?'ring-2 ring-white/50':''}`}>{t1}</span>
+                                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-black text-white ${getTeamBadge(t1Idx)} ${isMyMatch&&t1===myTeamName?'ring-2 ring-white/80':''}`}>{t1}</span>
                                                                 <span className="text-slate-600 text-xs">vs</span>
-                                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-black text-white ${getTeamBadge(t2Idx)} ${isMyMatch&&t2===myTeamName?'ring-2 ring-white/50':''}`}>{t2}</span>
+                                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-black text-white ${getTeamBadge(t2Idx)} ${isMyMatch&&t2===myTeamName?'ring-2 ring-white/80':''}`}>{t2}</span>
                                                             </div>
                                                         );
                                                     })}
@@ -749,8 +749,8 @@ function App() {
 
                         {/* QR 처리 결과 */}
                         {qrStatus !== 'idle' && (
-                            <div className={`rounded-3xl p-5 text-center border ${qrStatus==='success'?'bg-emerald-900/30 border-emerald-500/30':qrStatus==='processing'?'card border-white/10':'bg-red-900/30 border-red-500/30'}`}>
-                                {qrStatus==='processing' && <><div className="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p className="font-black text-slate-300">QR 확인 중...</p></>}
+                            <div className={`rounded-3xl p-5 text-center border ${qrStatus==='success'?'bg-emerald-50 border-emerald-200':qrStatus==='processing'?'card border-slate-100':'bg-red-50 border-red-200'}`}>
+                                {qrStatus==='processing' && <><div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p className="font-black text-slate-500">QR 확인 중...</p></>}
                                 {qrStatus==='success' && <><p className="text-3xl mb-2">🎉</p><p className="font-black text-emerald-400 whitespace-pre-line">{qrMessage}</p></>}
                                 {qrStatus==='error' && (
                                     <>
@@ -776,12 +776,12 @@ function App() {
                         {/* GPS 출석 */}
                         {!mySession?.checkedIn && (
                             <div className="card rounded-3xl p-5">
-                                <p className="text-xs font-black text-pink-400 uppercase tracking-widest mb-4">GPS 출석</p>
+                                <p className="text-xs font-black text-teal-500 uppercase tracking-widest mb-4">GPS 출석</p>
 
                                 {gpsStatus==='idle' && (
                                     <div className="text-center">
                                         <p className="text-slate-400 text-sm mb-4">모임 장소 근처에 있다면<br/>아래 버튼으로 위치를 확인하세요.</p>
-                                        <button onClick={handleGPSCheckIn} className="w-full py-4 bg-pink-500 text-white rounded-2xl font-black text-base shadow-lg shadow-pink-900/30">
+                                        <button onClick={handleGPSCheckIn} className="w-full py-4 bg-teal-500 text-white rounded-2xl font-black text-base shadow-lg shadow-teal-100">
                                             📍 위치 확인하기
                                         </button>
                                     </div>
@@ -789,7 +789,7 @@ function App() {
 
                                 {gpsStatus==='checking' && (
                                     <div className="text-center py-4">
-                                        <div className="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                                        <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                                         <p className="text-slate-400 font-black">GPS 확인 중...</p>
                                     </div>
                                 )}
@@ -797,8 +797,8 @@ function App() {
                                 {gpsStatus==='within' && (
                                     <div className="text-center">
                                         <div className="relative w-20 h-20 mx-auto mb-4">
-                                            <div className="absolute inset-0 bg-pink-500/20 rounded-full pulse-ring"></div>
-                                            <div className="w-20 h-20 bg-pink-500 rounded-full flex items-center justify-center text-3xl">📍</div>
+                                            <div className="absolute inset-0 bg-teal-100 rounded-full pulse-ring"></div>
+                                            <div className="w-20 h-20 bg-teal-500 rounded-full flex items-center justify-center text-3xl">📍</div>
                                         </div>
                                         <p className="font-black text-emerald-400 text-lg mb-1">모임 장소 근처!</p>
                                         <p className="text-slate-400 text-sm mb-4">{distance}m 거리</p>
@@ -814,7 +814,7 @@ function App() {
                                         <p className="text-3xl mb-2">🚶</p>
                                         <p className="font-black text-yellow-400 text-lg mb-1">아직 멀리 있습니다</p>
                                         <p className="text-slate-400 text-sm mb-4">현재 {distance}m 거리<br/>100m 이내로 이동해주세요.</p>
-                                        <button onClick={handleGPSCheckIn} className="w-full py-3 bg-slate-700 text-white rounded-2xl font-black text-sm">
+                                        <button onClick={handleGPSCheckIn} className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">
                                             🔄 다시 확인
                                         </button>
                                     </div>
@@ -823,7 +823,7 @@ function App() {
                                 {gpsStatus==='no_location' && (
                                     <div className="text-center">
                                         <p className="text-3xl mb-2">⚙️</p>
-                                        <p className="font-black text-slate-300 mb-1">장소 미설정</p>
+                                        <p className="font-black text-slate-500 mb-1">장소 미설정</p>
                                         <p className="text-slate-500 text-xs">관리자가 모임 장소 GPS를 설정하지 않았습니다.<br/>{meetingSettings?.enableQR ? 'QR 출석을 이용해주세요.' : '관리자에게 문의해주세요.'}</p>
                                     </div>
                                 )}
@@ -832,7 +832,7 @@ function App() {
                                     <div className="text-center">
                                         <p className="text-3xl mb-2">⚠️</p>
                                         <p className="font-black text-red-400 mb-3">위치 확인 실패</p>
-                                        <button onClick={()=>setGpsStatus('idle')} className="px-5 py-2.5 bg-slate-700 text-white rounded-xl font-black text-sm">다시 시도</button>
+                                        <button onClick={()=>setGpsStatus('idle')} className="px-5 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-black text-sm">다시 시도</button>
                                     </div>
                                 )}
 
@@ -865,9 +865,9 @@ function App() {
                         {key:'attend',label:'출석',emoji:'📍'},
                     ].map(({key,label,emoji})=>(
                         <button key={key} onClick={()=>setTab(key)}
-                            className={`flex flex-col items-center justify-center w-14 h-12 rounded-xl transition-all ${tab===key?'bg-pink-500/20 text-pink-400':'text-slate-600'}`}>
+                            className={`flex flex-col items-center justify-center w-14 h-12 rounded-xl transition-all ${tab===key?'bg-teal-100 text-teal-500':'text-slate-600'}`}>
                             <span className="text-lg leading-none">{emoji}</span>
-                            <span className={`text-[9px] font-black mt-0.5 ${tab===key?'text-pink-400':'text-slate-600'}`}>{label}</span>
+                            <span className={`text-[9px] font-black mt-0.5 ${tab===key?'text-teal-500':'text-slate-600'}`}>{label}</span>
                         </button>
                     ))}
                 </div>
