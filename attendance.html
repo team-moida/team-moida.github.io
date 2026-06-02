@@ -765,14 +765,27 @@ function App() {
         } catch(e) { showAlert('오류','변경 실패'); }
     };
 
+    const handleUncheckIn = async (participant) => {
+        showConfirm('출석 취소', `${participant.name}의 출석을 취소하시겠습니까?`, async () => {
+            try {
+                await getSessionCol().doc(participant.id).update({ checkedIn:false, checkInTime:null, status:'미출석' });
+                setModal({type:null,data:null});
+            } catch(e) { showAlert('오류','출석 취소 실패'); }
+        });
+    };
+
     const handleCheckIn = async (participant) => {
+        // 날짜 불일치 방어: participant의 세션 날짜가 현재 모임 날짜와 다르면 차단
+        if (participant.date !== meetingTimes.date) {
+            return showAlert('오류', `날짜 불일치 (${participant.date} ≠ ${meetingTimes.date})\n새로고침 후 다시 시도해주세요.`);
+        }
         const limit = testMode ? activeParticipants.length : (meetingTimes.maxLimit || 18);
         const rank = activeParticipants.findIndex(p => p.id === participant.id) + 1;
         if (!testMode && rank > limit) return showAlert('대기자 안내',`선착순(${limit}명) 마감되었습니다.`);
         const now = new Date();
         const [sy,sm,sd] = participant.date.split('-');
-        const [shr,smin] = meetingTimes.start.split(':');
-        const [ehr,emin] = meetingTimes.end.split(':');
+        const [shr,smin] = (meetingTimes.start||'08:00').split(':');
+        const [ehr,emin] = (meetingTimes.end||'10:00').split(':');
         const meetingStart = new Date(sy,sm-1,sd,parseInt(shr),parseInt(smin),0);
         const meetingEnd   = new Date(sy,sm-1,sd,parseInt(ehr),parseInt(emin),0);
         // 체크인 허용: 시작 70분 전(06:50) ~ 종료(10:00)
@@ -1632,7 +1645,11 @@ function App() {
                         <h2 className="text-2xl font-black text-slate-800 text-center mb-2">{modal.data.name}</h2>
                         <p className="text-xs text-center text-slate-400 mb-6">{modal.data.gender} · Lv.{modal.data.level}</p>
                         {modal.data.checkedIn
-                            ? <div className="text-center"><p className="text-emerald-500 font-black text-lg">✓ 이미 출석됨</p><p className="text-slate-400 text-sm mt-1">{modal.data.checkInTime} · {modal.data.status}</p></div>
+                            ? <div className="text-center">
+                                <p className="text-emerald-500 font-black text-lg">✓ 이미 출석됨</p>
+                                <p className="text-slate-400 text-sm mt-1">{modal.data.checkInTime} · {modal.data.status}</p>
+                                <button onClick={()=>handleUncheckIn(modal.data)} className="mt-4 w-full py-3 bg-red-50 text-red-500 border border-red-200 rounded-2xl font-black text-sm">출석 취소</button>
+                              </div>
                             : <button onClick={()=>handleCheckIn(modal.data)} className="w-full py-4 bg-teal-500 text-white rounded-2xl font-black text-lg shadow-lg">출석 체크</button>
                         }
                         <button onClick={()=>setModal({type:null,data:null})} className="w-full py-3 text-slate-400 text-sm mt-3">닫기</button>
