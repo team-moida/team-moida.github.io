@@ -135,6 +135,8 @@ function App() {
     const [user, setUser] = useState(null);
     const [alertModal, setAlertModal] = useState({show:false,title:'',content:'',type:'info',onConfirm:null});
     const [draggedItem, setDraggedItem] = useState(null);
+    const [selectedMember, setSelectedMember] = useState(null); // 탭 선택 조정용 {teamIdx, memberIdx}
+    const isDraggingRef = React.useRef(false);
     const [isCapturing, setIsCapturing] = useState(false);
     const [previewDraft, setPreviewDraft] = useState(null);
     const [displayedMeetingDate, setDisplayedMeetingDate] = useState('');
@@ -382,8 +384,14 @@ function App() {
 
     // 드래그 앤 드롭 (PC)
     const handleDragStart = (e, teamIdx, memberIdx) => {
+        isDraggingRef.current = true;
+        setSelectedMember(null);
         setDraggedItem({teamIdx,memberIdx});
         e.dataTransfer.effectAllowed='move';
+    };
+    const handleDragEnd = () => {
+        setTimeout(() => { isDraggingRef.current = false; }, 50);
+        setDraggedItem(null);
     };
 
     const handleDropOnTeam = (e, targetTeamIdx) => {
@@ -415,6 +423,33 @@ function App() {
         }
         setTeams(newTeams);
         setDraggedItem(null);
+    };
+
+    // 탭 선택 조정 (모바일/PC 공통)
+    const handleMemberClick = (teamIdx, memberIdx) => {
+        if (isDraggingRef.current || isPastMeeting) return;
+        if (!selectedMember) { setSelectedMember({teamIdx, memberIdx}); return; }
+        if (selectedMember.teamIdx===teamIdx && selectedMember.memberIdx===memberIdx) { setSelectedMember(null); return; }
+        // 두 멤버 위치 교체 (같은 팀이면 순서 교체, 다른 팀이면 팀 이동)
+        const newTeams = teams.map(t=>({...t,members:[...t.members]}));
+        const a = newTeams[selectedMember.teamIdx].members[selectedMember.memberIdx];
+        newTeams[selectedMember.teamIdx].members[selectedMember.memberIdx] = newTeams[teamIdx].members[memberIdx];
+        newTeams[teamIdx].members[memberIdx] = a;
+        newTeams[selectedMember.teamIdx].scoreSum = newTeams[selectedMember.teamIdx].members.reduce((s,m)=>s+(m.points||0),0);
+        if (teamIdx !== selectedMember.teamIdx) newTeams[teamIdx].scoreSum = newTeams[teamIdx].members.reduce((s,m)=>s+(m.points||0),0);
+        setTeams(newTeams);
+        setSelectedMember(null);
+    };
+    const handleMoveToTeam = (targetTeamIdx) => {
+        if (!selectedMember || isPastMeeting) return;
+        if (selectedMember.teamIdx === targetTeamIdx) { setSelectedMember(null); return; }
+        const newTeams = teams.map(t=>({...t,members:[...t.members]}));
+        const [moved] = newTeams[selectedMember.teamIdx].members.splice(selectedMember.memberIdx, 1);
+        newTeams[targetTeamIdx].members.push(moved);
+        newTeams[selectedMember.teamIdx].scoreSum = newTeams[selectedMember.teamIdx].members.reduce((s,m)=>s+(m.points||0),0);
+        newTeams[targetTeamIdx].scoreSum = newTeams[targetTeamIdx].members.reduce((s,m)=>s+(m.points||0),0);
+        setTeams(newTeams);
+        setSelectedMember(null);
     };
 
     const handleCapture = async () => {
@@ -615,32 +650,56 @@ function App() {
                                     <div id="teams-capture-area" className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
                                         {teams.map((team,teamIdx)=>(
                                             <div key={teamIdx}
-                                                className={`rounded-3xl border-2 p-4 ${getTeamCard(teamIdx)} transition-all`}
+                                                className={`rounded-3xl border-2 p-4 ${getTeamCard(teamIdx)} transition-all ${selectedMember&&selectedMember.teamIdx!==teamIdx&&!isPastMeeting?'ring-2 ring-teal-300':''}`}
                                                 onDragOver={!isPastMeeting?e=>e.preventDefault():undefined}
                                                 onDrop={!isPastMeeting?e=>handleDropOnTeam(e,teamIdx):undefined}>
                                                 <div className="flex items-center gap-2 mb-3">
                                                     <span className={`w-8 h-8 rounded-xl font-black text-sm flex items-center justify-center ${getTeamBadge(teamIdx)}`}>{getTeamName(teamIdx)}</span>
-                                                    <div>
+                                                    <div className="flex-1">
                                                         <p className="text-[10px] font-black text-slate-500">{team.members.length}명</p>
                                                         <p className="text-[10px] text-slate-400">{team.scoreSum}pt</p>
                                                     </div>
+                                                    {selectedMember&&selectedMember.teamIdx!==teamIdx&&!isPastMeeting&&(
+                                                        <button onClick={(e)=>{e.stopPropagation();handleMoveToTeam(teamIdx);}}
+                                                            className="text-[9px] font-black text-teal-600 bg-teal-50 border border-teal-300 px-1.5 py-0.5 rounded-lg active:scale-95 shrink-0">↓여기로</button>
+                                                    )}
                                                 </div>
-                                                {team.members.map((m,mi)=>(
-                                                    <div key={mi} draggable={!isPastMeeting}
+                                                {team.members.map((m,mi)=>{
+                                                    const isSelected=selectedMember?.teamIdx===teamIdx&&selectedMember?.memberIdx===mi;
+                                                    return (
+                                                    <div key={mi}
+                                                        draggable={!isPastMeeting}
                                                         onDragStart={!isPastMeeting?e=>handleDragStart(e,teamIdx,mi):undefined}
                                                         onDragOver={!isPastMeeting?e=>e.preventDefault():undefined}
                                                         onDrop={!isPastMeeting?e=>handleDropOnMember(e,teamIdx,mi):undefined}
-                                                        className={`flex items-center gap-1.5 p-2 mb-1 bg-white/70 rounded-xl border border-transparent transition-all ${!isPastMeeting?'cursor-grab active:cursor-grabbing hover:border-teal-200':''} ${draggedItem?.teamIdx===teamIdx&&draggedItem?.memberIdx===mi?'dragging':''}`}>
+                                                        onDragEnd={handleDragEnd}
+                                                        onClick={(e)=>{e.stopPropagation();handleMemberClick(teamIdx,mi);}}
+                                                        className={`flex items-center gap-1.5 p-2 mb-1 rounded-xl border transition-all
+                                                            ${isSelected?'bg-teal-100 border-teal-400 ring-2 ring-teal-400 scale-105':
+                                                              selectedMember?'bg-white/70 border-transparent hover:border-teal-300 cursor-pointer':
+                                                              `bg-white/70 border-transparent hover:border-teal-200 ${!isPastMeeting?'cursor-grab active:cursor-grabbing':''}`}
+                                                            ${draggedItem?.teamIdx===teamIdx&&draggedItem?.memberIdx===mi?'dragging':''}`}>
                                                         <span className="text-[9px] font-black text-slate-400 w-4 text-right flex-shrink-0">{mi+1}</span>
                                                         <span className="font-black text-xs text-slate-800 flex-1">{m.name}</span>
                                                         {m.gender==='여성'&&<span className="text-[8px] text-pink-400 font-black">W</span>}
                                                         {m.isGuest&&<span className="text-[8px] bg-slate-700 text-white px-1 rounded font-black">G</span>}
                                                         <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${getLevelColor(m.level)}`}>{m.level}</span>
                                                     </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         ))}
                                     </div>
+                                    {/* 선택 중 플로팅 안내 */}
+                                    {selectedMember&&!isPastMeeting&&(
+                                        <div style={{position:'fixed',bottom:'80px',left:'50%',transform:'translateX(-50%)',zIndex:50}}
+                                             className="flex items-center gap-2 bg-teal-500 text-white px-4 py-2.5 rounded-full shadow-xl text-xs font-black whitespace-nowrap animate-zoom-in">
+                                            <span>✋ {teams[selectedMember.teamIdx]?.members[selectedMember.memberIdx]?.name} 선택됨</span>
+                                            <span className="text-teal-200">·</span>
+                                            <span className="text-teal-100 font-medium">교체할 팀원 탭 또는 팀의 ↓여기로 탭</span>
+                                            <button onClick={()=>setSelectedMember(null)} className="ml-1 text-teal-200 hover:text-white text-sm font-black">✕</button>
+                                        </div>
+                                    )}
 
                                     {unassignedMembers.length>0 && (
                                         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
@@ -668,7 +727,7 @@ function App() {
                                             </button>
                                         </div>
                                     )}
-                                    {!isPastMeeting&&<p className="text-[10px] text-slate-400 text-center mt-2">팀 카드를 다른 팀으로 드래그하여 수동 조정 가능</p>}
+                                    {!isPastMeeting&&<p className="text-[10px] text-slate-400 text-center mt-2">팀원 탭 → 선택 후 다른 팀원과 교체 / ↓여기로 탭하면 팀 이동 · PC는 드래그 가능</p>}
                                 </div>
                             )
                         }
