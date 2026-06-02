@@ -561,7 +561,7 @@ function App() {
             const [startH,startM] = meetingTimes.start.split(':');
             const [endH,endM] = meetingTimes.end.split(':');
             const meetingStartTs = new Date(sy,sm-1,sd, parseInt(startH), parseInt(startM), 0);
-            const validFrom = new Date(meetingStartTs.getTime() - 70*60*1000).toISOString(); // 시작 70분 전
+            const validFrom = new Date(meetingStartTs.getTime() - 60*60*1000).toISOString(); // 시작 60분 전
             const validUntil = new Date(sy,sm-1,sd, parseInt(endH), parseInt(endM), 0).toISOString();
             await getQRCol().doc(date).set({ token, date, validFrom, validUntil, createdAt:new Date().toISOString(), usedBy:[] });
             setCurrentQRToken(token);
@@ -820,8 +820,8 @@ function App() {
         const [ehr,emin] = (meetingTimes.end||'10:00').split(':');
         const meetingStart = new Date(sy,sm-1,sd,parseInt(shr),parseInt(smin),0);
         const meetingEnd   = new Date(sy,sm-1,sd,parseInt(ehr),parseInt(emin),0);
-        // 체크인 허용: 시작 70분 전(06:50) ~ 종료(10:00)
-        const allowFrom = new Date(meetingStart.getTime() - 70*60*1000);
+        // 체크인 허용: 시작 60분 전(06:50) ~ 종료(10:00)
+        const allowFrom = new Date(meetingStart.getTime() - 60*60*1000);
         if (!testMode && now < allowFrom) {
             const allowFromStr = allowFrom.toLocaleTimeString('ko-KR',{hour12:false,hour:'2-digit',minute:'2-digit'});
             return showAlert('출석 불가',`출석 가능 시간: ${participant.date} ${allowFromStr}~${meetingTimes.end}`);

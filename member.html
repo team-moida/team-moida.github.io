@@ -522,7 +522,7 @@ function App() {
             const[ehr,emin] = (meetingSettings.end || '10:00').split(':');
             const meetingStart = new Date(sy,sm-1,sd,parseInt(shr),parseInt(smin),0);
             const meetingEnd   = new Date(sy,sm-1,sd,parseInt(ehr),parseInt(emin),0);
-            const allowFrom = new Date(meetingStart.getTime() - 70*60*1000);
+            const allowFrom = new Date(meetingStart.getTime() - 60*60*1000);
             if (!testMode && now < allowFrom) { showToast('아직 출석 가능 시간이 아닙니다.', 'error'); setIsCheckingIn(false); return; }
             if (!testMode && now > meetingEnd) { showToast('모임이 종료되었습니다.\n자동 노쇼 처리되었습니다.', 'error'); setIsCheckingIn(false); return; }
             const normalThreshold = new Date(meetingStart.getTime() - 9*60*1000);
