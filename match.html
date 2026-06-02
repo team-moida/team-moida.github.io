@@ -9,6 +9,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
     <title>모이다 - 매치 테이블</title>
+    <script>(function(){if(localStorage.getItem('moida_theme')==='dark')document.documentElement.classList.add('dark');})();</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
@@ -31,6 +32,30 @@
         .match-completed{opacity:0.45;background:#f8fafc}
         select,input{outline:none;font-family:'Esamanru',sans-serif}
         select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.75rem center;background-size:1rem;padding-right:2rem!important}
+        /* ── 다크모드 ── */
+        :root{--t-bg:#f8fafc;--t-surface:#ffffff;--t-s2:#f8fafc;--t-border:#e2e8f0;--t-text:#1e293b;--t-btn:#1e293b}
+        html.dark{--t-bg:#0f172a;--t-surface:#1e293b;--t-s2:#0f172a;--t-border:#334155;--t-text:#f1f5f9;--t-btn:#14b8a6}
+        html.dark body{background:var(--t-bg)!important;color:var(--t-text)}
+        html.dark .bg-white{background:var(--t-surface)!important}
+        html.dark .bg-white\/90{background:rgba(30,41,59,.95)!important}
+        html.dark .bg-slate-50{background:var(--t-s2)!important}
+        html.dark .bg-slate-100{background:#334155!important}
+        html.dark .bg-slate-200{background:#475569!important}
+        html.dark .border-b{border-bottom-color:var(--t-border)!important}
+        html.dark .border-slate-100,html.dark .border-slate-200{border-color:var(--t-border)!important}
+        html.dark .text-slate-900,html.dark .text-slate-800{color:var(--t-text)!important}
+        html.dark .text-slate-700{color:#cbd5e1!important}
+        html.dark .text-slate-600{color:#94a3b8!important}
+        html.dark .text-slate-500,html.dark .text-slate-400{color:#94a3b8!important}
+        html.dark .text-slate-300{color:#64748b!important}
+        html.dark input,html.dark textarea{background:var(--t-surface)!important;border-color:var(--t-border)!important;color:var(--t-text)!important}
+        html.dark select{background:var(--t-surface)!important;border-color:var(--t-border)!important;color:var(--t-text)!important}
+        html.dark .bg-teal-50{background:#042f2e!important} html.dark .border-teal-100{border-color:#134e4a!important} html.dark .bg-teal-100{background:#134e4a!important}
+        html.dark .match-row:active{background:#334155!important}
+        html.dark .match-completed{background:var(--t-bg)!important}
+        html.dark .text-teal-600{color:#2dd4bf!important} html.dark .text-teal-500{color:#2dd4bf!important}
+        html.dark #loading-screen{background:var(--t-bg)!important}
+        html.dark .shadow-sm{box-shadow:0 1px 3px rgba(0,0,0,.3)!important}
     </style>
 </head>
 <body>
@@ -73,6 +98,7 @@ const Icon = {
 };
 
 function App() {
+    const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
     const [view, setView] = useState('setup');
     const [loading, setLoading] = useState(true);
     const [confirmedData, setConfirmedData] = useState(null);
@@ -103,6 +129,8 @@ function App() {
     const hoursList=Array.from({length:24},(_,i)=>String(i).padStart(2,'0'));
     const minutesList=['00','10','20','30','40','50'];
     const splitTime=(t)=>{const p=(t||'08:00').split(':');return{h:p[0]||'08',m:p[1]||'00'};};
+
+    const toggleTheme = () => { const isDark = !darkMode; setDarkMode(isDark); document.documentElement.classList.toggle('dark', isDark); localStorage.setItem('moida_theme', isDark ? 'dark' : 'light'); };
 
     useEffect(()=>{
         const init=async()=>{
@@ -264,6 +292,7 @@ function App() {
                         {schedule.list.length>0&&<button onClick={saveMatchSchedule} disabled={isSaving} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-blue-600"><Icon.Save size={16}/></button>}
                         {schedule.list.length>0&&<button onClick={handleCapture} disabled={isCapturing} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-teal-500"><Icon.Camera size={16}/></button>}
                         <button onClick={()=>window.location.reload()} className="p-2.5 rounded-xl bg-slate-50 text-slate-400"><Icon.Refresh size={16}/></button>
+                        <button onClick={toggleTheme} className="p-2.5 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200" title="테마">{darkMode ? '☀️' : '🌙'}</button>
                         <button onClick={()=>window.location.href='index.html'} className="p-2.5 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"><Icon.Home size={18}/></button>
                     </div>
                 </div>

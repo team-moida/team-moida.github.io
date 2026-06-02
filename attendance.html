@@ -9,6 +9,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
     <title>모이다 - 출결 관리</title>
+    <script>(function(){if(localStorage.getItem('moida_theme')==='dark')document.documentElement.classList.add('dark');})();</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
@@ -41,6 +42,40 @@
         select:focus,input:focus{border-color:#14b8a6!important}
         select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.75rem center;background-size:1rem}
         #qr-canvas-area canvas { margin: 0 auto; }
+        /* ── 다크모드 ── */
+        :root{--t-bg:#f8fafc;--t-surface:#ffffff;--t-s2:#f8fafc;--t-border:#e2e8f0;--t-text:#1e293b;--t-btn:#1e293b}
+        html.dark{--t-bg:#0f172a;--t-surface:#1e293b;--t-s2:#0f172a;--t-border:#334155;--t-text:#f1f5f9;--t-btn:#14b8a6}
+        html.dark body{background:var(--t-bg)!important;color:var(--t-text)}
+        html.dark .bg-white{background:var(--t-surface)!important}
+        html.dark .bg-white\/90{background:rgba(30,41,59,.95)!important}
+        html.dark .bg-slate-50{background:var(--t-s2)!important}
+        html.dark .bg-slate-100{background:#334155!important}
+        html.dark .bg-slate-200{background:#475569!important}
+        html.dark .bg-slate-200\/70{background:rgba(71,85,105,.7)!important}
+        html.dark .border-b{border-bottom-color:var(--t-border)!important}
+        html.dark .border-t{border-top-color:var(--t-border)!important}
+        html.dark .border-slate-100,html.dark .border-slate-200{border-color:var(--t-border)!important}
+        html.dark .text-slate-900,html.dark .text-slate-800{color:var(--t-text)!important}
+        html.dark .text-slate-700{color:#cbd5e1!important}
+        html.dark .text-slate-600{color:#94a3b8!important}
+        html.dark .text-slate-500,html.dark .text-slate-400{color:#94a3b8!important}
+        html.dark .text-slate-300{color:#64748b!important}
+        html.dark input,html.dark textarea{background:var(--t-surface)!important;border-color:var(--t-border)!important;color:var(--t-text)!important}
+        html.dark select{background:var(--t-surface)!important;border-color:var(--t-border)!important;color:var(--t-text)!important}
+        html.dark .bg-blue-50{background:#0c1a2e!important} html.dark .border-blue-100{border-color:#1e3a5f!important} html.dark .bg-blue-100{background:#1e3a5f!important}
+        html.dark .bg-emerald-50{background:#022c22!important} html.dark .border-emerald-100{border-color:#064e3b!important} html.dark .bg-emerald-100{background:#064e3b!important}
+        html.dark .bg-teal-50{background:#042f2e!important} html.dark .border-teal-100{border-color:#134e4a!important} html.dark .bg-teal-100{background:#134e4a!important}
+        html.dark .bg-violet-50{background:#1e1b4b!important} html.dark .border-violet-100{border-color:#2e1065!important} html.dark .bg-violet-100{background:#2e1065!important}
+        html.dark .bg-rose-50{background:#2d0a11!important} html.dark .border-rose-100{border-color:#4c0519!important} html.dark .bg-rose-100{background:#4c0519!important}
+        html.dark .bg-amber-50{background:#1c1002!important} html.dark .border-amber-100{border-color:#451a03!important} html.dark .bg-amber-100{background:#451a03!important}
+        html.dark .bg-red-50{background:#2d0a11!important} html.dark .border-red-100,html.dark .border-red-200{border-color:#4c0519!important}
+        html.dark .text-teal-600{color:#2dd4bf!important} html.dark .text-teal-500{color:#2dd4bf!important} html.dark .text-teal-400{color:#5eead4!important}
+        html.dark .text-emerald-500{color:#34d399!important} html.dark .text-emerald-600{color:#34d399!important}
+        html.dark .text-violet-600{color:#a78bfa!important} html.dark .text-rose-500{color:#fb7185!important}
+        html.dark .text-amber-500{color:#fbbf24!important} html.dark .text-amber-600{color:#fbbf24!important}
+        html.dark .text-red-400{color:#f87171!important} html.dark .text-red-500{color:#f87171!important}
+        html.dark #loading-screen{background:var(--t-bg)!important}
+        html.dark .shadow-sm{box-shadow:0 1px 3px rgba(0,0,0,.3)!important}
     </style>
 </head>
 <body>
@@ -324,22 +359,22 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
     if (!isOpen) return null;
 
     return (
-        <div style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', flexDirection:'column', background:'#fff' }}>
+        <div style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', flexDirection:'column', background:'var(--t-surface)' }}>
 
             {/* 헤더 */}
-            <div style={{ position:'relative', zIndex:10, flexShrink:0, display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderBottom:'1px solid #e2e8f0', background:'#fff' }}>
-                <button onClick={onClose} style={{ padding:8, borderRadius:12, background:'#f1f5f9', border:'none', cursor:'pointer', display:'flex' }}>
+            <div style={{ position:'relative', zIndex:10, flexShrink:0, display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderBottom:'1px solid var(--t-border)', background:'var(--t-surface)' }}>
+                <button onClick={onClose} style={{ padding:8, borderRadius:12, background:'var(--t-s2)', border:'none', cursor:'pointer', display:'flex' }}>
                     <Icon.ArrowLeft size={18} />
                 </button>
                 <div style={{ flex:1 }}>
-                    <p style={{ fontWeight:700, fontSize:14, color:'#1e293b', margin:0 }}>장소 선택</p>
+                    <p style={{ fontWeight:700, fontSize:14, color:'var(--t-text)', margin:0 }}>장소 선택</p>
                     <p style={{ fontSize:10, color:'#94a3b8', margin:0 }}>업체명·주소 검색 또는 지도를 직접 클릭하세요</p>
                 </div>
                 {locating && <div style={{ width:18, height:18, border:'2px solid #ec4899', borderTopColor:'transparent', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />}
             </div>
 
             {/* 검색 바 */}
-            <div style={{ position:'relative', zIndex:10, flexShrink:0, padding:'10px 12px', borderBottom:'1px solid #e2e8f0', background:'#f8fafc' }}>
+            <div style={{ position:'relative', zIndex:10, flexShrink:0, padding:'10px 12px', borderBottom:'1px solid var(--t-border)', background:'var(--t-s2)' }}>
                 <div style={{ display:'flex', gap:8 }}>
                     <input
                         type="text"
@@ -347,12 +382,12 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
                         onChange={e => setQuery(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') doSearch(); }}
                         placeholder="업체명 또는 주소 검색"
-                        style={{ flex:1, background:'#fff', border:'1px solid #e2e8f0', borderRadius:12, padding:'8px 12px', fontSize:12, fontFamily:'inherit', fontWeight:700, outline:'none', userSelect:'text', WebkitUserSelect:'text' }}
+                        style={{ flex:1, background:'var(--t-surface)', border:'1px solid var(--t-border)', borderRadius:12, padding:'8px 12px', fontSize:12, fontFamily:'inherit', fontWeight:700, outline:'none', userSelect:'text', WebkitUserSelect:'text', color:'var(--t-text)' }}
                     />
                     <button
                         onClick={doSearch}
                         disabled={searching}
-                        style={{ padding:'8px 16px', background: searching ? '#94a3b8' : '#1e293b', color:'#fff', border:'none', borderRadius:12, fontSize:12, fontWeight:700, cursor: searching ? 'default' : 'pointer', fontFamily:'inherit' }}>
+                        style={{ padding:'8px 16px', background: searching ? '#94a3b8' : 'var(--t-btn)', color:'#fff', border:'none', borderRadius:12, fontSize:12, fontWeight:700, cursor: searching ? 'default' : 'pointer', fontFamily:'inherit' }}>
                         {searching ? '...' : '검색'}
                     </button>
                     <button
@@ -364,17 +399,17 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
 
                 {/* 검색 결과 목록 */}
                 {results.length > 0 && (
-                    <div style={{ position:'absolute', top:'100%', left:12, right:12, background:'#fff', border:'1px solid #e2e8f0', borderRadius:16, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:20, overflow:'hidden', maxHeight:280, overflowY:'auto' }}>
+                    <div style={{ position:'absolute', top:'100%', left:12, right:12, background:'var(--t-surface)', border:'1px solid var(--t-border)', borderRadius:16, boxShadow:'0 8px 24px rgba(0,0,0,0.18)', zIndex:20, overflow:'hidden', maxHeight:280, overflowY:'auto' }}>
                         {results.map((place, i) => (
                             <button key={i} onClick={() => selectResult(place)}
-                                style={{ width:'100%', textAlign:'left', padding:'12px 16px', background:'none', border:'none', borderBottom:'1px solid #f1f5f9', cursor:'pointer', fontFamily:'inherit' }}>
-                                <p style={{ fontSize:13, fontWeight:700, color:'#1e293b', margin:0 }}>{place.place_name}</p>
+                                style={{ width:'100%', textAlign:'left', padding:'12px 16px', background:'none', border:'none', borderBottom:'1px solid var(--t-border)', cursor:'pointer', fontFamily:'inherit' }}>
+                                <p style={{ fontSize:13, fontWeight:700, color:'var(--t-text)', margin:0 }}>{place.place_name}</p>
                                 <p style={{ fontSize:10, color:'#94a3b8', margin:'2px 0 0' }}>{place.road_address_name || place.address_name || ''}</p>
                                 {place.category_name && <p style={{ fontSize:10, color:'#ec4899', margin:'2px 0 0' }}>{place.category_name}</p>}
                             </button>
                         ))}
                         <button onClick={() => setResults([])}
-                            style={{ width:'100%', padding:'10px', background:'#f8fafc', border:'none', fontSize:11, color:'#94a3b8', cursor:'pointer', fontFamily:'inherit', fontWeight:700 }}>
+                            style={{ width:'100%', padding:'10px', background:'var(--t-s2)', border:'none', fontSize:11, color:'#94a3b8', cursor:'pointer', fontFamily:'inherit', fontWeight:700 }}>
                             닫기
                         </button>
                     </div>
@@ -385,7 +420,7 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
             <div ref={mapContainerRef} style={{ flex:1, minHeight:0, zIndex:1 }} />
 
             {/* 하단: 장소명 입력 + 확인 */}
-            <div style={{ position:'relative', zIndex:10, flexShrink:0, padding:'16px', borderTop:'1px solid #e2e8f0', background:'#fff', display:'flex', flexDirection:'column', gap:12 }}>
+            <div style={{ position:'relative', zIndex:10, flexShrink:0, padding:'16px', borderTop:'1px solid var(--t-border)', background:'var(--t-surface)', display:'flex', flexDirection:'column', gap:12 }}>
                 <div>
                     <p style={{ fontSize:10, fontWeight:700, color:'#ec4899', textTransform:'uppercase', margin:'0 0 4px 4px' }}>장소명</p>
                     <input
@@ -393,7 +428,7 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
                         value={placeName}
                         onChange={e => setPlaceName(e.target.value)}
                         placeholder="장소명을 직접 수정할 수 있습니다"
-                        style={{ width:'100%', background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:12, padding:'12px 16px', fontSize:14, fontFamily:'inherit', fontWeight:700, outline:'none', boxSizing:'border-box', userSelect:'text', WebkitUserSelect:'text' }}
+                        style={{ width:'100%', background:'var(--t-s2)', border:'1px solid var(--t-border)', borderRadius:12, padding:'12px 16px', fontSize:14, fontFamily:'inherit', fontWeight:700, outline:'none', boxSizing:'border-box', userSelect:'text', WebkitUserSelect:'text', color:'var(--t-text)' }}
                     />
                 </div>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'0 4px' }}>
@@ -407,7 +442,7 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
                         if (!placeName.trim()) { alert('장소명을 입력해주세요.'); return; }
                         onConfirm({ name: placeName.trim(), lat, lng });
                     }}
-                    style={{ width:'100%', padding:'16px', background:'#1e293b', color:'#fff', border:'none', borderRadius:16, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+                    style={{ width:'100%', padding:'16px', background:'var(--t-btn)', color:'#fff', border:'none', borderRadius:16, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
                     이 위치로 설정
                 </button>
             </div>
@@ -452,6 +487,7 @@ function App() {
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(!localStorage.getItem('moida_manager'));
     const [loginForm, setLoginForm] = useState({ name:'' });
     const [setupTabMonthlyMembers, setSetupTabMonthlyMembers] = useState([]);
+    const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
     const [testMode, setTestMode] = useState(false);
     const [testModeBackup, setTestModeBackup] = useState(null);
     const [isPasswordChangeModalOpen, setIsPasswordChangeModalOpen] = useState(false);
@@ -511,6 +547,7 @@ function App() {
         return list;
     }, [selectedHistoryDetail, historySortKey, historySortOrder]);
 
+    const toggleTheme = () => { const isDark = !darkMode; setDarkMode(isDark); document.documentElement.classList.toggle('dark', isDark); localStorage.setItem('moida_theme', isDark ? 'dark' : 'light'); };
     const showAlert = (title, content, type='info', onConfirm=null) => setAlertModal({show:true,title,content,type,onConfirm});
     const showConfirm = (title, content, onConfirm) => setAlertModal({show:true,title,content,type:'confirm',onConfirm});
 
@@ -1056,6 +1093,7 @@ function App() {
                                 className={`p-2.5 rounded-xl font-black transition-all ${testMode ? 'bg-amber-400 text-white shadow-lg shadow-amber-400/40' : 'bg-slate-50 text-slate-400'}`}>
                                 🧪
                             </button>
+                            <button onClick={toggleTheme} className="p-2.5 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200" title="테마">{darkMode ? '☀️' : '🌙'}</button>
                             <button onClick={()=>window.location.href='index.html'} className="p-2.5 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"><Icon.Home size={18}/></button>
                         </div>
                     </div>

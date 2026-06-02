@@ -9,6 +9,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
     <title>모이다 - 회원</title>
+    <script>(function(){if(localStorage.getItem('moida_theme')==='dark')document.documentElement.classList.add('dark');})();</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
@@ -39,6 +40,36 @@
         .tab-bar { background: rgba(255,255,255,0.95); border-top: 1px solid #e2e8f0; backdrop-filter: blur(10px); }
         .qr-scan-line { animation: scanLine 2s ease-in-out infinite; }
         @keyframes scanLine { 0%{top:8px} 50%{top:calc(100% - 10px)} 100%{top:8px} }
+        .member-header-bg{background:linear-gradient(160deg,#f0fdfa,#e6fffa)}
+        /* ── 다크모드 ── */
+        :root{--t-bg:#f8fafc;--t-surface:#ffffff;--t-s2:#f8fafc;--t-border:#e2e8f0;--t-text:#1e293b;--t-btn:#1e293b}
+        html.dark{--t-bg:#0f172a;--t-surface:#1e293b;--t-s2:#0f172a;--t-border:#334155;--t-text:#f1f5f9;--t-btn:#14b8a6}
+        html.dark body{background:var(--t-bg)!important;color:var(--t-text)}
+        html.dark .card{background:var(--t-surface)!important;border-color:var(--t-border)!important}
+        html.dark .tab-bar{background:rgba(15,23,42,.97)!important;border-color:var(--t-border)!important}
+        html.dark .member-header-bg{background:linear-gradient(160deg,#0f172a,#1e293b)}
+        html.dark .bg-white{background:var(--t-surface)!important}
+        html.dark .bg-slate-50{background:var(--t-s2)!important}
+        html.dark .bg-slate-100{background:#334155!important}
+        html.dark .bg-slate-200{background:#475569!important}
+        html.dark .bg-slate-200\/70{background:rgba(71,85,105,.7)!important}
+        html.dark .border-t{border-top-color:var(--t-border)!important}
+        html.dark .border-slate-100,html.dark .border-slate-200{border-color:var(--t-border)!important}
+        html.dark .text-slate-900,html.dark .text-slate-800{color:var(--t-text)!important}
+        html.dark .text-slate-700{color:#cbd5e1!important}
+        html.dark .text-slate-600{color:#94a3b8!important}
+        html.dark .text-slate-500,html.dark .text-slate-400{color:#94a3b8!important}
+        html.dark .text-slate-300{color:#64748b!important}
+        html.dark input,html.dark textarea{background:var(--t-surface)!important;border-color:var(--t-border)!important;color:var(--t-text)!important}
+        html.dark select{background:var(--t-surface)!important;border-color:var(--t-border)!important;color:var(--t-text)!important}
+        html.dark .bg-emerald-50{background:#022c22!important} html.dark .border-emerald-100,html.dark .border-emerald-200{border-color:#064e3b!important}
+        html.dark .bg-teal-50{background:#042f2e!important} html.dark .border-teal-100{border-color:#134e4a!important}
+        html.dark .bg-violet-50{background:#1e1b4b!important} html.dark .border-violet-100,html.dark .border-violet-200{border-color:#2e1065!important}
+        html.dark .bg-amber-50{background:#1c1002!important} html.dark .bg-amber-100{background:#451a03!important} html.dark .border-amber-100,html.dark .border-amber-200{border-color:#451a03!important}
+        html.dark .bg-red-50{background:#2d0a11!important} html.dark .border-red-100,html.dark .border-red-200{border-color:#4c0519!important}
+        html.dark .text-teal-600{color:#2dd4bf!important} html.dark .text-teal-500{color:#2dd4bf!important} html.dark .text-teal-400{color:#5eead4!important}
+        html.dark .text-emerald-500{color:#34d399!important} html.dark .text-amber-500{color:#fbbf24!important} html.dark .text-red-500{color:#f87171!important}
+        html.dark .shadow-sm{box-shadow:0 1px 3px rgba(0,0,0,.3)!important}
     </style>
 </head>
 <body class="min-h-screen">
@@ -193,6 +224,7 @@ function App() {
     // 로그인 폼
     const [loginForm, setLoginForm] = useState({ name:'', birth:'' });
     const [isLoggingIn, setIsLoggingIn] = useState(false);
+    const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
     const [testMode, setTestMode] = useState(false);
 
     // Firebase 데이터
@@ -406,6 +438,13 @@ function App() {
         setAppView('login');
     };
 
+    const toggleTheme = () => {
+        const isDark = !darkMode;
+        setDarkMode(isDark);
+        document.documentElement.classList.toggle('dark', isDark);
+        localStorage.setItem('moida_theme', isDark ? 'dark' : 'light');
+    };
+
     const toggleTestMode = async () => {
         const newVal = !testMode;
         try {
@@ -555,7 +594,7 @@ function App() {
                 </div>
             )}
             {/* 헤더 */}
-            <div className="px-5 pt-12 pb-6" style={{background:'linear-gradient(160deg,#f0fdfa,#e6fffa)'}}>
+            <div className="px-5 pt-12 pb-6 member-header-bg">
                 <div className="flex items-center justify-between mb-4">
                     <div>
                         <p className="text-teal-600 text-xs tracking-widest uppercase font-bold">OTP FC</p>
@@ -565,6 +604,7 @@ function App() {
                         <div className="flex gap-1.5">
                             <button onClick={()=>window.location.href='index.html'} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all">🏠</button>
                             <button onClick={handleLogout} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all">로그아웃</button>
+                            <button onClick={toggleTheme} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all" title="테마">{darkMode ? '☀️' : '🌙'}</button>
                             <button onClick={toggleTestMode} title="테스트 모드"
                                 className={`text-[10px] font-black px-2.5 py-1 rounded-lg transition-all ${testMode ? 'bg-amber-400 text-amber-900' : 'bg-slate-200/70 text-slate-500'}`}>
                                 🧪
@@ -644,7 +684,7 @@ function App() {
 
                         {/* 출석 현황 */}
                         {mySession && (
-                            <div className={`rounded-3xl p-5 ${mySession.checkedIn?'bg-emerald-900/30 border border-emerald-500/30':'card'}`}>
+                            <div className={`rounded-3xl p-5 ${mySession.checkedIn?'bg-emerald-50 border border-emerald-200':'card'}`}>
                                 <p className="text-xs font-black text-emerald-400 uppercase tracking-widest mb-2">오늘 출석 현황</p>
                                 {mySession.checkedIn
                                     ? <div><p className="font-black text-lg text-emerald-400">✓ 출석 완료</p><p className="text-slate-400 text-sm mt-1">{mySession.checkInTime} · {mySession.status}</p></div>
@@ -708,7 +748,7 @@ function App() {
                                                     <div className="flex items-center gap-2 mb-3">
                                                         <p className="text-xs font-black text-slate-400">{session.time}</p>
                                                         {hasMyTeam&&<span className="text-[9px] font-black text-teal-500 bg-teal-100 px-2 py-0.5 rounded-full">내 경기</span>}
-                                                        {isResting&&<span className="text-[9px] font-black text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-full">휴식</span>}
+                                                        {isResting&&<span className="text-[9px] font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">휴식</span>}
                                                     </div>
                                                     {session.matches.map((m,mi)=>{
                                                         const[t1,t2]=m.match;
@@ -740,7 +780,7 @@ function App() {
 
                         {/* 현재 출석 상태 */}
                         {mySession?.checkedIn && (
-                            <div className="bg-emerald-900/30 border border-emerald-500/30 rounded-3xl p-5 text-center">
+                            <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-5 text-center">
                                 <p className="text-4xl mb-2">✅</p>
                                 <p className="font-black text-xl text-emerald-400">출석 완료!</p>
                                 <p className="text-slate-400 text-sm mt-1">{mySession.checkInTime} · {mySession.status}</p>
@@ -756,7 +796,7 @@ function App() {
                                     <>
                                         <p className="text-3xl mb-2">⚠️</p>
                                         <p className="font-black text-red-400 whitespace-pre-line">{qrMessage}</p>
-                                        <button onClick={()=>{setQrStatus('idle');setIsQRScannerOpen(true);}} className="mt-3 text-xs text-violet-400 font-black px-5 py-2.5 rounded-xl bg-violet-400/15 block mx-auto">
+                                        <button onClick={()=>{setQrStatus('idle');setIsQRScannerOpen(true);}} className="mt-3 text-xs text-violet-600 font-black px-5 py-2.5 rounded-xl bg-violet-50 border border-violet-200 block mx-auto">
                                             📷 다시 스캔하기
                                         </button>
                                         {(urlParams.token || lastScannedQR.token) && (
@@ -764,7 +804,7 @@ function App() {
                                                 try { await getCol('settings').doc('meeting_schedule_v2').update({ testMode: true }); }
                                                 catch(e) { setTestMode(true); }
                                                 processQRToken(urlParams.token || lastScannedQR.token, urlParams.date || lastScannedQR.date);
-                                            }} className="mt-2 text-xs text-amber-400 font-black px-5 py-2.5 rounded-xl bg-amber-400/15 block mx-auto">
+                                            }} className="mt-2 text-xs text-amber-600 font-black px-5 py-2.5 rounded-xl bg-amber-50 border border-amber-200 block mx-auto">
                                                 🧪 테스트 모드로 재시도
                                             </button>
                                         )}
