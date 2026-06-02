@@ -426,7 +426,7 @@ function App() {
     const [historySortKey, setHistorySortKey] = useState('time');
     const [historySortOrder, setHistorySortOrder] = useState('asc');
     const [meetingTimes, setMeetingTimes] = useState({
-        date: getThisSunday(), start:'08:00', end:'10:00', location:'', locationLat:null, locationLng:null, managerId:'', managerName:'', maxLimit:18, enableQR:false
+        date: getThisSunday(), start:'08:00', end:'10:00', location:'', locationLat:null, locationLng:null, locationRadius:100, managerId:'', managerName:'', maxLimit:18, enableQR:false
     });
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isAppLocked, setIsAppLocked] = useState(false);
@@ -1380,6 +1380,18 @@ function App() {
                                                 className="text-[10px] text-slate-300 hover:text-red-400 font-black ml-auto">좌표 삭제</button>
                                         </div>
                                     )}
+                                    <div className="mt-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase">GPS 인정 반경</label>
+                                        <div className="flex gap-2 mt-1">
+                                            {[30,50,100,150,200].map(r => (
+                                                <button key={r}
+                                                    onClick={() => updateMeetingTimeSettings({...meetingTimes, locationRadius: r})}
+                                                    className={`flex-1 py-2 rounded-xl text-xs font-black border transition-all active:scale-95 ${(meetingTimes.locationRadius||100)===r ? 'bg-pink-500 text-white border-pink-500' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
+                                                    {r}m
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="text-[10px] font-black text-slate-400 uppercase">출석 방식</label>
