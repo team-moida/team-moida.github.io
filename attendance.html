@@ -504,6 +504,8 @@ function App() {
 
     const hourOptions = useMemo(() => Array.from({length:24},(_,i)=>String(i).padStart(2,'0')),[]);
     const minuteOptions = useMemo(() => Array.from({length:12},(_,i)=>String(i*5).padStart(2,'0')),[]);
+    // 저장된 분이 5분 단위가 아닐 때(테스트모드 등) 가장 가까운 5분 단위로 스냅
+    const snapMin = (m) => { const n=parseInt(m)||0; const s=Math.round(n/5)*5; return String(s>=60?0:s).padStart(2,'0'); };
 
     const activeMembers = useMemo(() => members.filter(m => !m.isResigned), [members]);
     const managers = useMemo(() => activeMembers.filter(m => STAFF_ROLES.includes(m.role)).sort((a,b)=>a.name.localeCompare(b.name)), [activeMembers]);
@@ -1458,11 +1460,11 @@ function App() {
                                         <label className="text-[10px] font-black text-slate-400 uppercase">시작</label>
                                         <div className="flex gap-1 mt-1">
                                             <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-black"
-                                                value={meetingTimes.start.split(':')[0]} onChange={e=>updateMeetingTimeSettings({...meetingTimes,start:`${e.target.value}:${meetingTimes.start.split(':')[1]}`})}>
+                                                value={meetingTimes.start.split(':')[0]} onChange={e=>updateMeetingTimeSettings({...meetingTimes,start:`${e.target.value}:${snapMin(meetingTimes.start.split(':')[1])}`})}>
                                                 {hourOptions.map(h=><option key={h} value={h}>{h}시</option>)}
                                             </select>
                                             <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-black"
-                                                value={meetingTimes.start.split(':')[1]} onChange={e=>updateMeetingTimeSettings({...meetingTimes,start:`${meetingTimes.start.split(':')[0]}:${e.target.value}`})}>
+                                                value={snapMin(meetingTimes.start.split(':')[1])} onChange={e=>updateMeetingTimeSettings({...meetingTimes,start:`${meetingTimes.start.split(':')[0]}:${e.target.value}`})}>
                                                 {minuteOptions.map(m=><option key={m} value={m}>{m}분</option>)}
                                             </select>
                                         </div>
@@ -1471,11 +1473,11 @@ function App() {
                                         <label className="text-[10px] font-black text-rose-400 uppercase">종료</label>
                                         <div className="flex gap-1 mt-1">
                                             <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-black"
-                                                value={meetingTimes.end.split(':')[0]} onChange={e=>updateMeetingTimeSettings({...meetingTimes,end:`${e.target.value}:${meetingTimes.end.split(':')[1]}`})}>
+                                                value={meetingTimes.end.split(':')[0]} onChange={e=>updateMeetingTimeSettings({...meetingTimes,end:`${e.target.value}:${snapMin(meetingTimes.end.split(':')[1])}`})}>
                                                 {hourOptions.map(h=><option key={h} value={h}>{h}시</option>)}
                                             </select>
                                             <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-black"
-                                                value={meetingTimes.end.split(':')[1]} onChange={e=>updateMeetingTimeSettings({...meetingTimes,end:`${meetingTimes.end.split(':')[0]}:${e.target.value}`})}>
+                                                value={snapMin(meetingTimes.end.split(':')[1])} onChange={e=>updateMeetingTimeSettings({...meetingTimes,end:`${meetingTimes.end.split(':')[0]}:${e.target.value}`})}>
                                                 {minuteOptions.map(m=><option key={m} value={m}>{m}분</option>)}
                                             </select>
                                         </div>
