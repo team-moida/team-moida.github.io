@@ -662,7 +662,8 @@ function App() {
                                                 onDragOver={!isPastMeeting?e=>handleTeamAreaDragOver(e,teamIdx):undefined}
                                                 onDragLeave={!isPastMeeting?handleTeamAreaDragLeave:undefined}
                                                 onDrop={!isPastMeeting?e=>handleDrop(e,teamIdx):undefined}>
-                                                <div className="flex items-center gap-2 mb-3">
+                                                <div className="flex items-center gap-2 mb-3"
+                                                    onDragOver={!isPastMeeting?e=>{e.preventDefault();e.stopPropagation();if(draggedItem)setDropIndicator({teamIdx,insertIdx:0});}:undefined}>
                                                     <span className={`w-8 h-8 rounded-xl font-black text-sm flex items-center justify-center ${getTeamBadge(teamIdx)}`}>{getTeamName(teamIdx)}</span>
                                                     <div className="flex-1">
                                                         <p className="text-[10px] font-black text-slate-500">{team.members.length}명</p>
