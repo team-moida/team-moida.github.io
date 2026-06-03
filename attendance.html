@@ -56,6 +56,7 @@
         html.dark .border-t{border-top-color:var(--t-border)!important}
         html.dark .border-slate-100,html.dark .border-slate-200{border-color:var(--t-border)!important}
         html.dark .text-slate-900,html.dark .text-slate-800{color:var(--t-text)!important}
+        html.dark .bg-lime-400,html.dark .bg-yellow-400{color:#1e293b!important}
         html.dark .text-slate-700{color:#cbd5e1!important}
         html.dark .text-slate-600{color:#94a3b8!important}
         html.dark .text-slate-500,html.dark .text-slate-400{color:#94a3b8!important}
@@ -467,6 +468,7 @@ function App() {
     const [meetingTimes, setMeetingTimes] = useState({
         date: getThisSunday(), start:'08:00', end:'10:00', location:'', locationLat:null, locationLng:null, locationRadius:100, managerId:'', managerName:'', maxLimit:18, enableQR:false
     });
+    const [localMaxLimit, setLocalMaxLimit] = useState(null);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isAppLocked, setIsAppLocked] = useState(false);
     const [lockPassword, setLockPassword] = useState('');
@@ -532,10 +534,11 @@ function App() {
     const groupedTeams = useMemo(() => {
         if (!activeTeamData?.teams) return [];
         return activeTeamData.teams.map((t, teamIdx) => {
-            const members = t.members.map((tm, mi) => {
+            const members = t.members.map((tm) => {
                 const p = activeParticipants.find(p => p.memberId === (tm.memberId||tm.id));
-                return p ? { ...p, jerseyNumber: mi + 1 } : null;
-            }).filter(Boolean);
+                return p || null;
+            }).filter(Boolean)
+              .map((p, i) => ({ ...p, jerseyNumber: i + 1 }));
             return members.length > 0 ? { teamName: String.fromCharCode(65+teamIdx), teamIdx, members } : null;
         }).filter(Boolean);
     }, [activeParticipants, activeTeamData]);
@@ -884,6 +887,8 @@ function App() {
 
     const handleAddGuest = async () => {
         if (!newGuest.name.trim()) return showAlert('알림','게스트 이름을 입력해주세요.');
+        if (isPending) return;
+        setIsPending(true);
         const inviter = members.find(m => m.id === newGuest.inviterId);
         try {
             await getSessionCol().add({
@@ -896,6 +901,7 @@ function App() {
             setNewGuest({name:'',gender:'남성',inviterId:'',level:'1'});
             showAlert('성공','게스트가 추가되었습니다.');
         } catch(e) { showAlert('오류','게스트 등록 실패'); }
+        finally { setIsPending(false); }
     };
 
     const saveAndResetCurrent = async () => {
@@ -1112,6 +1118,10 @@ function App() {
     useEffect(() => {
         if (!isMeetingOver || hasAutoNoShowRef.current) return;
         if (!meetingTimes.date) return;
+        // 오늘 날짜 세션에서만 자동 노쇼 — 과거/미래 날짜 설정 시 오작동 방지
+        const _d = new Date();
+        const todayStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
+        if (meetingTimes.date !== todayStr) return;
         hasAutoNoShowRef.current = true;
         const lim = meetingTimes.maxLimit || 18;
         const date = meetingTimes.date;
@@ -1130,10 +1140,10 @@ function App() {
         })();
     }, [isMeetingOver]);
 
-    // 날짜 변경 시 자동 노쇼 플래그 초기화
+    // 날짜 또는 종료 시간 변경 시 자동 노쇼 플래그 초기화
     useEffect(() => {
         hasAutoNoShowRef.current = false;
-    }, [meetingTimes.date]);
+    }, [meetingTimes.date, meetingTimes.end]);
 
     const limit = testMode ? activeParticipants.length : (meetingTimes.maxLimit || 18);
     const activeList = activeParticipants.slice(0, limit);
@@ -1558,7 +1568,13 @@ function App() {
                                 <div>
                                     <label className="text-[10px] font-black text-slate-400 uppercase">선착순 인원</label>
                                     <input type="number" className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black text-center"
-                                        value={meetingTimes.maxLimit||18} onChange={e=>updateMeetingTimeSettings({...meetingTimes,maxLimit:parseInt(e.target.value)||18})} />
+                                        value={localMaxLimit !== null ? localMaxLimit : (meetingTimes.maxLimit||18)}
+                                        onChange={e=>setLocalMaxLimit(e.target.value)}
+                                        onBlur={e=>{
+                                            const v = parseInt(e.target.value);
+                                            if (v > 0) updateMeetingTimeSettings({...meetingTimes, maxLimit:v});
+                                            setLocalMaxLimit(null);
+                                        }} />
                                 </div>
                                 <div>
                                     <label className="text-[10px] font-black text-slate-400 uppercase">담당 관리자</label>
