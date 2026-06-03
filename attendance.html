@@ -669,12 +669,24 @@ function App() {
             const d = new Date();
             const todayStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
-            // 현재 모임 일정 백업 (React state + Firestore 양쪽 — 새로고침 대비)
-            setTestModeBackup({ meetingTimes: {...meetingTimes} });
-            await getSettingsCol().doc('test_backup').set({
-                originalSettings: {...meetingTimes},
-                createdAt: new Date().toISOString()
-            });
+            // 원본 설정 백업 — testMode 값이 이미 켜진 상태(새로고침 후)면 기존 백업을 재사용
+            if (!meetingTimes.testMode) {
+                // 정상 상태 → 현재 값을 3중 백업 (React state, localStorage, Firestore)
+                setTestModeBackup({ meetingTimes: {...meetingTimes} });
+                localStorage.setItem('moida_testmode_backup', JSON.stringify({...meetingTimes}));
+                await getSettingsCol().doc('test_backup').set({
+                    originalSettings: {...meetingTimes},
+                    createdAt: new Date().toISOString()
+                });
+            } else {
+                // 이미 testMode 상태 → 기존 Firestore 백업으로 React state/localStorage 복원 (덮어쓰기 방지)
+                const existingBackup = await getSettingsCol().doc('test_backup').get();
+                if (existingBackup.exists) {
+                    const orig = existingBackup.data().originalSettings;
+                    setTestModeBackup({ meetingTimes: orig });
+                    localStorage.setItem('moida_testmode_backup', JSON.stringify(orig));
+                }
+            }
 
             // 테스트 모드: 12분 후 시작, 5분 모임
             // → 지금부터 3분(=12-9)이내 체크인 → "정상", 3분 이후 → "지각"
@@ -743,12 +755,19 @@ function App() {
                 try {
                     const testDate = meetingTimes.date; // 현재 테스트 중인 날짜
 
-                    // 원본 설정: React state 우선, 없으면 Firestore 백업에서 복원
+                    // 원본 설정 복원 우선순위: React state → localStorage → Firestore 백업 → 기본값
                     let originalSettings = testModeBackup?.meetingTimes || null;
+                    if (!originalSettings) {
+                        try {
+                            const lsRaw = localStorage.getItem('moida_testmode_backup');
+                            if (lsRaw) originalSettings = JSON.parse(lsRaw);
+                        } catch(e) {}
+                    }
                     if (!originalSettings) {
                         const backupDoc = await getSettingsCol().doc('test_backup').get();
                         if (backupDoc.exists) originalSettings = backupDoc.data().originalSettings;
                     }
+                    localStorage.removeItem('moida_testmode_backup');
 
                     // Firestore에서 직접 조회 — stale React state 방지
                     const sessionSnap = await getSessionCol().where('date', '==', testDate).get();
@@ -760,10 +779,10 @@ function App() {
                     batch.delete(getQRCol().doc(testDate));
                     // 백업 문서 삭제
                     batch.delete(getSettingsCol().doc('test_backup'));
-                    // 원본 설정 복원 (백업 없으면 다음 일요일로 날짜 진행)
+                    // 원본 설정 복원 — 백업 없으면 기본값(08:00~10:00)으로 복원 (testMode 잔류 시간 방지)
                     const restoredSettings = originalSettings
                         ? {...originalSettings, testMode: false}
-                        : {...meetingTimes, testMode: false, date: getNextSundayFromDate(testDate), managerId:'', managerName:''};
+                        : {...meetingTimes, testMode: false, start:'08:00', end:'10:00', date: getNextSundayFromDate(testDate), managerId:'', managerName:''};
                     batch.set(getSettingsCol().doc('meeting_schedule_v2'), restoredSettings);
 
                     await batch.commit();
@@ -773,7 +792,10 @@ function App() {
                     setMeetingTimes(restoredSettings);
                     setTestModeBackup(null);
                     setTestMode(false);
-                    showAlert('테스트 모드 종료', '테스트 데이터가 모두 삭제되고 복원되었습니다.');
+                    const restoreMsg = originalSettings
+                        ? '테스트 데이터가 모두 삭제되고 복원되었습니다.'
+                        : '테스트 데이터가 삭제되었습니다.\n원본 설정을 찾지 못해 08:00~10:00 기본값으로 복원됩니다.\n선정 탭에서 시간을 확인해 주세요.';
+                    showAlert('테스트 모드 종료', restoreMsg);
                 } catch(e) {
                     console.error(e);
                     showAlert('오류', '데이터 복원 실패: ' + e.message);
