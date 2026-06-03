@@ -52,9 +52,19 @@
         </div>
     </div>
 
-    <!-- 4. 관리자 권한 설정 -->
+    <!-- 4. 세션/팀편성 초기화 -->
+    <div class="bg-orange-50 border border-orange-200 rounded-2xl p-5 mt-3">
+        <p class="font-black text-slate-800 mb-1">④ 세션 · 팀편성 초기화</p>
+        <p class="text-slate-500 text-xs mb-4">출결 관리의 이번 주 인원(weekly_session)과 팀편성(team_drafts)을 삭제합니다.<br/>회원 데이터(members)는 건드리지 않습니다.</p>
+        <div class="flex gap-2">
+            <button onclick="clearSessions()" class="flex-1 bg-orange-400 text-white font-black py-3 rounded-xl text-sm active:opacity-70">세션 초기화</button>
+            <button onclick="clearTeamDrafts()" class="flex-1 bg-orange-500 text-white font-black py-3 rounded-xl text-sm active:opacity-70">팀편성 초기화</button>
+        </div>
+    </div>
+
+    <!-- 5. 관리자 권한 설정 -->
     <div class="bg-purple-50 border border-purple-200 rounded-2xl p-5 mt-3">
-        <p class="font-black text-slate-800 mb-1">④ 관리자 권한 설정</p>
+        <p class="font-black text-slate-800 mb-1">⑤ 관리자 권한 설정</p>
         <p class="text-slate-500 text-xs mb-4">이름으로 회원을 검색하여 역할(role)을 변경합니다.</p>
         <div class="flex gap-2 mb-3">
             <input id="role-search-name" type="text" placeholder="이름 입력"
@@ -254,6 +264,31 @@
         } finally {
             setBtn('btn-restore', false);
         }
+    }
+
+    const sessionCol = () => BASE().collection('weekly_session');
+    const teamDraftsCol = () => BASE().collection('team_drafts');
+
+    async function clearSessions() {
+        if (!confirm('이번 주 출석 세션(weekly_session)을 모두 삭제합니다. 계속하시겠습니까?')) return;
+        log('세션 초기화 중...', 'text-orange-600');
+        try {
+            const { docs } = await getCount(sessionCol);
+            if (docs.length === 0) { log('삭제할 세션 데이터가 없습니다.', 'text-slate-400'); return; }
+            await batchWrite(sessionCol, docs, (batch, col, d) => batch.delete(col().doc(d.id)));
+            log(`세션 ${docs.length}건 삭제 완료`, 'text-orange-600');
+        } catch(e) { log('오류: ' + e.message, 'text-red-500'); }
+    }
+
+    async function clearTeamDrafts() {
+        if (!confirm('팀편성 데이터(team_drafts)를 모두 삭제합니다. 계속하시겠습니까?')) return;
+        log('팀편성 초기화 중...', 'text-orange-600');
+        try {
+            const { docs } = await getCount(teamDraftsCol);
+            if (docs.length === 0) { log('삭제할 팀편성 데이터가 없습니다.', 'text-slate-400'); return; }
+            await batchWrite(teamDraftsCol, docs, (batch, col, d) => batch.delete(col().doc(d.id)));
+            log(`팀편성 ${docs.length}건 삭제 완료`, 'text-orange-600');
+        } catch(e) { log('오류: ' + e.message, 'text-red-500'); }
     }
 
     // 페이지 보호: isAppAdmin 또는 isAppAdmin 회원이 아직 없는 경우(최초 설정) 허용
