@@ -142,6 +142,7 @@ function App() {
     const [alertModal, setAlertModal] = useState({show:false,title:'',content:'',type:'info',onConfirm:null});
     const [draggedItem, setDraggedItem] = useState(null);
     const [selectedMember, setSelectedMember] = useState(null); // 탭 선택 조정용 {teamIdx, memberIdx}
+    const [selectedTeam, setSelectedTeam] = useState(null); // 팀 전체 스왑용 teamIdx
     const isDraggingRef = React.useRef(false);
     const [isCapturing, setIsCapturing] = useState(false);
     const [previewDraft, setPreviewDraft] = useState(null);
@@ -436,6 +437,7 @@ function App() {
     // 탭 선택 조정 (모바일/PC 공통)
     const handleMemberClick = (teamIdx, memberIdx) => {
         if (isDraggingRef.current || isPastMeeting) return;
+        setSelectedTeam(null);
         if (!selectedMember) { setSelectedMember({teamIdx, memberIdx}); return; }
         if (selectedMember.teamIdx===teamIdx && selectedMember.memberIdx===memberIdx) { setSelectedMember(null); return; }
         // 두 멤버 위치 교체 (같은 팀이면 순서 교체, 다른 팀이면 팀 이동)
@@ -458,6 +460,21 @@ function App() {
         newTeams[targetTeamIdx].scoreSum = newTeams[targetTeamIdx].members.reduce((s,m)=>s+(m.points||0),0);
         setTeams(newTeams);
         setSelectedMember(null);
+    };
+    const handleTeamBadgeClick = (e, teamIdx) => {
+        e.stopPropagation();
+        if (isPastMeeting) return;
+        setSelectedMember(null);
+        if (selectedTeam === null) { setSelectedTeam(teamIdx); return; }
+        if (selectedTeam === teamIdx) { setSelectedTeam(null); return; }
+        const newTeams = teams.map(t=>({...t,members:[...t.members]}));
+        const tmp = {members: newTeams[selectedTeam].members, scoreSum: newTeams[selectedTeam].scoreSum};
+        newTeams[selectedTeam].members = newTeams[teamIdx].members;
+        newTeams[selectedTeam].scoreSum = newTeams[teamIdx].scoreSum;
+        newTeams[teamIdx].members = tmp.members;
+        newTeams[teamIdx].scoreSum = tmp.scoreSum;
+        setTeams(newTeams);
+        setSelectedTeam(null);
     };
 
     const handleCapture = async () => {
@@ -664,7 +681,10 @@ function App() {
                                                 onDrop={!isPastMeeting?e=>handleDrop(e,teamIdx):undefined}>
                                                 <div className="flex items-center gap-2 mb-3"
                                                     onDragOver={!isPastMeeting?e=>{e.preventDefault();e.stopPropagation();if(draggedItem)setDropIndicator({teamIdx,insertIdx:0});}:undefined}>
-                                                    <span className={`w-8 h-8 rounded-xl font-black text-sm flex items-center justify-center ${getTeamBadge(teamIdx)}`}>{getTeamName(teamIdx)}</span>
+                                                    <span
+                                                        onClick={!isPastMeeting?e=>handleTeamBadgeClick(e,teamIdx):undefined}
+                                                        className={`w-8 h-8 rounded-xl font-black text-sm flex items-center justify-center transition-all ${getTeamBadge(teamIdx)} ${!isPastMeeting?'cursor-pointer active:scale-90':''}
+                                                            ${selectedTeam===teamIdx?'ring-2 ring-offset-1 ring-white scale-110':selectedTeam!==null&&selectedTeam!==teamIdx&&!isPastMeeting?'ring-2 ring-white/60':''}`}>{getTeamName(teamIdx)}</span>
                                                     <div className="flex-1">
                                                         <p className="text-[10px] font-black text-slate-500">{team.members.length}명</p>
                                                         <p className="text-[10px] text-slate-400">{team.scoreSum}pt</p>
@@ -725,6 +745,15 @@ function App() {
                                             <span className="text-teal-200">·</span>
                                             <span className="text-teal-100 font-medium">교체할 팀원 탭 또는 팀의 ↓여기로 탭</span>
                                             <button onClick={()=>setSelectedMember(null)} className="ml-1 text-teal-200 hover:text-white text-sm font-black">✕</button>
+                                        </div>
+                                    )}
+                                    {selectedTeam!==null&&!isPastMeeting&&(
+                                        <div style={{position:'fixed',bottom:'80px',left:'50%',transform:'translateX(-50%)',zIndex:50}}
+                                             className="flex items-center gap-2 bg-violet-500 text-white px-4 py-2.5 rounded-full shadow-xl text-xs font-black whitespace-nowrap animate-zoom-in">
+                                            <span>{getTeamName(selectedTeam)}팀 선택됨</span>
+                                            <span className="text-violet-200">·</span>
+                                            <span className="text-violet-100 font-medium">교체할 팀 이름 탭</span>
+                                            <button onClick={()=>setSelectedTeam(null)} className="ml-1 text-violet-200 hover:text-white text-sm font-black">✕</button>
                                         </div>
                                     )}
 
