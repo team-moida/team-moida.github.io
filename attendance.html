@@ -1328,45 +1328,36 @@ function App() {
                                             </div>
                                             <span className="text-[10px] font-black text-slate-400">{getTeamColorName(group.teamIdx)} 조끼</span>
                                         </div>
-                                        {/* 회원 카드 그리드 */}
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {group.members.map(p => (
+                                        {/* 회원 카드 그리드 — 팀 인원수만큼 한 줄 정사각형 */}
+                                        <div className="grid gap-1.5" style={{gridTemplateColumns:`repeat(${group.members.length},1fr)`}}>
+                                            {group.members.map(p=>(
                                                 <button key={p.id} onClick={()=>setModal({type:'checkin',data:p})}
-                                                    className={`relative overflow-hidden rounded-2xl border-2 p-3 text-left transition-all ${getTeamColorClass(group.teamIdx)}`}>
-                                                    {/* 상단 스트라이프: 노쇼=빨강, 정상/지각=초록 */}
-                                                    {p.status === '노쇼'
-                                                        ? <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:'#ef4444'}}/>
-                                                        : p.checkedIn && <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:'#10b981'}}/>
+                                                    className={`relative overflow-hidden rounded-xl border-2 aspect-square flex flex-col items-center justify-center gap-0.5 p-1 transition-all ${getTeamColorClass(group.teamIdx)}`}>
+                                                    {/* 상단 상태 스트라이프 */}
+                                                    {p.status==='노쇼'
+                                                        ?<div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:'#ef4444'}}/>
+                                                        :p.checkedIn&&<div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:'#10b981'}}/>
                                                     }
                                                     {/* 흐린 번호 배경 */}
-                                                    <span style={{position:'absolute',bottom:'-8px',right:'4px',fontSize:'72px',fontWeight:'900',opacity:0.1,lineHeight:1,pointerEvents:'none',userSelect:'none'}}>{p.jerseyNumber}</span>
-                                                    <div className="relative">
-                                                        <div className="flex items-start justify-between mb-1">
-                                                            <div className="flex items-center gap-1">
-                                                                {p.gender==='여성'&&<span className="text-[8px] font-black px-1 py-0.5 bg-pink-100 text-pink-500 rounded">W</span>}
-                                                                {p.isGuest&&<span className="text-[8px] font-black px-1 py-0.5 bg-slate-700 text-white rounded">G</span>}
-                                                            </div>
-                                                            {p.checkedIn
-                                                                ? <span className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0"><Icon.Check size={10} className="text-white"/></span>
-                                                                : p.status === '노쇼'
-                                                                    ? <span className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 text-white text-[9px] font-black">✗</span>
-                                                                    : <span className="text-slate-300 text-base leading-none">›</span>
-                                                            }
-                                                        </div>
-                                                        <p className="font-black text-slate-800 text-sm leading-tight">{p.name}</p>
-                                                        <p className="text-[9px] font-black text-slate-500 mt-0.5">{p.jerseyNumber}번 · Lv.{p.level}</p>
-                                                        {p.status === '노쇼' ? (
-                                                            <p className="text-[9px] text-red-600 font-black mt-0.5">✗ 노쇼</p>
-                                                        ) : p.checkedIn ? (
-                                                            p.status === '정상' ? (
-                                                                <p className="text-[9px] text-emerald-600 font-black mt-0.5">✓ 정상 · {p.checkInTime}</p>
-                                                            ) : (
-                                                                <p className="text-[9px] text-yellow-600 font-black mt-0.5">⚠️ 지각 · {p.checkInTime}</p>
-                                                            )
-                                                        ) : (
-                                                            <p className="text-[9px] text-slate-400 mt-0.5">미출석</p>
-                                                        )}
+                                                    <span style={{position:'absolute',bottom:'-3px',right:'2px',fontSize:'2.8em',fontWeight:'900',opacity:0.12,lineHeight:1,pointerEvents:'none',userSelect:'none'}}>{p.jerseyNumber}</span>
+                                                    {/* 체크 인디케이터 */}
+                                                    <div className="relative flex-shrink-0">
+                                                        {p.checkedIn
+                                                            ?<span className="w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center"><Icon.Check size={8} className="text-white"/></span>
+                                                            :p.status==='노쇼'
+                                                                ?<span className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-[8px] font-black">✗</span>
+                                                                :<span className="w-4 h-4 rounded-full border-2 border-slate-300"/>
+                                                        }
                                                     </div>
+                                                    {/* 이름 */}
+                                                    <p className="relative font-black text-slate-800 text-[10px] leading-none text-center w-full px-0.5 truncate">{p.name}</p>
+                                                    {/* W/G 뱃지 */}
+                                                    {(p.gender==='여성'||p.isGuest)&&(
+                                                        <div className="relative flex gap-0.5">
+                                                            {p.gender==='여성'&&<span className="text-[7px] font-black px-0.5 bg-pink-100 text-pink-500 rounded">W</span>}
+                                                            {p.isGuest&&<span className="text-[7px] font-black px-0.5 bg-slate-700 text-white rounded">G</span>}
+                                                        </div>
+                                                    )}
                                                 </button>
                                             ))}
                                         </div>
