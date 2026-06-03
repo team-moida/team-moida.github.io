@@ -1335,18 +1335,14 @@ function App() {
                                                     className={`relative overflow-hidden rounded-xl aspect-square flex items-center justify-center transition-all ${getTeamBadgeColor(group.teamIdx)} ${p.status==='노쇼'?'opacity-50':''}`}>
                                                     {/* 출석 완료: 상단 흰 스트라이프 */}
                                                     {p.checkedIn&&<div style={{position:'absolute',top:0,left:0,right:0,height:'4px',background:'rgba(255,255,255,0.55)'}}/>}
-                                                    {/* 조끼 번호 (좌상단) */}
-                                                    <span style={{position:'absolute',top:'4px',left:'6px',fontSize:'1.6em',fontWeight:'900',opacity:0.55,lineHeight:1,pointerEvents:'none',userSelect:'none'}}>{p.jerseyNumber}</span>
-                                                    {/* 이름 + 뱃지 (정중앙 오버레이) */}
-                                                    <div className="relative flex flex-col items-center gap-0.5">
-                                                        <p className="font-black text-[14px] text-center" style={{lineHeight:'1.2',wordBreak:'keep-all',maxWidth:'90%'}}>{p.name}</p>
-                                                        {(p.gender==='여성'||p.isGuest)&&(
-                                                            <div className="flex gap-0.5">
-                                                                {p.gender==='여성'&&<span className="text-[6px] font-black px-0.5 rounded bg-white/30">W</span>}
-                                                                {p.isGuest&&<span className="text-[6px] font-black px-0.5 rounded bg-black/20">G</span>}
-                                                            </div>
-                                                        )}
+                                                    {/* 조끼 번호 + W/G 뱃지 (좌상단) */}
+                                                    <div style={{position:'absolute',top:'4px',left:'6px',display:'flex',alignItems:'center',gap:'3px',pointerEvents:'none',userSelect:'none'}}>
+                                                        <span style={{fontSize:'1.6em',fontWeight:'900',opacity:0.55,lineHeight:1}}>{p.jerseyNumber}</span>
+                                                        {p.gender==='여성'&&<span style={{fontSize:'8px',fontWeight:'900',padding:'1px 3px',borderRadius:3,background:'#ec4899',color:'white',lineHeight:1}}>W</span>}
+                                                        {p.isGuest&&<span style={{fontSize:'8px',fontWeight:'900',padding:'1px 3px',borderRadius:3,background:'rgba(0,0,0,0.3)',color:'white',lineHeight:1}}>G</span>}
                                                     </div>
+                                                    {/* 이름 (정중앙) */}
+                                                    <p className="relative font-black text-[17px] text-center" style={{lineHeight:'1.2',wordBreak:'keep-all',maxWidth:'90%'}}>{p.name}</p>
                                                 </button>
                                             ))}
                                         </div>
