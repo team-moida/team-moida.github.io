@@ -244,41 +244,67 @@
             document.getElementById('kakao-linking-step').style.display = 'none';
         }
 
+        let loginTimeoutId = null;
+
         function handleKakaoLogin() {
             if (isKakaoLoading) return;
-            if (!window.Kakao?.isInitialized()) Kakao.init('ce0f70554512198de18a346beb970a91');
+            try {
+                if (!window.Kakao) { showToast('카카오 SDK 로드 실패. 새로고침 해주세요.', 'error'); return; }
+                if (!Kakao.isInitialized()) Kakao.init('ce0f70554512198de18a346beb970a91');
+            } catch(e) { showToast('카카오 초기화 오류: ' + e.message, 'error'); return; }
+
             setKakaoLoginLoading(true);
-            Kakao.Auth.login({
-                success: () => {
-                    Kakao.API.request({
-                        url: '/v2/user/me',
-                        success: async (res) => {
-                            const kakaoId = String(res.id);
-                            pendingNickname = res.kakao_account?.profile?.nickname || '';
-                            try {
-                                const snap = await getCol('members').where('kakaoId', '==', kakaoId).get();
-                                if (!snap.empty) {
-                                    const doc = snap.docs[0];
-                                    const data = doc.data();
-                                    if (data.isResigned) { setKakaoLoginLoading(false); showToast('탈퇴한 회원입니다.', 'error'); return; }
-                                    const memberData = { memberId: doc.id, name: data.name, role: data.role || '회원', kakaoId };
-                                    localStorage.setItem(LS_KEY, JSON.stringify(memberData));
-                                    routeByRole(memberData);
-                                } else {
-                                    pendingKakaoId = kakaoId;
-                                    document.getElementById('link-desc').innerHTML =
-                                        (pendingNickname ? `<b>${pendingNickname}</b>님, ` : '') + '처음 로그인이시네요.<br/>기존 회원 계정과 카카오를 연결해주세요.';
-                                    document.getElementById('kakao-idle-step').style.display = 'none';
-                                    document.getElementById('kakao-linking-step').style.display = 'block';
-                                    setKakaoLoginLoading(false);
-                                }
-                            } catch(e) { setKakaoLoginLoading(false); showToast('오류: ' + e.message, 'error'); }
-                        },
-                        fail: () => { setKakaoLoginLoading(false); showToast('카카오 정보 조회 실패', 'error'); }
-                    });
-                },
-                fail: () => { setKakaoLoginLoading(false); showToast('카카오 로그인 취소', 'error'); }
-            });
+
+            // 팝업 차단 등으로 콜백 미호출 시 30초 후 자동 해제
+            loginTimeoutId = setTimeout(() => {
+                if (isKakaoLoading) {
+                    setKakaoLoginLoading(false);
+                    showToast('로그인 시간 초과. 팝업이 차단되었을 수 있습니다.', 'error');
+                }
+            }, 30000);
+
+            const resetAndToast = (msg) => {
+                clearTimeout(loginTimeoutId);
+                setKakaoLoginLoading(false);
+                showToast(msg, 'error');
+            };
+
+            try {
+                Kakao.Auth.login({
+                    success: () => {
+                        Kakao.API.request({
+                            url: '/v2/user/me',
+                            success: async (res) => {
+                                const kakaoId = String(res.id);
+                                pendingNickname = res.kakao_account?.profile?.nickname || '';
+                                try {
+                                    const snap = await getCol('members').where('kakaoId', '==', kakaoId).get();
+                                    clearTimeout(loginTimeoutId);
+                                    if (!snap.empty) {
+                                        const doc = snap.docs[0];
+                                        const data = doc.data();
+                                        if (data.isResigned) { resetAndToast('탈퇴한 회원입니다.'); return; }
+                                        const memberData = { memberId: doc.id, name: data.name, role: data.role || '회원', kakaoId };
+                                        localStorage.setItem(LS_KEY, JSON.stringify(memberData));
+                                        routeByRole(memberData);
+                                    } else {
+                                        pendingKakaoId = kakaoId;
+                                        document.getElementById('link-desc').innerHTML =
+                                            (pendingNickname ? `<b>${pendingNickname}</b>님, ` : '') + '처음 로그인이시네요.<br/>기존 회원 계정과 카카오를 연결해주세요.';
+                                        document.getElementById('kakao-idle-step').style.display = 'none';
+                                        document.getElementById('kakao-linking-step').style.display = 'block';
+                                        setKakaoLoginLoading(false);
+                                    }
+                                } catch(e) { resetAndToast('오류: ' + e.message); }
+                            },
+                            fail: (err) => { resetAndToast('카카오 정보 조회 실패: ' + (err?.error_description || err?.error || '오류')); }
+                        });
+                    },
+                    fail: (err) => { resetAndToast('카카오 로그인 실패: ' + (err?.error_description || err?.error || '취소')); }
+                });
+            } catch(e) {
+                resetAndToast('카카오 로그인 오류: ' + e.message);
+            }
         }
 
         async function handleKakaoLink() {
