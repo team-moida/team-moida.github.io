@@ -233,85 +233,130 @@ function App() {
         localStorage.removeItem('moida_confirmed_teams');
         setIsConfirmed(false);
 
-        let pool=activeSelectedList.map(p=>{
+        const pool=activeSelectedList.map(p=>{
             const mi=members.find(mm=>mm.id===p.memberId)||{};
             const lvl=parseInt(mi.level||p.level||4);
             return{...p,name:mi.name||p.name,level:lvl,tierOrder:mi.tierOrder??99,points:getLevelPoints(lvl),coupleId:mi.coupleId||'',gender:mi.gender||p.gender||'남성',isGuest:p.isGuest||false};
         });
 
-        let units=[];
-        const processedIds=new Set();
-        if(keepCouples){
-            pool.forEach(p=>{
-                if(!processedIds.has(p.id)){
-                    if(p.coupleId){
-                        const partner=pool.find(o=>o.memberId===p.coupleId&&!processedIds.has(o.id));
-                        if(partner){
-                            units.push({members:[p,partner],totalPoints:p.points+partner.points,maxMemberPoints:Math.max(p.points,partner.points),isCouple:true});
-                            processedIds.add(p.id);processedIds.add(partner.id);return;
-                        }
-                    }
-                    units.push({members:[p],totalPoints:p.points,maxMemberPoints:p.points,isCouple:false});
-                    processedIds.add(p.id);
-                }
-            });
-        } else {
-            units=pool.map(p=>({members:[p],totalPoints:p.points,maxMemberPoints:p.points,isCouple:false}));
-        }
-
-        units=shuffleArray(units);
-        units.sort((a,b)=>b.maxMemberPoints-a.maxMemberPoints||b.totalPoints-a.totalPoints);
-
         const baseCapacity=Math.floor(total/teamCount);
         const remainder=total%teamCount;
-        const resultTeams=Array.from({length:teamCount},(_,i)=>({id:i,members:[],scoreSum:0,capacity:baseCapacity+(i<remainder?1:0)}));
+        const resultTeams=Array.from({length:teamCount},(_,i)=>({
+            id:i,members:[],scoreSum:0,capacity:baseCapacity+(i<remainder?1:0),femaleCount:0
+        }));
 
-        const getOverlapCount=(teamMembers)=>{
+        // 지난 모임 중복 카운트
+        const getPastOverlap=(teamMembers,newMembers)=>{
             let count=0;
-            for(let i=0;i<teamMembers.length;i++){
-                const pastSet=pastTeammatesMap[teamMembers[i].memberId||teamMembers[i].id];
-                if(pastSet){for(let j=i+1;j<teamMembers.length;j++){if(pastSet.has(teamMembers[j].memberId||teamMembers[j].id))count++;}}
-            }
+            newMembers.forEach(nm=>{
+                const ps=pastTeammatesMap[nm.memberId||nm.id];
+                if(ps)teamMembers.forEach(tm=>{if(ps.has(tm.memberId||tm.id))count++;});
+            });
             return count;
         };
 
-        units.forEach(unit=>{
-            const required=unit.members.length;
-            let candidates=resultTeams.filter(t=>t.members.length+required<=t.capacity);
-            if(candidates.length===0)candidates=[...resultTeams];
-            candidates.sort((a,b)=>{
-                if(avoidOverlap){
-                    let oA=0,oB=0;
-                    unit.members.forEach(m=>{
-                        const ps=pastTeammatesMap[m.memberId||m.id];
-                        if(ps){a.members.forEach(am=>{if(ps.has(am.memberId||am.id))oA++;});b.members.forEach(bm=>{if(ps.has(bm.memberId||bm.id))oB++;});}
-                    });
-                    const diff=Math.abs(a.scoreSum-b.scoreSum);
-                    if(diff<=2.5&&oA!==oB)return oA-oB;
+        // ── 1단계: 커플 식별 ──
+        const usedIds=new Set();
+        const coupleUnits=[];
+        if(keepCouples){
+            const processed=new Set();
+            pool.forEach(p=>{
+                const pid=p.memberId||p.id;
+                if(processed.has(pid)||!p.coupleId)return;
+                const partner=pool.find(o=>{const oid=o.memberId||o.id;return oid===p.coupleId&&!processed.has(oid);});
+                if(partner){
+                    coupleUnits.push({members:[p,partner],totalPoints:p.points+partner.points,femaleCount:[p,partner].filter(m=>m.gender==='여성').length});
+                    processed.add(pid);processed.add(partner.memberId||partner.id);
+                    usedIds.add(pid);usedIds.add(partner.memberId||partner.id);
                 }
-                return a.scoreSum!==b.scoreSum?a.scoreSum-b.scoreSum:Math.random()-0.5;
             });
-            const target=candidates[0];
-            target.members.push(...unit.members);
-            target.scoreSum+=unit.totalPoints;
+        }
+        const singles=pool.filter(p=>!usedIds.has(p.memberId||p.id));
+        // 여성: 강한 순 (level 낮을수록 강함), 같은 레벨은 랜덤
+        const singleFemales=shuffleArray(singles.filter(m=>m.gender==='여성')).sort((a,b)=>a.level-b.level);
+        // 남성: 강한 순 (스네이크 드래프트용), 같은 레벨은 tierOrder → 랜덤
+        const singleMales=shuffleArray(singles.filter(m=>m.gender!=='여성')).sort((a,b)=>a.level-b.level||(a.tierOrder||99)-(b.tierOrder||99));
+
+        // ── 2단계: 커플 배정 ──
+        // 여성 포함 커플 먼저, 그 다음 고득점 커플
+        coupleUnits.sort((a,b)=>b.femaleCount-a.femaleCount||b.totalPoints-a.totalPoints);
+        coupleUnits.forEach(unit=>{
+            const required=unit.members.length;
+            let cands=resultTeams.filter(t=>t.members.length+required<=t.capacity);
+            if(!cands.length)cands=[...resultTeams];
+            cands.sort((a,b)=>{
+                if(unit.femaleCount>0&&a.femaleCount!==b.femaleCount)return a.femaleCount-b.femaleCount;
+                // 커플끼리 지난번 동팀은 체크 안 함 — 커플은 무조건 함께
+                if(avoidOverlap){const oA=getPastOverlap(a.members,unit.members),oB=getPastOverlap(b.members,unit.members);if(oA!==oB&&Math.abs(a.scoreSum-b.scoreSum)<=2.5)return oA-oB;}
+                return a.scoreSum-b.scoreSum||Math.random()-0.5;
+            });
+            const t=cands[0];
+            t.members.push(...unit.members);t.scoreSum+=unit.totalPoints;t.femaleCount+=unit.femaleCount;
         });
 
-        // 최적화 (swap)
+        // ── 3단계: 단독 여성 배정 (여성 균등 분포 최우선) ──
+        singleFemales.forEach(female=>{
+            let cands=resultTeams.filter(t=>t.members.length<t.capacity);
+            if(!cands.length)cands=[...resultTeams];
+            cands.sort((a,b)=>{
+                if(a.femaleCount!==b.femaleCount)return a.femaleCount-b.femaleCount;
+                if(avoidOverlap){const oA=getPastOverlap(a.members,[female]),oB=getPastOverlap(b.members,[female]);if(oA!==oB)return oA-oB;}
+                return a.scoreSum-b.scoreSum;
+            });
+            const t=cands[0];
+            t.members.push(female);t.scoreSum+=female.points;t.femaleCount+=1;
+        });
+
+        // ── 4단계: 단독 남성 — 티어 순 스네이크 드래프트 ──
+        // 강한 순 → 팀 순서대로 1명씩, 한 바퀴 끝나면 방향 반전
+        // 같은 레벨 내 avoidOverlap 적용 (lookahead = 팀 수)
+        const maleQueue=[...singleMales];
+        let draftFwd=true;
+        const baseOrder=Array.from({length:teamCount},(_,i)=>i);
+        while(maleQueue.length>0){
+            const order=draftFwd?[...baseOrder]:[...baseOrder].reverse();
+            let anyAssigned=false;
+            for(const tid of order){
+                if(!maleQueue.length)break;
+                const t=resultTeams[tid];
+                if(t.members.length>=t.capacity)continue;
+                let chosenIdx=0;
+                if(avoidOverlap&&maleQueue.length>1){
+                    const look=Math.min(maleQueue.length,teamCount);
+                    let minOvlp=getPastOverlap(t.members,[maleQueue[0]]);
+                    for(let k=1;k<look;k++){
+                        if(maleQueue[k].level-maleQueue[0].level>1)break; // 레벨 차 2 이상이면 중단
+                        const ovlp=getPastOverlap(t.members,[maleQueue[k]]);
+                        if(ovlp<minOvlp){minOvlp=ovlp;chosenIdx=k;}
+                    }
+                }
+                const male=maleQueue.splice(chosenIdx,1)[0];
+                t.members.push(male);t.scoreSum+=male.points;
+                anyAssigned=true;
+            }
+            if(!anyAssigned)break;
+            draftFwd=!draftFwd;
+        }
+        maleQueue.forEach(m=>{
+            const t=resultTeams.reduce((min,cur)=>cur.members.length<min.members.length?cur:min,resultTeams[0]);
+            t.members.push(m);t.scoreSum+=m.points;
+        });
+
+        // ── 5단계: 점수 균형 스왑 최적화 (남성만, 커플 제외) ──
         let improved=true,iters=0;
         while(improved&&iters<150){
             improved=false;iters++;
             resultTeams.sort((a,b)=>b.scoreSum-a.scoreSum);
             const strong=resultTeams[0],weak=resultTeams[resultTeams.length-1];
-            const scoreDiff=strong.scoreSum-weak.scoreSum;
-            let bestSwap=null,bestScoreDiff=scoreDiff;
+            let bestSwap=null,bestDiff=strong.scoreSum-weak.scoreSum;
             for(let i=0;i<strong.members.length;i++){
+                const m1=strong.members[i];
+                if(m1.gender==='여성'||(keepCouples&&m1.coupleId))continue;
                 for(let j=0;j<weak.members.length;j++){
-                    const m1=strong.members[i],m2=weak.members[j];
-                    if(keepCouples&&(m1.coupleId||m2.coupleId))continue;
-                    const newStrong=strong.scoreSum-m1.points+m2.points;
-                    const newWeak=weak.scoreSum-m2.points+m1.points;
-                    const newDiff=Math.abs(newStrong-newWeak);
-                    if(newDiff<bestScoreDiff){bestScoreDiff=newDiff;bestSwap={si:i,wi:j};}
+                    const m2=weak.members[j];
+                    if(m2.gender==='여성'||(keepCouples&&m2.coupleId))continue;
+                    const newDiff=Math.abs((strong.scoreSum-m1.points+m2.points)-(weak.scoreSum-m2.points+m1.points));
+                    if(newDiff<bestDiff){bestDiff=newDiff;bestSwap={si:i,wi:j};}
                 }
             }
             if(bestSwap){
@@ -323,30 +368,32 @@ function App() {
             }
         }
 
-        // 여성 3번,6번 배치
-        const reorderGender=(members)=>{
-            const size=members.length;
-            if(size===0)return[];
-            const females=[...members.filter(m=>m.gender==='여성')];
-            const others=[...members.filter(m=>m.gender!=='여성')];
-            const result=new Array(size).fill(null);
-            if(females.length>0&&size>2)result[2]=females.shift();
-            if(females.length>0&&size>5)result[5]=females.shift();
-            for(let i=0;i<size;i++){
-                if(result[i]===null){
-                    if(others.length>0)result[i]=others.shift();
-                    else if(females.length>0)result[i]=females.shift();
-                }
+        // ── 6단계: 팀 내 포지션 배치 ──
+        // 3번(index 2): 여성 우선, 없으면 최약체 남성
+        // 6번(index 5) 또는 5인팀 5번(index 4): 추가 여성
+        // 나머지: 강한 남성 순 → 초과 여성
+        const arrangeMembers=(teamMembers,capacity)=>{
+            const females=[...teamMembers.filter(m=>m.gender==='여성')];
+            const males=teamMembers.filter(m=>m.gender!=='여성').sort((a,b)=>a.level-b.level||(a.tierOrder||99)-(b.tierOrder||99));
+            const result=new Array(capacity).fill(null);
+            const malePool=[...males]; // 강한 순 (앞)
+            const femalePool=[...females];
+            // 3번 자리 (index 2)
+            if(capacity>2){
+                if(femalePool.length>0)result[2]=femalePool.shift();
+                else if(malePool.length>0)result[2]=malePool.pop(); // 최약체 남성
             }
-            return result.filter(m=>m!==null);
+            // 6번(index 5) 또는 5인팀 5번(index 4)
+            const slot2=capacity>=6?5:capacity===5?4:-1;
+            if(slot2>=0&&femalePool.length>0)result[slot2]=femalePool.shift();
+            // 나머지: 강한 남성 → 초과 여성
+            const fill=[...malePool,...femalePool];
+            for(let i=0;i<capacity;i++){if(result[i]===null&&fill.length)result[i]=fill.shift();}
+            return result.filter(Boolean);
         };
 
         resultTeams.sort((a,b)=>a.id-b.id);
-        const finalTeams=resultTeams.map(t=>{
-            t.members.sort((a,b)=>a.level!==b.level?a.level-b.level:(a.tierOrder||99)-(b.tierOrder||99));
-            return{members:reorderGender(t.members),scoreSum:t.scoreSum};
-        });
-
+        const finalTeams=resultTeams.map(t=>({members:arrangeMembers(t.members,t.capacity),scoreSum:t.scoreSum}));
         setDisplayedMeetingDate(meetingDate);
         setTeams(finalTeams);
         setActiveTab('results');
