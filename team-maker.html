@@ -114,6 +114,10 @@ const Icon = {
     Trash:({size=16,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
     Camera:({size=16,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
     Folder:({size=16,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>,
+    Sun:({size=18,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
+    Moon:({size=18,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
+    Zap:({size=16,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+    List:({size=16,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
 };
 
 function App() {
@@ -534,7 +538,7 @@ function App() {
                     <div className="flex gap-2">
                         {teams.length>0&&<button onClick={handleCapture} className="p-2.5 rounded-xl bg-slate-50 text-slate-400"><Icon.Camera size={16}/></button>}
                         <button onClick={()=>window.location.reload()} className="p-2.5 rounded-xl bg-slate-50 text-slate-400"><Icon.Refresh size={16}/></button>
-                        <button onClick={toggleTheme} className="p-2.5 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200" title="테마">{darkMode ? '☀️' : '🌙'}</button>
+                        <button onClick={toggleTheme} className="p-2.5 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200" title="테마">{darkMode ? <Icon.Sun size={18}/> : <Icon.Moon size={18}/>}</button>
                         <button onClick={()=>window.location.href='index.html'} className="p-2.5 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"><Icon.Home size={18}/></button>
                     </div>
                 </div>
@@ -617,7 +621,7 @@ function App() {
 
                         <button onClick={generateTeams} disabled={activeSelectedList.length<teamingSettings.teamCount}
                             className="w-full py-4 bg-teal-500 text-white rounded-3xl font-black text-lg shadow-xl disabled:opacity-30">
-                            ⚡ 팀 자동 편성
+                            <Icon.Zap size={18} className="inline-block mr-1.5"/> 팀 자동 편성
                         </button>
                     </div>
                 )}
@@ -626,7 +630,7 @@ function App() {
                 {activeTab==='results' && (
                     <div>
                         {teams.length===0
-                            ? <div className="text-center py-20 text-slate-300"><p className="text-4xl mb-3">⚡</p><p className="font-black">편성 탭에서 팀을 생성해주세요</p></div>
+                            ? <div className="text-center py-20 text-slate-300"><div className="flex justify-center mb-3 opacity-50"><Icon.Zap size={48}/></div><p className="font-black">편성 탭에서 팀을 생성해주세요</p></div>
                             : (
                                 <div>
                                     {displayedMeetingDate && (
@@ -718,8 +722,8 @@ function App() {
                                         <div className="space-y-2">
                                             <div className="flex gap-2">
                                                 <button onClick={resetTeams} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">초기화</button>
-                                                <button onClick={reGenerateTeams} className="flex-1 py-3 bg-violet-500 text-white rounded-2xl font-black text-sm shadow-lg">🔄 재편성</button>
-                                                <button onClick={saveDraft} className="flex-1 py-3 bg-amber-400 text-slate-800 rounded-2xl font-black text-sm shadow-lg">💾 임시저장</button>
+                                                <button onClick={reGenerateTeams} className="flex-1 py-3 bg-violet-500 text-white rounded-2xl font-black text-sm shadow-lg flex items-center justify-center gap-1.5"><Icon.Refresh size={14}/> 재편성</button>
+                                                <button onClick={saveDraft} className="flex-1 py-3 bg-amber-400 text-slate-800 rounded-2xl font-black text-sm shadow-lg flex items-center justify-center gap-1.5"><Icon.Save size={14}/> 임시저장</button>
                                             </div>
                                             <button onClick={confirmTeams} disabled={isConfirmed}
                                                 className={`w-full py-3.5 rounded-2xl font-black text-sm shadow-lg ${isConfirmed?'bg-emerald-500 text-white opacity-70':'bg-teal-500 text-white'}`}>
@@ -739,7 +743,7 @@ function App() {
                     <div>
                         {/* 서브탭 */}
                         <div className="flex gap-2 mb-4">
-                            {[['confirmed','✓ 확정 기록',confirmedHistory.length],['draft','💾 임시 저장',savedDrafts.length]].map(([v,l,cnt])=>(
+                            {[['confirmed','확정 기록',confirmedHistory.length],['draft','임시 저장',savedDrafts.length]].map(([v,l,cnt])=>(
                                 <button key={v} onClick={()=>setStorageSubTab(v)}
                                     className={`flex-1 py-2.5 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-1.5 ${storageSubTab===v?'bg-teal-500 text-white shadow':'bg-white border border-slate-200 text-slate-500'}`}>
                                     {l}
@@ -751,7 +755,7 @@ function App() {
                         {/* 확정 기록 */}
                         {storageSubTab==='confirmed' && (
                             confirmedHistory.length===0
-                                ? <div className="text-center py-20 text-slate-300"><p className="text-4xl mb-3">📋</p><p className="font-black">확정된 기록이 없습니다</p></div>
+                                ? <div className="text-center py-20 text-slate-300"><div className="flex justify-center mb-3 opacity-50"><Icon.List size={48}/></div><p className="font-black">확정된 기록이 없습니다</p></div>
                                 : confirmedHistory.map(d=>(
                                     <div key={d.id} className="flex items-center gap-2 p-4 bg-white border border-emerald-100 rounded-2xl mb-2">
                                         <div className="flex-1">
@@ -767,7 +771,7 @@ function App() {
                         {/* 임시 저장 */}
                         {storageSubTab==='draft' && (
                             savedDrafts.length===0
-                                ? <div className="text-center py-20 text-slate-300"><p className="text-4xl mb-3">💾</p><p className="font-black">임시 저장된 기록이 없습니다</p></div>
+                                ? <div className="text-center py-20 text-slate-300"><div className="flex justify-center mb-3 opacity-50"><Icon.Save size={48}/></div><p className="font-black">임시 저장된 기록이 없습니다</p></div>
                                 : savedDrafts.map(d=>(
                                     <div key={d.id} className="flex items-center gap-2 p-4 bg-white border border-slate-100 rounded-2xl mb-2">
                                         <div className="flex-1">
