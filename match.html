@@ -146,13 +146,13 @@ function App() {
     const toggleTheme = () => { const isDark = !darkMode; setDarkMode(isDark); document.documentElement.classList.toggle('dark', isDark); localStorage.setItem('moida_theme', isDark ? 'dark' : 'light'); };
 
     useEffect(()=>{
-        const init=async()=>{
-            try{await auth.signInAnonymously();}catch(e){console.error(e);}
-            finally{setLoading(false);const l=document.getElementById('loading-screen');if(l){l.style.opacity='0';setTimeout(()=>{if(l)l.style.display='none';},500);}}
-        };
-        init();
+        const hideLoader=()=>{setLoading(false);const l=document.getElementById('loading-screen');if(l){l.style.opacity='0';setTimeout(()=>{if(l)l.style.display='none';},500);}};
+        const t=setTimeout(hideLoader,5000);
         if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+        auth.signInAnonymously().catch(()=>{});
         const unsubAuth=auth.onAuthStateChanged(u=>{
+            clearTimeout(t);
+            hideLoader();
             if(!u)return;
             getCol('team_drafts').onSnapshot(snap=>{
                 const drafts=snap.docs.map(d=>({id:d.id,...d.data()}));

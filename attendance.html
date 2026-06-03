@@ -1023,17 +1023,13 @@ function App() {
     };
 
     useEffect(() => {
-        const initAuth = async () => {
-            try { await auth.signInAnonymously(); }
-            catch(e) { console.error(e); }
-            finally {
-                const loader = document.getElementById('loading-screen');
-                if (loader) { loader.style.opacity='0'; setTimeout(()=>{ if(loader) loader.style.display='none'; },500); }
-            }
-        };
-        initAuth();
+        const hideLoader=()=>{const l=document.getElementById('loading-screen');if(l){l.style.opacity='0';setTimeout(()=>{if(l)l.style.display='none';},500);}};
+        const t=setTimeout(hideLoader,5000);
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+        auth.signInAnonymously().catch(()=>{});
         const unsubAuth = auth.onAuthStateChanged(u => {
+            clearTimeout(t);
+            hideLoader();
             if (u) {
                 getMemberCol().onSnapshot(snap => setMembers(snap.docs.map(d=>({id:d.id,...d.data()}))));
                 getSessionCol().onSnapshot(snap => setSessionData(snap.docs.map(d=>({id:d.id,...d.data()}))));
