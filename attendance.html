@@ -499,6 +499,7 @@ function App() {
     const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
     const qrCanvasRef = useRef(null);
     const hasAutoNoShowRef = useRef(false);
+    const hasAutoFixedRef = useRef(false);
 
 
 
@@ -1022,11 +1023,28 @@ function App() {
                 getMemberCol().onSnapshot(snap => setMembers(snap.docs.map(d=>({id:d.id,...d.data()}))));
                 getSessionCol().onSnapshot(snap => setSessionData(snap.docs.map(d=>({id:d.id,...d.data()}))));
                 getHistoryCol().onSnapshot(snap => setHistory(snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.date.localeCompare(a.date))));
-                getSettingsCol().doc('meeting_schedule_v2').onSnapshot(doc => {
+                getSettingsCol().doc('meeting_schedule_v2').onSnapshot(async doc => {
                     if(doc.exists) {
                         const data = doc.data();
                         setMeetingTimes(prev=>({...prev,...data}));
                         setTestMode(!!data.testMode);
+                        // testMode=false인데 test_backup이 남아있으면 자동 복원 (1회만)
+                        if (!hasAutoFixedRef.current && !data.testMode) {
+                            hasAutoFixedRef.current = true;
+                            try {
+                                const backupDoc = await getSettingsCol().doc('test_backup').get();
+                                if (backupDoc.exists) {
+                                    const orig = backupDoc.data().originalSettings;
+                                    const corrected = {...orig, testMode: false};
+                                    const fixBatch = db.batch();
+                                    fixBatch.set(getSettingsCol().doc('meeting_schedule_v2'), corrected);
+                                    fixBatch.delete(getSettingsCol().doc('test_backup'));
+                                    await fixBatch.commit();
+                                    setMeetingTimes(corrected);
+                                    localStorage.removeItem('moida_testmode_backup');
+                                }
+                            } catch(e) { console.error('자동 복원 실패:', e); }
+                        }
                     }
                 });
                 getTeamDraftsCol().orderBy('createdAt','desc').limit(1).onSnapshot(snap => { setTeamData(snap.empty?null:snap.docs[0].data()); });
