@@ -225,10 +225,11 @@ function App() {
     const [loginForm, setLoginForm] = useState({ name:'', birth:'' });
     const [isLoggingIn, setIsLoggingIn] = useState(false);
     const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
-    const [testMode, setTestMode] = useState(false);
 
     // Firebase 데이터
     const [meetingSettings, setMeetingSettings] = useState(null);
+    // testMode는 관리자(attendance.html)만 제어 — 회원 앱은 읽기 전용
+    const testMode = !!meetingSettings?.testMode;
     const [teamDraftData, setTeamDraftData] = useState(null);
     const [scheduleData, setScheduleData] = useState(null);
     const [mySession, setMySession] = useState(null); // 오늘 내 출석 세션
@@ -278,14 +279,10 @@ function App() {
         auth.signInAnonymously().catch(e=>console.error(e));
     }, []);
 
-    // 설정 읽기 (testMode 포함)
+    // 설정 읽기
     useEffect(() => {
         const unsub = getCol('settings').doc('meeting_schedule_v2').onSnapshot(doc => {
-            if (doc.exists) {
-                const data = doc.data();
-                setMeetingSettings(data);
-                setTestMode(data.testMode ?? false);
-            }
+            if (doc.exists) setMeetingSettings(doc.data());
         });
         return () => unsub();
     }, []);
@@ -314,10 +311,9 @@ function App() {
     }, []);
 
     // 내 출석 세션 읽기
-    // testMode도 의존성에 포함 → 테스트 종료 시 즉시 null 초기화 + 리스너 재생성
     useEffect(() => {
         if (!memberData?.memberId || !meetingSettings?.date) return;
-        setMySession(null); // 날짜·testMode 변경 시 이전 출석 기록 즉시 초기화
+        setMySession(null);
         const unsub = getCol('weekly_session')
             .where('memberId', '==', memberData.memberId)
             .where('date', '==', meetingSettings.date)
@@ -325,7 +321,7 @@ function App() {
                 setMySession(snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() });
             });
         return () => unsub();
-    }, [memberData?.memberId, meetingSettings?.date, testMode]);
+    }, [memberData?.memberId, meetingSettings?.date]);
 
     // members 문서 읽기
     useEffect(() => {
@@ -463,21 +459,6 @@ function App() {
         localStorage.setItem('moida_theme', isDark ? 'dark' : 'light');
     };
 
-    const toggleTestMode = async () => {
-        const newVal = !testMode;
-        try {
-            // 테스트 모드 OFF: 내 세션 먼저 삭제 (날짜가 그대로여도 출석 상태 초기화)
-            if (!newVal && mySession?.id) {
-                await getCol('weekly_session').doc(mySession.id).delete();
-                setMySession(null);
-            }
-            await getCol('settings').doc('meeting_schedule_v2').update({ testMode: newVal });
-            // setTestMode는 onSnapshot이 호출함
-        } catch(e) {
-            setTestMode(newVal);
-        }
-    };
-
     // GPS 출석 체크
     const handleGPSCheckIn = async () => {
         if (!memberData?.memberId) return;
@@ -613,7 +594,7 @@ function App() {
         <div className="min-h-screen pb-24 text-slate-800">
             {testMode && (
                 <div style={{background:'#fbbf24',position:'sticky',top:0,zIndex:50}} className="text-amber-900 text-xs font-black text-center py-2 px-4">
-                    🧪 테스트 모드 — GPS·QR 시간 제한 해제됨. 우측 상단 🧪 버튼으로 끄세요.
+                    🧪 테스트 모드 — GPS·QR 시간·거리 제한이 해제된 상태입니다.
                 </div>
             )}
             {/* 헤더 */}
@@ -628,10 +609,6 @@ function App() {
                             <button onClick={()=>window.location.href='index.html'} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all">🏠</button>
                             <button onClick={handleLogout} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all">로그아웃</button>
                             <button onClick={toggleTheme} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all" title="테마">{darkMode ? '☀️' : '🌙'}</button>
-                            <button onClick={toggleTestMode} title="테스트 모드"
-                                className={`text-[10px] font-black px-2.5 py-1 rounded-lg transition-all ${testMode ? 'bg-amber-400 text-amber-900' : 'bg-slate-200/70 text-slate-500'}`}>
-                                🧪
-                            </button>
                         </div>
                         <img src="icon.png" alt="OTP FC" className="w-10 h-10 object-contain opacity-70" onError={e=>e.target.style.display='none'}/>
                     </div>
@@ -865,15 +842,6 @@ function App() {
                                         <button onClick={()=>{setQrStatus('idle');setIsQRScannerOpen(true);}} className="mt-3 text-xs text-violet-600 font-black px-5 py-2.5 rounded-xl bg-violet-50 border border-violet-200 block mx-auto">
                                             📷 다시 스캔하기
                                         </button>
-                                        {(urlParams.token || lastScannedQR.token) && (
-                                            <button onClick={async () => {
-                                                try { await getCol('settings').doc('meeting_schedule_v2').update({ testMode: true }); }
-                                                catch(e) { setTestMode(true); }
-                                                processQRToken(urlParams.token || lastScannedQR.token, urlParams.date || lastScannedQR.date);
-                                            }} className="mt-2 text-xs text-amber-600 font-black px-5 py-2.5 rounded-xl bg-amber-50 border border-amber-200 block mx-auto">
-                                                🧪 테스트 모드로 재시도
-                                            </button>
-                                        )}
                                     </>
                                 )}
                             </div>
