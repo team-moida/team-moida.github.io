@@ -104,7 +104,7 @@
 - Tailwind CDN 사용 중 → z-index 문제 시 **inline style로 처리** (Tailwind z-index 클래스 우선순위 문제)
 
 ### 팀 관련 상수
-- **팀 색상**: 핑크(A) / 하늘(B) / 연두(C) / 노랑(D) / 보라(E) / 빨강(F)
+- **팀 색상**: 핑크(A) / 하늘(B) / 연두(C) / 노랑(D) / 파랑(E) / 빨강(F)
 - **팀 이름**: `String.fromCharCode(65 + idx)` → A, B, C...
 - **조끼 번호(Jersey)**: `team.members` 배열 내 인덱스 + 1 (1-based)
 

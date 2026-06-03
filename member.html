@@ -107,9 +107,9 @@ const getUrlParams = () => {
     return { token: params.get('token'), date: params.get('date') };
 };
 
-const getTeamBadge = (idx) => ['bg-pink-500','bg-sky-400','bg-lime-400','bg-yellow-400','bg-violet-500','bg-red-500'][idx] || 'bg-slate-500';
+const getTeamBadge = (idx) => ['bg-pink-500','bg-sky-400','bg-lime-400','bg-yellow-400','bg-blue-600','bg-red-500'][idx] || 'bg-slate-500';
 const getTeamName = (idx) => String.fromCharCode(65+idx);
-const getTeamColorName = (idx) => ['핑크','하늘','연두','노랑','보라','빨강'][idx] || '';
+const getTeamColorName = (idx) => ['핑크','하늘','연두','노랑','파랑','빨강'][idx] || '';
 
 // ─── 인앱 QR 스캐너 모달 ──────────────────────────────────────────────────────
 const QRScannerModal = ({ isOpen, onScan, onClose }) => {
