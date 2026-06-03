@@ -864,7 +864,7 @@ function App() {
         const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
         try {
             await getSessionCol().doc(participant.id).update({ checkedIn:true, checkInTime:timeStr, status:finalStatus });
-            setModal({type:null,data:null});
+            setModal({type:'checkin', data:{...participant, checkedIn:true, checkInTime:timeStr, status:finalStatus}});
         } catch(e) { showAlert('오류','출석 실패'); }
     };
 
@@ -1331,15 +1331,15 @@ function App() {
                                         {/* 회원 카드 그리드 — 팀 인원수만큼 한 줄 정사각형 */}
                                         <div className="grid gap-1.5" style={{gridTemplateColumns:`repeat(${group.members.length},1fr)`}}>
                                             {group.members.map(p=>(
-                                                <button key={p.id} onClick={()=>setModal({type:'checkin',data:p})}
+                                                <button key={p.id} onClick={()=>setModal({type:'checkin',data:{...p,teamIdx:group.teamIdx,teamName:group.teamName}})}
                                                     className={`relative overflow-hidden rounded-xl aspect-square flex items-center justify-center transition-all ${getTeamBadgeColor(group.teamIdx)} ${p.status==='노쇼'?'opacity-50':''}`}>
                                                     {/* 출석 완료: 상단 흰 스트라이프 */}
                                                     {p.checkedIn&&<div style={{position:'absolute',top:0,left:0,right:0,height:'4px',background:'rgba(255,255,255,0.55)'}}/>}
                                                     {/* 조끼 번호 (좌상단) */}
-                                                    <span style={{position:'absolute',top:'5px',left:'7px',fontSize:'1em',fontWeight:'900',opacity:0.5,lineHeight:1,pointerEvents:'none',userSelect:'none'}}>{p.jerseyNumber}</span>
+                                                    <span style={{position:'absolute',top:'4px',left:'6px',fontSize:'1.6em',fontWeight:'900',opacity:0.55,lineHeight:1,pointerEvents:'none',userSelect:'none'}}>{p.jerseyNumber}</span>
                                                     {/* 이름 + 뱃지 (정중앙 오버레이) */}
                                                     <div className="relative flex flex-col items-center gap-0.5">
-                                                        <p className="font-black text-[11px] text-center" style={{lineHeight:'1.2',wordBreak:'keep-all',maxWidth:'90%'}}>{p.name}</p>
+                                                        <p className="font-black text-[14px] text-center" style={{lineHeight:'1.2',wordBreak:'keep-all',maxWidth:'90%'}}>{p.name}</p>
                                                         {(p.gender==='여성'||p.isGuest)&&(
                                                             <div className="flex gap-0.5">
                                                                 {p.gender==='여성'&&<span className="text-[6px] font-black px-0.5 rounded bg-white/30">W</span>}
@@ -1739,10 +1739,21 @@ function App() {
                         <h2 className="text-2xl font-black text-slate-800 text-center mb-2">{modal.data.name}</h2>
                         <p className="text-xs text-center text-slate-400 mb-6">{modal.data.gender}</p>
                         {modal.data.checkedIn
-                            ? <div className="text-center">
-                                <p className="text-emerald-500 font-black text-lg">✓ 이미 출석됨</p>
-                                <p className="text-slate-400 text-sm mt-1">{modal.data.checkInTime} · {modal.data.status}</p>
-                                <button onClick={()=>handleUncheckIn(modal.data)} className="mt-4 w-full py-3 bg-red-50 text-red-500 border border-red-200 rounded-2xl font-black text-sm">출석 취소</button>
+                            ? <div>
+                                <div className="text-center mb-4">
+                                    <p className="text-emerald-500 font-black text-xl">✓ 출석 완료</p>
+                                    <p className="text-slate-400 text-sm mt-1">{modal.data.checkInTime} · <span className={`font-black ${modal.data.status==='지각'?'text-orange-400':'text-emerald-500'}`}>{modal.data.status}</span></p>
+                                </div>
+                                {modal.data.teamIdx !== undefined && modal.data.jerseyNumber && (
+                                    <div className={`rounded-2xl p-4 flex items-center gap-4 mb-4 ${getTeamBadgeColor(modal.data.teamIdx)}`}>
+                                        <span className="text-4xl font-black leading-none" style={{minWidth:'2.5rem',textAlign:'center'}}>{modal.data.jerseyNumber}</span>
+                                        <div>
+                                            <p className="font-black text-base leading-tight">{modal.data.teamName}팀 {modal.data.jerseyNumber}번</p>
+                                            <p className="text-sm opacity-80 mt-0.5">{getTeamColorName(modal.data.teamIdx)} 조끼</p>
+                                        </div>
+                                    </div>
+                                )}
+                                <button onClick={()=>handleUncheckIn(modal.data)} className="w-full py-3 bg-red-50 text-red-500 border border-red-200 rounded-2xl font-black text-sm">출석 취소</button>
                               </div>
                             : <button onClick={()=>handleCheckIn(modal.data)} className="w-full py-4 bg-teal-500 text-white rounded-2xl font-black text-lg shadow-lg">출석 체크</button>
                         }
