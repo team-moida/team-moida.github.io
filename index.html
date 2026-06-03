@@ -348,7 +348,7 @@
                     isResigned: false,
                     createdAt: new Date().toISOString()
                 });
-                const memberData = { memberId: docRef.id, name, role: '회원', kakaoId: pendingKakaoId };
+                const memberData = { memberId: docRef.id, name, role: '회원', kakaoId: pendingKakaoId, isAppAdmin: false };
                 localStorage.setItem(LS_KEY, JSON.stringify(memberData));
                 showToast('가입이 완료되었습니다! 환영합니다 🎉', 'ok');
                 setTimeout(() => routeByRole(memberData), 1200);
@@ -415,7 +415,7 @@
                     const doc = snap.docs[0];
                     const data = doc.data();
                     if (data.isResigned) { showToast('탈퇴한 회원입니다.', 'error'); showView('login-view'); return; }
-                    const memberData = { memberId: doc.id, name: data.name, role: data.role || '회원', kakaoId };
+                    const memberData = { memberId: doc.id, name: data.name, role: data.role || '회원', kakaoId, isAppAdmin: data.isAppAdmin || false };
                     localStorage.setItem(LS_KEY, JSON.stringify(memberData));
                     routeByRole(memberData);
                 } else {
@@ -435,7 +435,7 @@
                     const doc = snap.docs[0];
                     const data = doc.data();
                     if (data.isResigned) { showToast('탈퇴한 계정입니다.', 'error'); showView('login-view'); return; }
-                    const memberData = { memberId: doc.id, name: data.name, role: data.role || '회원', kakaoId };
+                    const memberData = { memberId: doc.id, name: data.name, role: data.role || '회원', kakaoId, isAppAdmin: data.isAppAdmin || false };
                     localStorage.setItem(LS_KEY, JSON.stringify(memberData));
                     showToast('이미 가입된 계정입니다. 로그인합니다.', 'ok');
                     setTimeout(() => routeByRole(memberData), 1000);
@@ -475,7 +475,7 @@
                 });
                 if (!found) { showToast('이름 또는 생년월일이 일치하지 않습니다.', 'error'); return; }
                 await getCol('members').doc(found.id).update({ kakaoId: pendingKakaoId });
-                const memberData = { memberId: found.id, name: found.name, role: found.role || '회원', kakaoId: pendingKakaoId };
+                const memberData = { memberId: found.id, name: found.name, role: found.role || '회원', kakaoId: pendingKakaoId, isAppAdmin: found.isAppAdmin || false };
                 localStorage.setItem(LS_KEY, JSON.stringify(memberData));
                 showToast('카카오 계정이 연결되었습니다!', 'ok');
                 setTimeout(() => routeByRole(memberData), 600);
@@ -527,6 +527,7 @@
                         const doc = await getCol('members').doc(saved.memberId).get();
                         if (doc.exists && !doc.data().isResigned) {
                             saved.role = doc.data().role || '회원';
+                            saved.isAppAdmin = doc.data().isAppAdmin || false;
                             localStorage.setItem(LS_KEY, JSON.stringify(saved));
                         } else {
                             localStorage.removeItem(LS_KEY);

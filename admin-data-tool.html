@@ -68,7 +68,7 @@
         </div>
         <div id="role-search-result" class="hidden bg-white border border-slate-200 rounded-xl p-3 mb-3">
             <p id="role-member-info" class="text-sm text-slate-700 mb-2"></p>
-            <div class="flex gap-2 items-center flex-wrap">
+            <div class="flex gap-2 items-center flex-wrap mb-2">
                 <select id="role-select"
                     class="border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-400">
                     <option value="회원">회원</option>
@@ -79,9 +79,18 @@
                 </select>
                 <button onclick="applyRoleChange()"
                     class="bg-purple-500 text-white font-black px-4 py-2 rounded-lg text-sm active:opacity-70">
-                    적용
+                    역할 적용
                 </button>
             </div>
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" id="isAppAdmin-check" class="w-4 h-4 accent-purple-600">
+                <span class="text-sm text-slate-700">앱 관리자 권한 부여</span>
+                <span class="text-xs text-slate-400">(운영진 역할과 별개 — admin-data-tool 접근 등)</span>
+            </label>
+            <button onclick="applyAppAdminChange()"
+                class="mt-2 w-full bg-slate-700 text-white font-black py-2 rounded-lg text-sm active:opacity-70">
+                앱 관리자 권한 저장
+            </button>
         </div>
     </div>
 
@@ -247,6 +256,29 @@
         }
     }
 
+    // 페이지 보호: isAppAdmin 또는 isAppAdmin 회원이 아직 없는 경우(최초 설정) 허용
+    async function checkAccess() {
+        const saved = (() => { try { return JSON.parse(localStorage.getItem('moida_member_data')); } catch { return null; } })();
+        if (saved?.isAppAdmin === true) return; // 앱 관리자 → 통과
+
+        // 시스템에 앱 관리자가 한 명도 없으면 최초 설정 허용
+        try {
+            const snap = await membersCol().where('isAppAdmin', '==', true).limit(1).get();
+            if (snap.empty) {
+                log('최초 설정 모드 — 앱 관리자가 아직 없습니다. ④ 섹션에서 권한을 부여해주세요.', 'text-purple-600');
+                return;
+            }
+        } catch { /* 쿼리 실패 시 통과 */ return; }
+
+        // 앱 관리자가 이미 있는데 본인이 아닌 경우 → 차단
+        document.body.innerHTML = `
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;background:#f8fafc;">
+                <p style="font-size:1.2rem;font-weight:900;color:#1e293b;margin-bottom:8px;">접근 권한 없음</p>
+                <p style="color:#64748b;font-size:0.9rem;margin-bottom:24px;">앱 관리자만 접근할 수 있습니다.</p>
+                <a href="index.html" style="background:#7c3aed;color:white;padding:12px 24px;border-radius:12px;text-decoration:none;font-weight:900;">메인으로</a>
+            </div>`;
+    }
+
     let _roleTargetDocId = null;
 
     async function searchMemberForRole() {
@@ -266,8 +298,9 @@
             const doc = active[0];
             const data = doc.data();
             _roleTargetDocId = doc.id;
-            infoEl.textContent = `${data.name} (생년월일: ${data.birth || '-'}, 현재 역할: ${data.role || '회원'})`;
+            infoEl.textContent = `${data.name} (생년월일: ${data.birth || '-'}, 현재 역할: ${data.role || '회원'}, 앱관리자: ${data.isAppAdmin ? '예' : '아니오'})`;
             document.getElementById('role-select').value = data.role || '회원';
+            document.getElementById('isAppAdmin-check').checked = data.isAppAdmin || false;
             resultBox.classList.remove('hidden');
             log(`"${name}" 검색 완료`);
         } catch(e) {
@@ -283,16 +316,30 @@
         try {
             await membersCol().doc(_roleTargetDocId).update({ role: newRole });
             log(`역할 변경 완료 → ${newRole}`, 'text-purple-600');
-            infoEl.textContent = infoEl.textContent.replace(/현재 역할: .+\)/, `현재 역할: ${newRole})`);
+            infoEl.textContent = infoEl.textContent.replace(/현재 역할: [^\s,)]+/, `현재 역할: ${newRole}`);
+        } catch(e) {
+            log('변경 오류: ' + e.message, 'text-red-500');
+        }
+    }
+
+    async function applyAppAdminChange() {
+        if (!_roleTargetDocId) return;
+        const val = document.getElementById('isAppAdmin-check').checked;
+        if (!confirm(`앱 관리자 권한을 ${val ? '부여' : '해제'}하시겠습니까?`)) return;
+        try {
+            await membersCol().doc(_roleTargetDocId).update({ isAppAdmin: val });
+            log(`앱 관리자 권한 ${val ? '부여' : '해제'} 완료`, 'text-purple-600');
+            if (val) log('다음 로그인 시 권한이 반영됩니다. 재로그인(index.html) 해주세요.', 'text-slate-500');
         } catch(e) {
             log('변경 오류: ' + e.message, 'text-red-500');
         }
     }
 
     // 초기화
-    auth.signInAnonymously().then(() => {
+    auth.signInAnonymously().then(async () => {
         log('Firestore 연결됨');
-        updateStatus();
+        await updateStatus();
+        await checkAccess();
     }).catch(e => {
         log('연결 실패: ' + e.message, 'text-red-500');
     });
