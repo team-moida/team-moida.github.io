@@ -227,6 +227,7 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
     const [results, setResults] = useState([]);
     const [searching, setSearching] = useState(false);
     const [locating, setLocating] = useState(false);
+    const [geocodeFailed, setGeocodeFailed] = useState(false);
 
     // 좌표 → 장소명 역변환 (카카오 REST + CORS 프록시)
     const reverseGeocode = async (y, x) => {
@@ -242,9 +243,11 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
                     || (doc.address && doc.address.address_name)
                     || (doc.road_address && doc.road_address.address_name)
                     || '';
-                if (n) setPlaceName(n.trim());
+                if (n) { setPlaceName(n.trim()); setGeocodeFailed(false); }
             }
-        } catch (_) {}
+        } catch (_) {
+            setGeocodeFailed(true);
+        }
     };
 
     // 마커 이동
@@ -326,6 +329,7 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
         setPlaceName(initialName || '');
         setQuery('');
         setResults([]);
+        setGeocodeFailed(false);
         const initLat = initialLat || 37.5665;
         const initLng = initialLng || 126.9780;
         setLat(initLat);
@@ -427,11 +431,14 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
             {/* 하단: 장소명 입력 + 확인 */}
             <div style={{ position:'relative', zIndex:10, flexShrink:0, padding:'16px', borderTop:'1px solid var(--t-border)', background:'var(--t-surface)', display:'flex', flexDirection:'column', gap:12 }}>
                 <div>
-                    <p style={{ fontSize:10, fontWeight:700, color:'#ec4899', textTransform:'uppercase', margin:'0 0 4px 4px' }}>장소명</p>
+                    <div style={{ display:'flex', justifyContent:'space-between', margin:'0 0 4px 4px' }}>
+                        <p style={{ fontSize:10, fontWeight:700, color:'#ec4899', textTransform:'uppercase', margin:0 }}>장소명</p>
+                        {geocodeFailed && <p style={{ fontSize:10, fontWeight:700, color:'#ef4444', margin:0 }}>⚠ 주소 자동 조회 실패 — 직접 입력해주세요</p>}
+                    </div>
                     <input
                         type="text"
                         value={placeName}
-                        onChange={e => setPlaceName(e.target.value)}
+                        onChange={e => { setPlaceName(e.target.value); setGeocodeFailed(false); }}
                         placeholder="장소명을 직접 수정할 수 있습니다"
                         style={{ width:'100%', background:'var(--t-s2)', border:'1px solid var(--t-border)', borderRadius:12, padding:'12px 16px', fontSize:14, fontFamily:'inherit', fontWeight:700, outline:'none', boxSizing:'border-box', userSelect:'text', WebkitUserSelect:'text', color:'var(--t-text)' }}
                     />
@@ -592,9 +599,16 @@ function App() {
         }
     }, [isQRModalOpen, currentQRToken]);
 
-    const updateMeetingTimeSettings = (newData) => {
+    const updateMeetingTimeSettings = async (newData) => {
+        const prev = meetingTimes;
         setMeetingTimes(newData);
-        getSettingsCol().doc('meeting_schedule_v2').set(newData);
+        try {
+            await getSettingsCol().doc('meeting_schedule_v2').set(newData);
+        } catch(e) {
+            console.error('설정 저장 실패:', e);
+            setMeetingTimes(prev);
+            showAlert('오류', '설정 저장에 실패했습니다.\n네트워크를 확인해주세요.');
+        }
     };
 
     const handleTestSelect = async () => {
