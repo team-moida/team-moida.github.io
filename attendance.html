@@ -1332,32 +1332,30 @@ function App() {
                                         <div className="grid gap-1.5" style={{gridTemplateColumns:`repeat(${group.members.length},1fr)`}}>
                                             {group.members.map(p=>(
                                                 <button key={p.id} onClick={()=>setModal({type:'checkin',data:p})}
-                                                    className={`relative overflow-hidden rounded-xl border-2 aspect-square flex flex-col items-center justify-center gap-0.5 p-1 transition-all ${getTeamColorClass(group.teamIdx)}`}>
-                                                    {/* 상단 상태 스트라이프 */}
-                                                    {p.status==='노쇼'
-                                                        ?<div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:'#ef4444'}}/>
-                                                        :p.checkedIn&&<div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:'#10b981'}}/>
-                                                    }
-                                                    {/* 흐린 번호 배경 */}
-                                                    <span style={{position:'absolute',bottom:'-3px',right:'2px',fontSize:'2.8em',fontWeight:'900',opacity:0.12,lineHeight:1,pointerEvents:'none',userSelect:'none'}}>{p.jerseyNumber}</span>
-                                                    {/* 체크 인디케이터 */}
-                                                    <div className="relative flex-shrink-0">
+                                                    className={`relative overflow-hidden rounded-xl aspect-square flex items-center justify-center transition-all ${getTeamBadgeColor(group.teamIdx)} ${p.status==='노쇼'?'opacity-50':''}`}>
+                                                    {/* 출석 완료: 상단 흰 스트라이프 */}
+                                                    {p.checkedIn&&<div style={{position:'absolute',top:0,left:0,right:0,height:'4px',background:'rgba(255,255,255,0.55)'}}/>}
+                                                    {/* 출석 인디케이터 (우상단) */}
+                                                    <div style={{position:'absolute',top:'5px',right:'5px'}}>
                                                         {p.checkedIn
-                                                            ?<span className="w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center"><Icon.Check size={8} className="text-white"/></span>
+                                                            ?<span className="w-3.5 h-3.5 rounded-full bg-white/40 flex items-center justify-center"><Icon.Check size={7} className="text-current"/></span>
                                                             :p.status==='노쇼'
-                                                                ?<span className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-[8px] font-black">✗</span>
-                                                                :<span className="w-4 h-4 rounded-full border-2 border-slate-300"/>
+                                                                ?<span className="w-3.5 h-3.5 rounded-full bg-black/20 flex items-center justify-center text-[7px] font-black">✗</span>
+                                                                :<span className="w-3.5 h-3.5 rounded-full border border-current" style={{opacity:0.35}}/>
                                                         }
                                                     </div>
-                                                    {/* 이름 */}
-                                                    <p className="relative font-black text-slate-800 text-[10px] leading-none text-center w-full px-0.5 truncate">{p.name}</p>
-                                                    {/* W/G 뱃지 */}
-                                                    {(p.gender==='여성'||p.isGuest)&&(
-                                                        <div className="relative flex gap-0.5">
-                                                            {p.gender==='여성'&&<span className="text-[7px] font-black px-0.5 bg-pink-100 text-pink-500 rounded">W</span>}
-                                                            {p.isGuest&&<span className="text-[7px] font-black px-0.5 bg-slate-700 text-white rounded">G</span>}
-                                                        </div>
-                                                    )}
+                                                    {/* 큰 번호 배경 (정중앙) */}
+                                                    <span style={{position:'absolute',fontSize:'4em',fontWeight:'900',opacity:0.22,lineHeight:1,pointerEvents:'none',userSelect:'none'}}>{p.jerseyNumber}</span>
+                                                    {/* 이름 + 뱃지 (정중앙 오버레이) */}
+                                                    <div className="relative flex flex-col items-center gap-0.5">
+                                                        <p className="font-black text-[11px] leading-none text-center truncate" style={{maxWidth:'88%'}}>{p.name}</p>
+                                                        {(p.gender==='여성'||p.isGuest)&&(
+                                                            <div className="flex gap-0.5">
+                                                                {p.gender==='여성'&&<span className="text-[6px] font-black px-0.5 rounded bg-white/30">W</span>}
+                                                                {p.isGuest&&<span className="text-[6px] font-black px-0.5 rounded bg-black/20">G</span>}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </button>
                                             ))}
                                         </div>
