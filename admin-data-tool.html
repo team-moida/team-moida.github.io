@@ -55,7 +55,11 @@
     <!-- 4. 세션/팀편성 초기화 -->
     <div class="bg-orange-50 border border-orange-200 rounded-2xl p-5 mt-3">
         <p class="font-black text-slate-800 mb-1">④ 세션 · 팀편성 초기화</p>
-        <p class="text-slate-500 text-xs mb-4">출결 관리의 이번 주 인원(weekly_session)과 팀편성(team_drafts)을 삭제합니다.<br/>회원 데이터(members)는 건드리지 않습니다.</p>
+        <p class="text-slate-500 text-xs mb-2">출결 관리의 이번 주 인원(weekly_session)과 팀편성(team_drafts)을 삭제합니다.<br/>회원 데이터(members)는 건드리지 않습니다.</p>
+        <p class="text-red-500 text-xs font-black mb-3">⚠️ 삭제된 데이터는 복구 불가 — 아래에 <b>삭제</b> 라고 입력 후 버튼을 눌러야 실행됩니다.</p>
+        <input id="delete-confirm-input" type="text" placeholder="삭제 라고 입력"
+            class="w-full border border-orange-300 rounded-xl px-3 py-2 text-sm mb-2 outline-none focus:border-orange-500"
+            style="user-select:text">
         <div class="flex gap-2">
             <button onclick="clearSessions()" class="flex-1 bg-orange-400 text-white font-black py-3 rounded-xl text-sm active:opacity-70">세션 초기화</button>
             <button onclick="clearTeamDrafts()" class="flex-1 bg-orange-500 text-white font-black py-3 rounded-xl text-sm active:opacity-70">팀편성 초기화</button>
@@ -216,7 +220,8 @@
             alert('백업이 없습니다! 먼저 백업을 생성해주세요.');
             return;
         }
-        if (!confirm(`경고: members 컬렉션의 모든 데이터를 삭제합니다.\n백업(${count}명)이 있으므로 롤백 가능합니다.\n\n정말 삭제하시겠습니까?`)) return;
+        const confirmVal = prompt(`경고: members 컬렉션의 모든 데이터를 삭제합니다.\n백업(${count}명)이 있으므로 롤백 가능합니다.\n\n계속하려면 "삭제" 라고 입력하세요:`);
+        if (confirmVal?.trim() !== '삭제') { log('취소됨 (확인 입력 불일치)', 'text-slate-400'); return; }
         setBtn('btn-clear', true);
         log('전체 삭제 시작...', 'text-red-600');
         try {
@@ -269,8 +274,15 @@
     const sessionCol = () => BASE().collection('weekly_session');
     const teamDraftsCol = () => BASE().collection('team_drafts');
 
+    function checkDeleteConfirm() {
+        const val = (document.getElementById('delete-confirm-input').value || '').trim();
+        if (val !== '삭제') { alert('"삭제" 라고 정확히 입력해주세요.'); return false; }
+        document.getElementById('delete-confirm-input').value = '';
+        return true;
+    }
+
     async function clearSessions() {
-        if (!confirm('이번 주 출석 세션(weekly_session)을 모두 삭제합니다. 계속하시겠습니까?')) return;
+        if (!checkDeleteConfirm()) return;
         log('세션 초기화 중...', 'text-orange-600');
         try {
             const { docs } = await getCount(sessionCol);
@@ -281,7 +293,7 @@
     }
 
     async function clearTeamDrafts() {
-        if (!confirm('팀편성 데이터(team_drafts)를 모두 삭제합니다. 계속하시겠습니까?')) return;
+        if (!checkDeleteConfirm()) return;
         log('팀편성 초기화 중...', 'text-orange-600');
         try {
             const { docs } = await getCount(teamDraftsCol);
