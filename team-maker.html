@@ -31,6 +31,7 @@
         .no-scrollbar::-webkit-scrollbar{display:none}.no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
         .dragging{opacity:0.3;border:2px dashed #3b82f6!important;background:#eff6ff!important;transform:scale(0.96)}
         .drop-target{border-color:#14b8a6!important;background:#f0fdfa!important;transform:scale(1.01)}
+        .drop-indicator{border:2px dashed #14b8a6;background:rgba(240,253,250,.5);transition:all .1s}
         select,input{outline:none}
         select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.75rem center;background-size:1rem}
         /* ── 다크모드 ── */
@@ -54,6 +55,7 @@
         html.dark .bg-teal-50{background:#042f2e!important} html.dark .border-teal-100{border-color:#134e4a!important} html.dark .bg-teal-100{background:#134e4a!important}
         html.dark .bg-violet-50{background:#1e1b4b!important} html.dark .border-violet-100{border-color:#2e1065!important}
         html.dark .drop-target{background:#042f2e!important}
+        html.dark .drop-indicator{background:rgba(20,184,166,.1)!important;border-color:#2dd4bf!important}
         html.dark .text-teal-600{color:#2dd4bf!important} html.dark .text-teal-500{color:#2dd4bf!important}
         html.dark .text-violet-600{color:#a78bfa!important}
         html.dark #loading-screen{background:var(--t-bg)!important}
@@ -145,6 +147,7 @@ function App() {
     const [previewDraft, setPreviewDraft] = useState(null);
     const [displayedMeetingDate, setDisplayedMeetingDate] = useState('');
     const [storageSubTab, setStorageSubTab] = useState('confirmed');
+    const [dropIndicator, setDropIndicator] = useState(null); // {teamIdx, insertIdx}
 
     const toggleTheme = () => { const isDark = !darkMode; setDarkMode(isDark); document.documentElement.classList.toggle('dark', isDark); localStorage.setItem('moida_theme', isDark ? 'dark' : 'light'); };
     const showAlert = (title,content,type='info',onConfirm=null) => setAlertModal({show:true,title,content,type,onConfirm});
@@ -396,37 +399,38 @@ function App() {
     const handleDragEnd = () => {
         setTimeout(() => { isDraggingRef.current = false; }, 50);
         setDraggedItem(null);
+        setDropIndicator(null);
     };
-
-    const handleDropOnTeam = (e, targetTeamIdx) => {
-        e.preventDefault();
-        if(!draggedItem||draggedItem.teamIdx===targetTeamIdx)return;
-        const newTeams=[...teams.map(t=>({...t,members:[...t.members]}))];
-        const moved=newTeams[draggedItem.teamIdx].members.splice(draggedItem.memberIdx,1)[0];
-        newTeams[targetTeamIdx].members.push(moved);
-        newTeams[draggedItem.teamIdx].scoreSum=newTeams[draggedItem.teamIdx].members.reduce((s,m)=>s+m.points,0);
-        newTeams[targetTeamIdx].scoreSum=newTeams[targetTeamIdx].members.reduce((s,m)=>s+m.points,0);
-        setTeams(newTeams);
-        setDraggedItem(null);
-    };
-
-    const handleDropOnMember = (e, targetTeamIdx, targetMemberIdx) => {
+    const handleMemberDragOver = (e, teamIdx, memberIdx) => {
         e.preventDefault();
         e.stopPropagation();
         if(!draggedItem)return;
-        if(draggedItem.teamIdx===targetTeamIdx&&draggedItem.memberIdx===targetMemberIdx)return;
-        const newTeams=[...teams.map(t=>({...t,members:[...t.members]}))];
+        const rect=e.currentTarget.getBoundingClientRect();
+        const insertIdx=e.clientY<(rect.top+rect.height/2)?memberIdx:memberIdx+1;
+        setDropIndicator({teamIdx,insertIdx});
+    };
+    const handleTeamAreaDragOver = (e, teamIdx) => {
+        e.preventDefault();
+        if(!draggedItem)return;
+        setDropIndicator({teamIdx,insertIdx:teams[teamIdx]?.members.length??0});
+    };
+    const handleTeamAreaDragLeave = (e) => {
+        if(!e.currentTarget.contains(e.relatedTarget))setDropIndicator(null);
+    };
+    const handleDrop = (e, teamIdx) => {
+        e.preventDefault();
+        if(!draggedItem)return;
+        const insertIdx=dropIndicator?.teamIdx===teamIdx?dropIndicator.insertIdx:(teams[teamIdx]?.members.length??0);
+        const newTeams=teams.map(t=>({...t,members:[...t.members]}));
         const moved=newTeams[draggedItem.teamIdx].members.splice(draggedItem.memberIdx,1)[0];
-        if(draggedItem.teamIdx===targetTeamIdx){
-            const adjustedIdx=targetMemberIdx>draggedItem.memberIdx?targetMemberIdx-1:targetMemberIdx;
-            newTeams[targetTeamIdx].members.splice(adjustedIdx,0,moved);
-        } else {
-            newTeams[targetTeamIdx].members.splice(targetMemberIdx,0,moved);
-            newTeams[draggedItem.teamIdx].scoreSum=newTeams[draggedItem.teamIdx].members.reduce((s,m)=>s+m.points,0);
-            newTeams[targetTeamIdx].scoreSum=newTeams[targetTeamIdx].members.reduce((s,m)=>s+m.points,0);
-        }
+        let finalIdx=insertIdx;
+        if(draggedItem.teamIdx===teamIdx&&draggedItem.memberIdx<insertIdx)finalIdx=insertIdx-1;
+        newTeams[teamIdx].members.splice(Math.max(0,finalIdx),0,moved);
+        newTeams[draggedItem.teamIdx].scoreSum=newTeams[draggedItem.teamIdx].members.reduce((s,m)=>s+m.points,0);
+        if(draggedItem.teamIdx!==teamIdx)newTeams[teamIdx].scoreSum=newTeams[teamIdx].members.reduce((s,m)=>s+m.points,0);
         setTeams(newTeams);
         setDraggedItem(null);
+        setDropIndicator(null);
     };
 
     // 탭 선택 조정 (모바일/PC 공통)
@@ -655,8 +659,9 @@ function App() {
                                         {teams.map((team,teamIdx)=>(
                                             <div key={teamIdx}
                                                 className={`rounded-3xl border-2 p-4 ${getTeamCard(teamIdx)} transition-all ${selectedMember&&selectedMember.teamIdx!==teamIdx&&!isPastMeeting?'ring-2 ring-teal-300':''}`}
-                                                onDragOver={!isPastMeeting?e=>e.preventDefault():undefined}
-                                                onDrop={!isPastMeeting?e=>handleDropOnTeam(e,teamIdx):undefined}>
+                                                onDragOver={!isPastMeeting?e=>handleTeamAreaDragOver(e,teamIdx):undefined}
+                                                onDragLeave={!isPastMeeting?handleTeamAreaDragLeave:undefined}
+                                                onDrop={!isPastMeeting?e=>handleDrop(e,teamIdx):undefined}>
                                                 <div className="flex items-center gap-2 mb-3">
                                                     <span className={`w-8 h-8 rounded-xl font-black text-sm flex items-center justify-center ${getTeamBadge(teamIdx)}`}>{getTeamName(teamIdx)}</span>
                                                     <div className="flex-1">
@@ -668,29 +673,46 @@ function App() {
                                                             className="text-[9px] font-black text-teal-600 bg-teal-50 border border-teal-300 px-1.5 py-0.5 rounded-lg active:scale-95 shrink-0">↓여기로</button>
                                                     )}
                                                 </div>
-                                                {team.members.map((m,mi)=>{
-                                                    const isSelected=selectedMember?.teamIdx===teamIdx&&selectedMember?.memberIdx===mi;
-                                                    return (
-                                                    <div key={mi}
-                                                        draggable={!isPastMeeting}
-                                                        onDragStart={!isPastMeeting?e=>handleDragStart(e,teamIdx,mi):undefined}
-                                                        onDragOver={!isPastMeeting?e=>e.preventDefault():undefined}
-                                                        onDrop={!isPastMeeting?e=>handleDropOnMember(e,teamIdx,mi):undefined}
-                                                        onDragEnd={handleDragEnd}
-                                                        onClick={(e)=>{e.stopPropagation();handleMemberClick(teamIdx,mi);}}
-                                                        className={`flex items-center gap-1.5 p-2 mb-1 rounded-xl border transition-all
-                                                            ${isSelected?'bg-teal-100 border-teal-400 ring-2 ring-teal-400 scale-105':
-                                                              selectedMember?'bg-white/70 border-transparent hover:border-teal-300 cursor-pointer':
-                                                              `bg-white/70 border-transparent hover:border-teal-200 ${!isPastMeeting?'cursor-grab active:cursor-grabbing':''}`}
-                                                            ${draggedItem?.teamIdx===teamIdx&&draggedItem?.memberIdx===mi?'dragging':''}`}>
-                                                        <span className="text-[9px] font-black text-slate-400 w-4 text-right flex-shrink-0">{mi+1}</span>
-                                                        <span className="font-black text-xs text-slate-800 flex-1">{m.name}</span>
-                                                        {m.gender==='여성'&&<span className="text-[8px] text-pink-400 font-black">W</span>}
-                                                        {m.isGuest&&<span className="text-[8px] bg-slate-700 text-white px-1 rounded font-black">G</span>}
-                                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${getLevelColor(m.level)}`}>{m.level}</span>
-                                                    </div>
+                                                {(()=>{
+                                                    const els=[];
+                                                    const showInd=(idx)=>{
+                                                        if(!draggedItem||!dropIndicator)return false;
+                                                        if(dropIndicator.teamIdx!==teamIdx||dropIndicator.insertIdx!==idx)return false;
+                                                        if(draggedItem.teamIdx===teamIdx&&(idx===draggedItem.memberIdx||idx===draggedItem.memberIdx+1))return false;
+                                                        return true;
+                                                    };
+                                                    const mkInd=(k)=>(
+                                                        <div key={k} className="h-7 mb-1 rounded-xl drop-indicator flex items-center justify-center">
+                                                            <span className="text-[8px] font-black text-teal-500">여기로 이동</span>
+                                                        </div>
                                                     );
-                                                })}
+                                                    team.members.forEach((m,mi)=>{
+                                                        if(showInd(mi))els.push(mkInd(`ind-${mi}`));
+                                                        const isSelected=selectedMember?.teamIdx===teamIdx&&selectedMember?.memberIdx===mi;
+                                                        els.push(
+                                                            <div key={mi}
+                                                                draggable={!isPastMeeting}
+                                                                onDragStart={!isPastMeeting?e=>handleDragStart(e,teamIdx,mi):undefined}
+                                                                onDragOver={!isPastMeeting?e=>handleMemberDragOver(e,teamIdx,mi):undefined}
+                                                                onDrop={!isPastMeeting?e=>{e.stopPropagation();handleDrop(e,teamIdx);}:undefined}
+                                                                onDragEnd={handleDragEnd}
+                                                                onClick={(e)=>{e.stopPropagation();handleMemberClick(teamIdx,mi);}}
+                                                                className={`flex items-center gap-1.5 p-2 mb-1 rounded-xl border transition-all
+                                                                    ${isSelected?'bg-teal-100 border-teal-400 ring-2 ring-teal-400 scale-105':
+                                                                      selectedMember?'bg-white/70 border-transparent hover:border-teal-300 cursor-pointer':
+                                                                      `bg-white/70 border-transparent hover:border-teal-200 ${!isPastMeeting?'cursor-grab active:cursor-grabbing':''}`}
+                                                                    ${draggedItem?.teamIdx===teamIdx&&draggedItem?.memberIdx===mi?'dragging':''}`}>
+                                                                <span className="text-[9px] font-black text-slate-400 w-4 text-right flex-shrink-0">{mi+1}</span>
+                                                                <span className="font-black text-xs text-slate-800 flex-1">{m.name}</span>
+                                                                {m.gender==='여성'&&<span className="text-[8px] text-pink-400 font-black">W</span>}
+                                                                {m.isGuest&&<span className="text-[8px] bg-slate-700 text-white px-1 rounded font-black">G</span>}
+                                                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${getLevelColor(m.level)}`}>{m.level}</span>
+                                                            </div>
+                                                        );
+                                                    });
+                                                    if(showInd(team.members.length))els.push(mkInd('ind-end'));
+                                                    return els;
+                                                })()}
                                             </div>
                                         ))}
                                     </div>
