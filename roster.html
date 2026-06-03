@@ -496,9 +496,15 @@ function App() {
                                     <button key={m.id} onClick={()=>handleMemberClick(m)}
                                         className="w-full flex items-center gap-3 p-4 bg-white border border-slate-100 rounded-2xl text-left hover:border-teal-200 transition-all">
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 flex-wrap">
                                                 <span className="font-black text-slate-800">{m.name}</span>
-                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg ${cfg.color}`}>{cfg.label}</span>
+                                                {statusType==='rest'&&info?.active
+                                                    ? <>
+                                                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg ${statusConfig[info.type==='반년'?'half':'full'].color}`}>{info.type}납</span>
+                                                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg ${cfg.color}`}>휴식 중</span>
+                                                      </>
+                                                    : <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg ${cfg.color}`}>{cfg.label}</span>
+                                                }
                                             </div>
                                             {info?.active&&<p className="text-[10px] text-slate-400 mt-0.5">만료: {info.endDateFormatted} · 잔여휴식 {info.remainingRest}회</p>}
                                             {payDate&&<p className="text-[10px] text-slate-400 mt-0.5">납부일: {payDate}</p>}
