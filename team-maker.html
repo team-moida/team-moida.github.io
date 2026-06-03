@@ -53,7 +53,7 @@
         html.dark input,html.dark textarea{background:var(--t-surface)!important;border-color:var(--t-border)!important;color:var(--t-text)!important}
         html.dark select{background:var(--t-surface)!important;border-color:var(--t-border)!important;color:var(--t-text)!important}
         html.dark .bg-teal-50{background:#042f2e!important} html.dark .border-teal-100{border-color:#134e4a!important} html.dark .bg-teal-100{background:#134e4a!important}
-        html.dark .bg-violet-50{background:#1e1b4b!important} html.dark .border-violet-100{border-color:#2e1065!important}
+        html.dark .bg-violet-50{background:#1e1b4b!important} html.dark .border-violet-100,html.dark .border-violet-200{border-color:#4c1d95!important}
         html.dark .drop-target{background:#042f2e!important}
         html.dark .drop-indicator{background:rgba(20,184,166,.1)!important;border-color:#2dd4bf!important}
         html.dark .text-teal-600{color:#2dd4bf!important} html.dark .text-teal-500{color:#2dd4bf!important}
@@ -98,8 +98,8 @@ const getLevelColor = (level) => {
     return ['','bg-rose-500 text-white','bg-orange-500 text-white','bg-amber-400 text-slate-800','bg-emerald-500 text-white','bg-blue-500 text-white','bg-violet-500 text-white'][n] || 'bg-slate-400 text-white';
 };
 
-const getTeamBadge = (idx) => ['bg-pink-500 text-white','bg-sky-400 text-white','bg-lime-400 text-slate-800','bg-yellow-400 text-slate-800','bg-blue-600 text-white','bg-red-500 text-white'][idx] || 'bg-slate-500 text-white';
-const getTeamCard = (idx) => ['bg-pink-50 border-pink-200','bg-sky-50 border-sky-200','bg-lime-50 border-lime-200','bg-yellow-50 border-yellow-200','bg-blue-50 border-blue-200','bg-red-50 border-red-200'][idx] || 'bg-slate-50 border-slate-200';
+const getTeamBadge = (idx) => ['bg-pink-500 text-white','bg-sky-400 text-white','bg-lime-400 text-slate-800','bg-yellow-400 text-slate-800','bg-violet-500 text-white','bg-red-500 text-white'][idx] || 'bg-slate-500 text-white';
+const getTeamCard = (idx) => ['bg-pink-50 border-pink-200','bg-sky-50 border-sky-200','bg-lime-50 border-lime-200','bg-yellow-50 border-yellow-200','bg-violet-50 border-violet-200','bg-red-50 border-red-200'][idx] || 'bg-slate-50 border-slate-200';
 const getTeamName = (idx) => String.fromCharCode(65+idx);
 
 const shuffleArray = (arr) => {
