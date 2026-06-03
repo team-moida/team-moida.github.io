@@ -52,6 +52,39 @@
         </div>
     </div>
 
+    <!-- 4. 관리자 권한 설정 -->
+    <div class="bg-purple-50 border border-purple-200 rounded-2xl p-5 mt-3">
+        <p class="font-black text-slate-800 mb-1">④ 관리자 권한 설정</p>
+        <p class="text-slate-500 text-xs mb-4">이름으로 회원을 검색하여 역할(role)을 변경합니다.</p>
+        <div class="flex gap-2 mb-3">
+            <input id="role-search-name" type="text" placeholder="이름 입력"
+                class="flex-1 border border-slate-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-400"
+                style="user-select:text"
+                onkeydown="if(event.key==='Enter') searchMemberForRole()">
+            <button onclick="searchMemberForRole()"
+                class="bg-purple-500 text-white font-black px-4 py-2 rounded-xl text-sm active:opacity-70">
+                검색
+            </button>
+        </div>
+        <div id="role-search-result" class="hidden bg-white border border-slate-200 rounded-xl p-3 mb-3">
+            <p id="role-member-info" class="text-sm text-slate-700 mb-2"></p>
+            <div class="flex gap-2 items-center flex-wrap">
+                <select id="role-select"
+                    class="border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-400">
+                    <option value="회원">회원</option>
+                    <option value="매니저">매니저</option>
+                    <option value="총무">총무</option>
+                    <option value="부총무">부총무</option>
+                    <option value="회장">회장</option>
+                </select>
+                <button onclick="applyRoleChange()"
+                    class="bg-purple-500 text-white font-black px-4 py-2 rounded-lg text-sm active:opacity-70">
+                    적용
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 로그 -->
     <div class="mt-6">
         <p class="text-xs font-bold text-slate-400 mb-2">작업 로그</p>
@@ -211,6 +244,48 @@
             log('오류: ' + e.message, 'text-red-500');
         } finally {
             setBtn('btn-restore', false);
+        }
+    }
+
+    let _roleTargetDocId = null;
+
+    async function searchMemberForRole() {
+        const name = document.getElementById('role-search-name').value.trim();
+        if (!name) { alert('이름을 입력해주세요.'); return; }
+        const resultBox = document.getElementById('role-search-result');
+        const infoEl = document.getElementById('role-member-info');
+        resultBox.classList.add('hidden');
+        _roleTargetDocId = null;
+        try {
+            const snap = await membersCol().where('name', '==', name).get();
+            const active = snap.docs.filter(d => !d.data().isResigned);
+            if (active.length === 0) {
+                log(`"${name}" 회원을 찾을 수 없습니다.`, 'text-red-500');
+                return;
+            }
+            const doc = active[0];
+            const data = doc.data();
+            _roleTargetDocId = doc.id;
+            infoEl.textContent = `${data.name} (생년월일: ${data.birth || '-'}, 현재 역할: ${data.role || '회원'})`;
+            document.getElementById('role-select').value = data.role || '회원';
+            resultBox.classList.remove('hidden');
+            log(`"${name}" 검색 완료`);
+        } catch(e) {
+            log('검색 오류: ' + e.message, 'text-red-500');
+        }
+    }
+
+    async function applyRoleChange() {
+        if (!_roleTargetDocId) return;
+        const newRole = document.getElementById('role-select').value;
+        const infoEl = document.getElementById('role-member-info');
+        if (!confirm(`역할을 "${newRole}"으로 변경하시겠습니까?`)) return;
+        try {
+            await membersCol().doc(_roleTargetDocId).update({ role: newRole });
+            log(`역할 변경 완료 → ${newRole}`, 'text-purple-600');
+            infoEl.textContent = infoEl.textContent.replace(/현재 역할: .+\)/, `현재 역할: ${newRole})`);
+        } catch(e) {
+            log('변경 오류: ' + e.message, 'text-red-500');
         }
     }
 
