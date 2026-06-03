@@ -10,6 +10,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
     <script>(function(){if(localStorage.getItem('moida_theme')==='dark')document.documentElement.classList.add('dark');})();</script>
+    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -79,20 +80,40 @@
 
         <!-- 로그인 폼 -->
         <div id="login-view" style="display:none;" class="fade-in">
-            <div id="login-form-wrap">
-                <input id="login-name" type="text" placeholder="이름"
-                    style="user-select:text;-webkit-user-select:text;background:#f8fafc;border:1.5px solid #e2e8f0;color:#1e293b;"
-                    class="w-full rounded-2xl px-4 py-4 mb-3 text-base transition-colors placeholder:text-slate-400"
-                    onkeydown="if(event.key==='Enter') document.getElementById('login-birth').focus()">
-                <input id="login-birth" type="tel" placeholder="생년월일 6자리 (YYMMDD)"
-                    style="user-select:text;-webkit-user-select:text;background:#f8fafc;border:1.5px solid #e2e8f0;color:#1e293b;"
-                    maxlength="6" inputmode="numeric"
-                    class="w-full rounded-2xl px-4 py-4 mb-4 text-base transition-colors placeholder:text-slate-400"
-                    onkeydown="if(event.key==='Enter') doLogin()">
-                <button onclick="doLogin()" id="login-btn"
-                    class="card w-full py-4 bg-teal-500 hover:bg-teal-400 text-white rounded-2xl font-black text-base shadow-lg shadow-teal-200">
-                    로그인
+            <!-- 카카오 로그인 -->
+            <div id="kakao-idle-step">
+                <button onclick="handleKakaoLogin()" id="kakao-login-btn"
+                    style="background:#FEE500;width:100%;padding:16px;border-radius:20px;font-weight:900;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="black"><path d="M12 3C6.477 3 2 6.82 2 11.5c0 2.974 1.74 5.602 4.36 7.207L5.24 21 9.5 18.677c.827.162 1.674.246 2.5.246 5.523 0 10-3.82 10-8.5C22 6.82 17.523 3 12 3z"/></svg>
+                    카카오로 로그인
                 </button>
+            </div>
+            <!-- 계정 연결 -->
+            <div id="kakao-linking-step" style="display:none;">
+                <div style="background:var(--t-surface);border-radius:24px;padding:24px;box-shadow:0 20px 60px -10px rgba(0,0,0,0.1);">
+                    <h2 style="font-size:18px;font-weight:900;color:var(--t-text);margin-bottom:4px;">계정 연결</h2>
+                    <p id="link-desc" style="font-size:12px;color:#94a3b8;margin-bottom:20px;line-height:1.6;"></p>
+                    <div style="margin-bottom:12px;">
+                        <p style="font-size:11px;font-weight:900;color:#64748b;margin-bottom:4px;">이름</p>
+                        <input id="link-name" type="text" placeholder="실명 입력"
+                            style="user-select:text;-webkit-user-select:text;width:100%;background:var(--t-s2);border:1.5px solid var(--t-border);color:var(--t-text);border-radius:14px;padding:12px 16px;font-size:14px;font-weight:700;box-sizing:border-box;"
+                            onkeydown="if(event.key==='Enter')document.getElementById('link-birth').focus()">
+                    </div>
+                    <div style="margin-bottom:16px;">
+                        <p style="font-size:11px;font-weight:900;color:#64748b;margin-bottom:4px;">생년월일 <span style="font-weight:400;color:#94a3b8">YYMMDD · 예) 900101</span></p>
+                        <input id="link-birth" type="tel" placeholder="900101" maxlength="6" inputmode="numeric"
+                            style="user-select:text;-webkit-user-select:text;width:100%;background:var(--t-s2);border:1.5px solid var(--t-border);color:var(--t-text);border-radius:14px;padding:12px 16px;font-size:14px;font-weight:700;box-sizing:border-box;"
+                            onkeydown="if(event.key==='Enter')handleKakaoLink()">
+                    </div>
+                    <button onclick="handleKakaoLink()" id="link-btn"
+                        style="width:100%;padding:15px;background:#14b8a6;color:white;border-radius:14px;font-weight:900;font-size:15px;box-shadow:0 8px 20px -4px rgba(20,184,166,0.4);cursor:pointer;">
+                        계정 연결
+                    </button>
+                    <button onclick="resetKakaoStep()"
+                        style="width:100%;margin-top:8px;padding:8px;color:#94a3b8;font-size:13px;font-weight:900;cursor:pointer;">
+                        뒤로
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -195,8 +216,102 @@
         const ADMIN_ROLES = ['회장', '매니저', '총무', '부총무'];
         const LS_KEY = 'moida_member_data';
 
+        if (window.Kakao && !Kakao.isInitialized()) Kakao.init('ce0f70554512198de18a346beb970a91');
+
+        let pendingKakaoId = '';
+        let pendingNickname = '';
+        let isKakaoLoading = false;
+
         function getSaved() {
             try { return JSON.parse(localStorage.getItem(LS_KEY)); } catch(e) { return null; }
+        }
+
+        function setKakaoLoginLoading(v) {
+            isKakaoLoading = v;
+            const btn = document.getElementById('kakao-login-btn');
+            if (btn) {
+                btn.disabled = v;
+                btn.style.opacity = v ? '0.6' : '1';
+                btn.innerHTML = v ? '연결 중...' :
+                    '<svg width="22" height="22" viewBox="0 0 24 24" fill="black"><path d="M12 3C6.477 3 2 6.82 2 11.5c0 2.974 1.74 5.602 4.36 7.207L5.24 21 9.5 18.677c.827.162 1.674.246 2.5.246 5.523 0 10-3.82 10-8.5C22 6.82 17.523 3 12 3z"/></svg>카카오로 로그인';
+            }
+        }
+
+        function resetKakaoStep() {
+            pendingKakaoId = '';
+            pendingNickname = '';
+            document.getElementById('kakao-idle-step').style.display = 'block';
+            document.getElementById('kakao-linking-step').style.display = 'none';
+        }
+
+        function handleKakaoLogin() {
+            if (isKakaoLoading) return;
+            if (!window.Kakao?.isInitialized()) Kakao.init('ce0f70554512198de18a346beb970a91');
+            setKakaoLoginLoading(true);
+            Kakao.Auth.login({
+                success: () => {
+                    Kakao.API.request({
+                        url: '/v2/user/me',
+                        success: async (res) => {
+                            const kakaoId = String(res.id);
+                            pendingNickname = res.kakao_account?.profile?.nickname || '';
+                            try {
+                                const snap = await getCol('members').where('kakaoId', '==', kakaoId).get();
+                                if (!snap.empty) {
+                                    const doc = snap.docs[0];
+                                    const data = doc.data();
+                                    if (data.isResigned) { setKakaoLoginLoading(false); showToast('탈퇴한 회원입니다.', 'error'); return; }
+                                    const memberData = { memberId: doc.id, name: data.name, role: data.role || '회원', kakaoId };
+                                    localStorage.setItem(LS_KEY, JSON.stringify(memberData));
+                                    routeByRole(memberData);
+                                } else {
+                                    pendingKakaoId = kakaoId;
+                                    document.getElementById('link-desc').innerHTML =
+                                        (pendingNickname ? `<b>${pendingNickname}</b>님, ` : '') + '처음 로그인이시네요.<br/>기존 회원 계정과 카카오를 연결해주세요.';
+                                    document.getElementById('kakao-idle-step').style.display = 'none';
+                                    document.getElementById('kakao-linking-step').style.display = 'block';
+                                    setKakaoLoginLoading(false);
+                                }
+                            } catch(e) { setKakaoLoginLoading(false); showToast('오류: ' + e.message, 'error'); }
+                        },
+                        fail: () => { setKakaoLoginLoading(false); showToast('카카오 정보 조회 실패', 'error'); }
+                    });
+                },
+                fail: () => { setKakaoLoginLoading(false); showToast('카카오 로그인 취소', 'error'); }
+            });
+        }
+
+        async function handleKakaoLink() {
+            const name = (document.getElementById('link-name').value || '').trim();
+            const birth6 = (document.getElementById('link-birth').value || '').replace(/[^0-9]/g, '').slice(0, 6);
+            if (!name) { showToast('이름을 입력해주세요.', 'error'); return; }
+            if (birth6.length !== 6) { showToast('생년월일 6자리(YYMMDD)를 입력해주세요.', 'error'); return; }
+
+            const btn = document.getElementById('link-btn');
+            btn.disabled = true;
+            btn.textContent = '연결 중...';
+
+            try {
+                const snap = await getCol('members').where('name', '==', name).get();
+                let found = null;
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    if (data.isResigned) return;
+                    const b = String(data.birth || '');
+                    if (b.substring(2) === birth6 || b === birth6) found = { id: doc.id, ...data };
+                });
+                if (!found) { showToast('이름 또는 생년월일이 일치하지 않습니다.', 'error'); return; }
+                await getCol('members').doc(found.id).update({ kakaoId: pendingKakaoId });
+                const memberData = { memberId: found.id, name: found.name, role: found.role || '회원', kakaoId: pendingKakaoId };
+                localStorage.setItem(LS_KEY, JSON.stringify(memberData));
+                showToast('카카오 계정이 연결되었습니다!', 'ok');
+                setTimeout(() => routeByRole(memberData), 600);
+            } catch(e) {
+                showToast('연결 실패: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '계정 연결';
+            }
         }
 
         function showView(id) {
@@ -233,7 +348,7 @@
             await auth.signInAnonymously().catch(() => {});
 
             const saved = getSaved();
-            if (saved && saved.memberId) {
+            if (saved && saved.memberId && saved.kakaoId) {
                 if (!saved.role) {
                     try {
                         const doc = await getCol('members').doc(saved.memberId).get();
@@ -256,50 +371,9 @@
             }
         }
 
-        async function doLogin() {
-            const name = document.getElementById('login-name').value.trim();
-            const birth6 = document.getElementById('login-birth').value.replace(/[^0-9]/g, '').slice(0, 6);
-
-            if (!name) return showToast('이름을 입력해주세요.');
-            if (birth6.length !== 6) return showToast('생년월일 6자리(YYMMDD)를 입력해주세요.');
-
-            const btn = document.getElementById('login-btn');
-            btn.disabled = true;
-            btn.textContent = '확인 중...';
-
-            try {
-                const snap = await getCol('members').where('name', '==', name).get();
-                let found = null;
-                snap.forEach(doc => {
-                    const data = doc.data();
-                    if (data.isResigned) return;
-                    const b = String(data.birth || '');
-                    if (b.substring(2) === birth6 || b === birth6) found = { id: doc.id, ...data };
-                });
-
-                if (!found) {
-                    const wrap = document.getElementById('login-form-wrap');
-                    wrap.classList.add('shake');
-                    setTimeout(() => wrap.classList.remove('shake'), 400);
-                    showToast('이름 또는 생년월일이 일치하지 않습니다.');
-                    return;
-                }
-
-                const memberData = { memberId: found.id, name: found.name, role: found.role || '회원' };
-                localStorage.setItem(LS_KEY, JSON.stringify(memberData));
-                routeByRole(memberData);
-            } catch(e) {
-                showToast('로그인 실패: ' + e.message);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '로그인';
-            }
-        }
-
         function doLogout() {
             localStorage.removeItem(LS_KEY);
-            document.getElementById('login-name').value = '';
-            document.getElementById('login-birth').value = '';
+            resetKakaoStep();
             showView('login-view');
         }
 

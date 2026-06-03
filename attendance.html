@@ -17,7 +17,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -109,7 +108,6 @@ db.enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('오�
 
 const APP_ID = 'moida-otpfc';
 const getCol = (name) => db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection(name);
-if (window.Kakao && !Kakao.isInitialized()) Kakao.init('ce0f70554512198de18a346beb970a91');
 const getTeamDraftsCol = () => db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('team_drafts');
 const getMonthlyCol = () => getCol('monthly_checks');
 const getSessionCol = () => getCol('weekly_session');
@@ -497,15 +495,13 @@ function App() {
     const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
     const [newGuest, setNewGuest] = useState({ name:'', gender:'남성', inviterId:'', level:'1' });
     const [loggedInManager, setLoggedInManager] = useState(() => {
-        try { const s = JSON.parse(localStorage.getItem('moida_manager')); return (s && s.kakaoId) ? s : null; } catch(e) { return null; }
+        try {
+            const s = JSON.parse(localStorage.getItem('moida_member_data'));
+            if (s && s.kakaoId) return s;
+            location.href = 'index.html';
+            return null;
+        } catch(e) { location.href = 'index.html'; return null; }
     });
-    const [isLoginModalOpen, setIsLoginModalOpen] = useState(() => {
-        try { const s = JSON.parse(localStorage.getItem('moida_manager')); return !(s && s.kakaoId); } catch(e) { return true; }
-    });
-    const [kakaoStep, setKakaoStep] = useState('idle'); // 'idle' | 'linking'
-    const [pendingKakaoId, setPendingKakaoId] = useState('');
-    const [linkForm, setLinkForm] = useState({ name:'', birth:'' });
-    const [isKakaoLoading, setIsKakaoLoading] = useState(false);
     const [setupTabMonthlyMembers, setSetupTabMonthlyMembers] = useState([]);
     const [setupTabRestMembers, setSetupTabRestMembers] = useState([]);
     const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
@@ -674,78 +670,9 @@ function App() {
         }
     };
 
-    const handleLogin = () => {
-    };
-
-    const handleKakaoLogin = () => {
-        if (!window.Kakao?.isInitialized()) Kakao.init('ce0f70554512198de18a346beb970a91');
-        setIsKakaoLoading(true);
-        Kakao.Auth.login({
-            success: (authObj) => {
-                Kakao.API.request({
-                    url: '/v2/user/me',
-                    success: async (res) => {
-                        const kakaoId = String(res.id);
-                        try {
-                            const snap = await getCol('members').where('kakaoId', '==', kakaoId).get();
-                            setIsKakaoLoading(false);
-                            if (!snap.empty) {
-                                const doc = snap.docs[0];
-                                const data = doc.data();
-                                if (!STAFF_ROLES.includes(data.role)) return showAlert('오류','관리자 권한이 없습니다.');
-                                const user = { id: doc.id, ...data, kakaoId };
-                                localStorage.setItem('moida_manager', JSON.stringify(user));
-                                setLoggedInManager(user);
-                                setIsLoginModalOpen(false);
-                                showAlert('환영합니다', `${user.name} ${user.role}님 환영합니다!`);
-                            } else {
-                                setPendingKakaoId(kakaoId);
-                                setKakaoStep('linking');
-                            }
-                        } catch(e) { setIsKakaoLoading(false); showAlert('오류','로그인 실패: ' + e.message); }
-                    },
-                    fail: () => { setIsKakaoLoading(false); showAlert('오류','카카오 정보 조회 실패'); }
-                });
-            },
-            fail: () => { setIsKakaoLoading(false); showAlert('오류','카카오 로그인 실패'); }
-        });
-    };
-
-    const handleKakaoLink = async () => {
-        const birth6 = linkForm.birth.replace(/[^0-9]/g, '').slice(0, 6);
-        if (!linkForm.name.trim()) return showAlert('알림','이름을 입력해주세요.');
-        if (birth6.length !== 6) return showAlert('알림','생년월일 6자리(YYMMDD)를 입력해주세요.');
-        setIsKakaoLoading(true);
-        try {
-            const snap = await getCol('members').where('name', '==', linkForm.name.trim()).get();
-            let found = null;
-            snap.forEach(doc => {
-                const data = doc.data();
-                if (data.isResigned) return;
-                const b = String(data.birth || '');
-                if (b.substring(2) === birth6 || b === birth6) found = { id: doc.id, ...data };
-            });
-            if (!found) return showAlert('오류','이름 또는 생년월일이 일치하지 않습니다.');
-            if (!STAFF_ROLES.includes(found.role)) return showAlert('오류','관리자 권한이 없습니다.');
-            await getCol('members').doc(found.id).update({ kakaoId: pendingKakaoId });
-            const user = { ...found, kakaoId: pendingKakaoId };
-            localStorage.setItem('moida_manager', JSON.stringify(user));
-            setLoggedInManager(user);
-            setIsLoginModalOpen(false);
-            setKakaoStep('idle');
-            showAlert('환영합니다', `${user.name} ${user.role}님 환영합니다!`);
-        } catch(e) { showAlert('오류','연결 실패: ' + e.message); }
-        finally { setIsKakaoLoading(false); }
-    };
-
     const handleLogout = () => {
-        localStorage.removeItem('moida_manager');
-        setLoggedInManager(null);
-        setIsLoginModalOpen(true);
-        setKakaoStep('idle');
-        setPendingKakaoId('');
-        setLinkForm({ name:'', birth:'' });
-        setView('attendance');
+        localStorage.removeItem('moida_member_data');
+        location.href = 'index.html';
     };
 
     const toggleTestMode = async () => {
@@ -897,9 +824,9 @@ function App() {
         if (next.length < 4) return showAlert('알림','비밀번호는 4자리 이상이어야 합니다.');
         if (next !== confirm) return showAlert('오류','새 비밀번호가 일치하지 않습니다.');
         try {
-            await getMemberCol().doc(loggedInManager.id).update({ password:next });
+            await getMemberCol().doc(loggedInManager.memberId).update({ password:next });
             const updated = {...loggedInManager, password:next};
-            localStorage.setItem('moida_manager', JSON.stringify(updated));
+            localStorage.setItem('moida_member_data', JSON.stringify(updated));
             setLoggedInManager(updated);
             setIsPasswordChangeModalOpen(false);
             setPasswordForm({current:'',next:'',confirm:''});
@@ -1231,50 +1158,6 @@ function App() {
     const unassignedActive = activeList.filter(p => !assignedIds.has(p.id));
 
     // ===================== RENDER =====================
-    if (isLoginModalOpen && !isAppLocked) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-teal-50 to-slate-100 flex items-center justify-center p-4">
-                <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm animate-zoom-in">
-                    <div className="flex flex-col items-center mb-6">
-                        <img src="icon.png" alt="OTP FC" className="w-16 h-16 object-contain mb-3" onError={e=>e.target.style.display='none'} />
-                        <h1 className="text-2xl font-black text-slate-800">모이다</h1>
-                        <p className="text-xs text-teal-600 font-black mt-1">출결 관리 시스템</p>
-                    </div>
-                    {kakaoStep === 'idle' ? (
-                        <>
-                            <p className="text-sm font-black text-slate-600 mb-4">운영진 로그인</p>
-                            <button onClick={handleKakaoLogin} disabled={isKakaoLoading}
-                                style={{background:'#FEE500'}}
-                                className="w-full py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 disabled:opacity-50">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="black"><path d="M12 3C6.477 3 2 6.82 2 11.5c0 2.974 1.74 5.602 4.36 7.207L5.24 21 9.5 18.677c.827.162 1.674.246 2.5.246 5.523 0 10-3.82 10-8.5C22 6.82 17.523 3 12 3z"/></svg>
-                                {isKakaoLoading ? '연결 중...' : '카카오로 로그인'}
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            <p className="text-sm font-black text-slate-600 mb-1">계정 연결</p>
-                            <p className="text-xs text-slate-400 mb-4">처음 로그인이시네요. 이름과 생년월일로 계정을 연결해주세요.</p>
-                            <div className="space-y-3 mb-4">
-                                <input type="text" placeholder="이름" style={{userSelect:'text'}}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:border-teal-400"
-                                    value={linkForm.name} onChange={e=>setLinkForm(p=>({...p,name:e.target.value}))}
-                                    onKeyDown={e=>e.key==='Enter'&&handleKakaoLink()}/>
-                                <input type="text" placeholder="생년월일 YYMMDD" maxLength="6" style={{userSelect:'text'}}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:border-teal-400"
-                                    value={linkForm.birth} onChange={e=>setLinkForm(p=>({...p,birth:e.target.value.replace(/[^0-9]/g,'')}))}
-                                    onKeyDown={e=>e.key==='Enter'&&handleKakaoLink()}/>
-                            </div>
-                            <button onClick={handleKakaoLink} disabled={isKakaoLoading}
-                                className="w-full py-3 bg-teal-500 text-white rounded-xl font-black text-sm shadow-lg disabled:opacity-50">
-                                {isKakaoLoading ? '연결 중...' : '계정 연결'}
-                            </button>
-                            <button onClick={()=>setKakaoStep('idle')} className="w-full mt-2 py-2 text-slate-400 text-xs font-black">뒤로</button>
-                        </>
-                    )}
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-screen pb-40 text-slate-900">
@@ -1299,9 +1182,8 @@ function App() {
                                 <Icon.QrCode size={18} />
                             </button>
                             <button onClick={()=>window.location.reload()} className="p-2.5 rounded-xl bg-slate-50 text-slate-400"><Icon.Refresh size={18} /></button>
-                            {loggedInManager?.name === '이성훈' && (
+                            {loggedInManager?.memberId && (
                                 <button onClick={() => {
-                                    localStorage.setItem('moida_member_data', JSON.stringify({ memberId: loggedInManager.id, name: loggedInManager.name, kakaoId: loggedInManager.kakaoId }));
                                     localStorage.setItem('moida_admin_mode', 'true');
                                     window.location.href = 'member.html';
                                 }} className="p-2.5 rounded-xl bg-teal-50 text-teal-600" title="회원 모드로 전환"><Icon.User size={18}/></button>
