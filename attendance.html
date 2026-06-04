@@ -17,6 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -516,6 +517,33 @@ function App() {
     const qrCanvasRef = useRef(null);
     const hasAutoNoShowRef = useRef(false);
     const hasAutoFixedRef = useRef(false);
+
+    // 푸시 알림 발송 모달
+    const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
+    const [notifTitle, setNotifTitle] = useState('');
+    const [notifBody, setNotifBody] = useState('');
+    const [notifSending, setNotifSending] = useState(false);
+
+    const sendPushNotification = async () => {
+        if (!notifTitle.trim() || !notifBody.trim()) return showAlert('입력 오류', '제목과 내용을 모두 입력해주세요.');
+        setNotifSending(true);
+        try {
+            await getCol('notifications').add({
+                title: notifTitle.trim(),
+                body: notifBody.trim(),
+                sentAt: new Date().toISOString(),
+                sentBy: loggedInManager?.name || '관리자',
+            });
+            setIsNotifModalOpen(false);
+            setNotifTitle('');
+            setNotifBody('');
+            showAlert('발송 완료', '푸시 알림이 전송되었습니다.');
+        } catch(e) {
+            showAlert('오류', '알림 발송 실패: ' + e.message);
+        } finally {
+            setNotifSending(false);
+        }
+    };
 
 
 
@@ -1177,6 +1205,9 @@ function App() {
                             <button onClick={generateQRCode} className="p-2.5 rounded-xl bg-violet-50 text-violet-600 hover:bg-violet-100" title="QR 출석 생성">
                                 <Icon.QrCode size={18} />
                             </button>
+                            <button onClick={()=>setIsNotifModalOpen(true)} className="p-2.5 rounded-xl bg-teal-50 text-teal-600 hover:bg-teal-100" title="푸시 알림 발송">
+                                <Icon.Bell size={18} />
+                            </button>
                             <button onClick={()=>window.location.reload()} className="p-2.5 rounded-xl bg-slate-50 text-slate-400"><Icon.Refresh size={18} /></button>
                             {loggedInManager?.memberId && (
                                 <button onClick={() => {
@@ -1812,6 +1843,49 @@ function App() {
                         <div id="qr-canvas-area" className="flex justify-center mb-5"></div>
                         <p className="text-xs text-slate-400 mb-4">회원에게 이 화면을 보여주세요.<br/>카메라로 스캔하면 출석됩니다.</p>
                         <button onClick={()=>setIsQRModalOpen(false)} className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">닫기</button>
+                    </div>
+                </div>
+            )}
+
+            {/* 푸시 알림 발송 모달 */}
+            {isNotifModalOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={()=>setIsNotifModalOpen(false)}>
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={e=>e.stopPropagation()}>
+                        <h2 className="text-xl font-black text-slate-800 mb-1">푸시 알림 발송</h2>
+                        <p className="text-xs text-slate-400 mb-5">알림을 허용한 모든 회원에게 전송됩니다</p>
+                        <div className="space-y-3 mb-5">
+                            <div>
+                                <p className="text-xs font-black text-slate-500 mb-1 ml-1">제목</p>
+                                <input
+                                    type="text"
+                                    value={notifTitle}
+                                    onChange={e=>setNotifTitle(e.target.value)}
+                                    placeholder="예: 팀 편성 완료!"
+                                    maxLength={50}
+                                    style={{userSelect:'text'}}
+                                    className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm font-medium text-slate-800 focus:border-teal-400 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <p className="text-xs font-black text-slate-500 mb-1 ml-1">내용</p>
+                                <textarea
+                                    value={notifBody}
+                                    onChange={e=>setNotifBody(e.target.value)}
+                                    placeholder="예: 이번 주 팀 편성이 완료됐어요. 회원 앱에서 확인하세요!"
+                                    maxLength={200}
+                                    rows={3}
+                                    style={{userSelect:'text', resize:'none'}}
+                                    className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm font-medium text-slate-800 focus:border-teal-400 outline-none"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={()=>setIsNotifModalOpen(false)} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
+                            <button onClick={sendPushNotification} disabled={notifSending || !notifTitle.trim() || !notifBody.trim()}
+                                className="flex-1 py-3 bg-teal-500 text-white rounded-2xl font-black text-sm disabled:opacity-50">
+                                {notifSending ? '발송 중...' : '발송'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

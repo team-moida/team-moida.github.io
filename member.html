@@ -17,6 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <style>
         body {
@@ -290,11 +291,34 @@ function App() {
     // URL에 QR 토큰이 있는지 확인
     const urlParams = useMemo(() => getUrlParams(), []);
 
-    // Firebase 인증
+    // Firebase 인증 + FCM 토큰 등록
+    const VAPID_KEY = 'BMuOxkIP0Xm912P0lVDUP8KUFR2y2FD-Acxgal5lNYemqWaldDon6kr9c_KrLEqKRFuumPCenIYnwEn0z_1WuXU';
     useEffect(() => {
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
         auth.signInAnonymously().catch(e=>console.error(e));
     }, []);
+
+    // FCM 토큰 등록 (로그인 후)
+    useEffect(() => {
+        if (!memberData?.memberId) return;
+        const registerFcmToken = async () => {
+            try {
+                if (!('Notification' in window)) return;
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') return;
+                const messaging = firebase.messaging();
+                const token = await messaging.getToken({ vapidKey: VAPID_KEY });
+                if (token) {
+                    await getCol('fcm_tokens').doc(memberData.memberId).set({
+                        token,
+                        name: memberData.name || '',
+                        updatedAt: new Date().toISOString(),
+                    });
+                }
+            } catch(e) { console.warn('FCM 토큰 등록 실패:', e); }
+        };
+        registerFcmToken();
+    }, [memberData?.memberId]);
 
     // 설정 읽기
     useEffect(() => {

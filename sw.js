@@ -1,67 +1,86 @@
-const CACHE_NAME = 'moida-v1';
+importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js');
 
+firebase.initializeApp({
+    apiKey: "AIzaSyBYykNZVf20LLQ-YIIeA2TKz9DSBsypRZM",
+    authDomain: "moida-otpfc.firebaseapp.com",
+    projectId: "moida-otpfc",
+    storageBucket: "moida-otpfc.firebasestorage.app",
+    messagingSenderId: "407991675090",
+    appId: "1:407991675090:web:df9f7d8a7c93a6eb5ae50b"
+});
+
+const messaging = firebase.messaging();
+
+// 앱이 백그라운드일 때 푸시 수신
+messaging.onBackgroundMessage((payload) => {
+    const title = payload.notification?.title || '모이다';
+    const body  = payload.notification?.body  || '';
+    self.registration.showNotification(title, {
+        body,
+        icon:  '/moida/icon.png',
+        badge: '/moida/icon.png',
+        data:  { url: 'https://nakdo0415-crypto.github.io/moida/' },
+    });
+});
+
+// 알림 클릭 시 앱으로 이동
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const url = event.notification.data?.url || 'https://nakdo0415-crypto.github.io/moida/';
+    event.waitUntil(clients.openWindow(url));
+});
+
+// ── 기존 캐시 로직 ──────────────────────────────────────
+const CACHE_NAME = 'moida-v1';
 const CACHE_URLS = [
-  '/moida/index.html',
-  '/moida/attendance.html',
-  '/moida/roster.html',
-  '/moida/team-maker.html',
-  '/moida/match.html',
-  '/moida/member.html',
-  '/moida/icon.png',
-  '/moida/manifest.json',
+    '/moida/index.html',
+    '/moida/attendance.html',
+    '/moida/roster.html',
+    '/moida/team-maker.html',
+    '/moida/match.html',
+    '/moida/member.html',
+    '/moida/icon.png',
+    '/moida/manifest.json',
 ];
 
-// 설치: 핵심 파일 캐시
 self.addEventListener('install', event => {
-  self.skipWaiting();
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(CACHE_URLS).catch(err => {
-        console.warn('캐시 일부 실패 (정상):', err);
-      });
-    })
-  );
+    self.skipWaiting();
+    event.waitUntil(
+        caches.open(CACHE_NAME).then(cache =>
+            cache.addAll(CACHE_URLS).catch(err => console.warn('캐시 일부 실패 (정상):', err))
+        )
+    );
 });
 
-// 활성화: 이전 캐시 삭제
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-      )
-    ).then(() => self.clients.claim())
-  );
+    event.waitUntil(
+        caches.keys().then(keys =>
+            Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+        ).then(() => self.clients.claim())
+    );
 });
 
-// 네트워크 요청 처리: 네트워크 우선, 실패 시 캐시 사용
 self.addEventListener('fetch', event => {
-  // Firebase, CDN 요청은 캐시하지 않음
-  const url = event.request.url;
-  if (
-    url.includes('firestore.googleapis.com') ||
-    url.includes('firebase') ||
-    url.includes('cdn.tailwindcss') ||
-    url.includes('cdnjs.cloudflare') ||
-    url.includes('unpkg.com') ||
-    url.includes('gstatic.com')
-  ) {
-    return;
-  }
+    const url = event.request.url;
+    if (
+        url.includes('firestore.googleapis.com') ||
+        url.includes('firebase') ||
+        url.includes('cdn.tailwindcss') ||
+        url.includes('cdnjs.cloudflare') ||
+        url.includes('unpkg.com') ||
+        url.includes('gstatic.com')
+    ) return;
 
-  event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        // 성공 응답은 캐시에도 저장
-        if (response && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      })
-      .catch(() => {
-        // 오프라인일 때 캐시에서 가져옴
-        return caches.match(event.request);
-      })
-  );
+    event.respondWith(
+        fetch(event.request)
+            .then(response => {
+                if (response && response.status === 200) {
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+                }
+                return response;
+            })
+            .catch(() => caches.match(event.request))
+    );
 });
