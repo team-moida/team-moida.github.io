@@ -252,6 +252,7 @@ function App() {
     const [teamDraftData, setTeamDraftData] = useState(null);
     const [confirmedDrafts, setConfirmedDrafts] = useState([]);
     const [scheduleData, setScheduleData] = useState(null);
+    const [matchViewMode, setMatchViewMode] = useState('my'); // 'my' | 'all'
     const [mySession, setMySession] = useState(null); // 오늘 내 출석 세션
 
     // GPS 상태
@@ -905,44 +906,173 @@ function App() {
                                 <p className="font-black text-lg mb-2">매치 테이블 준비 중</p>
                                 <p className="text-sm text-slate-400">팀 편성이 확정되면<br/>경기 일정이 공개됩니다</p>
                               </div>
-                            : (
-                                <div>
-                                    <div className="text-center mb-4">
-                                        <p className="text-xs text-slate-500 uppercase tracking-widest font-black">{scheduleData.meetingDate}</p>
-                                        <p className="text-[10px] text-slate-600 mt-1">{scheduleData.schedule?.list?.length}라운드</p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {scheduleData.schedule?.list?.map((session,si)=>{
-                                            const myTeamName = myTeamInfo?.teamName;
-                                            const hasMyTeam = myTeamName && session.matches.some(m=>m.match.includes(myTeamName));
-                                            const isResting = myTeamName && session.resting?.includes(myTeamName);
-                                            return (
-                                                <div key={si} className={`rounded-2xl p-4 border ${hasMyTeam?'border-teal-300 bg-teal-50':isResting?'border-amber-200 bg-amber-50':'card border-slate-100'}`}>
-                                                    <div className="flex items-center gap-2 mb-3">
-                                                        <p className="text-xs font-black text-slate-400">{session.time}</p>
-                                                        {hasMyTeam&&<span className="text-[9px] font-black text-teal-500 bg-teal-100 px-2 py-0.5 rounded-full">내 경기</span>}
-                                                        {isResting&&<span className="text-[9px] font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">휴식</span>}
+                            : (() => {
+                                const sessions = scheduleData.schedule?.list || [];
+                                const cmi = scheduleData.currentMatchIndex ?? 0;
+                                const currentSession = sessions[cmi];
+                                const allDone = cmi >= sessions.length;
+                                const myTeam = myTeamInfo?.teamName;
+                                const myTeamIdx2 = myTeamInfo?.teamIdx ?? 0;
+                                return (
+                                    <div>
+                                        {/* 날짜 + 뷰 토글 */}
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div>
+                                                <p className="text-xs text-slate-500 uppercase tracking-widest font-black">{scheduleData.meetingDate}</p>
+                                                <p className="text-[10px] text-slate-400 mt-0.5">총 {sessions.length}라운드</p>
+                                            </div>
+                                            <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
+                                                <button onClick={()=>setMatchViewMode('my')} className={`px-3 py-1.5 rounded-lg font-black text-xs transition-all ${matchViewMode==='my'?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>내 경기</button>
+                                                <button onClick={()=>setMatchViewMode('all')} className={`px-3 py-1.5 rounded-lg font-black text-xs transition-all ${matchViewMode==='all'?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>전체 보기</button>
+                                            </div>
+                                        </div>
+
+                                        {/* ── 내 경기 뷰 ── */}
+                                        {matchViewMode==='my' && (
+                                            <div>
+                                                {allDone ? (
+                                                    <div className="text-center py-16">
+                                                        <div className="text-5xl mb-4">🏁</div>
+                                                        <p className="font-black text-slate-500 text-lg">모든 경기가 종료되었습니다</p>
+                                                        <p className="text-sm text-slate-400 mt-1">수고하셨습니다!</p>
                                                     </div>
-                                                    {session.matches.map((m,mi)=>{
-                                                        const[t1,t2]=m.match;
-                                                        const t1Idx=t1.charCodeAt(0)-65;
-                                                        const t2Idx=t2.charCodeAt(0)-65;
-                                                        const isMyMatch=myTeamName&&(t1===myTeamName||t2===myTeamName);
-                                                        return (
-                                                            <div key={mi} className="flex items-center gap-2 mb-1.5 last:mb-0">
-                                                                <span className="text-[9px] text-slate-600 w-10 shrink-0">{scheduleData.config?.fieldNames?.[m.fieldIdx]||`${m.fieldIdx+1}구장`}</span>
-                                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-black text-white ${getTeamBadge(t1Idx)} ${isMyMatch&&t1===myTeamName?'ring-2 ring-white/80':''}`}>{t1}</span>
-                                                                <span className="text-slate-600 text-xs">vs</span>
-                                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-black text-white ${getTeamBadge(t2Idx)} ${isMyMatch&&t2===myTeamName?'ring-2 ring-white/80':''}`}>{t2}</span>
+                                                ) : !currentSession ? null : (
+                                                    <div>
+                                                        {/* 라운드 표시 */}
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-8 h-8 bg-teal-500 text-white rounded-xl font-black text-sm flex items-center justify-center">{cmi+1}</div>
+                                                                <span className="text-xs text-slate-400 font-black">/ {sessions.length} 라운드</span>
                                                             </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            );
-                                        })}
+                                                            <span className="text-xs text-slate-400">{currentSession.time}</span>
+                                                        </div>
+
+                                                        {/* 내 팀 상태 카드 */}
+                                                        {(() => {
+                                                            if (!myTeam) {
+                                                                return (
+                                                                    <div className="card rounded-2xl border border-slate-100 p-4">
+                                                                        <p className="text-xs text-slate-400 font-black mb-3">현재 라운드</p>
+                                                                        {currentSession.matches.map((m,mi)=>{
+                                                                            const[t1,t2]=m.match;
+                                                                            return (
+                                                                                <div key={mi} className="flex items-center gap-2 mb-2 last:mb-0">
+                                                                                    <span className="text-[9px] text-slate-400 w-10 shrink-0">{scheduleData.config?.fieldNames?.[m.fieldIdx]||`${m.fieldIdx+1}구장`}</span>
+                                                                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-black text-white ${getTeamBadge(t1.charCodeAt(0)-65)}`}>{t1}</span>
+                                                                                    <span className="text-slate-400 text-xs">vs</span>
+                                                                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-black text-white ${getTeamBadge(t2.charCodeAt(0)-65)}`}>{t2}</span>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            const isResting = currentSession.resting?.includes(myTeam);
+                                                            const myMatch = currentSession.matches.find(m=>m.match.includes(myTeam));
+                                                            if (isResting) {
+                                                                return (
+                                                                    <div className="bg-amber-50 border border-amber-200 rounded-3xl p-8 text-center">
+                                                                        <div className="text-5xl mb-3">😴</div>
+                                                                        <p className="font-black text-amber-500 text-lg">이번 경기는 휴식입니다.</p>
+                                                                        <p className="text-amber-500 text-sm mt-1">다음 라운드를 기다려주세요</p>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            if (myMatch) {
+                                                                const [t1,t2]=myMatch.match;
+                                                                const opponent = t1===myTeam?t2:t1;
+                                                                const oppIdx = opponent.charCodeAt(0)-65;
+                                                                const fieldName = scheduleData.config?.fieldNames?.[myMatch.fieldIdx]||`${myMatch.fieldIdx+1}구장`;
+                                                                return (
+                                                                    <div className="bg-teal-50 border border-teal-100 rounded-3xl p-6 text-center">
+                                                                        <p className="text-xs font-black text-teal-500 mb-4">다음 상대</p>
+                                                                        <div className="flex items-center justify-center gap-5 mb-5">
+                                                                            <div className="text-center">
+                                                                                <div className={`w-16 h-16 rounded-2xl font-black text-2xl flex items-center justify-center text-white mb-1 ${getTeamBadge(myTeamIdx2)}`}>{myTeam}</div>
+                                                                                <p className="text-[10px] text-slate-400">우리 팀</p>
+                                                                            </div>
+                                                                            <span className="text-slate-300 font-black text-2xl">vs</span>
+                                                                            <div className="text-center">
+                                                                                <div className={`w-16 h-16 rounded-2xl font-black text-2xl flex items-center justify-center text-white mb-1 ${getTeamBadge(oppIdx)}`}>{opponent}</div>
+                                                                                <p className="text-[10px] text-slate-400">상대 팀</p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-center gap-1.5">
+                                                                            <Icon.MapPin size={14} className="text-slate-400"/>
+                                                                            <span className="text-sm font-black text-slate-600">{fieldName}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        })()}
+
+                                                        {/* 다음 라운드 예고 */}
+                                                        {myTeam && cmi+1 < sessions.length && (()=>{
+                                                            const nxt = sessions[cmi+1];
+                                                            const nxtResting = nxt.resting?.includes(myTeam);
+                                                            const nxtMatch = nxt.matches.find(m=>m.match.includes(myTeam));
+                                                            const nxtOpp = nxtMatch?.match.find(t=>t!==myTeam);
+                                                            return (
+                                                                <div className="card rounded-2xl border border-slate-100 p-4 mt-3">
+                                                                    <p className="text-[10px] font-black text-slate-400 mb-2">다음 라운드 ({cmi+2}/{sessions.length})</p>
+                                                                    {nxtResting ? (
+                                                                        <p className="text-xs text-amber-500 font-black">😴 휴식</p>
+                                                                    ) : nxtMatch && nxtOpp ? (
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-xs text-slate-400">vs</span>
+                                                                            <span className={`px-2.5 py-1 rounded-lg text-xs font-black text-white ${getTeamBadge(nxtOpp.charCodeAt(0)-65)}`}>{nxtOpp}</span>
+                                                                            <span className="text-[10px] text-slate-400">{scheduleData.config?.fieldNames?.[nxtMatch.fieldIdx]||`${nxtMatch.fieldIdx+1}구장`}</span>
+                                                                        </div>
+                                                                    ) : null}
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* ── 전체 보기 뷰 ── */}
+                                        {matchViewMode==='all' && (
+                                            <div className="space-y-2">
+                                                {sessions.map((session,si)=>{
+                                                    const hasMyTeam = myTeam && session.matches.some(m=>m.match.includes(myTeam));
+                                                    const isResting = myTeam && session.resting?.includes(myTeam);
+                                                    const isCurrent = si===cmi;
+                                                    const isPast = si<cmi;
+                                                    return (
+                                                        <div key={si} className={`rounded-2xl p-4 border transition-all ${isCurrent?'border-teal-100 bg-teal-50':isPast?'border-slate-100 bg-slate-50 opacity-50':hasMyTeam?'border-teal-100 card':'card border-slate-100'}`}>
+                                                            <div className="flex items-center gap-2 mb-3">
+                                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] flex-shrink-0 ${isCurrent?'bg-teal-500 text-white':isPast?'bg-slate-300 text-white':'bg-slate-100 text-slate-500'}`}>{isPast?'✓':si+1}</div>
+                                                                <p className="text-xs font-black text-slate-400">{session.time}</p>
+                                                                {isCurrent&&<span className="text-[9px] font-black text-teal-600 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-full">진행 중</span>}
+                                                                {hasMyTeam&&!isCurrent&&<span className="text-[9px] font-black text-teal-500 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-full">내 경기</span>}
+                                                                {isResting&&<span className="text-[9px] font-black text-amber-500 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">휴식</span>}
+                                                            </div>
+                                                            {session.matches.map((m,mi)=>{
+                                                                const[t1,t2]=m.match;
+                                                                const t1Idx=t1.charCodeAt(0)-65;
+                                                                const t2Idx=t2.charCodeAt(0)-65;
+                                                                const isMyMatch=myTeam&&(t1===myTeam||t2===myTeam);
+                                                                return (
+                                                                    <div key={mi} className="flex items-center gap-2 mb-1.5 last:mb-0 pl-8">
+                                                                        <span className="text-[9px] text-slate-400 w-10 shrink-0">{scheduleData.config?.fieldNames?.[m.fieldIdx]||`${m.fieldIdx+1}구장`}</span>
+                                                                        <span className={`px-2.5 py-1 rounded-lg text-xs font-black text-white ${getTeamBadge(t1Idx)} ${isMyMatch&&t1===myTeam?'ring-2 ring-offset-1 ring-teal-400':''}`}>{t1}</span>
+                                                                        <span className="text-slate-400 text-xs">vs</span>
+                                                                        <span className={`px-2.5 py-1 rounded-lg text-xs font-black text-white ${getTeamBadge(t2Idx)} ${isMyMatch&&t2===myTeam?'ring-2 ring-offset-1 ring-teal-400':''}`}>{t2}</span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                            {session.resting?.length>0&&<p className="text-[9px] text-slate-400 mt-1.5 pl-8">휴식: {session.resting.join(', ')}</p>}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            )
+                                );
+                            })()
                         }
                     </div>
                 )}

@@ -56,6 +56,8 @@
         html.dark .text-teal-600{color:#2dd4bf!important} html.dark .text-teal-500{color:#2dd4bf!important}
         html.dark #loading-screen{background:var(--t-bg)!important}
         html.dark .shadow-sm{box-shadow:0 1px 3px rgba(0,0,0,.3)!important}
+        html.dark .bg-teal-50{background:#042f2e!important} html.dark .border-teal-300{border-color:#0d9488!important} html.dark .bg-teal-100{background:#134e4a!important} html.dark .text-teal-600{color:#2dd4bf!important}
+        html.dark .text-teal-100{color:#ccfbf1!important}
     </style>
 </head>
 <body>
@@ -118,6 +120,8 @@ function App() {
     const [isSaving, setIsSaving] = useState(false);
     const [isCapturing, setIsCapturing] = useState(false);
     const [alertModal, setAlertModal] = useState({show:false,title:'',content:'',type:'info',onConfirm:null});
+    const [activeScheduleId, setActiveScheduleId] = useState(null);
+    const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
 
     const [config, setConfig] = useState({
         meetingDate:new Date().toISOString().split('T')[0],
@@ -218,6 +222,8 @@ function App() {
         }
         setSchedule({list:sessionList,stats:teamStats});
         setCompletedMatches(new Set());
+        setCurrentMatchIndex(0);
+        setActiveScheduleId(null);
         setView('results');
     };
 
@@ -225,13 +231,33 @@ function App() {
         if(!schedule.list.length)return;
         setIsSaving(true);
         try {
-            await getCol('match_schedules').add({
+            const docRef = await getCol('match_schedules').add({
                 schedule,config,completedMatches:Array.from(completedMatches),
+                currentMatchIndex,
                 createdAt:new Date().toISOString(),meetingDate:config.meetingDate,
                 label:`${config.meetingDate} 매치 (${schedule.list.length}라운드)`
             });
+            setActiveScheduleId(docRef.id);
             showAlert('저장 완료','매치 테이블이 저장되었습니다.');
         } catch(e){showAlert('오류','저장 실패');} finally{setIsSaving(false);}
+    };
+
+    const handleNextMatch = async () => {
+        if (!schedule.list.length || currentMatchIndex >= schedule.list.length) return;
+        const currentSession = schedule.list[currentMatchIndex];
+        const newCompleted = new Set(completedMatches);
+        newCompleted.add(currentSession.id);
+        setCompletedMatches(newCompleted);
+        const newIndex = currentMatchIndex + 1;
+        setCurrentMatchIndex(newIndex);
+        if (activeScheduleId) {
+            try {
+                await getCol('match_schedules').doc(activeScheduleId).update({
+                    completedMatches: Array.from(newCompleted),
+                    currentMatchIndex: newIndex
+                });
+            } catch(e) {}
+        }
     };
 
     const handleCapture = async () => {
@@ -453,16 +479,20 @@ function App() {
 
                         {schedule.list.length===0
                             ? <div className="text-center py-20 text-slate-300"><div className="flex justify-center mb-3 opacity-50"><Icon.Calendar size={48}/></div><p className="font-black">설정 탭에서 매치 테이블을 생성해주세요</p></div>
-                            : schedule.list.map(session=>{
+                            : schedule.list.map((session, si)=>{
                                 const isDone=completedMatches.has(session.id);
+                                const isCurrent=si===currentMatchIndex;
+                                const isPast=si<currentMatchIndex;
                                 return (
                                     <div key={session.id} onClick={()=>setCompletedMatches(prev=>{const n=new Set(prev);n.has(session.id)?n.delete(session.id):n.add(session.id);return n;})}
-                                        className={`match-row mb-2 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm ${isDone?'match-completed':''}`}>
+                                        className={`match-row mb-2 p-4 rounded-2xl border shadow-sm transition-all ${isCurrent?'bg-teal-50 border-teal-300':isPast||isDone?'match-completed border-slate-100':'bg-white border-slate-100'}`}
+                                        style={isCurrent?{boxShadow:'0 0 0 2px #2dd4bf40'}:{}}>
                                         <div className="flex items-center gap-3 mb-3">
-                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isDone?'bg-emerald-500 border-emerald-500':'border-slate-300'}`}>
-                                                {isDone&&<Icon.Check size={10} className="text-white"/>}
+                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 font-black text-[10px] ${isCurrent?'bg-teal-500 border-teal-500 text-white':isDone||isPast?'bg-emerald-500 border-emerald-500 text-white':'border-slate-300 text-slate-400'}`}>
+                                                {isDone||isPast?<Icon.Check size={10} className="text-white"/>:si+1}
                                             </div>
                                             <p className="font-black text-sm text-slate-600">{session.time}</p>
+                                            {isCurrent&&<span className="text-[9px] font-black text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full ml-auto">진행 중</span>}
                                         </div>
                                         <div className="space-y-2 pl-9">
                                             {session.matches.map((m,mi)=>{
@@ -473,9 +503,9 @@ function App() {
                                                     <div key={mi} className="flex items-center gap-2">
                                                         <span className="text-[10px] font-black text-slate-400 w-12 shrink-0">{config.fieldNames[m.fieldIdx]||`${m.fieldIdx+1}구장`}</span>
                                                         <div className="flex items-center gap-2 flex-1">
-                                                            <span className={`px-3 py-1.5 rounded-xl font-black text-xs ${getTeamBadge(t1Idx)} ${isDone?'opacity-60':''}`}>{t1}</span>
+                                                            <span className={`px-3 py-1.5 rounded-xl font-black text-xs ${getTeamBadge(t1Idx)} ${isPast||isDone?'opacity-60':''}`}>{t1}</span>
                                                             <span className="text-slate-400 font-black text-sm">vs</span>
-                                                            <span className={`px-3 py-1.5 rounded-xl font-black text-xs ${getTeamBadge(t2Idx)} ${isDone?'opacity-60':''}`}>{t2}</span>
+                                                            <span className={`px-3 py-1.5 rounded-xl font-black text-xs ${getTeamBadge(t2Idx)} ${isPast||isDone?'opacity-60':''}`}>{t2}</span>
                                                         </div>
                                                         <span className="text-[9px] font-black text-slate-300">{config.fieldTypes[m.fieldIdx]||'6vs6'}</span>
                                                     </div>
@@ -542,6 +572,28 @@ function App() {
                 )}
             </main>
 
+            {/* ===== 다음 매치 버튼 (매치표 탭, 캡쳐 중 숨김) ===== */}
+            {view==='results' && schedule.list.length>0 && !isCapturing && (
+                <div style={{position:'fixed',bottom:0,left:0,right:0,zIndex:40,background:'var(--t-surface)',backdropFilter:'blur(12px)',borderTop:'1px solid var(--t-border)',padding:'12px 16px',paddingBottom:'calc(12px + env(safe-area-inset-bottom))'}}>
+                    <div className="max-w-5xl mx-auto flex items-center gap-3">
+                        <div className="flex-1">
+                            {currentMatchIndex < schedule.list.length ? (
+                                <div>
+                                    <p className="text-xs font-black text-slate-500">{currentMatchIndex+1} / {schedule.list.length} 라운드</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">{schedule.list[currentMatchIndex]?.time}</p>
+                                </div>
+                            ) : (
+                                <p className="text-sm font-black text-emerald-500">✓ 모든 경기 종료</p>
+                            )}
+                        </div>
+                        <button onClick={handleNextMatch} disabled={currentMatchIndex>=schedule.list.length}
+                            style={{minWidth:130}} className="py-3 px-6 bg-teal-500 text-white rounded-2xl font-black text-sm disabled:opacity-30 active:scale-95 transition-all shadow-lg">
+                            {currentMatchIndex>=schedule.list.length?'종료':'다음 매치 →'}
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* 기록 불러오기 모달 */}
             {isLoadModalOpen && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50" onClick={()=>setIsLoadModalOpen(false)}>
@@ -555,7 +607,7 @@ function App() {
                                         <p className="font-black text-slate-800 text-sm">{s.meetingDate}</p>
                                         <p className="text-xs text-slate-400 mt-0.5">{s.schedule?.list?.length||0}라운드 · {s.config?.courtCount||0}구장</p>
                                     </div>
-                                    <button onClick={()=>{setSchedule(s.schedule);setConfig(p=>({...p,...s.config}));setCompletedMatches(new Set(s.completedMatches||[]));setView('results');setIsLoadModalOpen(false);}} className="px-3 py-2 bg-teal-500 text-white rounded-xl font-black text-xs">불러오기</button>
+                                    <button onClick={()=>{setSchedule(s.schedule);setConfig(p=>({...p,...s.config}));setCompletedMatches(new Set(s.completedMatches||[]));setCurrentMatchIndex(s.currentMatchIndex||0);setActiveScheduleId(s.id);setView('results');setIsLoadModalOpen(false);}} className="px-3 py-2 bg-teal-500 text-white rounded-xl font-black text-xs">불러오기</button>
                                     <button onClick={()=>showConfirm('삭제','이 기록을 삭제하시겠습니까?',async()=>await getCol('match_schedules').doc(s.id).delete())} className="p-2 bg-red-50 text-red-400 rounded-xl"><Icon.Trash size={12}/></button>
                                 </div>
                             ))
