@@ -250,6 +250,7 @@ function App() {
     // testMode는 관리자(attendance.html)만 제어 — 회원 앱은 읽기 전용
     const testMode = !!meetingSettings?.testMode;
     const [teamDraftData, setTeamDraftData] = useState(null);
+    const [confirmedDrafts, setConfirmedDrafts] = useState([]);
     const [scheduleData, setScheduleData] = useState(null);
     const [mySession, setMySession] = useState(null); // 오늘 내 출석 세션
 
@@ -281,6 +282,27 @@ function App() {
         if (minsUntil > 0) return { type:'today', label:`${minsUntil}분 후 시작`, urgent: minsUntil <= 30 };
         return { type:'started', label:'모임 중' };
     }, [meetingSettings, nowTime]);
+
+    // 팀 공개 시각 = allowFrom (모임 시작 -70분), 출석 가능 시간과 동일
+    const allowFromDisplay = useMemo(() => {
+        if (!meetingSettings?.date || !meetingSettings?.start) return null;
+        const [y,m,d] = meetingSettings.date.split('-').map(Number);
+        const [h,min] = meetingSettings.start.split(':').map(Number);
+        const af = new Date(y, m-1, d, h, min, 0);
+        af.setTime(af.getTime() - 70*60*1000);
+        return `${String(af.getHours()).padStart(2,'0')}:${String(af.getMinutes()).padStart(2,'0')}`;
+    }, [meetingSettings]);
+
+    const teamReady = useMemo(() => {
+        if (!meetingSettings?.date || !meetingSettings?.start) return false;
+        if (testMode) return true;
+        if (meetingDayInfo?.type === 'past') return true;
+        if (meetingDayInfo?.type === 'future') return false;
+        const [y,m,d] = meetingSettings.date.split('-').map(Number);
+        const [h,min] = meetingSettings.start.split(':').map(Number);
+        const allowFrom = new Date(y, m-1, d, h, min, 0).getTime() - 70*60*1000;
+        return nowTime.getTime() >= allowFrom;
+    }, [meetingSettings, meetingDayInfo, nowTime, testMode]);
 
     // 알림
     const [toast, setToast] = useState({ show:false, msg:'', type:'info' });
@@ -386,17 +408,27 @@ function App() {
         return () => unsub();
     }, []);
 
-    // 팀 편성 읽기
+    // 팀 편성 읽기 (orderBy 없이 — 복합 인덱스 불필요, JS에서 필터/정렬)
     useEffect(() => {
         const unsub = getCol('team_drafts')
             .where('isConfirmed', '==', true)
-            .orderBy('createdAt', 'desc')
-            .limit(1)
             .onSnapshot(snap => {
-                setTeamDraftData(snap.empty ? null : snap.docs[0].data());
-            });
+                const list = [];
+                snap.forEach(d => list.push(d.data()));
+                setConfirmedDrafts(list);
+            }, () => {});
         return () => unsub();
     }, []);
+
+    // 현재 모임 날짜에 맞는 확정 팀 편성 선택
+    useEffect(() => {
+        const date = meetingSettings?.date;
+        if (!date || !confirmedDrafts.length) { setTeamDraftData(null); return; }
+        const filtered = confirmedDrafts
+            .filter(d => d.meetingDate === date)
+            .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+        setTeamDraftData(filtered[0] || null);
+    }, [confirmedDrafts, meetingSettings?.date]);
 
     // 매치 테이블 읽기
     useEffect(() => {
@@ -660,13 +692,17 @@ function App() {
                                 {meetingSettings.location && <p className="text-slate-400 text-xs mt-0.5 flex items-center gap-1"><Icon.MapPin size={11}/>{meetingSettings.location}</p>}
                             </div>
                             {mySession?.checkedIn
-                                ? <div className="bg-emerald-500 px-4 py-2 rounded-xl text-sm font-black">✓ 출석</div>
-                                : myTeamInfo
-                                    ? <div className={`${getTeamBadge(myTeamIdx)} px-3 py-2 rounded-xl text-sm font-black text-center`}>
-                                        <div>{myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</div>
-                                        <div className="text-[10px] opacity-80">{getTeamColorName(myTeamIdx)} 조끼</div>
+                                ? <div className="bg-emerald-500 px-4 py-2 rounded-xl text-sm font-black text-white">✓ 출석</div>
+                                : !teamReady
+                                    ? <div className="bg-slate-100 px-3 py-2 rounded-xl text-[10px] font-black text-slate-400 text-center leading-tight">
+                                        🔒<br/>{allowFromDisplay} 공개
                                       </div>
-                                    : <div className="bg-slate-100 px-4 py-2 rounded-xl text-xs font-black text-slate-400">미편성</div>
+                                    : myTeamInfo
+                                        ? <div className={`${getTeamBadge(myTeamIdx)} px-3 py-2 rounded-xl text-sm font-black text-center`}>
+                                            <div>{myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</div>
+                                            <div className="text-[10px] opacity-80">{getTeamColorName(myTeamIdx)} 조끼</div>
+                                          </div>
+                                        : <div className="bg-slate-100 px-4 py-2 rounded-xl text-xs font-black text-slate-400">미편성</div>
                             }
                         </div>
                     </div>
@@ -727,7 +763,13 @@ function App() {
                         </button>
 
                         {/* 내 팀 */}
-                        {myTeamInfo ? (
+                        {!teamReady ? (
+                            <div className="card rounded-3xl p-5 text-center text-slate-400">
+                                <div className="flex justify-center mb-2 opacity-25"><Icon.Users size={36}/></div>
+                                <p className="font-black text-sm">팀 편성 비공개 중</p>
+                                {allowFromDisplay && <p className="text-xs mt-1">{allowFromDisplay}부터 공개됩니다</p>}
+                            </div>
+                        ) : myTeamInfo ? (
                             <div className="card rounded-3xl p-5">
                                 <p className="text-xs font-black text-teal-500 uppercase tracking-widest mb-3">내 팀</p>
                                 <div className="flex items-center gap-3 mb-3">
@@ -820,6 +862,12 @@ function App() {
                                 <div className="flex justify-center mb-4 opacity-25"><Icon.Users size={56}/></div>
                                 <p className="font-black text-lg mb-2">아직 팀이 편성되지 않았습니다</p>
                                 <p className="text-sm text-slate-400">운영진이 팀 편성을 완료하면<br/>여기에 표시됩니다</p>
+                              </div>
+                            : !teamReady
+                            ? <div className="text-center py-20 text-slate-500">
+                                <div className="flex justify-center mb-4 opacity-25"><Icon.Users size={56}/></div>
+                                <p className="font-black text-lg mb-2">팀 편성 비공개 중</p>
+                                <p className="text-sm text-slate-400">{allowFromDisplay}부터 공개됩니다</p>
                               </div>
                             : (
                                 <div>
