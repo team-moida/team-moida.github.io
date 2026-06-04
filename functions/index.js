@@ -1,32 +1,77 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { setGlobalOptions } = require("firebase-functions/v2");
+const admin = require("firebase-admin");
 
-const {setGlobalOptions} = require("firebase-functions");
-const {onRequest} = require("firebase-functions/https");
-const logger = require("firebase-functions/logger");
+admin.initializeApp();
+setGlobalOptions({ region: "asia-northeast3", maxInstances: 10 });
 
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
-setGlobalOptions({ maxInstances: 10 });
+const DB_PATH = "artifacts/moida-otpfc/public/data";
 
-// Create and deploy your first functions
-// https://firebase.google.com/docs/functions/get-started
+// Firestore에 notifications 문서 생성 시 FCM 전송
+exports.sendPushNotification = onDocumentCreated(
+  `${DB_PATH}/notifications/{notifId}`,
+  async (event) => {
+    const data = event.data.data();
+    const { title, body, targetMemberId } = data;
 
-// exports.helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+    if (!title || !body) return;
+
+    const tokensSnap = await admin.firestore()
+      .collection(`${DB_PATH}/fcm_tokens`)
+      .get();
+
+    if (tokensSnap.empty) return;
+
+    // 특정 회원에게만 보내는 경우 필터링
+    const tokens = [];
+    tokensSnap.forEach(doc => {
+      const t = doc.data();
+      if (!t.token) return;
+      if (targetMemberId && doc.id !== targetMemberId) return;
+      tokens.push(t.token);
+    });
+
+    if (tokens.length === 0) return;
+
+    // 500개씩 나눠서 전송 (FCM 제한)
+    const chunks = [];
+    for (let i = 0; i < tokens.length; i += 500) {
+      chunks.push(tokens.slice(i, i + 500));
+    }
+
+    for (const chunk of chunks) {
+      const res = await admin.messaging().sendEachForMulticast({
+        tokens: chunk,
+        notification: { title, body },
+        webpush: {
+          fcmOptions: { link: "https://nakdo0415-crypto.github.io/moida/" },
+          notification: {
+            icon: "https://nakdo0415-crypto.github.io/moida/icon.png",
+            badge: "https://nakdo0415-crypto.github.io/moida/icon.png",
+          },
+        },
+      });
+
+      // 유효하지 않은 토큰 삭제
+      const invalidTokenDocs = [];
+      res.responses.forEach((r, idx) => {
+        if (!r.success && (
+          r.error?.code === "messaging/invalid-registration-token" ||
+          r.error?.code === "messaging/registration-token-not-registered"
+        )) {
+          invalidTokenDocs.push(chunk[idx]);
+        }
+      });
+
+      if (invalidTokenDocs.length > 0) {
+        const batch = admin.firestore().batch();
+        tokensSnap.forEach(doc => {
+          if (invalidTokenDocs.includes(doc.data().token)) {
+            batch.delete(doc.ref);
+          }
+        });
+        await batch.commit();
+      }
+    }
+  }
+);
