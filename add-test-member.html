@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>테스트 계정 생성</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+  body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f8fafc}
+  .card{background:white;border-radius:24px;padding:32px;width:320px;box-shadow:0 4px 24px rgba(0,0,0,.1);text-align:center}
+  h2{font-size:20px;font-weight:900;color:#1e293b;margin-bottom:8px}
+  p{font-size:13px;color:#64748b;margin:0 0 24px}
+  .info{background:#f1f5f9;border-radius:12px;padding:16px;margin-bottom:24px;text-align:left}
+  .info b{display:block;font-size:11px;color:#94a3b8;margin-bottom:4px}
+  .info span{font-size:15px;font-weight:900;color:#1e293b}
+  button{width:100%;padding:14px;background:#14b8a6;color:white;border:none;border-radius:16px;font-size:15px;font-weight:900;cursor:pointer}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  #status{margin-top:16px;font-size:13px;font-weight:700;color:#64748b}
+  .ok{color:#10b981}.err{color:#ef4444}
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>🧪 테스트 계정 생성</h2>
+  <p>아래 정보로 Firestore에 회원을 등록합니다</p>
+  <div class="info">
+    <b>이름</b><span>테스트</span>
+    <b style="margin-top:12px">생년월일 (로그인용)</b><span>000101 (20000101)</span>
+    <b style="margin-top:12px">역할</b><span>회원</span>
+  </div>
+  <button id="btn" onclick="run()">지금 생성하기</button>
+  <div id="status"></div>
+</div>
+
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyBYykNZVf20LLQ-YIIeA2TKz9DSBsypRZM",
+  authDomain:"moida-otpfc.firebaseapp.com",
+  projectId:"moida-otpfc",
+  storageBucket:"moida-otpfc.firebasestorage.app",
+  messagingSenderId:"407991675090",
+  appId:"1:407991675090:web:df9f7d8a7c93a6eb5ae50b"
+});
+const db = firebase.firestore();
+const auth = firebase.auth();
+const getCol = n => db.collection('artifacts').doc('moida-otpfc').collection('public').doc('data').collection(n);
+
+async function run() {
+  const btn = document.getElementById('btn');
+  const st = document.getElementById('status');
+  btn.disabled = true;
+  st.textContent = '⏳ 연결 중...';
+  st.className = '';
+  try {
+    await auth.signInAnonymously();
+
+    // 이미 존재하는지 확인
+    const existing = await getCol('members').where('name','==','테스트').get();
+    if (!existing.empty) {
+      st.innerHTML = '✅ 이미 존재합니다!<br><small style="color:#94a3b8">이름: 테스트 / 생년월일: 000101</small>';
+      st.className = 'ok';
+      return;
+    }
+
+    await getCol('members').add({
+      name: '테스트',
+      birth: '20000101',
+      gender: '남성',
+      role: '회원',
+      level: 5,
+      position: 'all',
+      isResigned: false,
+      joinDate: new Date().toISOString().split('T')[0],
+      phone: '010-0000-0000'
+    });
+
+    st.innerHTML = '🎉 생성 완료!<br><b style="color:#1e293b">이름: 테스트</b><br><b style="color:#1e293b">생년월일: 000101</b><br><small style="color:#94a3b8">member.html에서 로그인해보세요</small>';
+    st.className = 'ok';
+  } catch(e) {
+    st.textContent = '❌ 실패: ' + e.message;
+    st.className = 'err';
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
