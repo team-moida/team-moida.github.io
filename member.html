@@ -108,6 +108,7 @@ const getUrlParams = () => {
     return { token: params.get('token'), date: params.get('date') };
 };
 
+const ADMIN_ROLES = ['회장', '매니저', '총무', '부총무'];
 const getTeamBadge = (idx) => ['bg-pink-500','bg-sky-400','bg-lime-400','bg-yellow-400','bg-blue-600','bg-red-500'][idx] || 'bg-slate-500';
 const getTeamName = (idx) => String.fromCharCode(65+idx);
 const getTeamColorName = (idx) => ['핑크','하늘','연두','노랑','파랑','빨강'][idx] || '';
@@ -221,6 +222,7 @@ const Icon = {
     Activity:({size=14,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
     MapPin:  ({size=18,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
     Bell:    ({size=18,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+    List:    ({size=20,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
 };
 
 function App() {
@@ -240,8 +242,11 @@ function App() {
 
     const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
 
-    // 관리자 → 회원 모드로 전환된 경우, 또는 kakaoId(관리자 인증)가 있는 경우
-    const isAdminModeSwitch = localStorage.getItem('moida_admin_mode') === 'true' || Boolean(memberData?.kakaoId);
+    // 관리자 여부 (role 기반)
+    const isAdmin = ADMIN_ROLES.includes(memberData?.role);
+    const [isAdminMode, setIsAdminMode] = useState(
+        () => ADMIN_ROLES.includes(memberData?.role) && localStorage.getItem('moida_admin_mode') === 'true'
+    );
 
     // Firebase 데이터
     const [meetingSettings, setMeetingSettings] = useState(null);
@@ -562,6 +567,13 @@ function App() {
         localStorage.setItem('moida_theme', isDark ? 'dark' : 'light');
     };
 
+    const toggleAdminMode = () => {
+        const next = !isAdminMode;
+        setIsAdminMode(next);
+        localStorage.setItem('moida_admin_mode', next ? 'true' : 'false');
+        if (!next && tab === 'roster') setTab('home');
+    };
+
     // GPS 출석 체크
     const handleGPSCheckIn = async () => {
         if (!memberData?.memberId) return;
@@ -664,16 +676,17 @@ function App() {
                     <div className="flex flex-col items-end gap-1.5">
                         <div className="flex gap-1.5">
                             <button onClick={()=>window.location.href='index.html'} className="p-2 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all text-slate-500"><Icon.Home size={15}/></button>
-                            {isAdminModeSwitch ? (
-                                <button onClick={() => { localStorage.removeItem('moida_admin_mode'); window.location.href = 'attendance.html'; }}
-                                    className="flex items-center gap-1.5 text-[10px] font-black text-white px-2.5 py-1.5 rounded-lg transition-all active:scale-95"
-                                    style={{background:'linear-gradient(135deg,#f97316,#ef4444)'}}>
-                                    <span className="w-2 h-2 rounded-full bg-white animate-ping flex-shrink-0" style={{animationDuration:'1.2s'}}/>
-                                    회원 모드
+                            {isAdmin && (
+                                <button onClick={toggleAdminMode}
+                                    className="flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1.5 rounded-lg transition-all active:scale-95"
+                                    style={isAdminMode
+                                        ? {background:'linear-gradient(135deg,#14b8a6,#0d9488)',color:'white'}
+                                        : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
+                                    {isAdminMode && <span className="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0 animate-ping"/>}
+                                    {isAdminMode ? '관리자 ON' : '⚙️'}
                                 </button>
-                            ) : (
-                                <button onClick={handleLogout} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all">로그아웃</button>
                             )}
+                            <button onClick={handleLogout} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all">로그아웃</button>
                             <button onClick={toggleTheme} className="p-2 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all text-slate-500" title="테마">{darkMode ? <Icon.Sun size={15}/> : <Icon.Moon size={15}/>}</button>
                         </div>
                         <img src="icon.png" alt="OTP FC" className="w-10 h-10 object-contain opacity-70" onError={e=>e.target.style.display='none'}/>
@@ -1208,19 +1221,29 @@ function App() {
                         )}
                     </div>
                 )}
+
+                {/* ===== 명단 탭 (관리자 모드 전용) ===== */}
+                {tab === 'roster' && isAdminMode && (
+                    <div className="animate-in text-center py-20 text-slate-400">
+                        <div className="flex justify-center mb-4 opacity-25"><Icon.List size={56}/></div>
+                        <p className="font-black text-lg mb-2 text-slate-600">회원 명단 · 회비</p>
+                        <p className="text-sm">다음 단계에서 구현됩니다</p>
+                    </div>
+                )}
             </div>
 
             {/* 하단 탭바 */}
             <div className="tab-bar fixed bottom-0 left-0 right-0 z-50 pb-safe">
-                <div className="flex justify-around items-center h-16 max-w-sm mx-auto px-6">
+                <div className="flex items-center h-16 max-w-sm mx-auto px-2">
                     {[
-                        {key:'home',  label:'홈',   icon:<Icon.Home size={20}/>},
-                        {key:'team',  label:'팀',   icon:<Icon.Users size={20}/>},
-                        {key:'match', label:'매치', icon:<Icon.Calendar size={20}/>},
-                        {key:'attend',label:'출석', icon:<Icon.CheckSq size={20}/>},
+                        {key:'home',   label:'홈',   icon:<Icon.Home size={20}/>},
+                        {key:'attend', label:'출석', icon:<Icon.CheckSq size={20}/>},
+                        {key:'team',   label:'팀',   icon:<Icon.Users size={20}/>},
+                        {key:'match',  label:'매치', icon:<Icon.Calendar size={20}/>},
+                        ...(isAdminMode ? [{key:'roster', label:'명단', icon:<Icon.List size={20}/>}] : []),
                     ].map(({key,label,icon})=>(
                         <button key={key} onClick={()=>setTab(key)}
-                            className={`flex flex-col items-center justify-center w-14 h-12 rounded-xl transition-all ${tab===key?'bg-teal-100 text-teal-500':'text-slate-400'}`}>
+                            className={`flex flex-col items-center justify-center flex-1 h-12 rounded-xl transition-all ${tab===key?'bg-teal-100 text-teal-500':'text-slate-400'}`}>
                             {icon}
                             <span className={`text-[9px] font-black mt-0.5 ${tab===key?'text-teal-500':'text-slate-400'}`}>{label}</span>
                         </button>
