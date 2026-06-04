@@ -242,8 +242,8 @@ function App() {
 
     const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
 
-    // 관리자(이성훈)가 회원 모드로 전환한 경우 — 복귀 버튼 표시용
-    const isAdminModeSwitch = localStorage.getItem('moida_admin_mode') === 'true' && memberData?.name === '이성훈';
+    // 관리자 → 회원 모드로 전환된 경우, 또는 kakaoId(관리자 인증)가 있는 경우
+    const isAdminModeSwitch = localStorage.getItem('moida_admin_mode') === 'true' || Boolean(memberData?.kakaoId);
 
     // Firebase 데이터
     const [meetingSettings, setMeetingSettings] = useState(null);
@@ -633,14 +633,13 @@ function App() {
                     <div className="flex flex-col items-end gap-1.5">
                         <div className="flex gap-1.5">
                             <button onClick={()=>window.location.href='index.html'} className="p-2 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all text-slate-500"><Icon.Home size={15}/></button>
-                            {isAdminModeSwitch ? (
+                            {isAdminModeSwitch && (
                                 <button onClick={() => { localStorage.removeItem('moida_admin_mode'); window.location.href = 'attendance.html'; }}
                                     className="text-[10px] font-black text-teal-700 px-2.5 py-1 rounded-lg bg-teal-100 hover:bg-teal-200 transition-all">
-                                    관리자 모드
+                                    관리 화면
                                 </button>
-                            ) : (
-                                <button onClick={handleLogout} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all">로그아웃</button>
                             )}
+                            <button onClick={handleLogout} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all">로그아웃</button>
                             <button onClick={toggleTheme} className="p-2 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all text-slate-500" title="테마">{darkMode ? <Icon.Sun size={15}/> : <Icon.Moon size={15}/>}</button>
                         </div>
                         <img src="icon.png" alt="OTP FC" className="w-10 h-10 object-contain opacity-70" onError={e=>e.target.style.display='none'}/>

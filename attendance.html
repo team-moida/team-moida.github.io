@@ -1239,11 +1239,9 @@ function App() {
                                             <button onClick={()=>{window.location.reload();}} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100">
                                                 <Icon.Refresh size={16}/> 새로고침
                                             </button>
-                                            {loggedInManager?.memberId && (
-                                                <button onClick={()=>{localStorage.setItem('moida_admin_mode','true');window.location.href='member.html';}} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100">
-                                                    <Icon.User size={16}/> 회원 모드로
-                                                </button>
-                                            )}
+                                            <button onClick={()=>{localStorage.setItem('moida_admin_mode','true');window.location.href='member.html';}} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100">
+                                                <Icon.User size={16}/> 회원 모드로
+                                            </button>
                                             <button onClick={()=>{toggleTheme();}} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100">
                                                 {darkMode ? <Icon.Sun size={16}/> : <Icon.Moon size={16}/>} {darkMode?'라이트 모드':'다크 모드'}
                                             </button>
