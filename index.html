@@ -78,6 +78,121 @@
             <p class="text-teal-600 text-[11px] mt-2 tracking-[0.3em] uppercase font-bold">One Two Pass Futsal Club</p>
         </div>
 
+        <!-- 카카오톡 인앱 브라우저 안내 -->
+        <div id="kakaotalk-guide" style="display:none;">
+            <!-- 경고 헤더 -->
+            <div style="text-align:center;padding:20px;background:var(--t-surface);border:1.5px solid #fcd34d;border-radius:24px;box-shadow:0 8px 24px -8px rgba(0,0,0,0.08);margin-bottom:16px;">
+                <div style="font-size:44px;line-height:1;margin-bottom:12px;">⚠️</div>
+                <h2 style="font-size:18px;font-weight:900;color:var(--t-text);margin-bottom:8px;line-height:1.5;">카카오톡 브라우저에서는<br/>정상 작동하지 않아요</h2>
+                <p style="font-size:13px;color:#94a3b8;line-height:1.7;">아래 방법대로 외부 브라우저에서 열어주세요.<br/>한 번만 설치하면 앱처럼 쓸 수 있어요!</p>
+            </div>
+
+            <!-- 플랫폼 탭 -->
+            <div style="display:flex;gap:6px;margin-bottom:14px;background:var(--t-s2);border-radius:16px;padding:4px;">
+                <button id="tab-android" onclick="showGuideOS('android')"
+                    style="flex:1;padding:10px;border-radius:12px;font-weight:900;font-size:14px;cursor:pointer;transition:all 0.2s;background:#14b8a6;color:white;box-shadow:0 2px 8px rgba(20,184,166,0.3);border:none;">
+                    🤖 Android
+                </button>
+                <button id="tab-ios" onclick="showGuideOS('ios')"
+                    style="flex:1;padding:10px;border-radius:12px;font-weight:900;font-size:14px;cursor:pointer;transition:all 0.2s;background:transparent;color:#94a3b8;border:none;">
+                    🍎 iPhone
+                </button>
+            </div>
+
+            <!-- STEP 1: 외부 브라우저로 열기 -->
+            <div style="background:var(--t-surface);border:1.5px solid var(--t-border);border-radius:20px;padding:20px;margin-bottom:12px;">
+                <p style="font-size:10px;font-weight:900;color:#14b8a6;letter-spacing:0.15em;margin-bottom:14px;">STEP 1 &nbsp;·&nbsp; 외부 브라우저로 열기</p>
+
+                <div id="step1-android">
+                    <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;">
+                        <div style="width:28px;height:28px;min-width:28px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#16a34a;">1</div>
+                        <div>
+                            <p style="font-size:14px;font-weight:700;color:var(--t-text);margin-bottom:2px;">화면 하단 <span style="color:#14b8a6;font-weight:900;">···</span> 버튼 탭</p>
+                            <p style="font-size:12px;color:#94a3b8;">카카오톡 하단 메뉴 버튼을 누르세요</p>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:12px;align-items:flex-start;">
+                        <div style="width:28px;height:28px;min-width:28px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#16a34a;">2</div>
+                        <div>
+                            <p style="font-size:14px;font-weight:700;color:var(--t-text);margin-bottom:2px;"><span style="color:#14b8a6;font-weight:900;">다른 브라우저로 열기</span> 선택</p>
+                            <p style="font-size:12px;color:#94a3b8;">Chrome을 선택하세요</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="step1-ios" style="display:none;">
+                    <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;">
+                        <div style="width:28px;height:28px;min-width:28px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#16a34a;">1</div>
+                        <div>
+                            <p style="font-size:14px;font-weight:700;color:var(--t-text);margin-bottom:2px;">하단 우측 공유 버튼 <span style="color:#14b8a6;font-weight:900;">□↑</span> 탭</p>
+                            <p style="font-size:12px;color:#94a3b8;">카카오톡 하단 바의 공유 아이콘</p>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:12px;align-items:flex-start;">
+                        <div style="width:28px;height:28px;min-width:28px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#16a34a;">2</div>
+                        <div>
+                            <p style="font-size:14px;font-weight:700;color:var(--t-text);margin-bottom:2px;"><span style="color:#14b8a6;font-weight:900;">Safari로 열기</span> 선택</p>
+                            <p style="font-size:12px;color:#94a3b8;">Safari 앱에서 페이지가 열립니다</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 2: PWA 설치 -->
+            <div style="background:var(--t-surface);border:1.5px solid var(--t-border);border-radius:20px;padding:20px;">
+                <p style="font-size:10px;font-weight:900;color:#8b5cf6;letter-spacing:0.15em;margin-bottom:4px;">STEP 2 &nbsp;·&nbsp; 앱으로 설치하기 <span style="font-weight:400;color:#94a3b8;font-size:9px;">(선택 · 추천)</span></p>
+                <p style="font-size:12px;color:#94a3b8;margin-bottom:14px;line-height:1.6;">홈 화면에 추가하면 앱처럼 바로 실행돼요</p>
+
+                <div id="step2-android">
+                    <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;">
+                        <div style="width:28px;height:28px;min-width:28px;background:#faf5ff;border:1.5px solid #c4b5fd;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#7c3aed;">1</div>
+                        <div>
+                            <p style="font-size:14px;font-weight:700;color:var(--t-text);margin-bottom:2px;">Chrome 주소창 우측 <span style="color:#8b5cf6;font-weight:900;">⋮</span> 탭</p>
+                            <p style="font-size:12px;color:#94a3b8;">Chrome 브라우저 메뉴를 여세요</p>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;">
+                        <div style="width:28px;height:28px;min-width:28px;background:#faf5ff;border:1.5px solid #c4b5fd;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#7c3aed;">2</div>
+                        <div>
+                            <p style="font-size:14px;font-weight:700;color:var(--t-text);margin-bottom:2px;"><span style="color:#8b5cf6;font-weight:900;">홈 화면에 추가</span> 선택</p>
+                            <p style="font-size:12px;color:#94a3b8;">"앱 설치" 배너가 보이면 그걸 눌러도 돼요</p>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:12px;align-items:flex-start;">
+                        <div style="width:28px;height:28px;min-width:28px;background:#faf5ff;border:1.5px solid #c4b5fd;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#7c3aed;">3</div>
+                        <div>
+                            <p style="font-size:14px;font-weight:700;color:var(--t-text);margin-bottom:2px;"><span style="color:#8b5cf6;font-weight:900;">추가</span> 버튼 탭</p>
+                            <p style="font-size:12px;color:#94a3b8;">홈 화면에 모이다 아이콘이 생겨요</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="step2-ios" style="display:none;">
+                    <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;">
+                        <div style="width:28px;height:28px;min-width:28px;background:#faf5ff;border:1.5px solid #c4b5fd;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#7c3aed;">1</div>
+                        <div>
+                            <p style="font-size:14px;font-weight:700;color:var(--t-text);margin-bottom:2px;">Safari 하단 <span style="color:#8b5cf6;font-weight:900;">□↑</span> 공유 버튼 탭</p>
+                            <p style="font-size:12px;color:#94a3b8;">Safari 하단 가운데 공유 아이콘</p>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;">
+                        <div style="width:28px;height:28px;min-width:28px;background:#faf5ff;border:1.5px solid #c4b5fd;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#7c3aed;">2</div>
+                        <div>
+                            <p style="font-size:14px;font-weight:700;color:var(--t-text);margin-bottom:2px;"><span style="color:#8b5cf6;font-weight:900;">홈 화면에 추가</span> 선택</p>
+                            <p style="font-size:12px;color:#94a3b8;">목록을 아래로 스크롤해서 찾으세요</p>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:12px;align-items:flex-start;">
+                        <div style="width:28px;height:28px;min-width:28px;background:#faf5ff;border:1.5px solid #c4b5fd;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#7c3aed;">3</div>
+                        <div>
+                            <p style="font-size:14px;font-weight:700;color:var(--t-text);margin-bottom:2px;">우측 상단 <span style="color:#8b5cf6;font-weight:900;">추가</span> 탭</p>
+                            <p style="font-size:12px;color:#94a3b8;">홈 화면에 모이다 아이콘이 생겨요</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 로그인 폼 -->
         <div id="login-view" style="display:none;" class="fade-in">
 
@@ -488,10 +603,28 @@
         }
 
         function showView(id) {
-            ['login-view', 'admin-view', 'loading-view'].forEach(v => {
-                document.getElementById(v).style.display = 'none';
+            ['login-view', 'admin-view', 'loading-view', 'kakaotalk-guide'].forEach(v => {
+                const el = document.getElementById(v);
+                if (el) el.style.display = 'none';
             });
-            document.getElementById(id).style.display = id === 'loading-view' ? 'flex' : 'block';
+            const target = document.getElementById(id);
+            if (target) target.style.display = id === 'loading-view' ? 'flex' : 'block';
+        }
+
+        function showGuideOS(os) {
+            const isAnd = os === 'android';
+            document.getElementById('step1-android').style.display = isAnd ? 'block' : 'none';
+            document.getElementById('step1-ios').style.display = isAnd ? 'none' : 'block';
+            document.getElementById('step2-android').style.display = isAnd ? 'block' : 'none';
+            document.getElementById('step2-ios').style.display = isAnd ? 'none' : 'block';
+            const tA = document.getElementById('tab-android');
+            const tI = document.getElementById('tab-ios');
+            tA.style.background = isAnd ? '#14b8a6' : 'transparent';
+            tA.style.color = isAnd ? 'white' : '#94a3b8';
+            tA.style.boxShadow = isAnd ? '0 2px 8px rgba(20,184,166,0.3)' : 'none';
+            tI.style.background = isAnd ? 'transparent' : '#14b8a6';
+            tI.style.color = isAnd ? '#94a3b8' : 'white';
+            tI.style.boxShadow = isAnd ? 'none' : '0 2px 8px rgba(20,184,166,0.3)';
         }
 
         let toastTimer = null;
@@ -551,17 +684,25 @@
             showView('login-view');
         }
 
-        const _urlParams = new URLSearchParams(location.search);
-        const _authCode = _urlParams.get('code');
-        const _authError = _urlParams.get('error');
-        if (_authError) {
-            window.history.replaceState({}, '', location.pathname);
-            sessionStorage.removeItem('kakao_intent');
-            initApp();
-        } else if (_authCode) {
-            handleKakaoCallback(_authCode);
+        const _isKakaoTalk = /KAKAOTALK/i.test(navigator.userAgent);
+        const _isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+        if (_isKakaoTalk) {
+            document.getElementById('kakaotalk-guide').style.display = 'block';
+            showGuideOS(_isIOS ? 'ios' : 'android');
         } else {
-            initApp();
+            const _urlParams = new URLSearchParams(location.search);
+            const _authCode = _urlParams.get('code');
+            const _authError = _urlParams.get('error');
+            if (_authError) {
+                window.history.replaceState({}, '', location.pathname);
+                sessionStorage.removeItem('kakao_intent');
+                initApp();
+            } else if (_authCode) {
+                handleKakaoCallback(_authCode);
+            } else {
+                initApp();
+            }
         }
     </script>
 </body>
