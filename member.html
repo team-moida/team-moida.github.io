@@ -633,13 +633,16 @@ function App() {
                     <div className="flex flex-col items-end gap-1.5">
                         <div className="flex gap-1.5">
                             <button onClick={()=>window.location.href='index.html'} className="p-2 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all text-slate-500"><Icon.Home size={15}/></button>
-                            {isAdminModeSwitch && (
+                            {isAdminModeSwitch ? (
                                 <button onClick={() => { localStorage.removeItem('moida_admin_mode'); window.location.href = 'attendance.html'; }}
-                                    className="text-[10px] font-black text-teal-700 px-2.5 py-1 rounded-lg bg-teal-100 hover:bg-teal-200 transition-all">
-                                    관리 화면
+                                    className="flex items-center gap-1.5 text-[10px] font-black text-white px-2.5 py-1.5 rounded-lg transition-all active:scale-95"
+                                    style={{background:'linear-gradient(135deg,#f97316,#ef4444)'}}>
+                                    <span className="w-2 h-2 rounded-full bg-white animate-ping flex-shrink-0" style={{animationDuration:'1.2s'}}/>
+                                    회원 모드
                                 </button>
+                            ) : (
+                                <button onClick={handleLogout} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all">로그아웃</button>
                             )}
-                            <button onClick={handleLogout} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all">로그아웃</button>
                             <button onClick={toggleTheme} className="p-2 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all text-slate-500" title="테마">{darkMode ? <Icon.Sun size={15}/> : <Icon.Moon size={15}/>}</button>
                         </div>
                         <img src="icon.png" alt="OTP FC" className="w-10 h-10 object-contain opacity-70" onError={e=>e.target.style.display='none'}/>
