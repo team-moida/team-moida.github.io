@@ -233,9 +233,7 @@ function App() {
         try {
             const s = JSON.parse(localStorage.getItem('moida_member_data'));
             if (!s) { location.href = 'index.html'; return null; }
-            if (localStorage.getItem('moida_admin_mode') === 'true' || s.kakaoId) return s;
-            location.href = 'index.html';
-            return null;
+            return s;
         } catch(e) { location.href = 'index.html'; return null; }
     });
     const [memberInfo, setMemberInfo] = useState(null); // Firestore members doc
