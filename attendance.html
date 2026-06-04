@@ -527,6 +527,7 @@ function App() {
     const [notifTitle, setNotifTitle] = useState('');
     const [notifBody, setNotifBody] = useState('');
     const [notifSending, setNotifSending] = useState(false);
+    const [notifHistory, setNotifHistory] = useState([]);
 
     const sendPushNotification = async () => {
         if (!notifTitle.trim() || !notifBody.trim()) return showAlert('입력 오류', '제목과 내용을 모두 입력해주세요.');
@@ -548,6 +549,18 @@ function App() {
             setNotifSending(false);
         }
     };
+
+    useEffect(() => {
+        const unsub = getCol('notifications')
+            .orderBy('sentAt', 'desc')
+            .limit(20)
+            .onSnapshot(snap => {
+                const list = [];
+                snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+                setNotifHistory(list);
+            }, () => {});
+        return () => unsub();
+    }, []);
 
 
 
@@ -1867,8 +1880,8 @@ function App() {
             {/* 푸시 알림 발송 모달 */}
             {isNotifModalOpen && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={()=>setIsNotifModalOpen(false)}>
-                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={e=>e.stopPropagation()}>
-                        <h2 className="text-xl font-black text-slate-800 mb-1">푸시 알림 발송</h2>
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col" style={{maxHeight:'85vh'}} onClick={e=>e.stopPropagation()}>
+                        <h2 className="text-xl font-black text-slate-800 mb-1">공지 발송</h2>
                         <p className="text-xs text-slate-400 mb-5">알림을 허용한 모든 회원에게 전송됩니다</p>
                         <div className="space-y-3 mb-5">
                             <div>
@@ -1896,13 +1909,32 @@ function App() {
                                 />
                             </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 mb-5">
                             <button onClick={()=>setIsNotifModalOpen(false)} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
                             <button onClick={sendPushNotification} disabled={notifSending || !notifTitle.trim() || !notifBody.trim()}
                                 className="flex-1 py-3 bg-teal-500 text-white rounded-2xl font-black text-sm disabled:opacity-50">
                                 {notifSending ? '발송 중...' : '발송'}
                             </button>
                         </div>
+                        {notifHistory.length > 0 && (
+                            <div className="border-t border-slate-100 pt-4 overflow-y-auto flex-1">
+                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">발송 기록</p>
+                                <div className="space-y-3">
+                                    {notifHistory.map(n => (
+                                        <div key={n.id} className="pb-3 border-b border-slate-50 last:pb-0 last:border-0">
+                                            <div className="flex items-center justify-between gap-2 mb-0.5">
+                                                <span className="font-black text-sm text-slate-700 flex-1 truncate">{n.title}</span>
+                                                <span className="text-[10px] text-slate-400 flex-shrink-0">
+                                                    {n.sentAt ? new Date(n.sentAt).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}) : ''}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 leading-relaxed">{n.body}</p>
+                                            {n.sentBy && <p className="text-[10px] text-slate-400 mt-1">{n.sentBy}</p>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
