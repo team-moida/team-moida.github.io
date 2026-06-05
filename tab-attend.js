@@ -1,3 +1,11 @@
+// ─── 키오스크 실시간 시계 ───────────────────────────────────────────────────────────
+const KioskClock = () => {
+    const fmt = () => { const n = new Date(); return `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}`; };
+    const [time, setTime] = React.useState(fmt);
+    React.useEffect(() => { const t = setInterval(() => setTime(fmt()), 1000); return () => clearInterval(t); }, []);
+    return <span style={{fontVariantNumeric:'tabular-nums'}}>{time}</span>;
+};
+
 // ─── 출석 탭 ────────────────────────────────────────────────────────────────────
 const TabAttend = ({
     isAdminMode,
@@ -608,6 +616,7 @@ const TabAttend = ({
                     <div>
                         <p style={{color:'#1e293b',fontWeight:900,fontSize:'1rem'}}>직접 출석</p>
                         <p style={{color:'#64748b',fontSize:'0.75rem',marginTop:'2px'}}>{meetingSettings?.date} · <span style={{color:'#0d9488',fontWeight:900}}>{attendCheckedInCount}명 출석</span> / {attendActiveList.length}명</p>
+                        <p style={{color:'#94a3b8',fontSize:'0.75rem',marginTop:'1px'}}><KioskClock /></p>
                     </div>
                     <button onClick={() => setIsKioskOpen(false)}
                         style={{width:'40px',height:'40px',borderRadius:'12px',background:'#f1f5f9',color:'#64748b',display:'flex',alignItems:'center',justifyContent:'center',border:'none',cursor:'pointer',fontSize:'20px',fontWeight:900}}>
