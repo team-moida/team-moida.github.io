@@ -19,6 +19,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -75,6 +76,19 @@
         html.dark .bg-pink-100{background:#3d0a1e!important} html.dark .text-pink-600{color:#f472b6!important}
         html.dark .bg-orange-50{background:#1a0800!important} html.dark .text-orange-400,html.dark .text-orange-500{color:#fb923c!important}
         html.dark .border-b{border-bottom-color:var(--t-border)!important}
+        /* ── 팀편성 드래그 ── */
+        .tm-dragging{opacity:0.3;border:2px dashed #3b82f6!important;background:#eff6ff!important;transform:scale(0.96)}
+        .tm-drop-target{border-color:#14b8a6!important;background:#f0fdfa!important;transform:scale(1.01)}
+        .tm-drop-indicator{border:2px dashed #14b8a6;background:rgba(240,253,250,.5);transition:all .1s}
+        html.dark .tm-drop-target{background:#042f2e!important}
+        html.dark .tm-drop-indicator{background:rgba(20,184,166,.1)!important;border-color:#2dd4bf!important}
+        html.dark .bg-blue-50{background:#0c1634!important}
+        html.dark .border-blue-100{border-color:#1e3a5f!important}
+        html.dark .bg-sky-50{background:#082f49!important} html.dark .border-sky-200{border-color:#0c4a6e!important}
+        html.dark .bg-lime-50{background:#1a2e05!important} html.dark .border-lime-200{border-color:#3f6212!important}
+        html.dark .bg-yellow-50{background:#1c1002!important} html.dark .border-yellow-200{border-color:#713f12!important}
+        html.dark .bg-red-50{background:#2d0a11!important} html.dark .border-red-200{border-color:#4c0519!important}
+        html.dark .bg-pink-50{background:#2d0a1e!important} html.dark .border-pink-200{border-color:#500724!important}
     </style>
 </head>
 <body class="min-h-screen">
@@ -116,6 +130,10 @@ const ADMIN_ROLES = ['회장', '매니저', '총무', '부총무'];
 const getTeamBadge = (idx) => ['bg-pink-500','bg-sky-400','bg-lime-400','bg-yellow-400','bg-blue-600','bg-red-500'][idx] || 'bg-slate-500';
 const getTeamName = (idx) => String.fromCharCode(65+idx);
 const getTeamColorName = (idx) => ['핑크','하늘','연두','노랑','파랑','빨강'][idx] || '';
+const getTeamCard = (idx) => ['bg-pink-50 border-pink-200','bg-sky-50 border-sky-200','bg-lime-50 border-lime-200','bg-yellow-50 border-yellow-200','bg-blue-50 border-blue-200','bg-red-50 border-red-200'][idx] || 'bg-slate-50 border-slate-200';
+
+const getLevelPoints = (level) => { const l=parseInt(level); const n=l>6?l-6:l; return [0,15,11,8,5,3,1][n]||1; };
+const shuffleArray = (arr) => { const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
 
 // ─── 명단/회비 관련 헬퍼 ─────────────────────────────────────────────────────
 const getMonthlyCol = () => getCol('monthly_checks');
@@ -370,6 +388,27 @@ function App() {
     const [alertModal, setAlertModal] = useState({show:false,title:'',content:'',type:'info',onConfirm:null});
     // ─────────────────────────────────────────────────────────────────────────────
 
+    // ── 팀 편성 관리자 패널 ──────────────────────────────────────────────────────
+    const [isTeamPanelOpen, setIsTeamPanelOpen] = useState(false);
+    const [teamMakerTab, setTeamMakerTab] = useState('generator');
+    const [tmSessionData, setTmSessionData] = useState([]);
+    const [tmMonthlyStatuses, setTmMonthlyStatuses] = useState({});
+    const [excludedIds, setExcludedIds] = useState([]);
+    const [teamingSettings, setTeamingSettings] = useState({teamCount:3,keepCouples:true,avoidOverlap:true});
+    const [editTeams, setEditTeams] = useState([]);
+    const [editIsConfirmed, setEditIsConfirmed] = useState(false);
+    const [editMeetingDate, setEditMeetingDate] = useState('');
+    const [draggedItem, setDraggedItem] = useState(null);
+    const [selectedMemberTM, setSelectedMemberTM] = useState(null);
+    const [selectedTeamTM, setSelectedTeamTM] = useState(null);
+    const [dropIndicator, setDropIndicator] = useState(null);
+    const [savedDrafts, setSavedDrafts] = useState([]);
+    const [teamStorageSubTab, setTeamStorageSubTab] = useState('confirmed');
+    const [previewDraft, setPreviewDraft] = useState(null);
+    const [isCapturing, setIsCapturing] = useState(false);
+    const isDraggingRef = useRef(false);
+    // ─────────────────────────────────────────────────────────────────────────────
+
     // GPS 상태
     const [gpsStatus, setGpsStatus] = useState('idle'); // idle | checking | within | outside | no_location | error
     const [distance, setDistance] = useState(null);
@@ -588,6 +627,42 @@ function App() {
         return () => unsub();
     }, [isAdminMode]);
 
+    // tmSessionData: 관리자 모드 시 weekly_session 구독
+    useEffect(() => {
+        if (!isAdminMode) return;
+        const unsub = getCol('weekly_session').onSnapshot(snap => {
+            setTmSessionData(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        });
+        return () => unsub();
+    }, [isAdminMode]);
+
+    // tmMonthlyStatuses: 모임 날짜 기준 월 구독
+    useEffect(() => {
+        if (!isAdminMode || !meetingSettings?.date) return;
+        const [y, m] = meetingSettings.date.split('-');
+        const docKey = `${y}-${m}`;
+        const unsub = getCol('monthly_checks').doc(docKey).onSnapshot(doc => {
+            setTmMonthlyStatuses(doc.exists ? (doc.data().statuses || {}) : {});
+        });
+        return () => unsub();
+    }, [isAdminMode, meetingSettings?.date]);
+
+    // savedDrafts: 임시저장 목록 (isConfirmed=false)
+    useEffect(() => {
+        if (!isAdminMode) return;
+        const unsub = getCol('team_drafts').where('isConfirmed', '==', false).onSnapshot(snap => {
+            const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            setSavedDrafts(list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')));
+        }, () => {});
+        return () => unsub();
+    }, [isAdminMode]);
+
+    // teamingSettings: maxLimit 변경 시 팀 수 자동 조정
+    useEffect(() => {
+        const lim = parseInt(meetingSettings?.maxLimit || 18);
+        setTeamingSettings(prev => ({ ...prev, teamCount: Math.max(2, Math.round(lim / 6)) }));
+    }, [meetingSettings?.maxLimit]);
+
     // monthly_checks: 관리자 모드 + targetMonth 변경 시
     useEffect(() => {
         if (!isAdminMode || !targetMonth) return;
@@ -800,6 +875,61 @@ function App() {
     }, [activeMembers, monthlyStatuses, monthlyReasons, targetMonth]);
     // ─────────────────────────────────────────────────────────────────────────────
 
+    // ── 팀 편성 computed ──────────────────────────────────────────────────────────
+    const tmMeetingDate = meetingSettings?.date || '';
+    const tmMaxLimit = parseInt(meetingSettings?.maxLimit || 18);
+    const pastTeammatesMap = useMemo(() => {
+        const map = {};
+        const sorted = [...confirmedDrafts].sort((a, b) => (b.meetingDate||'').localeCompare(a.meetingDate||''));
+        if (sorted[0]?.teams) {
+            sorted[0].teams.forEach(team => {
+                const ids = team.members.map(m => m.memberId || m.id);
+                ids.forEach(id1 => {
+                    if (!map[id1]) map[id1] = new Set();
+                    ids.forEach(id2 => { if (id1 !== id2) map[id1].add(id2); });
+                });
+            });
+        }
+        return map;
+    }, [confirmedDrafts]);
+
+    const tmAllAttendees = useMemo(() => {
+        if (!tmMeetingDate) return [];
+        const [y, m] = tmMeetingDate.split('-');
+        const targetMonthStr = `${y}-${m}`;
+        return tmSessionData.filter(s => {
+            if (!s.date || s.date.trim() !== tmMeetingDate.trim() || s.status === '노쇼') return false;
+            if (s.isGuest) return true;
+            const mi = allMembers.find(mm => mm.id === s.memberId);
+            if (!mi) return true;
+            if (mi.isResigned) return false;
+            if (mi.isSpecialRest && targetMonthStr >= (mi.specialRestStartMonth || '0000-00')) return false;
+            if (tmMonthlyStatuses[s.memberId] === 'rest') return false;
+            return true;
+        }).sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || '') || a.name.localeCompare(b.name));
+    }, [tmSessionData, tmMeetingDate, allMembers, tmMonthlyStatuses]);
+
+    const tmEntryList = useMemo(() => tmAllAttendees.slice(0, tmMaxLimit), [tmAllAttendees, tmMaxLimit]);
+    const tmActiveList = useMemo(() => tmEntryList.filter(p => !excludedIds.includes(p.memberId || p.id)), [tmEntryList, excludedIds]);
+
+    const tmUnassigned = useMemo(() => {
+        if (editTeams.length === 0) return [];
+        const assignedIds = new Set();
+        editTeams.forEach(t => t.members.forEach(m => assignedIds.add(m.memberId || m.id)));
+        return tmAllAttendees.filter(a => !assignedIds.has(a.memberId || a.id) && !excludedIds.includes(a.memberId || a.id)).map(p => {
+            const mi = allMembers.find(mm => mm.id === p.memberId) || {};
+            const lvl = parseInt(mi.level || p.level || 4);
+            return { ...p, name: mi.name || p.name, level: lvl, points: getLevelPoints(lvl) };
+        });
+    }, [tmAllAttendees, editTeams, allMembers, excludedIds]);
+
+    const tmLevelStats = useMemo(() => {
+        const s = {1:0,2:0,3:0,4:0,5:0,6:0};
+        tmActiveList.forEach(p => { const mi = allMembers.find(mm => mm.id === p.memberId) || {}; const l = parseInt(mi.level || p.level || 0); if (l > 0) { const n = l > 6 ? l - 6 : l; if (s[n] !== undefined) s[n]++; } });
+        return s;
+    }, [tmActiveList, allMembers]);
+    // ─────────────────────────────────────────────────────────────────────────────
+
     // ── 명단/회비 핸들러 ──────────────────────────────────────────────────────────
     const showAlert = (title, content, type='info', onConfirm=null) => setAlertModal({show:true, title, content, type, onConfirm});
     const showConfirm = (title, content, onConfirm) => setAlertModal({show:true, title, content, type:'confirm', onConfirm});
@@ -904,6 +1034,285 @@ function App() {
             setBillingMember(null);
             showAlert('성공','상태가 반영되었습니다.');
         } catch(e) { console.error(e); showAlert('오류','처리 실패'); }
+    };
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    // ── 팀 편성 핸들러 ───────────────────────────────────────────────────────────
+    const tmSaveDraft = async () => {
+        try {
+            const now = new Date();
+            await getCol('team_drafts').add({
+                meetingDate: editMeetingDate || tmMeetingDate,
+                meetingTimeRange: `${meetingSettings?.start||''} ~ ${meetingSettings?.end||''}`,
+                createdAt: now.toISOString(),
+                timeLabel: now.toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit',second:'2-digit'}),
+                teams: editTeams, isConfirmed: false
+            });
+            showAlert('저장완료', '임시 저장되었습니다.');
+        } catch(e) { showAlert('오류', '임시 저장 실패'); }
+    };
+
+    const tmLoadDraft = (draft) => {
+        setEditTeams(draft.teams || []);
+        setEditIsConfirmed(draft.isConfirmed || false);
+        setEditMeetingDate(draft.meetingDate || '');
+        setPreviewDraft(null);
+        setTeamMakerTab('results');
+    };
+
+    const tmConfirm = async () => {
+        setEditIsConfirmed(true);
+        try {
+            const now = new Date();
+            const draftsRef = getCol('team_drafts');
+            const snap = await draftsRef.where('meetingDate', '==', tmMeetingDate).where('isConfirmed', '==', true).get();
+            if (!snap.empty) {
+                await draftsRef.doc(snap.docs[0].id).update({ teams: editTeams, updatedAt: now.toISOString() });
+                showAlert('업데이트', '기존 확정 기록을 업데이트했습니다.');
+            } else {
+                await draftsRef.add({
+                    meetingDate: tmMeetingDate,
+                    meetingTimeRange: `${meetingSettings?.start||''} ~ ${meetingSettings?.end||''}`,
+                    createdAt: now.toISOString(),
+                    timeLabel: now.toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit',second:'2-digit'}),
+                    teams: editTeams, isConfirmed: true
+                });
+                showAlert('확정 완료', '편성이 확정되어 출결 시스템에 반영됩니다.');
+            }
+        } catch(e) { showAlert('오류', '서버 저장 실패'); }
+    };
+
+    const tmReset = () => {
+        showConfirm('편성 초기화', '현재 편성을 초기화하시겠습니까?', () => {
+            setEditTeams([]); setEditIsConfirmed(false); setEditMeetingDate('');
+            setTeamMakerTab('generator');
+        });
+    };
+
+    const generateTeams = () => {
+        const { teamCount, keepCouples, avoidOverlap } = teamingSettings;
+        const total = tmActiveList.length;
+        if (total < teamCount) { showAlert('알림', `선정 인원(${total}명)이 팀 수(${teamCount})보다 적습니다.`); return; }
+        setEditIsConfirmed(false);
+
+        const pool = tmActiveList.map(p => {
+            const mi = allMembers.find(mm => mm.id === p.memberId) || {};
+            const lvl = parseInt(mi.level || p.level || 4);
+            return { ...p, name: mi.name || p.name, level: lvl, tierOrder: mi.tierOrder ?? 99, points: getLevelPoints(lvl), coupleId: mi.coupleId || '', gender: mi.gender || p.gender || '남성', isGuest: p.isGuest || false };
+        });
+
+        const baseCapacity = Math.floor(total / teamCount);
+        const remainder = total % teamCount;
+        const resultTeams = Array.from({length: teamCount}, (_, i) => ({
+            id: i, members: [], scoreSum: 0, capacity: baseCapacity + (i < remainder ? 1 : 0), femaleCount: 0
+        }));
+
+        const getPastOverlap = (teamMembers, newMembers) => {
+            let count = 0;
+            newMembers.forEach(nm => {
+                const ps = pastTeammatesMap[nm.memberId || nm.id];
+                if (ps) teamMembers.forEach(tm => { if (ps.has(tm.memberId || tm.id)) count++; });
+            });
+            return count;
+        };
+
+        const usedIds = new Set();
+        const coupleUnits = [];
+        if (keepCouples) {
+            const processed = new Set();
+            pool.forEach(p => {
+                const pid = p.memberId || p.id;
+                if (processed.has(pid) || !p.coupleId) return;
+                const partner = pool.find(o => { const oid = o.memberId || o.id; return oid === p.coupleId && !processed.has(oid); });
+                if (partner) {
+                    coupleUnits.push({ members: [p, partner], totalPoints: p.points + partner.points, femaleCount: [p, partner].filter(m => m.gender === '여성').length });
+                    processed.add(pid); processed.add(partner.memberId || partner.id);
+                    usedIds.add(pid); usedIds.add(partner.memberId || partner.id);
+                }
+            });
+        }
+        const singles = pool.filter(p => !usedIds.has(p.memberId || p.id));
+        const singleFemales = shuffleArray(singles.filter(m => m.gender === '여성')).sort((a, b) => a.level - b.level);
+        const singleMales = shuffleArray(singles.filter(m => m.gender !== '여성')).sort((a, b) => a.level - b.level || (a.tierOrder || 99) - (b.tierOrder || 99));
+
+        coupleUnits.sort((a, b) => b.femaleCount - a.femaleCount || b.totalPoints - a.totalPoints);
+        coupleUnits.forEach(unit => {
+            const required = unit.members.length;
+            let cands = resultTeams.filter(t => t.members.length + required <= t.capacity);
+            if (!cands.length) cands = [...resultTeams];
+            cands.sort((a, b) => {
+                if (unit.femaleCount > 0 && a.femaleCount !== b.femaleCount) return a.femaleCount - b.femaleCount;
+                if (avoidOverlap) { const oA = getPastOverlap(a.members, unit.members), oB = getPastOverlap(b.members, unit.members); if (oA !== oB && Math.abs(a.scoreSum - b.scoreSum) <= 2.5) return oA - oB; }
+                return a.scoreSum - b.scoreSum || Math.random() - 0.5;
+            });
+            const t = cands[0];
+            t.members.push(...unit.members); t.scoreSum += unit.totalPoints; t.femaleCount += unit.femaleCount;
+        });
+
+        singleFemales.forEach(female => {
+            let cands = resultTeams.filter(t => t.members.length < t.capacity);
+            if (!cands.length) cands = [...resultTeams];
+            cands.sort((a, b) => {
+                if (a.femaleCount !== b.femaleCount) return a.femaleCount - b.femaleCount;
+                if (avoidOverlap) { const oA = getPastOverlap(a.members, [female]), oB = getPastOverlap(b.members, [female]); if (oA !== oB) return oA - oB; }
+                return a.scoreSum - b.scoreSum;
+            });
+            const t = cands[0]; t.members.push(female); t.scoreSum += female.points; t.femaleCount += 1;
+        });
+
+        const maleQueue = [...singleMales]; let draftFwd = true;
+        const baseOrder = Array.from({length: teamCount}, (_, i) => i);
+        while (maleQueue.length > 0) {
+            const order = draftFwd ? [...baseOrder] : [...baseOrder].reverse();
+            let anyAssigned = false;
+            for (const tid of order) {
+                if (!maleQueue.length) break;
+                const t = resultTeams[tid];
+                if (t.members.length >= t.capacity) continue;
+                let chosenIdx = 0;
+                if (avoidOverlap && maleQueue.length > 1) {
+                    const look = Math.min(maleQueue.length, teamCount);
+                    let minOvlp = getPastOverlap(t.members, [maleQueue[0]]);
+                    for (let k = 1; k < look; k++) {
+                        if (maleQueue[k].level - maleQueue[0].level > 1) break;
+                        const ovlp = getPastOverlap(t.members, [maleQueue[k]]);
+                        if (ovlp < minOvlp) { minOvlp = ovlp; chosenIdx = k; }
+                    }
+                }
+                const male = maleQueue.splice(chosenIdx, 1)[0];
+                t.members.push(male); t.scoreSum += male.points; anyAssigned = true;
+            }
+            if (!anyAssigned) break;
+            draftFwd = !draftFwd;
+        }
+        maleQueue.forEach(m => {
+            const t = resultTeams.reduce((min, cur) => cur.members.length < min.members.length ? cur : min, resultTeams[0]);
+            t.members.push(m); t.scoreSum += m.points;
+        });
+
+        let improved = true, iters = 0;
+        while (improved && iters < 150) {
+            improved = false; iters++;
+            resultTeams.sort((a, b) => b.scoreSum - a.scoreSum);
+            const strong = resultTeams[0], weak = resultTeams[resultTeams.length - 1];
+            let bestSwap = null, bestDiff = strong.scoreSum - weak.scoreSum;
+            for (let i = 0; i < strong.members.length; i++) {
+                const m1 = strong.members[i];
+                if (m1.gender === '여성' || (keepCouples && m1.coupleId)) continue;
+                for (let j = 0; j < weak.members.length; j++) {
+                    const m2 = weak.members[j];
+                    if (m2.gender === '여성' || (keepCouples && m2.coupleId)) continue;
+                    const newDiff = Math.abs((strong.scoreSum - m1.points + m2.points) - (weak.scoreSum - m2.points + m1.points));
+                    if (newDiff < bestDiff) { bestDiff = newDiff; bestSwap = {si: i, wi: j}; }
+                }
+            }
+            if (bestSwap) {
+                const m1 = strong.members[bestSwap.si], m2 = weak.members[bestSwap.wi];
+                strong.members[bestSwap.si] = m2; weak.members[bestSwap.wi] = m1;
+                strong.scoreSum = strong.scoreSum - m1.points + m2.points;
+                weak.scoreSum = weak.scoreSum - m2.points + m1.points;
+                improved = true;
+            }
+        }
+
+        const arrangeMembers = (teamMembers, capacity) => {
+            const females = [...teamMembers.filter(m => m.gender === '여성')];
+            const males = teamMembers.filter(m => m.gender !== '여성').sort((a, b) => a.level - b.level || (a.tierOrder || 99) - (b.tierOrder || 99));
+            const result = new Array(capacity).fill(null);
+            const malePool = [...males]; const femalePool = [...females];
+            if (capacity > 2) {
+                if (femalePool.length > 0) result[2] = femalePool.shift();
+                else if (malePool.length > 0) result[2] = malePool.pop();
+            }
+            const slot2 = capacity >= 6 ? 5 : capacity === 5 ? 4 : -1;
+            if (slot2 >= 0 && femalePool.length > 0) result[slot2] = femalePool.shift();
+            const fill = [...malePool, ...femalePool];
+            for (let i = 0; i < capacity; i++) { if (result[i] === null && fill.length) result[i] = fill.shift(); }
+            return result.filter(Boolean);
+        };
+
+        resultTeams.sort((a, b) => a.id - b.id);
+        const finalTeams = resultTeams.map(t => ({ members: arrangeMembers(t.members, t.capacity), scoreSum: t.scoreSum }));
+        setEditMeetingDate(tmMeetingDate);
+        setEditTeams(finalTeams);
+        setTeamMakerTab('results');
+    };
+
+    const tmReGenerate = () => {
+        if (editIsConfirmed) {
+            showConfirm('재편성 확인', '이미 확정된 편성입니다.\n재편성하면 확정이 취소됩니다. 계속할까요?', generateTeams);
+        } else { generateTeams(); }
+    };
+
+    // 드래그 앤 드롭
+    const tmDragStart = (e, teamIdx, memberIdx) => { isDraggingRef.current = true; setSelectedMemberTM(null); setDraggedItem({teamIdx, memberIdx}); e.dataTransfer.effectAllowed = 'move'; };
+    const tmDragEnd = () => { setTimeout(() => { isDraggingRef.current = false; }, 50); setDraggedItem(null); setDropIndicator(null); };
+    const tmMemberDragOver = (e, teamIdx, memberIdx) => { e.preventDefault(); e.stopPropagation(); if (!draggedItem) return; const rect = e.currentTarget.getBoundingClientRect(); const insertIdx = e.clientY < (rect.top + rect.height / 2) ? memberIdx : memberIdx + 1; setDropIndicator({teamIdx, insertIdx}); };
+    const tmTeamDragOver = (e, teamIdx) => { e.preventDefault(); if (!draggedItem) return; setDropIndicator({teamIdx, insertIdx: editTeams[teamIdx]?.members.length ?? 0}); };
+    const tmTeamDragLeave = (e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDropIndicator(null); };
+    const tmDrop = (e, teamIdx) => {
+        e.preventDefault();
+        if (!draggedItem) return;
+        const insertIdx = dropIndicator?.teamIdx === teamIdx ? dropIndicator.insertIdx : (editTeams[teamIdx]?.members.length ?? 0);
+        const newTeams = editTeams.map(t => ({...t, members: [...t.members]}));
+        const moved = newTeams[draggedItem.teamIdx].members.splice(draggedItem.memberIdx, 1)[0];
+        let finalIdx = insertIdx;
+        if (draggedItem.teamIdx === teamIdx && draggedItem.memberIdx < insertIdx) finalIdx = insertIdx - 1;
+        newTeams[teamIdx].members.splice(Math.max(0, finalIdx), 0, moved);
+        newTeams[draggedItem.teamIdx].scoreSum = newTeams[draggedItem.teamIdx].members.reduce((s, m) => s + (m.points||0), 0);
+        if (draggedItem.teamIdx !== teamIdx) newTeams[teamIdx].scoreSum = newTeams[teamIdx].members.reduce((s, m) => s + (m.points||0), 0);
+        setEditTeams(newTeams); setDraggedItem(null); setDropIndicator(null);
+    };
+
+    // 탭 선택 조정 (모바일)
+    const tmMemberClick = (teamIdx, memberIdx) => {
+        if (isDraggingRef.current) return;
+        setSelectedTeamTM(null);
+        if (!selectedMemberTM) { setSelectedMemberTM({teamIdx, memberIdx}); return; }
+        if (selectedMemberTM.teamIdx === teamIdx && selectedMemberTM.memberIdx === memberIdx) { setSelectedMemberTM(null); return; }
+        const newTeams = editTeams.map(t => ({...t, members: [...t.members]}));
+        const a = newTeams[selectedMemberTM.teamIdx].members[selectedMemberTM.memberIdx];
+        newTeams[selectedMemberTM.teamIdx].members[selectedMemberTM.memberIdx] = newTeams[teamIdx].members[memberIdx];
+        newTeams[teamIdx].members[memberIdx] = a;
+        newTeams[selectedMemberTM.teamIdx].scoreSum = newTeams[selectedMemberTM.teamIdx].members.reduce((s, m) => s + (m.points||0), 0);
+        if (teamIdx !== selectedMemberTM.teamIdx) newTeams[teamIdx].scoreSum = newTeams[teamIdx].members.reduce((s, m) => s + (m.points||0), 0);
+        setEditTeams(newTeams); setSelectedMemberTM(null);
+    };
+    const tmMoveToTeam = (targetTeamIdx) => {
+        if (!selectedMemberTM) return;
+        if (selectedMemberTM.teamIdx === targetTeamIdx) { setSelectedMemberTM(null); return; }
+        const newTeams = editTeams.map(t => ({...t, members: [...t.members]}));
+        const [moved] = newTeams[selectedMemberTM.teamIdx].members.splice(selectedMemberTM.memberIdx, 1);
+        newTeams[targetTeamIdx].members.push(moved);
+        newTeams[selectedMemberTM.teamIdx].scoreSum = newTeams[selectedMemberTM.teamIdx].members.reduce((s, m) => s + (m.points||0), 0);
+        newTeams[targetTeamIdx].scoreSum = newTeams[targetTeamIdx].members.reduce((s, m) => s + (m.points||0), 0);
+        setEditTeams(newTeams); setSelectedMemberTM(null);
+    };
+    const tmTeamBadgeClick = (e, teamIdx) => {
+        e.stopPropagation(); setSelectedMemberTM(null);
+        if (selectedTeamTM === null) { setSelectedTeamTM(teamIdx); return; }
+        if (selectedTeamTM === teamIdx) { setSelectedTeamTM(null); return; }
+        const newTeams = editTeams.map(t => ({...t, members: [...t.members]}));
+        const tmp = { members: newTeams[selectedTeamTM].members, scoreSum: newTeams[selectedTeamTM].scoreSum };
+        newTeams[selectedTeamTM].members = newTeams[teamIdx].members;
+        newTeams[selectedTeamTM].scoreSum = newTeams[teamIdx].scoreSum;
+        newTeams[teamIdx].members = tmp.members; newTeams[teamIdx].scoreSum = tmp.scoreSum;
+        setEditTeams(newTeams); setSelectedTeamTM(null);
+    };
+
+    const tmCapture = async () => {
+        setIsCapturing(true);
+        await new Promise(r => setTimeout(r, 200));
+        try {
+            const el = document.getElementById('tm-capture-area');
+            if (!el) return;
+            const canvas = await window.html2canvas(el, { scale: 2, backgroundColor: '#f8fafc', useCORS: true });
+            const link = document.createElement('a');
+            link.download = `모이다_팀편성_${tmMeetingDate}.jpg`;
+            link.href = canvas.toDataURL('image/jpeg', 0.92);
+            link.click();
+        } catch(e) { showAlert('오류', '캡쳐 실패'); }
+        finally { setIsCapturing(false); }
     };
     // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1135,42 +1544,304 @@ function App() {
                 {/* ===== 팀 탭 ===== */}
                 {tab === 'team' && (
                     <div className="animate-in">
-                        {!teamDraftData
-                            ? <div className="text-center py-20 text-slate-500">
-                                <div className="flex justify-center mb-4 opacity-25"><Icon.Users size={56}/></div>
-                                <p className="font-black text-lg mb-2">아직 팀이 편성되지 않았습니다</p>
-                                <p className="text-sm text-slate-400">운영진이 팀 편성을 완료하면<br/>여기에 표시됩니다</p>
-                              </div>
-                            : !teamReady
-                            ? <div className="text-center py-20 text-slate-500">
-                                <div className="flex justify-center mb-4 opacity-25"><Icon.Users size={56}/></div>
-                                <p className="font-black text-lg mb-2">팀 편성 비공개 중</p>
-                                <p className="text-sm text-slate-400">{allowFromDisplay}부터 공개됩니다</p>
-                              </div>
-                            : (
-                                <div>
-                                    <div className="text-center mb-4">
-                                        <p className="text-xs text-slate-500 uppercase tracking-widest font-black">{teamDraftData.meetingDate} 팀 편성</p>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {teamDraftData.teams.map((team, teamIdx)=>(
-                                            <div key={teamIdx} className={`rounded-2xl p-4 border ${teamIdx===myTeamIdx?'border-teal-500 bg-teal-50':'card border-slate-100'}`}>
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <span className={`w-8 h-8 rounded-xl font-black text-sm flex items-center justify-center text-white ${getTeamBadge(teamIdx)}`}>{getTeamName(teamIdx)}</span>
-                                                    {teamIdx===myTeamIdx&&<span className="text-[9px] font-black text-teal-500 uppercase">내 팀</span>}
+                        {/* 관리자 패널 토글 버튼 */}
+                        {isAdminMode && (
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-xs font-black text-slate-500 uppercase tracking-widest">팀 편성</p>
+                                <button onClick={() => setIsTeamPanelOpen(v => !v)}
+                                    className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 rounded-xl transition-all active:scale-95"
+                                    style={isTeamPanelOpen ? {background:'linear-gradient(135deg,#14b8a6,#0d9488)',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
+                                    ⚙️ {isTeamPanelOpen ? '편성 모드 ON' : '편성 관리'}
+                                </button>
+                            </div>
+                        )}
+
+                        {/* ── 관리자 편성 패널 ── */}
+                        {isAdminMode && isTeamPanelOpen ? (
+                            <div>
+                                {/* 서브탭 */}
+                                <div className="flex gap-2 mb-4">
+                                    {[['generator','편성'],['results','결과'],['storage','기록']].map(([v,l]) => (
+                                        <button key={v} onClick={() => setTeamMakerTab(v)}
+                                            className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${teamMakerTab===v?'bg-teal-500 text-white shadow':'text-slate-400 bg-slate-100'}`}>{l}</button>
+                                    ))}
+                                    <div className="flex-1"/>
+                                    {editTeams.length > 0 && !isCapturing && (
+                                        <button onClick={tmCapture} className="p-2 rounded-xl bg-slate-100 text-slate-400"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
+                                    )}
+                                </div>
+
+                                {/* 편성 탭 */}
+                                {teamMakerTab === 'generator' && (
+                                    <div className="space-y-3">
+                                        <div className="card border-slate-100 rounded-2xl p-4">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div>
+                                                    <p className="text-[10px] font-black text-teal-500 uppercase tracking-widest">모임 날짜</p>
+                                                    <p className="font-black text-slate-800">{tmMeetingDate || '날짜 미설정'}</p>
                                                 </div>
-                                                {team.members.map((m,mi)=>(
-                                                    <div key={mi} className={`text-xs py-1 font-black flex items-center gap-1 ${m.memberId===memberData?.memberId?'text-teal-500':'text-slate-400'}`}>
-                                                        <span className="opacity-50 w-4 text-right flex-shrink-0">{mi+1}.</span>
-                                                        <span>{m.name}{m.gender==='여성'&&' W'}</span>
-                                                    </div>
+                                                <div className="text-right">
+                                                    <p className="text-2xl font-black text-slate-800">{tmActiveList.length}명</p>
+                                                    <p className="text-[10px] text-slate-400">편성 대상</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-1 flex-wrap">
+                                                {Object.entries(tmLevelStats).map(([lvl, count]) => count > 0 && (
+                                                    <span key={lvl} className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${getLevelColor(lvl)}`}>{lvl}단계:{count}명</span>
                                                 ))}
                                             </div>
-                                        ))}
+                                        </div>
+                                        <div className="card border-slate-100 rounded-2xl p-4">
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">팀 수</p>
+                                            <div className="grid grid-cols-5 gap-2 mb-3">
+                                                {[2,3,4,5,6].map(n => (
+                                                    <button key={n} onClick={() => setTeamingSettings(p => ({...p, teamCount: n}))}
+                                                        className={`py-2.5 rounded-xl font-black text-sm transition-all ${teamingSettings.teamCount===n?'bg-teal-500 text-white shadow':'bg-slate-50 border border-slate-200 text-slate-600'}`}>
+                                                        {n}팀
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <div className="space-y-2">
+                                                {[{key:'keepCouples',label:'커플 같은 팀 유지'},{key:'avoidOverlap',label:'지난 주 팀메이트 중복 회피'}].map(opt => (
+                                                    <button key={opt.key} onClick={() => setTeamingSettings(p => ({...p, [opt.key]: !p[opt.key]}))}
+                                                        className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${teamingSettings[opt.key]?'bg-teal-50 border-teal-200':'bg-white border-slate-200'}`}>
+                                                        <div className={`w-4 h-4 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${teamingSettings[opt.key]?'bg-teal-500 border-teal-500':'border-slate-300'}`}>
+                                                            {teamingSettings[opt.key] && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                                                        </div>
+                                                        <span className="text-xs font-black text-slate-700">{opt.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        {tmEntryList.length > 0 && (
+                                            <div className="card border-slate-100 rounded-2xl p-4">
+                                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">편성 대상 (탭하여 제외)</p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {tmEntryList.map(p => {
+                                                        const mi = allMembers.find(mm => mm.id === p.memberId) || {};
+                                                        const lvl = mi.level || p.level;
+                                                        const isExcluded = excludedIds.includes(p.memberId || p.id);
+                                                        return (
+                                                            <button key={p.id} onClick={() => setExcludedIds(prev => prev.includes(p.memberId||p.id) ? prev.filter(id => id !== (p.memberId||p.id)) : [...prev, p.memberId||p.id])}
+                                                                className={`px-2.5 py-1.5 rounded-lg text-xs font-black flex items-center gap-1 border transition-all ${isExcluded?'bg-slate-100 border-slate-200 opacity-40 line-through':'bg-white border-slate-200'}`}>
+                                                                <span>{mi.name || p.name}</span>
+                                                                {(mi.gender||p.gender)==='여성' && <span className="text-pink-400">W</span>}
+                                                                {p.isGuest && <span className="text-[8px] px-1 bg-slate-700 text-white rounded">G</span>}
+                                                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${getLevelColor(lvl)}`}>{lvl}</span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                        <button onClick={generateTeams} disabled={tmActiveList.length < teamingSettings.teamCount}
+                                            className="w-full py-4 bg-teal-500 text-white rounded-2xl font-black text-base shadow-xl disabled:opacity-30 flex items-center justify-center gap-2">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                                            팀 자동 편성
+                                        </button>
                                     </div>
-                                </div>
-                            )
-                        }
+                                )}
+
+                                {/* 결과 탭 */}
+                                {teamMakerTab === 'results' && (
+                                    <div>
+                                        {editTeams.length === 0
+                                            ? <div className="text-center py-16 text-slate-400"><div className="flex justify-center mb-3 opacity-30"><Icon.Users size={48}/></div><p className="font-black">편성 탭에서 팀을 생성해주세요</p></div>
+                                            : (
+                                                <div>
+                                                    {editMeetingDate && (
+                                                        <div className="rounded-xl p-3 mb-3 bg-blue-50 border border-blue-100 flex items-center justify-between">
+                                                            <p className="font-black text-slate-800 text-sm">{editMeetingDate} 팀 편성</p>
+                                                            {editIsConfirmed && <span className="text-[10px] font-black px-2 py-0.5 bg-emerald-100 text-emerald-600 rounded-lg">✓ 확정됨</span>}
+                                                        </div>
+                                                    )}
+                                                    <div id="tm-capture-area" className="grid grid-cols-2 gap-2 mb-3">
+                                                        {editTeams.map((team, teamIdx) => (
+                                                            <div key={teamIdx}
+                                                                className={`rounded-2xl border-2 p-3 ${getTeamCard(teamIdx)} transition-all ${selectedMemberTM && selectedMemberTM.teamIdx !== teamIdx ? 'ring-2 ring-teal-300' : ''}`}
+                                                                onDragOver={e => tmTeamDragOver(e, teamIdx)}
+                                                                onDragLeave={tmTeamDragLeave}
+                                                                onDrop={e => tmDrop(e, teamIdx)}>
+                                                                <div className="flex items-center gap-1.5 mb-2"
+                                                                    onDragOver={e => {e.preventDefault();e.stopPropagation();if(draggedItem)setDropIndicator({teamIdx,insertIdx:0});}}>
+                                                                    <span onClick={e => tmTeamBadgeClick(e, teamIdx)}
+                                                                        className={`w-7 h-7 rounded-lg font-black text-xs flex items-center justify-center text-white cursor-pointer active:scale-90 ${getTeamBadge(teamIdx)} ${selectedTeamTM===teamIdx?'ring-2 ring-offset-1 ring-white scale-110':selectedTeamTM!==null&&selectedTeamTM!==teamIdx?'ring-1 ring-white/60':''}`}>
+                                                                        {getTeamName(teamIdx)}
+                                                                    </span>
+                                                                    <div className="flex-1">
+                                                                        <p className="text-[9px] font-black text-slate-500">{team.members.length}명</p>
+                                                                        <p className="text-[9px] text-slate-400">{team.scoreSum}pt</p>
+                                                                    </div>
+                                                                    {selectedMemberTM && selectedMemberTM.teamIdx !== teamIdx && (
+                                                                        <button onClick={e => {e.stopPropagation(); tmMoveToTeam(teamIdx);}}
+                                                                            className="text-[9px] font-black text-teal-600 bg-teal-50 border border-teal-300 px-1.5 py-0.5 rounded-lg shrink-0">↓여기로</button>
+                                                                    )}
+                                                                </div>
+                                                                {(()=>{
+                                                                    const els = [];
+                                                                    const showInd = (idx) => {
+                                                                        if (!draggedItem || !dropIndicator) return false;
+                                                                        if (dropIndicator.teamIdx !== teamIdx || dropIndicator.insertIdx !== idx) return false;
+                                                                        if (draggedItem.teamIdx === teamIdx && (idx === draggedItem.memberIdx || idx === draggedItem.memberIdx + 1)) return false;
+                                                                        return true;
+                                                                    };
+                                                                    const mkInd = (k) => <div key={k} className="h-6 mb-1 rounded-lg tm-drop-indicator flex items-center justify-center"><span className="text-[8px] font-black text-teal-500">여기로</span></div>;
+                                                                    team.members.forEach((m, mi) => {
+                                                                        if (showInd(mi)) els.push(mkInd(`ind-${mi}`));
+                                                                        const isSelected = selectedMemberTM?.teamIdx === teamIdx && selectedMemberTM?.memberIdx === mi;
+                                                                        els.push(
+                                                                            <div key={mi}
+                                                                                draggable
+                                                                                onDragStart={e => tmDragStart(e, teamIdx, mi)}
+                                                                                onDragOver={e => tmMemberDragOver(e, teamIdx, mi)}
+                                                                                onDrop={e => {e.stopPropagation(); tmDrop(e, teamIdx);}}
+                                                                                onDragEnd={tmDragEnd}
+                                                                                onClick={e => {e.stopPropagation(); tmMemberClick(teamIdx, mi);}}
+                                                                                className={`flex items-center gap-1 p-1.5 mb-1 rounded-lg border transition-all cursor-grab active:cursor-grabbing
+                                                                                    ${isSelected ? 'bg-teal-100 border-teal-400 ring-2 ring-teal-400 scale-105' :
+                                                                                      selectedMemberTM ? 'bg-white/70 border-transparent hover:border-teal-300 cursor-pointer' :
+                                                                                      'bg-white/70 border-transparent hover:border-teal-200'}
+                                                                                    ${draggedItem?.teamIdx===teamIdx&&draggedItem?.memberIdx===mi?'tm-dragging':''}`}>
+                                                                                <span className="text-[8px] font-black text-slate-400 w-3 text-right flex-shrink-0">{mi+1}</span>
+                                                                                <span className="font-black text-[11px] text-slate-800 flex-1">{m.name}</span>
+                                                                                {m.gender==='여성' && <span className="text-[8px] text-pink-400 font-black">W</span>}
+                                                                                {m.isGuest && <span className="text-[8px] bg-slate-700 text-white px-1 rounded font-black">G</span>}
+                                                                                <span className={`text-[8px] font-black px-1 py-0.5 rounded ${getLevelColor(m.level)}`}>{m.level}</span>
+                                                                            </div>
+                                                                        );
+                                                                    });
+                                                                    if (showInd(team.members.length)) els.push(mkInd('ind-end'));
+                                                                    return els;
+                                                                })()}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    {selectedMemberTM && (
+                                                        <div style={{position:'fixed',bottom:'80px',left:'50%',transform:'translateX(-50%)',zIndex:50}}
+                                                             className="flex items-center gap-2 bg-teal-500 text-white px-4 py-2.5 rounded-full shadow-xl text-xs font-black whitespace-nowrap">
+                                                            <span>✋ {editTeams[selectedMemberTM.teamIdx]?.members[selectedMemberTM.memberIdx]?.name} 선택됨</span>
+                                                            <button onClick={() => setSelectedMemberTM(null)} className="ml-1 text-teal-200 hover:text-white font-black">✕</button>
+                                                        </div>
+                                                    )}
+                                                    {selectedTeamTM !== null && (
+                                                        <div style={{position:'fixed',bottom:'80px',left:'50%',transform:'translateX(-50%)',zIndex:50}}
+                                                             className="flex items-center gap-2 bg-violet-500 text-white px-4 py-2.5 rounded-full shadow-xl text-xs font-black whitespace-nowrap">
+                                                            <span>{getTeamName(selectedTeamTM)}팀 선택 · 교체할 팀 이름 탭</span>
+                                                            <button onClick={() => setSelectedTeamTM(null)} className="ml-1 text-violet-200 hover:text-white font-black">✕</button>
+                                                        </div>
+                                                    )}
+                                                    {tmUnassigned.length > 0 && (
+                                                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
+                                                            <p className="text-xs font-black text-amber-600 mb-1.5">미편성 ({tmUnassigned.length}명)</p>
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {tmUnassigned.map(m => <span key={m.id} className="text-xs font-black px-2 py-1 bg-white rounded-lg border border-amber-200 text-slate-700">{m.name}</span>)}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    <div className="space-y-2">
+                                                        <div className="flex gap-2">
+                                                            <button onClick={tmReset} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-black text-xs">초기화</button>
+                                                            <button onClick={tmReGenerate} className="flex-1 py-3 bg-violet-500 text-white rounded-xl font-black text-xs shadow-lg flex items-center justify-center gap-1">
+                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> 재편성
+                                                            </button>
+                                                            <button onClick={tmSaveDraft} className="flex-1 py-3 bg-amber-400 text-slate-800 rounded-xl font-black text-xs shadow-lg flex items-center justify-center gap-1">
+                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> 임시저장
+                                                            </button>
+                                                        </div>
+                                                        <button onClick={tmConfirm} disabled={editIsConfirmed}
+                                                            className={`w-full py-3.5 rounded-xl font-black text-sm shadow-lg ${editIsConfirmed?'bg-emerald-500 text-white opacity-70':'bg-teal-500 text-white'}`}>
+                                                            {editIsConfirmed ? '✓ 확정됨' : '확정하기'}
+                                                        </button>
+                                                    </div>
+                                                    <p className="text-[10px] text-slate-400 text-center mt-2">팀원 탭 → 선택 후 교체 / ↓여기로 탭 · PC는 드래그</p>
+                                                </div>
+                                            )
+                                        }
+                                    </div>
+                                )}
+
+                                {/* 기록 탭 */}
+                                {teamMakerTab === 'storage' && (
+                                    <div>
+                                        <div className="flex gap-2 mb-3">
+                                            {[['confirmed','✓ 확정',confirmedDrafts.length],['draft','💾 임시',savedDrafts.length]].map(([v,l,cnt]) => (
+                                                <button key={v} onClick={() => setTeamStorageSubTab(v)}
+                                                    className={`flex-1 py-2 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 ${teamStorageSubTab===v?'bg-teal-500 text-white shadow':'bg-slate-100 text-slate-500'}`}>
+                                                    {l} <span className={`text-[9px] px-1.5 py-0.5 rounded font-black ${teamStorageSubTab===v?'bg-white/20 text-white':'bg-slate-200 text-slate-400'}`}>{cnt}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {teamStorageSubTab === 'confirmed' && (
+                                            confirmedDrafts.length === 0
+                                                ? <div className="text-center py-16 text-slate-400"><p className="font-black">확정된 기록이 없습니다</p></div>
+                                                : confirmedDrafts.map(d => (
+                                                    <div key={d.meetingDate + d.createdAt} className="flex items-center gap-2 p-3 card border-emerald-100 rounded-xl mb-2">
+                                                        <div className="flex-1">
+                                                            <p className="font-black text-slate-800 text-sm">{d.meetingDate}</p>
+                                                            <span className="text-[9px] font-black px-1.5 py-0.5 bg-emerald-100 text-emerald-600 rounded mt-0.5 inline-block">{d.teams?.length||0}팀 확정</span>
+                                                        </div>
+                                                        <button onClick={() => setPreviewDraft({...d})} className="px-2.5 py-1.5 bg-teal-50 text-teal-500 rounded-lg font-black text-xs">미리보기</button>
+                                                    </div>
+                                                ))
+                                        )}
+                                        {teamStorageSubTab === 'draft' && (
+                                            savedDrafts.length === 0
+                                                ? <div className="text-center py-16 text-slate-400"><p className="font-black">임시 저장된 기록이 없습니다</p></div>
+                                                : savedDrafts.map(d => (
+                                                    <div key={d.id} className="flex items-center gap-2 p-3 card border-slate-100 rounded-xl mb-2">
+                                                        <div className="flex-1">
+                                                            <p className="font-black text-slate-800 text-sm">{d.meetingDate}</p>
+                                                            <p className="text-xs text-slate-400 mt-0.5">{d.timeLabel}</p>
+                                                        </div>
+                                                        <button onClick={() => setPreviewDraft(d)} className="px-2.5 py-1.5 bg-teal-50 text-teal-500 rounded-lg font-black text-xs">미리보기</button>
+                                                        <button onClick={() => showConfirm('삭제','이 기록을 삭제하시겠습니까?', async () => { await getCol('team_drafts').doc(d.id).delete(); })}
+                                                            className="p-2 bg-red-50 text-red-400 rounded-lg">
+                                                            <Icon.Trash size={13}/>
+                                                        </button>
+                                                    </div>
+                                                ))
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            /* ── 일반/회원 뷰 ── */
+                            !teamDraftData
+                                ? <div className="text-center py-20 text-slate-500">
+                                    <div className="flex justify-center mb-4 opacity-25"><Icon.Users size={56}/></div>
+                                    <p className="font-black text-lg mb-2">아직 팀이 편성되지 않았습니다</p>
+                                    <p className="text-sm text-slate-400">운영진이 팀 편성을 완료하면<br/>여기에 표시됩니다</p>
+                                  </div>
+                                : !teamReady
+                                ? <div className="text-center py-20 text-slate-500">
+                                    <div className="flex justify-center mb-4 opacity-25"><Icon.Users size={56}/></div>
+                                    <p className="font-black text-lg mb-2">팀 편성 비공개 중</p>
+                                    <p className="text-sm text-slate-400">{allowFromDisplay}부터 공개됩니다</p>
+                                  </div>
+                                : (
+                                    <div>
+                                        <div className="text-center mb-4">
+                                            <p className="text-xs text-slate-500 uppercase tracking-widest font-black">{teamDraftData.meetingDate} 팀 편성</p>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {teamDraftData.teams.map((team, teamIdx) => (
+                                                <div key={teamIdx} className={`rounded-2xl p-4 border ${teamIdx===myTeamIdx?'border-teal-500 bg-teal-50':'card border-slate-100'}`}>
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <span className={`w-8 h-8 rounded-xl font-black text-sm flex items-center justify-center text-white ${getTeamBadge(teamIdx)}`}>{getTeamName(teamIdx)}</span>
+                                                        {teamIdx===myTeamIdx && <span className="text-[9px] font-black text-teal-500 uppercase">내 팀</span>}
+                                                    </div>
+                                                    {team.members.map((m, mi) => (
+                                                        <div key={mi} className={`text-xs py-1 font-black flex items-center gap-1 ${m.memberId===memberData?.memberId?'text-teal-500':'text-slate-400'}`}>
+                                                            <span className="opacity-50 w-4 text-right flex-shrink-0">{mi+1}.</span>
+                                                            <span>{m.name}{m.gender==='여성' && ' W'}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )
+                        )}
                     </div>
                 )}
 
@@ -1854,6 +2525,49 @@ function App() {
                             <button onClick={()=>setResigningMember(null)} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
                             <button onClick={handleResignConfirm} className="flex-1 py-3 bg-red-500 text-white rounded-2xl font-black text-sm">탈퇴 처리</button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ===== 팀 편성 미리보기 모달 ===== */}
+            {previewDraft && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center" style={{zIndex:65}} onClick={() => setPreviewDraft(null)}>
+                    <div className="bg-white rounded-t-3xl p-5 w-full max-w-lg shadow-2xl no-scrollbar overflow-y-auto" style={{maxHeight:'82vh'}} onClick={e => e.stopPropagation()}>
+                        <div className="flex items-start justify-between mb-4">
+                            <div>
+                                <p className="font-black text-xl text-slate-800">{previewDraft.meetingDate}</p>
+                                {previewDraft.meetingTimeRange && <p className="text-xs text-slate-400 mt-0.5">{previewDraft.meetingTimeRange}</p>}
+                                <div className="flex items-center gap-2 mt-1.5">
+                                    {previewDraft.isConfirmed
+                                        ? <span className="text-[10px] font-black px-2 py-0.5 bg-emerald-100 text-emerald-600 rounded-lg">확정됨</span>
+                                        : <span className="text-[10px] font-black px-2 py-0.5 bg-amber-100 text-amber-600 rounded-lg">임시저장</span>
+                                    }
+                                </div>
+                            </div>
+                            <button onClick={() => setPreviewDraft(null)} className="text-slate-400 text-3xl leading-none ml-2">×</button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mb-4">
+                            {(previewDraft.teams || []).map((team, teamIdx) => (
+                                <div key={teamIdx} className={`rounded-2xl border-2 p-3 ${getTeamCard(teamIdx)}`}>
+                                    <div className="flex items-center gap-1.5 mb-2">
+                                        <span className={`w-6 h-6 rounded-lg font-black text-xs flex items-center justify-center text-white ${getTeamBadge(teamIdx)}`}>{getTeamName(teamIdx)}</span>
+                                        <span className="text-[10px] font-black text-slate-500">{team.members.length}명</span>
+                                    </div>
+                                    {team.members.map((m, mi) => (
+                                        <div key={mi} className="flex items-center gap-1 py-0.5">
+                                            <span className="text-[9px] text-slate-400 w-3 text-right flex-shrink-0">{mi+1}</span>
+                                            <span className="text-[10px] font-black text-slate-700 flex-1">{m.name}</span>
+                                            {m.gender==='여성' && <span className="text-[9px] text-pink-400 font-black">W</span>}
+                                            <span className={`text-[8px] font-black px-1 rounded ${getLevelColor(m.level)}`}>{m.level}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+                        <button onClick={() => tmLoadDraft(previewDraft)}
+                            className="w-full py-3.5 bg-teal-500 text-white rounded-2xl font-black text-sm shadow-lg">
+                            {previewDraft.isConfirmed ? '불러오기' : '불러오기'}
+                        </button>
                     </div>
                 </div>
             )}
