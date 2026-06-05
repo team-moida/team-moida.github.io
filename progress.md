@@ -47,7 +47,7 @@
 
 ---
 
-# roster.html — 진행 중
+# roster.html ✅ 목표 달성
 
 목표: 500줄 이하 / 원칙: 기능·UI·Firestore 구조 변경 금지
 
@@ -69,12 +69,36 @@
 | `roster-members.js` | DirectoryTab, AddMemberModal, EditMemberModal, ResignModal |
 | `roster-payment.js` | PaymentTab(회비 탭 화면), PaymentActionModal(납부/휴식 액션 모달) |
 
-## 남은 작업
+## 취소된 작업
 
-| 파일 | 상태 | 비고 |
-|------|------|------|
-| `roster-rest.js` | 계획 취소 권장 | processAction 내부에 납부와 혼재 — 별도 분리 불필요 |
-| `roster-admin.js` | 계획 취소 권장 | 한 줄 조건만 존재 — 별도 파일 의미 없음 |
+| 파일 | 비고 |
+|------|------|
+| `roster-rest.js` | processAction 내부에 납부와 혼재 — 별도 분리 불필요 |
+| `roster-admin.js` | 한 줄 조건만 존재 — 별도 파일 의미 없음 |
+
+---
+
+# team-maker.html ✅ 목표 달성
+
+목표: 500줄 이하 / 원칙: 기능·UI·Firestore 구조 변경 금지
+
+## 줄 수 변화
+
+| 단계 | 줄 수 | 감소 |
+|------|-------|------|
+| 원본 | 909줄 | - |
+| 1단계 (현재) | **285줄** | -624줄 |
+| 목표 | 500줄 이하 | ✅ 달성 |
+
+## 완료된 분리 파일
+
+| 파일 | 내용 |
+|------|------|
+| `team-utils.js` | 아이콘 모음 (Icon 전역 객체) |
+| `team-export.js` | 이미지 저장 (captureTeams 함수) |
+| `team-balance.js` | 팀 편성 알고리즘 (buildTeams) + 편성 탭 화면 (GeneratorTab) |
+| `team-dragdrop.js` | 드래그·클릭 이동 핸들러 (makeTeamMoveHandlers) + 결과 탭 화면 (ResultsTab) |
+| `team-storage.js` | 임시저장·확정 핸들러 (makeTeamStorageHandlers) + 기록 탭 (StorageTab) + 미리보기 모달 (PreviewModal) |
 
 ---
 
