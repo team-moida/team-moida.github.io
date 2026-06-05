@@ -36,6 +36,9 @@ const TabAttend = ({
                             <button onClick={generateAttendQRCode} className="px-2.5 py-1.5 rounded-xl bg-violet-50 text-violet-600 text-xs font-black flex items-center gap-1">
                                 <Icon.QrCode size={13}/> QR
                             </button>
+                            <button onClick={() => setAttendSubTab('attend')} className="px-2.5 py-1.5 rounded-xl bg-teal-50 text-teal-600 text-xs font-black flex items-center gap-1">
+                                <Icon.Check size={13}/> 출석
+                            </button>
                             <button onClick={attendToggleTestMode}
                                 className={`px-2.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1 ${testMode?'bg-amber-100 text-amber-600':'bg-slate-100 text-slate-400'}`}>
                                 <Icon.Beaker size={13}/> {testMode?'테스트 ON':'테스트'}
@@ -56,7 +59,7 @@ const TabAttend = ({
             <div>
                 {/* 서브탭 */}
                 <div className="flex gap-2 mb-4">
-                    {[['setup','선정'],['attend','출석'],['history','기록']].map(([v,l]) => (
+                    {[['setup','선정'],['history','기록']].map(([v,l]) => (
                         <button key={v} onClick={() => { setAttendSubTab(v); setSelectedHistoryDetail(null); }}
                             className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${attendSubTab===v?'bg-teal-500 text-white shadow':'text-slate-400 bg-slate-100'}`}>{l}</button>
                     ))}
