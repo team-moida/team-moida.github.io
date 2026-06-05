@@ -1,0 +1,50 @@
+/* ── 폰트 ── */
+@font-face{font-family:'Esamanru';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10@1.0/GongGothicMedium.woff') format('woff');font-weight:normal}
+@font-face{font-family:'Esamanru';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10@1.0/GongGothicBold.woff') format('woff');font-weight:700}
+
+/* ── 애니메이션 ── */
+.animate-zoom-in{animation:zoomIn 0.2s ease-out}
+.animate-fade-in{animation:fadeIn 0.2s ease-out}
+@keyframes zoomIn{from{opacity:0;transform:scale(0.98)}to{opacity:1;transform:scale(1)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+button:active{transform:scale(0.95);opacity:0.8}
+
+/* ── 로딩 화면 ── */
+#loading-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.5s}
+
+/* ── 스크롤바 ── */
+.no-scrollbar::-webkit-scrollbar{display:none}
+.no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+
+/* ── 입력 요소 ── */
+select,input{outline:none}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.75rem center;background-size:1rem}
+
+/* ── 다크모드 변수 ── */
+:root{--t-bg:#f8fafc;--t-surface:#ffffff;--t-s2:#f8fafc;--t-border:#e2e8f0;--t-text:#1e293b;--t-btn:#1e293b}
+html.dark{--t-bg:#0f172a;--t-surface:#1e293b;--t-s2:#0f172a;--t-border:#334155;--t-text:#f1f5f9;--t-btn:#14b8a6}
+
+/* ── 다크모드 기본 스타일 ── */
+html.dark body{background:var(--t-bg)!important;color:var(--t-text)}
+html.dark .bg-white{background:var(--t-surface)!important}
+html.dark .bg-white\/90{background:rgba(30,41,59,.95)!important}
+html.dark .bg-slate-50{background:var(--t-s2)!important}
+html.dark .bg-slate-100{background:#334155!important}
+html.dark .bg-slate-200{background:#475569!important}
+html.dark .border-b{border-bottom-color:var(--t-border)!important}
+html.dark .border-t{border-top-color:var(--t-border)!important}
+html.dark .border-slate-100,html.dark .border-slate-200{border-color:var(--t-border)!important}
+html.dark .text-slate-900,html.dark .text-slate-800{color:var(--t-text)!important}
+html.dark .text-slate-700{color:#cbd5e1!important}
+html.dark .text-slate-600{color:#94a3b8!important}
+html.dark .text-slate-500,html.dark .text-slate-400{color:#94a3b8!important}
+html.dark .text-slate-300{color:#64748b!important}
+html.dark input,html.dark textarea{background:var(--t-surface)!important;border-color:var(--t-border)!important;color:var(--t-text)!important}
+html.dark select{background:var(--t-surface)!important;border-color:var(--t-border)!important;color:var(--t-text)!important}
+html.dark .bg-teal-50{background:#042f2e!important}
+html.dark .border-teal-100{border-color:#134e4a!important}
+html.dark .bg-teal-100{background:#134e4a!important}
+html.dark .text-teal-600{color:#2dd4bf!important}
+html.dark .text-teal-500{color:#2dd4bf!important}
+html.dark #loading-screen{background:var(--t-bg)!important}
+html.dark .shadow-sm{box-shadow:0 1px 3px rgba(0,0,0,.3)!important}
