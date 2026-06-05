@@ -28,22 +28,26 @@ const TabAttend = ({
 
         {/* 관리자 ⚙️ 토글 */}
         {isAdminMode && (
-            <div className="flex items-center justify-between">
-                <button onClick={() => setIsAttendPanelOpen(p=>!p)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl font-black text-xs transition-all ${isAttendPanelOpen?'bg-teal-500 text-white shadow-lg':'bg-slate-100 text-slate-400'}`}>
-                    ⚙️ {isAttendPanelOpen ? '출석 관리 ON' : '출석 관리'}
-                </button>
-                {isAttendPanelOpen && (
-                    <div className="flex gap-1.5">
-                        <button onClick={generateAttendQRCode} className="px-2.5 py-1.5 rounded-xl bg-violet-50 text-violet-600 text-xs font-black flex items-center gap-1">
-                            <Icon.QrCode size={13}/> QR
-                        </button>
-                        <button onClick={attendToggleTestMode}
-                            className={`px-2.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1 ${testMode?'bg-amber-100 text-amber-600':'bg-slate-100 text-slate-400'}`}>
-                            <Icon.Beaker size={13}/> {testMode?'테스트 ON':'테스트'}
-                        </button>
-                    </div>
-                )}
+            <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-black text-slate-500 uppercase tracking-widest">출석</p>
+                <div className="flex items-center gap-1.5">
+                    {isAttendPanelOpen && (
+                        <>
+                            <button onClick={generateAttendQRCode} className="px-2.5 py-1.5 rounded-xl bg-violet-50 text-violet-600 text-xs font-black flex items-center gap-1">
+                                <Icon.QrCode size={13}/> QR
+                            </button>
+                            <button onClick={attendToggleTestMode}
+                                className={`px-2.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1 ${testMode?'bg-amber-100 text-amber-600':'bg-slate-100 text-slate-400'}`}>
+                                <Icon.Beaker size={13}/> {testMode?'테스트 ON':'테스트'}
+                            </button>
+                        </>
+                    )}
+                    <button onClick={() => setIsAttendPanelOpen(p=>!p)}
+                        className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 rounded-xl transition-all active:scale-95"
+                        style={isAttendPanelOpen ? {background:'linear-gradient(135deg,#14b8a6,#0d9488)',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
+                        ⚙️ {isAttendPanelOpen ? '출석 관리 ON' : '출석 관리'}
+                    </button>
+                </div>
             </div>
         )}
 
