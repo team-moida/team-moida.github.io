@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -21,6 +21,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
     <script src="firebase-init.js"></script>
     <script src="utils.js"></script>
+    <script src="member-helpers.js"></script>
+    <script src="member-icons.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
@@ -90,85 +92,6 @@
 <script type="text/babel">
 const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
-
-// 거리 계산 (Haversine)
-const calcDistance = (lat1, lng1, lat2, lng2) => {
-    const R = 6371000;
-    const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
-    const Δφ = (lat2-lat1) * Math.PI / 180, Δλ = (lng2-lng1) * Math.PI / 180;
-    const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-};
-
-// URL 파라미터 파싱
-const getUrlParams = () => {
-    const params = new URLSearchParams(window.location.search);
-    return { token: params.get('token'), date: params.get('date') };
-};
-
-const ADMIN_ROLES = ['회장', '매니저', '총무', '부총무'];
-const getTeamBadge = (idx) => ['bg-pink-500','bg-sky-400','bg-lime-400','bg-yellow-400','bg-blue-600','bg-red-500'][idx] || 'bg-slate-500';
-// ─── 명단/회비 관련 헬퍼 ─────────────────────────────────────────────────────
-const getMonthlyCol = () => getCol('monthly_checks');
-const getMemberCol  = () => getCol('members');
-const getMembershipStatus = (member, targetMonthStr) => {
-    if(!member.membershipType||member.membershipType==='monthly'||!member.membershipEndDate)return null;
-    const end=new Date(member.membershipEndDate);
-    const endMonth=new Date(end.getFullYear(),end.getMonth(),1);
-    const[y,m]=targetMonthStr.split('-').map(Number);
-    const current=new Date(y,m-1,1);
-    if(current>endMonth)return{active:false,msg:'만료됨',type:member.membershipType==='half_year'?'반년':'1년'};
-    const monthsRemaining=(endMonth.getFullYear()-current.getFullYear())*12+(endMonth.getMonth()-current.getMonth())+1;
-    const maxRest=member.membershipType==='half_year'?3:6;
-    const usedRest=member.totalRestMonths||0;
-    const endDateFormatted=`${end.getFullYear().toString().slice(2)}.${String(end.getMonth()+1).padStart(2,'0')}.${String(end.getDate()).padStart(2,'0')}`;
-    return{active:true,remaining:monthsRemaining,type:member.membershipType==='half_year'?'반년':'1년',endDate:member.membershipEndDate,endDateFormatted,maxRest,usedRest,remainingRest:maxRest-usedRest};
-};
-const STAFF_ROLES_CONST = ['회장','매니저','총무','부총무'];
-const getMemberStatusType = (member, statuses, reasons, targetMonthStr) => {
-    if(STAFF_ROLES_CONST.includes(member.role))return 'staff';
-    if(member.isSpecialRest&&targetMonthStr>=(member.specialRestStartMonth||'0000-00'))return 'special';
-    const status=statuses[member.id];
-    const membershipInfo=getMembershipStatus(member,targetMonthStr);
-    if(membershipInfo&&membershipInfo.active){if(status==='rest')return 'rest';return membershipInfo.type==='반년'?'half':'full';}
-    if(status==='paid')return 'monthly';
-    if(status==='rest')return reasons[member.id]?'special':'rest';
-    return 'unpaid';
-};
-const statusConfig = {
-    staff:{label:'운영진',color:'bg-slate-900 text-white'},
-    monthly:{label:'월납',color:'bg-emerald-500 text-white'},
-    half:{label:'반년납',color:'bg-blue-500 text-white'},
-    full:{label:'1년납',color:'bg-indigo-600 text-white'},
-    rest:{label:'휴식',color:'bg-amber-400 text-slate-800'},
-    special:{label:'특별휴식',color:'bg-orange-400 text-white'},
-    unpaid:{label:'미납',color:'bg-rose-500 text-white'},
-};
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ─── 출석 관리 헬퍼 ──────────────────────────────────────────────────────────
-const getSessionCol  = () => getCol('weekly_session');
-const getHistoryCol  = () => getCol('history');
-const getSettingsCol = () => getCol('settings');
-const getQRCol       = () => getCol('qr_tokens');
-const KAKAO_REST_KEY = 'bdebf2ece4ae2d9315448ec55001d7b2';
-const KAKAO_PROXY    = 'https://corsproxy.io/?url=';
-const getThisSunday = () => {
-    const now = new Date();
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
-    const day = d.getDay();
-    const diff = (day === 0) ? 0 : 7 - day;
-    d.setDate(d.getDate() + diff);
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-};
-const getNextSundayFromDate = (dateStr) => {
-    let d = dateStr ? new Date(parseInt(dateStr.split('-')[0]), parseInt(dateStr.split('-')[1])-1, parseInt(dateStr.split('-')[2]), 12, 0, 0) : new Date();
-    const day = d.getDay();
-    const diff = (day === 0) ? 7 : 7 - day;
-    d.setDate(d.getDate() + diff);
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-};
-// ─────────────────────────────────────────────────────────────────────────────
 
 // ─── 지도 장소 선택 모달 ──────────────────────────────────────────────────────
 const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLng, initialName }) => {
@@ -409,35 +332,7 @@ const QRScannerModal = ({ isOpen, onScan, onClose }) => {
     );
 };
 // ─────────────────────────────────────────────────────────────────────────────
-const Icon = {
-    Home:    ({size=20,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
-    Users:   ({size=20,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-    Calendar:({size=20,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
-    CheckSq: ({size=20,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>,
-    Check:   ({size=20,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>,
-    Sun:     ({size=18,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
-    Moon:    ({size=18,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
-    Activity:({size=14,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
-    MapPin:  ({size=18,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
-    Bell:    ({size=18,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
-    List:      ({size=20,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
-    UserPlus:  ({size=18,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>,
-    ChevronLeft: ({size=20,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="15 18 9 12 15 6"/></svg>,
-    ChevronRight:({size=20,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>,
-    Edit:      ({size=16,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
-    Trash:     ({size=16,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
-    Heart:     ({size=12,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>,
-    Save:      ({size=16,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
-    Camera:    ({size=16,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
-    Minus:     ({size=14,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-    Plus:      ({size=14,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-    ArrowLeft: ({size=20,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
-    RotateCcw: ({size=18,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>,
-    QrCode:    ({size=18,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><line x1="17" y1="17" x2="20" y2="17"/><line x1="20" y1="14" x2="20" y2="20"/></svg>,
-    Beaker:    ({size=18,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 2v7L5 17c-.83 1.38-.83 3 0 4 .83 1 2.25 1 4 1h6c1.75 0 3.17 0 4-1 .83-1 .83-2.62 0-4l-4-8V2"/><line x1="6" y1="9" x2="18" y2="9"/></svg>,
-    Edit2:     ({size=14,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>,
-    History:   ({size=22,className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 8v4l3 3"/><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/></svg>,
-};
+const getTeamBadge = (idx) => ['bg-pink-500','bg-sky-400','bg-lime-400','bg-yellow-400','bg-blue-600','bg-red-500'][idx] || 'bg-slate-500';
 
 function App() {
     // 앱 상태
