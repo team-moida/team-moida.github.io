@@ -149,3 +149,33 @@
 - 기능별 custom hook: useState + useEffect + useMemo를 기능 단위로 묶음
 - 각 hook은 `isAdminMode`, `meetingSettings` 등 최소 의존성만 props로 받음
 - App은 hook 결과를 조합해 핸들러 팩토리와 JSX에 전달하는 역할만 수행
+
+---
+
+# match.html ✅ 목표 달성
+
+목표: 500줄 이하 / 원칙: 기능·UI·Firestore 구조 변경 금지
+
+## 줄 수 변화
+
+| 단계 | 줄 수 | 감소 |
+|------|-------|------|
+| 원본 | 631줄 | - |
+| 1단계 (현재) | **263줄** | -368줄 |
+| 목표 | 500줄 이하 | ✅ 달성 |
+
+## 완료된 분리 파일
+
+| 파일 | 내용 |
+|------|------|
+| `match/match-utils.js` | 아이콘 모음 (Icon 전역 객체) + splitTime/hoursList/minutesList + PresetModal |
+| `match/match-generator.js` | 경기 일정 생성 알고리즘 (generateSchedule) + 설정 탭 화면 (SetupTab) |
+| `match/match-results.js` | 매치표 탭 화면 (ResultsTab) + 기록 불러오기 모달 (LoadModal) |
+| `match/match-score.js` | 통계 계산 (computeStats) + 통계 탭 화면 (StatsTab) |
+| `match/match-export.js` | 이미지 저장 함수 (captureMatchTable) |
+
+## 분리 원칙
+
+- 순수 함수(generateSchedule, computeStats, captureMatchTable)와 순수 컴포넌트(SetupTab, ResultsTab, StatsTab, LoadModal, PresetModal)만 외부 파일로 분리
+- 모든 상태(useState, useEffect, useMemo)는 App 컴포넌트 내부에 유지
+- match/ 서브폴더 구조 적용
