@@ -610,8 +610,8 @@ const TabAttend = ({
                         <p style={{color:'#94a3b8',fontSize:'0.75rem',marginTop:'2px'}}>{meetingSettings?.date} · <span style={{color:'#34d399',fontWeight:900}}>{attendCheckedInCount}명 출석</span> / {attendActiveList.length}명</p>
                     </div>
                     <button onClick={() => setIsKioskOpen(false)}
-                        style={{width:'40px',height:'40px',borderRadius:'12px',background:'#334155',color:'white',display:'flex',alignItems:'center',justifyContent:'center',border:'none',cursor:'pointer'}}>
-                        <Icon.X size={20}/>
+                        style={{width:'40px',height:'40px',borderRadius:'12px',background:'#334155',color:'white',display:'flex',alignItems:'center',justifyContent:'center',border:'none',cursor:'pointer',fontSize:'20px',fontWeight:900}}>
+                        ✕
                     </button>
                 </div>
                 {/* 출석 진행 바 */}
