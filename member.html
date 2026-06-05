@@ -80,6 +80,11 @@
         .tm-dragging{opacity:0.3;border:2px dashed #3b82f6!important;background:#eff6ff!important;transform:scale(0.96)}
         .tm-drop-target{border-color:#14b8a6!important;background:#f0fdfa!important;transform:scale(1.01)}
         .tm-drop-indicator{border:2px dashed #14b8a6;background:rgba(240,253,250,.5);transition:all .1s}
+        .match-row{transition:all 0.2s ease;cursor:pointer}
+        .match-row:active{background:#f1f5f9}
+        .match-completed{opacity:0.45;background:#f8fafc}
+        html.dark .match-row:active{background:#334155!important}
+        html.dark .match-completed{background:var(--t-bg)!important}
         html.dark .tm-drop-target{background:#042f2e!important}
         html.dark .tm-drop-indicator{background:rgba(20,184,166,.1)!important;border-color:#2dd4bf!important}
         html.dark .bg-blue-50{background:#0c1634!important}
@@ -409,6 +414,30 @@ function App() {
     const isDraggingRef = useRef(false);
     // ─────────────────────────────────────────────────────────────────────────────
 
+    // ── 매치 관리자 패널 ──────────────────────────────────────────────────────────
+    const [isMatchPanelOpen, setIsMatchPanelOpen] = useState(false);
+    const [matchAdminView, setMatchAdminView] = useState('setup');
+    const [matchConfig, setMatchConfig] = useState({
+        meetingDate:'', courtCount:3, matchDuration:12, breakDuration:3,
+        startTime:'08:00', endTime:'10:00',
+        fieldNames:['1구장','2구장','3구장'], fieldTypes:['6vs6','6vs6','6vs6'],
+        strictCourtSize:false
+    });
+    const [localSchedule, setLocalSchedule] = useState({list:[],stats:{}});
+    const [localCompletedMatches, setLocalCompletedMatches] = useState(new Set());
+    const [localMatchIndex, setLocalMatchIndex] = useState(0);
+    const [presets, setPresets] = useState([]);
+    const [savedMatchSchedules, setSavedMatchSchedules] = useState([]);
+    const [selectedPresetId, setSelectedPresetId] = useState('manual');
+    const [presetToggles, setPresetToggles] = useState([]);
+    const [isLoadMatchModalOpen, setIsLoadMatchModalOpen] = useState(false);
+    const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
+    const [presetForm, setPresetForm] = useState({name:'',courtCount:3,fieldNames:['1구장','2구장','3구장'],fieldTypes:['6vs6','6vs6','6vs6']});
+    const [matchIsSaving, setMatchIsSaving] = useState(false);
+    const [activeMatchScheduleId, setActiveMatchScheduleId] = useState(null);
+    const [matchIsCapturing, setMatchIsCapturing] = useState(false);
+    // ─────────────────────────────────────────────────────────────────────────────
+
     // GPS 상태
     const [gpsStatus, setGpsStatus] = useState('idle'); // idle | checking | within | outside | no_location | error
     const [distance, setDistance] = useState(null);
@@ -595,6 +624,20 @@ function App() {
             });
         return () => unsub();
     }, []);
+
+    // 매치 관리자: court_presets + match_schedules 전체 읽기
+    useEffect(() => {
+        if (!isAdminMode) return;
+        const u1 = getCol('court_presets').orderBy('createdAt').onSnapshot(snap => setPresets(snap.docs.map(d => ({id:d.id,...d.data()}))));
+        const u2 = getCol('match_schedules').orderBy('createdAt','desc').onSnapshot(snap => setSavedMatchSchedules(snap.docs.map(d => ({id:d.id,...d.data()}))));
+        return () => { u1(); u2(); };
+    }, [isAdminMode]);
+
+    // matchConfig: 모임날짜/확정팀 자동 반영
+    useEffect(() => {
+        if (!isAdminMode) return;
+        setMatchConfig(p => ({...p, meetingDate: meetingSettings?.date || p.meetingDate}));
+    }, [isAdminMode, meetingSettings?.date]);
 
     // 내 출석 세션 읽기
     useEffect(() => {
@@ -1316,6 +1359,145 @@ function App() {
     };
     // ─────────────────────────────────────────────────────────────────────────────
 
+    // ── 매치 핸들러 ──────────────────────────────────────────────────────────────
+    const splitTime = (t) => { const p = (t||'08:00').split(':'); return {h:p[0]||'08', m:p[1]||'00'}; };
+
+    const matchGenerateTable = () => {
+        if (!confirmedDrafts.length) return showAlert('알림','팀 편성을 먼저 확정해주세요.');
+        const latest = [...confirmedDrafts].sort((a,b) => (b.meetingDate||'').localeCompare(a.meetingDate||''))[0];
+        const teams = latest.teams.map((_,i) => getTeamName(i));
+        const teamSizes = {}; latest.teams.forEach((t,i) => { teamSizes[getTeamName(i)] = t.members.length; });
+        const {courtCount, matchDuration, breakDuration, startTime, endTime} = matchConfig;
+        if (courtCount === 0) return showAlert('알림','구장을 1개 이상 선택해주세요.');
+        let currentTime = new Date(`2024-01-01T${startTime}:00`);
+        const limitTime = new Date(`2024-01-01T${endTime}:00`);
+        const teamStats = {}; teams.forEach(t => teamStats[t] = 0);
+        const matchupHistory = {}; teams.forEach(t1 => { matchupHistory[t1] = {}; teams.forEach(t2 => { if(t1!==t2) matchupHistory[t1][t2] = 0; }); });
+        const courtUsage = {}, lastOpponent = {};
+        teams.forEach(t => { courtUsage[t] = {}; for(let i=0;i<courtCount;i++) courtUsage[t][i]=0; lastOpponent[t]=null; });
+        const sessionList = []; let matchIdx = 1;
+        while (currentTime < limitTime) {
+            let usedInSession = new Set(), sessionMatches = [];
+            const sessionCourts = Array.from({length:courtCount},(_,i) => ({idx:i, type:matchConfig.fieldTypes[i]||'6vs6'}));
+            for (const court of sessionCourts) {
+                const isSmall = court.type === '5vs5';
+                let candidates = teams.filter(t => !usedInSession.has(t));
+                if (matchConfig.strictCourtSize && isSmall) candidates = candidates.filter(t => teamSizes[t] <= 5);
+                if (candidates.length < 2) continue;
+                candidates.sort(() => Math.random() - 0.5);
+                let bestPair = null, minScore = Infinity;
+                for (let i = 0; i < candidates.length; i++) {
+                    for (let j = i+1; j < candidates.length; j++) {
+                        const t1 = candidates[i], t2 = candidates[j];
+                        const isB2B = (lastOpponent[t1]===t2 || lastOpponent[t2]===t1);
+                        const score = matchupHistory[t1][t2]*10000 + (teamStats[t1]+teamStats[t2])*100 + (courtUsage[t1][court.idx]+courtUsage[t2][court.idx])*50 + (isB2B?500000:0) + Math.random();
+                        if (score < minScore) { minScore = score; bestPair = [t1,t2]; }
+                    }
+                }
+                if (bestPair) {
+                    const [t1,t2] = bestPair;
+                    sessionMatches.push({match:[t1,t2], fieldIdx:court.idx});
+                    usedInSession.add(t1); usedInSession.add(t2);
+                    matchupHistory[t1][t2]++; matchupHistory[t2][t1]++;
+                    teamStats[t1]++; teamStats[t2]++;
+                    courtUsage[t1][court.idx]++; courtUsage[t2][court.idx]++;
+                    lastOpponent[t1]=t2; lastOpponent[t2]=t1;
+                }
+            }
+            if (sessionMatches.length > 0) {
+                const startL = currentTime.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:false});
+                const endC = new Date(currentTime.getTime() + matchDuration*60000);
+                const endL = endC.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:false});
+                sessionList.push({id:matchIdx++, time:`${startL} - ${endL}`, startTime:startL, endTime:endL, matches:sessionMatches.sort((a,b)=>a.fieldIdx-b.fieldIdx), resting:teams.filter(t=>!usedInSession.has(t))});
+                currentTime = new Date(currentTime.getTime() + (matchDuration+breakDuration)*60000);
+                if (new Date(currentTime.getTime()-breakDuration*60000) >= limitTime) break;
+            } else break;
+        }
+        setLocalSchedule({list:sessionList, stats:teamStats});
+        setLocalCompletedMatches(new Set());
+        setLocalMatchIndex(0);
+        setActiveMatchScheduleId(null);
+        setMatchAdminView('results');
+    };
+
+    const matchSaveSchedule = async () => {
+        if (!localSchedule.list.length) return;
+        setMatchIsSaving(true);
+        try {
+            const docRef = await getCol('match_schedules').add({
+                schedule: localSchedule, config: matchConfig,
+                completedMatches: Array.from(localCompletedMatches),
+                currentMatchIndex: localMatchIndex,
+                createdAt: new Date().toISOString(), meetingDate: matchConfig.meetingDate,
+                label: `${matchConfig.meetingDate} 매치 (${localSchedule.list.length}라운드)`
+            });
+            setActiveMatchScheduleId(docRef.id);
+            showAlert('저장 완료','매치 테이블이 저장되었습니다.');
+        } catch(e) { showAlert('오류','저장 실패'); } finally { setMatchIsSaving(false); }
+    };
+
+    const matchHandleNextMatch = async () => {
+        if (!localSchedule.list.length || localMatchIndex >= localSchedule.list.length) return;
+        const newCompleted = new Set(localCompletedMatches);
+        newCompleted.add(localSchedule.list[localMatchIndex].id);
+        setLocalCompletedMatches(newCompleted);
+        const newIndex = localMatchIndex + 1;
+        setLocalMatchIndex(newIndex);
+        if (activeMatchScheduleId) {
+            try { await getCol('match_schedules').doc(activeMatchScheduleId).update({completedMatches:Array.from(newCompleted), currentMatchIndex:newIndex}); } catch(e) {}
+        }
+    };
+
+    const matchHandleCapture = async () => {
+        setMatchIsCapturing(true);
+        await new Promise(r => setTimeout(r, 300));
+        try {
+            const el = document.getElementById('match-capture-area');
+            if (!el) return;
+            const canvas = await window.html2canvas(el,{scale:2,backgroundColor:'#f8fafc',useCORS:true,scrollY:0});
+            const link = document.createElement('a');
+            link.download = `모이다_매치표_${matchConfig.meetingDate}.png`;
+            link.href = canvas.toDataURL('image/png',1.0);
+            link.click();
+        } catch(e) { showAlert('오류','캡쳐 실패'); } finally { setMatchIsCapturing(false); }
+    };
+
+    const matchHandlePresetSelect = (preset) => {
+        setSelectedPresetId(preset.id);
+        setPresetToggles(new Array(preset.courtCount).fill(false));
+        setMatchConfig(p => ({...p, courtCount:0, fieldNames:[], fieldTypes:[]}));
+    };
+
+    const matchToggleSubCourt = (idx) => {
+        const newToggles = [...presetToggles]; newToggles[idx] = !newToggles[idx]; setPresetToggles(newToggles);
+        const p = presets.find(pr => pr.id === selectedPresetId); if (!p) return;
+        const names = [], types = [];
+        newToggles.forEach((on,i) => { if(on) { names.push(p.fieldNames[i]); types.push(p.fieldTypes[i]); } });
+        setMatchConfig(prev => ({...prev, courtCount:names.length, fieldNames:names, fieldTypes:types}));
+    };
+
+    const matchSavePreset = async () => {
+        if (!presetForm.name.trim()) return showAlert('알림','프리셋 이름을 입력해주세요.');
+        try {
+            await getCol('court_presets').add({...presetForm, createdAt: new Date().toISOString()});
+            setIsPresetModalOpen(false);
+            setPresetForm({name:'',courtCount:3,fieldNames:['1구장','2구장','3구장'],fieldTypes:['6vs6','6vs6','6vs6']});
+            showAlert('완료','프리셋이 저장되었습니다.');
+        } catch(e) { showAlert('오류','저장 실패'); }
+    };
+
+    const matchStatsData = useMemo(() => {
+        if (!localSchedule.list.length || !confirmedDrafts.length) return null;
+        const latest = [...confirmedDrafts].sort((a,b) => (b.meetingDate||'').localeCompare(a.meetingDate||''))[0];
+        if (!latest?.teams) return null;
+        const teams = latest.teams.map((_,i) => getTeamName(i));
+        const matchupCounts = {}, totalMatches = {};
+        teams.forEach(t => { matchupCounts[t] = {}; teams.forEach(o => { if(t!==o) matchupCounts[t][o]=0; }); totalMatches[t]=0; });
+        localSchedule.list.forEach(session => { session.matches.forEach(m => { const[t1,t2]=m.match; matchupCounts[t1][t2]++; matchupCounts[t2][t1]++; totalMatches[t1]++; totalMatches[t2]++; }); });
+        return {matchupCounts, totalMatches, teams};
+    }, [localSchedule, confirmedDrafts]);
+    // ─────────────────────────────────────────────────────────────────────────────
+
     // ============================
     // 뷰 렌더링
     // ============================
@@ -1848,12 +2030,264 @@ function App() {
                 {/* ===== 매치 탭 ===== */}
                 {tab === 'match' && (
                     <div className="animate-in">
-                        {!scheduleData
-                            ? <div className="text-center py-20 text-slate-500">
-                                <div className="flex justify-center mb-4 opacity-25"><Icon.Calendar size={56}/></div>
-                                <p className="font-black text-lg mb-2">매치 테이블 준비 중</p>
-                                <p className="text-sm text-slate-400">팀 편성이 확정되면<br/>경기 일정이 공개됩니다</p>
-                              </div>
+                        {/* 관리자 패널 토글 버튼 */}
+                        {isAdminMode && (
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-xs font-black text-slate-500 uppercase tracking-widest">매치</p>
+                                <button onClick={() => setIsMatchPanelOpen(v => !v)}
+                                    className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 rounded-xl transition-all active:scale-95"
+                                    style={isMatchPanelOpen ? {background:'linear-gradient(135deg,#14b8a6,#0d9488)',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
+                                    ⚙️ {isMatchPanelOpen ? '매치 관리 ON' : '매치 관리'}
+                                </button>
+                            </div>
+                        )}
+
+                        {/* ── 관리자 매치 패널 ── */}
+                        {isAdminMode && isMatchPanelOpen ? (
+                            <div>
+                                {/* 서브탭 */}
+                                <div className="flex gap-2 mb-4">
+                                    {[['setup','설정'],['results','매치표'],['stats','통계']].map(([v,l]) => (
+                                        <button key={v} onClick={() => setMatchAdminView(v)}
+                                            className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${matchAdminView===v?'bg-teal-500 text-white shadow':'text-slate-400 bg-slate-100'}`}>{l}</button>
+                                    ))}
+                                    <div className="flex-1"/>
+                                    {localSchedule.list.length > 0 && !matchIsCapturing && (
+                                        <button onClick={matchSaveSchedule} disabled={matchIsSaving}
+                                            className="p-2 rounded-xl bg-slate-100 text-slate-400 flex items-center"><Icon.Save size={14}/></button>
+                                    )}
+                                    {localSchedule.list.length > 0 && !matchIsCapturing && (
+                                        <button onClick={matchHandleCapture}
+                                            className="p-2 rounded-xl bg-slate-100 text-slate-400 flex items-center"><Icon.Camera size={14}/></button>
+                                    )}
+                                    <button onClick={() => setIsLoadMatchModalOpen(true)}
+                                        className="p-2 rounded-xl bg-slate-100 text-slate-400 text-sm flex items-center">📂</button>
+                                </div>
+
+                                {/* 설정 탭 */}
+                                {matchAdminView === 'setup' && (
+                                    <div className="space-y-3">
+                                        <div className="card border-slate-100 rounded-2xl p-4">
+                                            <p className="text-[10px] font-black text-teal-500 uppercase tracking-widest mb-3">기본 설정</p>
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <p className="text-[10px] font-black text-slate-400 mb-1">모임 날짜</p>
+                                                    <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-black text-sm text-center" style={{userSelect:'text'}}
+                                                        value={matchConfig.meetingDate} onChange={e => setMatchConfig(p => ({...p, meetingDate:e.target.value}))}/>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {[['startTime','시작'],['endTime','종료']].map(([key,label]) => (
+                                                        <div key={key}>
+                                                            <p className={`text-[10px] font-black mb-1 ${key==='endTime'?'text-rose-400':'text-slate-400'}`}>{label} 시간</p>
+                                                            <div className="flex gap-1">
+                                                                <select className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-1 py-2 text-xs font-black" value={splitTime(matchConfig[key]).h} onChange={e => setMatchConfig(p => ({...p,[key]:`${e.target.value}:${splitTime(p[key]).m}`}))}>
+                                                                    {Array.from({length:24},(_,i)=>String(i).padStart(2,'0')).map(h=><option key={h} value={h}>{h}시</option>)}
+                                                                </select>
+                                                                <select className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-1 py-2 text-xs font-black" value={splitTime(matchConfig[key]).m} onChange={e => setMatchConfig(p => ({...p,[key]:`${splitTime(p[key]).h}:${e.target.value}`}))}>
+                                                                    {['00','10','20','30','40','50'].map(m=><option key={m} value={m}>{m}분</option>)}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {[['matchDuration','경기 시간(분)'],['breakDuration','휴식 시간(분)']].map(([key,label]) => (
+                                                        <div key={key}>
+                                                            <p className="text-[10px] font-black text-slate-400 mb-1">{label}</p>
+                                                            <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 font-black text-center text-sm" style={{userSelect:'text'}}
+                                                                value={matchConfig[key]} onChange={e => setMatchConfig(p => ({...p,[key]:parseInt(e.target.value)||matchConfig[key]}))}/>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="card border-slate-100 rounded-2xl p-4">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <p className="text-[10px] font-black text-teal-500 uppercase tracking-widest">구장 프리셋</p>
+                                                <button onClick={() => setIsPresetModalOpen(true)} className="text-xs font-black text-teal-500 bg-teal-50 px-2.5 py-1 rounded-lg">+ 추가</button>
+                                            </div>
+                                            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-3">
+                                                <button onClick={() => setSelectedPresetId('manual')} className={`shrink-0 px-3 py-2 rounded-xl font-black text-xs border-2 transition-all ${selectedPresetId==='manual'?'bg-teal-500 text-white border-teal-500':'bg-white text-slate-500 border-slate-200'}`}>직접 입력</button>
+                                                {presets.map(p => (
+                                                    <button key={p.id} onClick={() => matchHandlePresetSelect(p)} className={`shrink-0 px-3 py-2 rounded-xl font-black text-xs border-2 transition-all ${selectedPresetId===p.id?'bg-teal-500 text-white border-teal-500':'bg-white text-slate-600 border-slate-200'}`}>{p.name}</button>
+                                                ))}
+                                            </div>
+                                            {selectedPresetId !== 'manual' && (
+                                                <div className="bg-teal-50 rounded-xl p-3 mb-3">
+                                                    <p className="text-[10px] font-black text-teal-600 mb-2">세부 구장 선택</p>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {presets.find(p=>p.id===selectedPresetId)?.fieldNames.map((name,i) => (
+                                                            <button key={i} onClick={() => matchToggleSubCourt(i)}
+                                                                className={`px-2.5 py-1.5 rounded-lg font-black text-xs border transition-all ${presetToggles[i]?'bg-teal-500 text-white border-teal-500':'bg-white text-slate-500 border-slate-200'}`}>
+                                                                {name}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {selectedPresetId === 'manual' && (
+                                                <div className="space-y-2 mb-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-xs font-black text-slate-500 flex-1">구장 수: {matchConfig.courtCount}</p>
+                                                        <button onClick={() => { if(matchConfig.courtCount>1){ const fn=[...matchConfig.fieldNames];fn.pop();const ft=[...matchConfig.fieldTypes];ft.pop();setMatchConfig(p=>({...p,courtCount:p.courtCount-1,fieldNames:fn,fieldTypes:ft})); }}} className="p-2 rounded-lg bg-slate-100 text-slate-600"><Icon.Minus size={13}/></button>
+                                                        <button onClick={() => { if(matchConfig.courtCount<6){ const fn=[...matchConfig.fieldNames,`${matchConfig.courtCount+1}구장`];const ft=[...matchConfig.fieldTypes,'6vs6'];setMatchConfig(p=>({...p,courtCount:p.courtCount+1,fieldNames:fn,fieldTypes:ft})); }}} className="p-2 rounded-lg bg-slate-100 text-slate-600"><Icon.Plus size={13}/></button>
+                                                    </div>
+                                                    {matchConfig.fieldNames.map((name,i) => (
+                                                        <div key={i} className="flex gap-2 items-center">
+                                                            <input type="text" className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-black" style={{userSelect:'text'}} value={name}
+                                                                onChange={e => { const fn=[...matchConfig.fieldNames];fn[i]=e.target.value;setMatchConfig(p=>({...p,fieldNames:fn})); }}/>
+                                                            <select className="bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-black" value={matchConfig.fieldTypes[i]}
+                                                                onChange={e => { const ft=[...matchConfig.fieldTypes];ft[i]=e.target.value;setMatchConfig(p=>({...p,fieldTypes:ft})); }}>
+                                                                <option value="6vs6">6vs6</option><option value="5vs5">5vs5</option>
+                                                            </select>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <button onClick={() => setMatchConfig(p => ({...p, strictCourtSize:!p.strictCourtSize}))}
+                                                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${matchConfig.strictCourtSize?'bg-teal-50 border-teal-200':'bg-white border-slate-200'}`}>
+                                                <div className={`w-4 h-4 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${matchConfig.strictCourtSize?'bg-teal-500 border-teal-500':'border-slate-300'}`}>
+                                                    {matchConfig.strictCourtSize && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                                                </div>
+                                                <span className="text-xs font-black text-slate-700">5vs5 구장에 6명 이상 팀 배정 제외</span>
+                                            </button>
+                                        </div>
+
+                                        {confirmedDrafts.length > 0 && (() => {
+                                            const latest = [...confirmedDrafts].sort((a,b) => (b.meetingDate||'').localeCompare(a.meetingDate||''))[0];
+                                            return latest ? (
+                                                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                                                    <p className="text-xs font-black text-emerald-600">✓ 확정된 팀 편성: {latest.meetingDate}</p>
+                                                    <p className="text-xs text-emerald-500 mt-0.5">{latest.teams?.length}팀 · {latest.teams?.reduce((s,t)=>s+t.members.length,0)}명</p>
+                                                </div>
+                                            ) : null;
+                                        })()}
+
+                                        <button onClick={matchGenerateTable} disabled={matchConfig.courtCount === 0 || !confirmedDrafts.length}
+                                            className="w-full py-4 bg-teal-500 text-white rounded-2xl font-black text-base shadow-xl disabled:opacity-30 flex items-center justify-center gap-2">
+                                            <Icon.Calendar size={16}/> 매치 테이블 생성
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* 매치표 탭 */}
+                                {matchAdminView === 'results' && (
+                                    <div>
+                                        {localSchedule.list.length === 0
+                                            ? <div className="text-center py-16 text-slate-400"><div className="flex justify-center mb-3 opacity-30"><Icon.Calendar size={48}/></div><p className="font-black">설정 탭에서 매치 테이블을 생성해주세요</p></div>
+                                            : (
+                                                <div>
+                                                    <div id="match-capture-area">
+                                                        <div className="text-center mb-3">
+                                                            <p className="font-black text-slate-800">{matchConfig.meetingDate}</p>
+                                                            <p className="text-[10px] text-slate-400 mt-0.5">{matchConfig.startTime} ~ {matchConfig.endTime} · {localSchedule.list.length}라운드</p>
+                                                        </div>
+                                                        {localSchedule.list.map((session,si) => {
+                                                            const isDone = localCompletedMatches.has(session.id);
+                                                            const isCurrent = si === localMatchIndex;
+                                                            const isPast = si < localMatchIndex;
+                                                            return (
+                                                                <div key={session.id}
+                                                                    onClick={() => setLocalCompletedMatches(prev => { const n=new Set(prev); n.has(session.id)?n.delete(session.id):n.add(session.id); return n; })}
+                                                                    className={`match-row mb-2 p-3.5 rounded-2xl border shadow-sm transition-all ${isCurrent?'bg-teal-50 border-teal-300':isPast||isDone?'match-completed border-slate-100':'bg-white border-slate-100'}`}
+                                                                    style={isCurrent?{boxShadow:'0 0 0 2px #2dd4bf40'}:{}}>
+                                                                    <div className="flex items-center gap-2 mb-2">
+                                                                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 font-black text-[10px] ${isCurrent?'bg-teal-500 border-teal-500 text-white':isDone||isPast?'bg-emerald-500 border-emerald-500 text-white':'border-slate-300 text-slate-400'}`}>
+                                                                            {isDone||isPast?<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>:si+1}
+                                                                        </div>
+                                                                        <p className="font-black text-xs text-slate-600">{session.time}</p>
+                                                                        {isCurrent && <span className="text-[9px] font-black text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full ml-auto">진행 중</span>}
+                                                                    </div>
+                                                                    <div className="space-y-1.5 pl-8">
+                                                                        {session.matches.map((m,mi) => {
+                                                                            const[t1,t2]=m.match;
+                                                                            return (
+                                                                                <div key={mi} className="flex items-center gap-2">
+                                                                                    <span className="text-[9px] font-black text-slate-400 w-10 shrink-0">{matchConfig.fieldNames[m.fieldIdx]||`${m.fieldIdx+1}구장`}</span>
+                                                                                    <span className={`px-2.5 py-1 rounded-lg font-black text-xs ${getTeamBadge(t1.charCodeAt(0)-65)} ${isPast||isDone?'opacity-60':''}`}>{t1}</span>
+                                                                                    <span className="text-slate-400 font-black text-xs">vs</span>
+                                                                                    <span className={`px-2.5 py-1 rounded-lg font-black text-xs ${getTeamBadge(t2.charCodeAt(0)-65)} ${isPast||isDone?'opacity-60':''}`}>{t2}</span>
+                                                                                    <span className="text-[8px] font-black text-slate-300 ml-auto">{matchConfig.fieldTypes[m.fieldIdx]||'6vs6'}</span>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                        {session.resting.length > 0 && <p className="text-[9px] text-slate-400">휴식: {session.resting.join(', ')}</p>}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                    {!matchIsCapturing && (
+                                                        <div className="flex items-center gap-3 mt-3 p-4 card border-slate-100 rounded-2xl">
+                                                            <div className="flex-1">
+                                                                {localMatchIndex < localSchedule.list.length
+                                                                    ? <div><p className="text-xs font-black text-slate-500">{localMatchIndex+1} / {localSchedule.list.length} 라운드</p><p className="text-[10px] text-slate-400 mt-0.5">{localSchedule.list[localMatchIndex]?.time}</p></div>
+                                                                    : <p className="text-sm font-black text-emerald-500">✓ 모든 경기 종료</p>
+                                                                }
+                                                            </div>
+                                                            <button onClick={matchHandleNextMatch} disabled={localMatchIndex >= localSchedule.list.length}
+                                                                className="py-2.5 px-5 bg-teal-500 text-white rounded-xl font-black text-sm disabled:opacity-30">
+                                                                {localMatchIndex >= localSchedule.list.length ? '종료' : '다음 매치 →'}
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
+                                        }
+                                    </div>
+                                )}
+
+                                {/* 통계 탭 */}
+                                {matchAdminView === 'stats' && (
+                                    <div>
+                                        {!matchStatsData
+                                            ? <div className="text-center py-16 text-slate-400"><p className="font-black">매치 테이블을 먼저 생성해주세요</p></div>
+                                            : (
+                                                <div>
+                                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">팀별 경기 수</p>
+                                                    <div className="grid grid-cols-3 gap-2 mb-4">
+                                                        {matchStatsData.teams.map((t,i) => (
+                                                            <div key={t} className="card border-slate-100 rounded-2xl p-3 text-center">
+                                                                <span className={`inline-flex w-8 h-8 rounded-xl font-black text-sm items-center justify-center mb-2 ${getTeamBadge(i)}`}>{t}</span>
+                                                                <p className="text-2xl font-black text-slate-800">{matchStatsData.totalMatches[t]}</p>
+                                                                <p className="text-[10px] text-slate-400">경기</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">매치업 횟수</p>
+                                                    <div className="card border-slate-100 rounded-2xl p-3 overflow-x-auto">
+                                                        <table className="w-full text-xs font-black text-center">
+                                                            <thead><tr>
+                                                                <th className="p-1.5 text-slate-400">vs</th>
+                                                                {matchStatsData.teams.map(t=><th key={t} className="p-1.5"><span className={`inline-flex w-6 h-6 rounded-lg text-xs items-center justify-center ${getTeamBadge(matchStatsData.teams.indexOf(t))}`}>{t}</span></th>)}
+                                                            </tr></thead>
+                                                            <tbody>
+                                                                {matchStatsData.teams.map((t1,i) => (
+                                                                    <tr key={t1}>
+                                                                        <td className="p-1.5"><span className={`inline-flex w-6 h-6 rounded-lg text-xs items-center justify-center ${getTeamBadge(i)}`}>{t1}</span></td>
+                                                                        {matchStatsData.teams.map(t2 => (
+                                                                            <td key={t2} className={`p-1.5 ${t1===t2?'text-slate-200':'text-slate-700'}`}>{t1===t2?'-':matchStatsData.matchupCounts[t1]?.[t2]||0}</td>
+                                                                        ))}
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            )
+                                        }
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            /* ── 일반/회원 뷰 ── */
+                            !scheduleData
+                                ? <div className="text-center py-20 text-slate-500">
+                                    <div className="flex justify-center mb-4 opacity-25"><Icon.Calendar size={56}/></div>
+                                    <p className="font-black text-lg mb-2">매치 테이블 준비 중</p>
+                                    <p className="text-sm text-slate-400">팀 편성이 확정되면<br/>경기 일정이 공개됩니다</p>
+                                  </div>
                             : (() => {
                                 const sessions = scheduleData.schedule?.list || [];
                                 const cmi = scheduleData.currentMatchIndex ?? 0;
@@ -2021,7 +2455,7 @@ function App() {
                                     </div>
                                 );
                             })()
-                        }
+                        )}
                     </div>
                 )}
 
@@ -2568,6 +3002,70 @@ function App() {
                             className="w-full py-3.5 bg-teal-500 text-white rounded-2xl font-black text-sm shadow-lg">
                             {previewDraft.isConfirmed ? '불러오기' : '불러오기'}
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ===== 매치 기록 불러오기 모달 ===== */}
+            {isLoadMatchModalOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center" style={{zIndex:65}} onClick={() => setIsLoadMatchModalOpen(false)}>
+                    <div className="bg-white rounded-t-3xl p-5 w-full max-w-lg shadow-2xl max-h-[80vh] overflow-y-auto no-scrollbar" onClick={e => e.stopPropagation()}>
+                        <h2 className="text-lg font-black text-slate-800 mb-4">과거 기록 불러오기</h2>
+                        {savedMatchSchedules.length === 0
+                            ? <p className="text-center text-slate-400 py-8">저장된 기록이 없습니다</p>
+                            : savedMatchSchedules.map(s => (
+                                <div key={s.id} className="flex items-center gap-3 p-3.5 bg-slate-50 border border-slate-100 rounded-2xl mb-2">
+                                    <div className="flex-1">
+                                        <p className="font-black text-slate-800 text-sm">{s.meetingDate}</p>
+                                        <p className="text-xs text-slate-400 mt-0.5">{s.schedule?.list?.length||0}라운드 · {s.config?.courtCount||0}구장</p>
+                                    </div>
+                                    <button onClick={() => {
+                                        setLocalSchedule(s.schedule || {list:[],stats:{}});
+                                        setMatchConfig(p => ({...p, ...(s.config||{})}));
+                                        setLocalCompletedMatches(new Set(s.completedMatches||[]));
+                                        setLocalMatchIndex(s.currentMatchIndex||0);
+                                        setActiveMatchScheduleId(s.id);
+                                        setMatchAdminView('results');
+                                        setIsLoadMatchModalOpen(false);
+                                    }} className="px-3 py-2 bg-teal-500 text-white rounded-xl font-black text-xs">불러오기</button>
+                                    <button onClick={() => showConfirm('삭제','이 기록을 삭제하시겠습니까?', async () => await getCol('match_schedules').doc(s.id).delete())}
+                                        className="p-2 bg-red-50 text-red-400 rounded-xl"><Icon.Trash size={12}/></button>
+                                </div>
+                            ))
+                        }
+                        <button onClick={() => setIsLoadMatchModalOpen(false)} className="w-full py-3 text-slate-400 text-sm mt-2 font-black">닫기</button>
+                    </div>
+                </div>
+            )}
+
+            {/* ===== 구장 프리셋 추가 모달 ===== */}
+            {isPresetModalOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" style={{zIndex:65}} onClick={() => setIsPresetModalOpen(false)}>
+                    <div className="bg-white rounded-3xl p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <h2 className="text-lg font-black text-slate-800 mb-4">구장 프리셋 추가</h2>
+                        <div className="space-y-3 mb-4">
+                            <input type="text" placeholder="프리셋 이름 (예: 강남 풋살장)" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black" style={{userSelect:'text'}}
+                                value={presetForm.name} onChange={e => setPresetForm(p => ({...p, name:e.target.value}))}/>
+                            <div className="flex items-center gap-2">
+                                <p className="text-sm font-black text-slate-600 flex-1">구장 수: {presetForm.courtCount}</p>
+                                <button onClick={() => { if(presetForm.courtCount>1){const fn=[...presetForm.fieldNames];fn.pop();const ft=[...presetForm.fieldTypes];ft.pop();setPresetForm(p=>({...p,courtCount:p.courtCount-1,fieldNames:fn,fieldTypes:ft}));} }} className="p-2 rounded-lg bg-slate-100"><Icon.Minus size={13}/></button>
+                                <button onClick={() => { if(presetForm.courtCount<6){const fn=[...presetForm.fieldNames,`${presetForm.courtCount+1}구장`];const ft=[...presetForm.fieldTypes,'6vs6'];setPresetForm(p=>({...p,courtCount:p.courtCount+1,fieldNames:fn,fieldTypes:ft}));} }} className="p-2 rounded-lg bg-slate-100"><Icon.Plus size={13}/></button>
+                            </div>
+                            {presetForm.fieldNames.map((name,i) => (
+                                <div key={i} className="flex gap-2">
+                                    <input type="text" className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-black" style={{userSelect:'text'}} value={name}
+                                        onChange={e => { const fn=[...presetForm.fieldNames];fn[i]=e.target.value;setPresetForm(p=>({...p,fieldNames:fn})); }}/>
+                                    <select className="bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-black" value={presetForm.fieldTypes[i]}
+                                        onChange={e => { const ft=[...presetForm.fieldTypes];ft[i]=e.target.value;setPresetForm(p=>({...p,fieldTypes:ft})); }}>
+                                        <option value="6vs6">6vs6</option><option value="5vs5">5vs5</option>
+                                    </select>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => setIsPresetModalOpen(false)} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
+                            <button onClick={matchSavePreset} className="flex-1 py-3 bg-teal-500 text-white rounded-2xl font-black text-sm">저장</button>
+                        </div>
                     </div>
                 </div>
             )}
