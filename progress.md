@@ -57,7 +57,8 @@
 |------|-------|------|
 | 원본 | 696줄 | - |
 | 1단계 | 614줄 | -82줄 |
-| 2단계 (현재) | **451줄** | -163줄 |
+| 2단계 | 451줄 | -163줄 |
+| 3단계 (현재) | **354줄** | -97줄 |
 | 목표 | 500줄 이하 | ✅ 달성 |
 
 ## 완료된 분리 파일
@@ -66,6 +67,14 @@
 |------|------|
 | `roster-utils.js` | 회비 기간 계산, 상태 분류, 아이콘, 상태 설정(statusConfig) |
 | `roster-members.js` | DirectoryTab, AddMemberModal, EditMemberModal, ResignModal |
+| `roster-payment.js` | PaymentTab(회비 탭 화면), PaymentActionModal(납부/휴식 액션 모달) |
+
+## 남은 작업
+
+| 파일 | 상태 | 비고 |
+|------|------|------|
+| `roster-rest.js` | 계획 취소 권장 | processAction 내부에 납부와 혼재 — 별도 분리 불필요 |
+| `roster-admin.js` | 계획 취소 권장 | 한 줄 조건만 존재 — 별도 파일 의미 없음 |
 
 ---
 
