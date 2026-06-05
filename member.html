@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -37,6 +37,12 @@
     <script type="text/babel" src="tab-attend.js"></script>
     <script type="text/babel" src="tab-roster.js"></script>
     <script type="text/babel" src="modals.js"></script>
+    <script type="text/babel" src="member-header.js"></script>
+    <script type="text/babel" src="use-roster.js"></script>
+    <script type="text/babel" src="use-team.js"></script>
+    <script type="text/babel" src="use-match.js"></script>
+    <script type="text/babel" src="use-attend.js"></script>
+    <script type="text/babel" src="use-fcm.js"></script>
     <script src="handlers-roster.js"></script>
     <script src="handlers-attend.js"></script>
     <script src="handlers-team.js"></script>
@@ -46,14 +52,11 @@
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useEffect, useMemo, useRef } = React;
+const { useState, useEffect, useMemo } = React;
 
 function App() {
-    // 앱 상태
-    const [appView, setAppView] = useState('loading'); // loading | app
+    const [appView, setAppView] = useState('loading');
     const [tab, setTab] = useState('home');
-
-    // 회원 데이터
     const [memberData, setMemberData] = useState(() => {
         try {
             const s = JSON.parse(localStorage.getItem('moida_member_data'));
@@ -61,135 +64,79 @@ function App() {
             return s;
         } catch(e) { location.href = 'index.html'; return null; }
     });
-    const [memberInfo, setMemberInfo] = useState(null); // Firestore members doc
-
+    const [memberInfo, setMemberInfo] = useState(null);
     const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
-
-    // 관리자 여부 (role 기반)
     const isAdmin = ADMIN_ROLES.includes(memberData?.role);
     const [isAdminMode, setIsAdminMode] = useState(
         () => ADMIN_ROLES.includes(memberData?.role) && localStorage.getItem('moida_admin_mode') === 'true'
     );
-
-    // Firebase 데이터
     const [meetingSettings, setMeetingSettings] = useState(null);
-    // testMode는 관리자(attendance.html)만 제어 — 회원 앱은 읽기 전용
     const testMode = !!meetingSettings?.testMode;
-    const [teamDraftData, setTeamDraftData] = useState(null);
-    const [confirmedDrafts, setConfirmedDrafts] = useState([]);
-    const [scheduleData, setScheduleData] = useState(null);
-    const [matchViewMode, setMatchViewMode] = useState('my'); // 'my' | 'all'
-    const [mySession, setMySession] = useState(null); // 오늘 내 출석 세션
-
-    // ── 명단/회비 (관리자 전용) ──────────────────────────────────────────────────
-    const [allMembers, setAllMembers] = useState([]);
-    const [rosterSubTab, setRosterSubTab] = useState('directory');
-    const [targetMonth, setTargetMonth] = useState(()=>{
-        const n=new Date();
-        return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`;
-    });
-    const [filterCategory, setFilterCategory] = useState('all');
-    const [monthlyStatuses, setMonthlyStatuses] = useState({});
-    const [monthlyReasons, setMonthlyReasons] = useState({});
-    const [monthlyPaymentDates, setMonthlyPaymentDates] = useState({});
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [newMemberForm, setNewMemberForm] = useState({name:'',birth:'',gender:'남성',position:'all',level:'4',role:'회원',coupleId:'',joinDate:'',address:'',phone:''});
-    const [editingMember, setEditingMember] = useState(null);
-    const [resigningMember, setResigningMember] = useState(null);
-    const [resignForm, setResignForm] = useState({date:'',reason:'',isForced:false});
-    const [billingMember, setBillingMember] = useState(null);
-    const [actionStep, setActionStep] = useState('main');
-    const [selectedAction, setSelectedAction] = useState(null);
-    const [paymentDateInput, setPaymentDateInput] = useState('');
-    const [manualEndDate, setManualEndDate] = useState('');
-    const [specialRestReason, setSpecialRestReason] = useState('');
-    const [tempRestCount, setTempRestCount] = useState(0);
+    const [mySession, setMySession] = useState(null);
     const [alertModal, setAlertModal] = useState({show:false,title:'',content:'',type:'info',onConfirm:null});
     const showAlert = (title, content, type='info', onConfirm=null) => setAlertModal({show:true, title, content, type, onConfirm});
     const showConfirm = (title, content, onConfirm) => setAlertModal({show:true, title, content, type:'confirm', onConfirm});
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    // ── 팀 편성 관리자 패널 ──────────────────────────────────────────────────────
-    const [isTeamPanelOpen, setIsTeamPanelOpen] = useState(false);
-    const [teamMakerTab, setTeamMakerTab] = useState('generator');
-    const [tmSessionData, setTmSessionData] = useState([]);
-    const [tmMonthlyStatuses, setTmMonthlyStatuses] = useState({});
-    const [excludedIds, setExcludedIds] = useState([]);
-    const [teamingSettings, setTeamingSettings] = useState({teamCount:3,keepCouples:true,avoidOverlap:true});
-    const [editTeams, setEditTeams] = useState([]);
-    const [editIsConfirmed, setEditIsConfirmed] = useState(false);
-    const [editMeetingDate, setEditMeetingDate] = useState('');
-    const [draggedItem, setDraggedItem] = useState(null);
-    const [selectedMemberTM, setSelectedMemberTM] = useState(null);
-    const [selectedTeamTM, setSelectedTeamTM] = useState(null);
-    const [dropIndicator, setDropIndicator] = useState(null);
-    const [savedDrafts, setSavedDrafts] = useState([]);
-    const [teamStorageSubTab, setTeamStorageSubTab] = useState('confirmed');
-    const [previewDraft, setPreviewDraft] = useState(null);
-    const [isCapturing, setIsCapturing] = useState(false);
-    const isDraggingRef = useRef(false);
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    // ── 매치 관리자 패널 ──────────────────────────────────────────────────────────
-    const [isMatchPanelOpen, setIsMatchPanelOpen] = useState(false);
-    const [matchAdminView, setMatchAdminView] = useState('setup');
-    const [matchConfig, setMatchConfig] = useState({
-        meetingDate:'', courtCount:3, matchDuration:12, breakDuration:3,
-        startTime:'08:00', endTime:'10:00',
-        fieldNames:['1구장','2구장','3구장'], fieldTypes:['6vs6','6vs6','6vs6'],
-        strictCourtSize:false
-    });
-    const [localSchedule, setLocalSchedule] = useState({list:[],stats:{}});
-    const [localCompletedMatches, setLocalCompletedMatches] = useState(new Set());
-    const [localMatchIndex, setLocalMatchIndex] = useState(0);
-    const [presets, setPresets] = useState([]);
-    const [savedMatchSchedules, setSavedMatchSchedules] = useState([]);
-    const [selectedPresetId, setSelectedPresetId] = useState('manual');
-    const [presetToggles, setPresetToggles] = useState([]);
-    const [isLoadMatchModalOpen, setIsLoadMatchModalOpen] = useState(false);
-    const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
-    const [presetForm, setPresetForm] = useState({name:'',courtCount:3,fieldNames:['1구장','2구장','3구장'],fieldTypes:['6vs6','6vs6','6vs6']});
-    const [matchIsSaving, setMatchIsSaving] = useState(false);
-    const [activeMatchScheduleId, setActiveMatchScheduleId] = useState(null);
-    const [matchIsCapturing, setMatchIsCapturing] = useState(false);
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    // ── 출석 관리 패널 (관리자 전용) ──────────────────────────────────────────────
-    const [isAttendPanelOpen, setIsAttendPanelOpen] = useState(false);
-    const [attendSubTab, setAttendSubTab] = useState('setup'); // 'setup'|'attend'|'history'
-    const [attendHistory, setAttendHistory] = useState([]);
-    const [selectedHistoryDetail, setSelectedHistoryDetail] = useState(null);
-    const [historySortKey, setHistorySortKey] = useState('time');
-    const [historySortOrder, setHistorySortOrder] = useState('asc');
-    const [isEditingHistoryLocation, setIsEditingHistoryLocation] = useState(false);
-    const [editHistoryLocationValue, setEditHistoryLocationValue] = useState('');
-    const [historyEditTarget, setHistoryEditTarget] = useState(null);
-    const [attendModal, setAttendModal] = useState({type:null, data:null});
-    const [isAttendGuestModalOpen, setIsAttendGuestModalOpen] = useState(false);
-    const [attendNewGuest, setAttendNewGuest] = useState({name:'', gender:'남성', inviterId:'', level:'1'});
-    const [isQRGenModalOpen, setIsQRGenModalOpen] = useState(false);
-    const [currentQRToken, setCurrentQRToken] = useState('');
-    const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
-    const [attendIsPending, setAttendIsPending] = useState(false);
-    const [localMaxLimit, setLocalMaxLimit] = useState(null);
-    const [testModeBackup, setTestModeBackup] = useState(null);
-    const hasAutoNoShowRef = useRef(false);
-    const hasAutoFixedRef = useRef(false);
-    const [attendCurrentTime, setAttendCurrentTime] = useState(() => new Date());
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    // GPS 상태
-    const [gpsStatus, setGpsStatus] = useState('idle'); // idle | checking | within | outside | no_location | error
+    const [toast, setToast] = useState({ show:false, msg:'', type:'info' });
+    const showToast = (msg, type='info') => { setToast({show:true,msg,type}); setTimeout(()=>setToast(p=>({...p,show:false})),3000); };
+    const [gpsStatus, setGpsStatus] = useState('idle');
     const [distance, setDistance] = useState(null);
     const [isCheckingIn, setIsCheckingIn] = useState(false);
-
-    // QR 상태
-    const [qrStatus, setQrStatus] = useState('idle'); // idle | processing | success | error
+    const [qrStatus, setQrStatus] = useState('idle');
     const [qrMessage, setQrMessage] = useState('');
     const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
     const [lastScannedQR, setLastScannedQR] = useState({ token:null, date:null });
     const [nowTime, setNowTime] = useState(() => new Date());
     useEffect(() => { const t = setInterval(() => setNowTime(new Date()), 30000); return () => clearInterval(t); }, []);
+
+    // 기능별 훅
+    const { notifPermission, registerFcmToken, announcements } = useFCM({ memberData, showToast });
+    const roster = useRoster({ isAdminMode });
+    const team = useTeam({ isAdminMode, meetingSettings, allMembers: roster.allMembers });
+    const match = useMatch({ isAdminMode, meetingSettings, confirmedDrafts: team.confirmedDrafts });
+    const { scheduleData, matchViewMode, setMatchViewMode } = match;
+    const attend = useAttend({
+        isAdminMode, meetingSettings,
+        tmSessionData: team.tmSessionData,
+        activeMembers: roster.activeMembers,
+        tmMonthlyStatuses: team.tmMonthlyStatuses,
+        teamDraftData: team.teamDraftData,
+    });
+
+    useEffect(() => {
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+        auth.signInAnonymously().catch(e=>console.error(e));
+    }, []);
+
+    useEffect(() => {
+        const unsub = getCol('settings').doc('meeting_schedule_v2').onSnapshot(doc => {
+            if (doc.exists) setMeetingSettings(doc.data());
+        });
+        return () => unsub();
+    }, []);
+
+    useEffect(() => {
+        if (!memberData?.memberId || !meetingSettings?.date) return;
+        setMySession(null);
+        const unsub = getCol('weekly_session')
+            .where('memberId', '==', memberData.memberId)
+            .where('date', '==', meetingSettings.date)
+            .onSnapshot(snap => {
+                setMySession(snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() });
+            });
+        return () => unsub();
+    }, [memberData?.memberId, meetingSettings?.date]);
+
+    useEffect(() => {
+        if (!memberData?.memberId) return;
+        const unsub = getCol('members').doc(memberData.memberId).onSnapshot(doc => {
+            if (doc.exists) setMemberInfo({ id: doc.id, ...doc.data() });
+        });
+        return () => unsub();
+    }, [memberData]);
+
+    useEffect(() => { if (memberData?.memberId) setAppView('app'); }, []);
+
+    const urlParams = useMemo(() => getUrlParams(), []);
 
     const meetingDayInfo = useMemo(() => {
         if (!meetingSettings?.date || !meetingSettings?.start) return null;
@@ -207,7 +154,6 @@ function App() {
         return { type:'started', label:'모임 중' };
     }, [meetingSettings, nowTime]);
 
-    // 팀 공개 시각 = allowFrom (모임 시작 -70분), 출석 가능 시간과 동일
     const allowFromDisplay = useMemo(() => {
         if (!meetingSettings?.date || !meetingSettings?.start) return null;
         const [y,m,d] = meetingSettings.date.split('-').map(Number);
@@ -228,274 +174,15 @@ function App() {
         return nowTime.getTime() >= allowFrom;
     }, [meetingSettings, meetingDayInfo, nowTime, testMode]);
 
-    // 알림
-    const [toast, setToast] = useState({ show:false, msg:'', type:'info' });
-    const showToast = (msg, type='info') => {
-        setToast({show:true,msg,type});
-        setTimeout(()=>setToast(p=>({...p,show:false})),3000);
-    };
-
-    // URL에 QR 토큰이 있는지 확인
-    const urlParams = useMemo(() => getUrlParams(), []);
-
-    // Firebase 인증 + FCM 토큰 등록
-    const VAPID_KEY = 'BMuOxkIP0Xm912P0lVDUP8KUFR2y2FD-Acxgal5lNYemqWaldDon6kr9c_KrLEqKRFuumPCenIYnwEn0z_1WuXU';
-    useEffect(() => {
-        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
-        auth.signInAnonymously().catch(e=>console.error(e));
-    }, []);
-
-    // FCM 알림 권한 상태
-    const [notifPermission, setNotifPermission] = useState(() =>
-        ('Notification' in window) ? Notification.permission : 'unsupported'
-    );
-
-    const registerFcmToken = async () => {
-        try {
-            if (!('Notification' in window)) return;
-            const permission = await Notification.requestPermission();
-            setNotifPermission(permission);
-            if (permission !== 'granted') return;
-            const swReg = await navigator.serviceWorker.ready;
-            const messaging = firebase.messaging();
-            const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
-            if (token && memberData?.memberId) {
-                await getCol('fcm_tokens').doc(memberData.memberId).set({
-                    token,
-                    name: memberData.name || '',
-                    updatedAt: new Date().toISOString(),
-                });
-                showToast('알림이 등록됐어요!', 'success');
-            }
-        } catch(e) { console.warn('FCM 토큰 등록 실패:', e); }
-    };
-
-    // 이미 허용된 경우 자동 토큰 갱신
-    useEffect(() => {
-        if (!memberData?.memberId) return;
-        if (Notification.permission !== 'granted') return;
-        (async () => {
-            try {
-                const swReg = await navigator.serviceWorker.ready;
-                const messaging = firebase.messaging();
-                const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
-                if (token) {
-                    await getCol('fcm_tokens').doc(memberData.memberId).set({
-                        token, name: memberData.name || '', updatedAt: new Date().toISOString(),
-                    });
-                }
-            } catch(e) { console.warn('FCM 토큰 갱신 실패:', e); }
-        })();
-    }, [memberData?.memberId]);
-
-    // 포그라운드 푸시 메시지 처리 (앱이 열려있을 때도 알림 표시)
-    useEffect(() => {
-        if (!('Notification' in window) || notifPermission !== 'granted') return;
-        let unsub = null;
-        navigator.serviceWorker.ready.then(swReg => {
-            try {
-                const messaging = firebase.messaging();
-                unsub = messaging.onMessage(payload => {
-                    const title = payload.notification?.title || '모이다';
-                    const body  = payload.notification?.body  || '';
-                    swReg.showNotification(title, {
-                        body,
-                        icon:  '/moida/icon.png',
-                        badge: '/moida/icon.png',
-                        data:  { url: 'https://nakdo0415-crypto.github.io/moida/' },
-                    });
-                });
-            } catch(e) { console.warn('FCM onMessage 설정 실패:', e); }
-        });
-        return () => { if (unsub) unsub(); };
-    }, [notifPermission]);
-
-    // 공지사항 로딩
-    const [announcements, setAnnouncements] = useState([]);
-    useEffect(() => {
-        const unsub = getCol('notifications')
-            .orderBy('sentAt', 'desc')
-            .limit(10)
-            .onSnapshot(snap => {
-                const list = [];
-                snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-                setAnnouncements(list);
-            }, () => {});
-        return () => unsub();
-    }, []);
-
-    // 설정 읽기
-    useEffect(() => {
-        const unsub = getCol('settings').doc('meeting_schedule_v2').onSnapshot(doc => {
-            if (doc.exists) setMeetingSettings(doc.data());
-        });
-        return () => unsub();
-    }, []);
-
-    // 팀 편성 읽기 (orderBy 없이 — 복합 인덱스 불필요, JS에서 필터/정렬)
-    useEffect(() => {
-        const unsub = getCol('team_drafts')
-            .where('isConfirmed', '==', true)
-            .onSnapshot(snap => {
-                const list = [];
-                snap.forEach(d => list.push(d.data()));
-                setConfirmedDrafts(list);
-            }, () => {});
-        return () => unsub();
-    }, []);
-
-    // 현재 모임 날짜에 맞는 확정 팀 편성 선택
-    useEffect(() => {
-        const date = meetingSettings?.date;
-        if (!date || !confirmedDrafts.length) { setTeamDraftData(null); return; }
-        const filtered = confirmedDrafts
-            .filter(d => d.meetingDate === date)
-            .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-        setTeamDraftData(filtered[0] || null);
-    }, [confirmedDrafts, meetingSettings?.date]);
-
-    // 매치 테이블 읽기
-    useEffect(() => {
-        const unsub = getCol('match_schedules')
-            .orderBy('createdAt', 'desc')
-            .limit(1)
-            .onSnapshot(snap => {
-                setScheduleData(snap.empty ? null : snap.docs[0].data());
-            });
-        return () => unsub();
-    }, []);
-
-    // 매치 관리자: court_presets + match_schedules 전체 읽기
-    useEffect(() => {
-        if (!isAdminMode) return;
-        const u1 = getCol('court_presets').orderBy('createdAt').onSnapshot(snap => setPresets(snap.docs.map(d => ({id:d.id,...d.data()}))));
-        const u2 = getCol('match_schedules').orderBy('createdAt','desc').onSnapshot(snap => setSavedMatchSchedules(snap.docs.map(d => ({id:d.id,...d.data()}))));
-        return () => { u1(); u2(); };
-    }, [isAdminMode]);
-
-    // matchConfig: 모임날짜/확정팀 자동 반영
-    useEffect(() => {
-        if (!isAdminMode) return;
-        setMatchConfig(p => ({...p, meetingDate: meetingSettings?.date || p.meetingDate}));
-    }, [isAdminMode, meetingSettings?.date]);
-
-    // 내 출석 세션 읽기
-    useEffect(() => {
-        if (!memberData?.memberId || !meetingSettings?.date) return;
-        setMySession(null);
-        const unsub = getCol('weekly_session')
-            .where('memberId', '==', memberData.memberId)
-            .where('date', '==', meetingSettings.date)
-            .onSnapshot(snap => {
-                setMySession(snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() });
-            });
-        return () => unsub();
-    }, [memberData?.memberId, meetingSettings?.date]);
-
-    // members 문서 읽기
-    useEffect(() => {
-        if (!memberData?.memberId) return;
-        const unsub = getCol('members').doc(memberData.memberId).onSnapshot(doc => {
-            if (doc.exists) setMemberInfo({ id: doc.id, ...doc.data() });
-        });
-        return () => unsub();
-    }, [memberData]);
-
-    // allMembers: 관리자 모드일 때만 구독
-    useEffect(() => {
-        if (!isAdminMode) return;
-        const unsub = getMemberCol().onSnapshot(snap => {
-            setAllMembers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-        });
-        return () => unsub();
-    }, [isAdminMode]);
-
-    // tmSessionData: 관리자 모드 시 weekly_session 구독
-    useEffect(() => {
-        if (!isAdminMode) return;
-        const unsub = getCol('weekly_session').onSnapshot(snap => {
-            setTmSessionData(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-        });
-        return () => unsub();
-    }, [isAdminMode]);
-
-    // tmMonthlyStatuses: 모임 날짜 기준 월 구독
-    useEffect(() => {
-        if (!isAdminMode || !meetingSettings?.date) return;
-        const [y, m] = meetingSettings.date.split('-');
-        const docKey = `${y}-${m}`;
-        const unsub = getCol('monthly_checks').doc(docKey).onSnapshot(doc => {
-            setTmMonthlyStatuses(doc.exists ? (doc.data().statuses || {}) : {});
-        });
-        return () => unsub();
-    }, [isAdminMode, meetingSettings?.date]);
-
-    // savedDrafts: 임시저장 목록 (isConfirmed=false)
-    useEffect(() => {
-        if (!isAdminMode) return;
-        const unsub = getCol('team_drafts').where('isConfirmed', '==', false).onSnapshot(snap => {
-            const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            setSavedDrafts(list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')));
-        }, () => {});
-        return () => unsub();
-    }, [isAdminMode]);
-
-    // teamingSettings: maxLimit 변경 시 팀 수 자동 조정
-    useEffect(() => {
-        const lim = parseInt(meetingSettings?.maxLimit || 18);
-        setTeamingSettings(prev => ({ ...prev, teamCount: Math.max(2, Math.round(lim / 6)) }));
-    }, [meetingSettings?.maxLimit]);
-
-    // monthly_checks: 관리자 모드 + targetMonth 변경 시
-    useEffect(() => {
-        if (!isAdminMode || !targetMonth) return;
-        const unsub = getMonthlyCol().doc(targetMonth).onSnapshot(doc => {
-            if (doc.exists) {
-                const data = doc.data();
-                setMonthlyStatuses(data.statuses || {});
-                setMonthlyReasons(data.reasons || {});
-                setMonthlyPaymentDates(data.paymentDates || {});
-            } else {
-                setMonthlyStatuses({});
-                setMonthlyReasons({});
-                setMonthlyPaymentDates({});
-            }
-        });
-        return () => unsub();
-    }, [isAdminMode, targetMonth]);
-
-    // 출석 기록 구독 (관리자)
-    useEffect(() => {
-        if (!isAdminMode) return;
-        const unsub = getHistoryCol().onSnapshot(snap => {
-            setAttendHistory(snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.date.localeCompare(a.date)));
-        }, () => {});
-        return () => unsub();
-    }, [isAdminMode]);
-
-    // attendCurrentTime 10초 갱신 (관리자)
-    useEffect(() => {
-        if (!isAdminMode) return;
-        const t = setInterval(() => setAttendCurrentTime(new Date()), 10000);
-        return () => clearInterval(t);
-    }, [isAdminMode]);
-
-    // QR 코드 렌더링
-    useEffect(() => {
-        if (!isQRGenModalOpen || !currentQRToken || !meetingSettings?.date) return;
-        setTimeout(() => {
-            const container = document.getElementById('attend-qr-canvas');
-            if (!container) return;
-            container.innerHTML = '';
-            const qrUrl = `https://nakdo0415-crypto.github.io/moida/member.html?token=${currentQRToken}&date=${meetingSettings.date}`;
-            new QRCode(container, { text:qrUrl, width:220, height:220, colorDark:'#0f172a', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M });
-        }, 100);
-    }, [isQRGenModalOpen, currentQRToken, meetingSettings?.date]);
-
-    // 초기 앱 뷰 설정
-    useEffect(() => {
-        if (memberData?.memberId) setAppView('app');
-    }, []);
+    const myTeamInfo = useMemo(() => {
+        if (!team.teamDraftData?.teams || !memberData?.memberId) return null;
+        for (let i = 0; i < team.teamDraftData.teams.length; i++) {
+            const t = team.teamDraftData.teams[i];
+            const foundIdx = t.members.findIndex(m => m.memberId === memberData.memberId || m.id === memberData.memberId);
+            if (foundIdx !== -1) return { teamIdx: i, teamName: getTeamName(i), members: t.members, jerseyNumber: foundIdx + 1 };
+        }
+        return null;
+    }, [team.teamDraftData, memberData]);
 
     const { processQRToken, handleQRAttendance, handleInAppQRScan, handleGPSCheckIn, handleGPSAttend } = makeQRGPSHandlers({
         memberData, testMode, meetingSettings, mySession, urlParams,
@@ -507,274 +194,84 @@ function App() {
         if (urlParams.token && appView === 'app') handleQRAttendance();
     }, [urlParams.token, appView]);
 
-    // 로그아웃
-    const handleLogout = () => {
-        localStorage.removeItem('moida_member_data');
-        localStorage.removeItem('moida_admin_mode');
-        location.href = 'index.html';
-    };
-
-    const toggleTheme = () => {
-        const isDark = !darkMode;
-        setDarkMode(isDark);
-        document.documentElement.classList.toggle('dark', isDark);
-        localStorage.setItem('moida_theme', isDark ? 'dark' : 'light');
-    };
-
-    const toggleAdminMode = () => {
-        const next = !isAdminMode;
-        setIsAdminMode(next);
-        localStorage.setItem('moida_admin_mode', next ? 'true' : 'false');
-        if (!next && tab === 'roster') setTab('home');
-    };
-
-
-
-    // 내 팀 정보
-    const myTeamInfo = useMemo(() => {
-        if (!teamDraftData?.teams || !memberData?.memberId) return null;
-        for (let i = 0; i < teamDraftData.teams.length; i++) {
-            const team = teamDraftData.teams[i];
-            const foundIdx = team.members.findIndex(m => m.memberId === memberData.memberId || m.id === memberData.memberId);
-            if (foundIdx !== -1) return { teamIdx: i, teamName: getTeamName(i), members: team.members, jerseyNumber: foundIdx + 1 };
-        }
-        return null;
-    }, [teamDraftData, memberData]);
-
-    // ── 출석 관리 computed ────────────────────────────────────────────────────────
-    const attendActiveParticipants = useMemo(() =>
-        tmSessionData.filter(p => p.date === (meetingSettings?.date || ''))
-            .sort((a,b) => (a.createdAt||'').localeCompare(b.createdAt||'') || a.name.localeCompare(b.name)),
-    [tmSessionData, meetingSettings?.date]);
-
-    const { attendNormalMembers, attendGuestEligibleMembers } = useMemo(() => {
-        const monthStr = meetingSettings?.date?.substring(0,7) || '';
-        const normal = [], guestEligible = [];
-        activeMembers.sort((a,b)=>a.name.localeCompare(b.name)).forEach(member => {
-            if (ADMIN_ROLES.includes(member.role)) { normal.push(member); return; }
-            if (member.isSpecialRest) { guestEligible.push(member); return; }
-            const isResting = tmMonthlyStatuses[member.id] === 'rest';
-            if (isResting) {
-                const info = getMembershipStatus(member, monthStr);
-                if (info?.active) guestEligible.push(member);
-                return;
-            }
-            const isPaid = tmMonthlyStatuses[member.id] === 'paid';
-            const info = getMembershipStatus(member, monthStr);
-            if (isPaid || info?.active) normal.push(member);
-        });
-        return { attendNormalMembers: normal, attendGuestEligibleMembers: guestEligible };
-    }, [activeMembers, tmMonthlyStatuses, meetingSettings?.date]);
-
-    const attendGroupedTeams = useMemo(() => {
-        if (!teamDraftData?.teams) return [];
-        return teamDraftData.teams.map((t, teamIdx) => {
-            const members = t.members.map(tm => {
-                const p = attendActiveParticipants.find(p => p.memberId === (tm.memberId||tm.id));
-                return p || null;
-            }).filter(Boolean).map((p, i) => ({...p, jerseyNumber: i+1}));
-            return members.length > 0 ? {teamName: getTeamName(teamIdx), teamIdx, members} : null;
-        }).filter(Boolean);
-    }, [attendActiveParticipants, teamDraftData]);
-
-    const isMeetingOver = useMemo(() => {
-        if (!meetingSettings?.date || !meetingSettings?.end) return false;
-        const [y,m,d] = meetingSettings.date.split('-');
-        const [hr,min] = meetingSettings.end.split(':');
-        return attendCurrentTime >= new Date(parseInt(y),parseInt(m)-1,parseInt(d),parseInt(hr),parseInt(min),0);
-    }, [meetingSettings?.date, meetingSettings?.end, attendCurrentTime]);
-
-    const attendLimit = useMemo(() => testMode ? attendActiveParticipants.length : (meetingSettings?.maxLimit || 18), [testMode, attendActiveParticipants.length, meetingSettings?.maxLimit]);
-    const attendActiveList = useMemo(() => attendActiveParticipants.slice(0, attendLimit), [attendActiveParticipants, attendLimit]);
-    const attendWaitingList = useMemo(() => attendActiveParticipants.slice(attendLimit), [attendActiveParticipants, attendLimit]);
-    const attendCheckedInCount = useMemo(() => attendActiveList.filter(p=>p.checkedIn).length, [attendActiveList]);
-    const attendAssignedIds = useMemo(() => new Set(attendGroupedTeams.flatMap(g=>g.members.map(m=>m.id))), [attendGroupedTeams]);
-    const attendUnassignedActive = useMemo(() => attendActiveList.filter(p=>!attendAssignedIds.has(p.id)), [attendActiveList, attendAssignedIds]);
-
-    const sortedHistoryRecords = useMemo(() => {
-        if (!selectedHistoryDetail?.records) return [];
-        const list = selectedHistoryDetail.records.map((r,i) => ({...r, originalIndex:i}));
-        if (historySortKey === 'time') return list.sort((a,b)=>(a.timestamp||'99:99').localeCompare(b.timestamp||'99:99'));
-        if (historySortKey === 'status') {
-            const order = {'정상':1,'지각':2,'노쇼':3,'미출석':4};
-            return list.sort((a,b) => {
-                let diff = (order[a.status]||9)-(order[b.status]||9);
-                if (historySortOrder==='desc') diff=-diff;
-                return diff || (a.timestamp||'99:99').localeCompare(b.timestamp||'99:99');
-            });
-        }
-        return list;
-    }, [selectedHistoryDetail, historySortKey, historySortOrder]);
-
-    const attendHourOptions = useMemo(() => Array.from({length:24},(_,i)=>String(i).padStart(2,'0')), []);
-    const attendMinuteOptions = useMemo(() => Array.from({length:12},(_,i)=>String(i*5).padStart(2,'0')), []);
-    const snapMin = (m) => { const n=parseInt(m)||0; const s=Math.round(n/5)*5; return String(s>=60?0:s).padStart(2,'0'); };
-
-    // 자동 노쇼 처리
-    useEffect(() => {
-        if (!isAdminMode || !isMeetingOver || hasAutoNoShowRef.current || !meetingSettings?.date) return;
-        const _d = new Date();
-        const todayStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
-        if (meetingSettings.date !== todayStr) return;
-        hasAutoNoShowRef.current = true;
-        const lim = meetingSettings?.maxLimit || 18;
-        const date = meetingSettings.date;
-        (async () => {
-            try {
-                const snap = await getSessionCol().where('date','==',date).get();
-                const sorted = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||'')||a.name.localeCompare(b.name));
-                const toNoShow = sorted.slice(0,lim).filter(p=>!p.checkedIn&&p.status!=='노쇼');
-                if (toNoShow.length===0) return;
-                const batch = db.batch();
-                toNoShow.forEach(p => batch.update(getSessionCol().doc(p.id),{status:'노쇼'}));
-                await batch.commit();
-            } catch(e) { console.error('자동 노쇼 처리 실패:',e); }
-        })();
-    }, [isMeetingOver, isAdminMode]);
-    useEffect(() => { hasAutoNoShowRef.current = false; }, [meetingSettings?.date, meetingSettings?.end]);
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    // ── 명단/회비 computed ────────────────────────────────────────────────────────
-    const activeMembers = useMemo(() => allMembers.filter(m => !m.isResigned), [allMembers]);
-    const resignedMembers = useMemo(() => allMembers.filter(m => m.isResigned), [allMembers]);
-    const filteredMembers = useMemo(() => {
-        let list = [...activeMembers].sort((a,b) => a.name.localeCompare(b.name));
-        if (filterCategory !== 'all') {
-            list = list.filter(m => getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth) === filterCategory);
-        }
-        return list;
-    }, [activeMembers, filterCategory, monthlyStatuses, monthlyReasons, targetMonth]);
-    const filterCounts = useMemo(() => {
-        const counts = {all:activeMembers.length, monthly:0, half:0, full:0, rest:0, special:0, unpaid:0};
-        activeMembers.forEach(m => {
-            const type = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
-            if (type !== 'staff' && counts[type] !== undefined) counts[type]++;
-        });
-        return counts;
-    }, [activeMembers, monthlyStatuses, monthlyReasons, targetMonth]);
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    // ── 팀 편성 computed ──────────────────────────────────────────────────────────
-    const tmMeetingDate = meetingSettings?.date || '';
-    const tmMaxLimit = parseInt(meetingSettings?.maxLimit || 18);
-    const pastTeammatesMap = useMemo(() => {
-        const map = {};
-        const sorted = [...confirmedDrafts].sort((a, b) => (b.meetingDate||'').localeCompare(a.meetingDate||''));
-        if (sorted[0]?.teams) {
-            sorted[0].teams.forEach(team => {
-                const ids = team.members.map(m => m.memberId || m.id);
-                ids.forEach(id1 => {
-                    if (!map[id1]) map[id1] = new Set();
-                    ids.forEach(id2 => { if (id1 !== id2) map[id1].add(id2); });
-                });
-            });
-        }
-        return map;
-    }, [confirmedDrafts]);
-
-    const tmAllAttendees = useMemo(() => {
-        if (!tmMeetingDate) return [];
-        const [y, m] = tmMeetingDate.split('-');
-        const targetMonthStr = `${y}-${m}`;
-        return tmSessionData.filter(s => {
-            if (!s.date || s.date.trim() !== tmMeetingDate.trim() || s.status === '노쇼') return false;
-            if (s.isGuest) return true;
-            const mi = allMembers.find(mm => mm.id === s.memberId);
-            if (!mi) return true;
-            if (mi.isResigned) return false;
-            if (mi.isSpecialRest && targetMonthStr >= (mi.specialRestStartMonth || '0000-00')) return false;
-            if (tmMonthlyStatuses[s.memberId] === 'rest') return false;
-            return true;
-        }).sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || '') || a.name.localeCompare(b.name));
-    }, [tmSessionData, tmMeetingDate, allMembers, tmMonthlyStatuses]);
-
-    const tmEntryList = useMemo(() => tmAllAttendees.slice(0, tmMaxLimit), [tmAllAttendees, tmMaxLimit]);
-    const tmActiveList = useMemo(() => tmEntryList.filter(p => !excludedIds.includes(p.memberId || p.id)), [tmEntryList, excludedIds]);
-
-    const tmUnassigned = useMemo(() => {
-        if (editTeams.length === 0) return [];
-        const assignedIds = new Set();
-        editTeams.forEach(t => t.members.forEach(m => assignedIds.add(m.memberId || m.id)));
-        return tmAllAttendees.filter(a => !assignedIds.has(a.memberId || a.id) && !excludedIds.includes(a.memberId || a.id)).map(p => {
-            const mi = allMembers.find(mm => mm.id === p.memberId) || {};
-            const lvl = parseInt(mi.level || p.level || 4);
-            return { ...p, name: mi.name || p.name, level: lvl, points: getLevelPoints(lvl) };
-        });
-    }, [tmAllAttendees, editTeams, allMembers, excludedIds]);
-
-    const tmLevelStats = useMemo(() => {
-        const s = {1:0,2:0,3:0,4:0,5:0,6:0};
-        tmActiveList.forEach(p => { const mi = allMembers.find(mm => mm.id === p.memberId) || {}; const l = parseInt(mi.level || p.level || 0); if (l > 0) { const n = l > 6 ? l - 6 : l; if (s[n] !== undefined) s[n]++; } });
-        return s;
-    }, [tmActiveList, allMembers]);
-    // ─────────────────────────────────────────────────────────────────────────────
+    const handleLogout = () => { localStorage.removeItem('moida_member_data'); localStorage.removeItem('moida_admin_mode'); location.href = 'index.html'; };
+    const toggleTheme = () => { const isDark = !darkMode; setDarkMode(isDark); document.documentElement.classList.toggle('dark', isDark); localStorage.setItem('moida_theme', isDark ? 'dark' : 'light'); };
+    const toggleAdminMode = () => { const next = !isAdminMode; setIsAdminMode(next); localStorage.setItem('moida_admin_mode', next ? 'true' : 'false'); if (!next && tab === 'roster') setTab('home'); };
 
     const { updateMeetingSettingsAdmin, attendHandleCheckIn, attendHandleUncheckIn,
             attendToggleParticipant, attendToggleParticipantAsGuest, attendHandleResetSelection,
             attendHandleAddGuest, attendHandleTestSelect, attendSaveAndReset,
             attendHandleDeleteHistory, handleHistoryStatusUpdate, handleUpdateHistoryLocation,
             generateAttendQRCode, attendToggleTestMode } = makeAttendHandlers({
-        meetingSettings, testMode, showAlert, showConfirm, setAttendModal,
-        tmSessionData, activeMembers, selectedHistoryDetail, setSelectedHistoryDetail,
-        setMeetingSettings, historyEditTarget, setHistoryEditTarget, editHistoryLocationValue,
-        setIsEditingHistoryLocation, attendIsPending, setAttendIsPending,
-        setIsAttendGuestModalOpen, setAttendNewGuest, attendNewGuest,
-        setCurrentQRToken, setIsQRGenModalOpen, testModeBackup, setTestModeBackup
+        meetingSettings, testMode, showAlert, showConfirm, setAttendModal: attend.setAttendModal,
+        tmSessionData: team.tmSessionData, activeMembers: roster.activeMembers,
+        selectedHistoryDetail: attend.selectedHistoryDetail, setSelectedHistoryDetail: attend.setSelectedHistoryDetail,
+        setMeetingSettings, historyEditTarget: attend.historyEditTarget, setHistoryEditTarget: attend.setHistoryEditTarget,
+        editHistoryLocationValue: attend.editHistoryLocationValue,
+        setIsEditingHistoryLocation: attend.setIsEditingHistoryLocation,
+        attendIsPending: attend.attendIsPending, setAttendIsPending: attend.setAttendIsPending,
+        setIsAttendGuestModalOpen: attend.setIsAttendGuestModalOpen,
+        setAttendNewGuest: attend.setAttendNewGuest, attendNewGuest: attend.attendNewGuest,
+        setCurrentQRToken: attend.setCurrentQRToken, setIsQRGenModalOpen: attend.setIsQRGenModalOpen,
+        testModeBackup: attend.testModeBackup, setTestModeBackup: attend.setTestModeBackup
     });
 
     const { moveMonth, handleAddMember, handleUpdateMember, handleResignConfirm,
             handleBillingMemberClick, processAction } = makeRosterHandlers({
-        newMemberForm, setNewMemberForm, setIsAddModalOpen,
-        editingMember, setEditingMember,
-        resigningMember, setResigningMember, resignForm,
-        billingMember, setBillingMember, targetMonth,
-        monthlyReasons, paymentDateInput, specialRestReason,
-        manualEndDate, tempRestCount,
-        setActionStep, setSelectedAction, setPaymentDateInput,
-        setSpecialRestReason, setTempRestCount, setManualEndDate,
-        setTargetMonth, setFilterCategory,
+        newMemberForm: roster.newMemberForm, setNewMemberForm: roster.setNewMemberForm,
+        setIsAddModalOpen: roster.setIsAddModalOpen,
+        editingMember: roster.editingMember, setEditingMember: roster.setEditingMember,
+        resigningMember: roster.resigningMember, setResigningMember: roster.setResigningMember,
+        resignForm: roster.resignForm,
+        billingMember: roster.billingMember, setBillingMember: roster.setBillingMember,
+        targetMonth: roster.targetMonth,
+        monthlyReasons: roster.monthlyReasons, paymentDateInput: roster.paymentDateInput,
+        specialRestReason: roster.specialRestReason, manualEndDate: roster.manualEndDate,
+        tempRestCount: roster.tempRestCount,
+        setActionStep: roster.setActionStep, setSelectedAction: roster.setSelectedAction,
+        setPaymentDateInput: roster.setPaymentDateInput,
+        setSpecialRestReason: roster.setSpecialRestReason, setTempRestCount: roster.setTempRestCount,
+        setManualEndDate: roster.setManualEndDate,
+        setTargetMonth: roster.setTargetMonth, setFilterCategory: roster.setFilterCategory,
         showAlert, showConfirm
     });
 
     const { tmSaveDraft, tmLoadDraft, tmConfirm, tmReset, generateTeams, tmReGenerate,
             tmDragStart, tmDragEnd, tmMemberDragOver, tmTeamDragOver, tmTeamDragLeave,
             tmDrop, tmMemberClick, tmMoveToTeam, tmTeamBadgeClick, tmCapture } = makeTeamHandlers({
-        meetingSettings, editTeams, setEditTeams, editIsConfirmed, setEditIsConfirmed,
-        editMeetingDate, setEditMeetingDate, setTeamMakerTab, teamingSettings,
-        tmActiveList, allMembers, tmMeetingDate, confirmedDrafts, pastTeammatesMap,
-        excludedIds, draggedItem, setDraggedItem, dropIndicator, setDropIndicator,
-        selectedMemberTM, setSelectedMemberTM, selectedTeamTM, setSelectedTeamTM,
-        isDraggingRef, setPreviewDraft, setIsCapturing,
-        showAlert, showConfirm
+        meetingSettings, editTeams: team.editTeams, setEditTeams: team.setEditTeams,
+        editIsConfirmed: team.editIsConfirmed, setEditIsConfirmed: team.setEditIsConfirmed,
+        editMeetingDate: team.editMeetingDate, setEditMeetingDate: team.setEditMeetingDate,
+        setTeamMakerTab: team.setTeamMakerTab, teamingSettings: team.teamingSettings,
+        tmActiveList: team.tmActiveList, allMembers: roster.allMembers,
+        tmMeetingDate: team.tmMeetingDate, confirmedDrafts: team.confirmedDrafts,
+        pastTeammatesMap: team.pastTeammatesMap, excludedIds: team.excludedIds,
+        draggedItem: team.draggedItem, setDraggedItem: team.setDraggedItem,
+        dropIndicator: team.dropIndicator, setDropIndicator: team.setDropIndicator,
+        selectedMemberTM: team.selectedMemberTM, setSelectedMemberTM: team.setSelectedMemberTM,
+        selectedTeamTM: team.selectedTeamTM, setSelectedTeamTM: team.setSelectedTeamTM,
+        isDraggingRef: team.isDraggingRef, setPreviewDraft: team.setPreviewDraft,
+        setIsCapturing: team.setIsCapturing, showAlert, showConfirm
     });
 
     const { splitTime, matchGenerateTable, matchSaveSchedule, matchHandleNextMatch,
             matchHandleCapture, matchHandlePresetSelect, matchToggleSubCourt,
             matchSavePreset } = makeMatchHandlers({
-        confirmedDrafts, matchConfig, setMatchConfig,
-        localSchedule, setLocalSchedule, localCompletedMatches, setLocalCompletedMatches,
-        localMatchIndex, setLocalMatchIndex, activeMatchScheduleId, setActiveMatchScheduleId,
-        setMatchIsSaving, setMatchIsCapturing, presets, presetToggles, setPresetToggles,
-        selectedPresetId, setSelectedPresetId, presetForm, setPresetForm,
-        setIsPresetModalOpen, setMatchAdminView, showAlert
+        confirmedDrafts: team.confirmedDrafts, matchConfig: match.matchConfig,
+        setMatchConfig: match.setMatchConfig, localSchedule: match.localSchedule,
+        setLocalSchedule: match.setLocalSchedule, localCompletedMatches: match.localCompletedMatches,
+        setLocalCompletedMatches: match.setLocalCompletedMatches,
+        localMatchIndex: match.localMatchIndex, setLocalMatchIndex: match.setLocalMatchIndex,
+        activeMatchScheduleId: match.activeMatchScheduleId,
+        setActiveMatchScheduleId: match.setActiveMatchScheduleId,
+        setMatchIsSaving: match.setMatchIsSaving, setMatchIsCapturing: match.setMatchIsCapturing,
+        presets: match.presets, presetToggles: match.presetToggles,
+        setPresetToggles: match.setPresetToggles, selectedPresetId: match.selectedPresetId,
+        setSelectedPresetId: match.setSelectedPresetId, presetForm: match.presetForm,
+        setPresetForm: match.setPresetForm, setIsPresetModalOpen: match.setIsPresetModalOpen,
+        setMatchAdminView: match.setMatchAdminView, showAlert
     });
-    const matchStatsData = useMemo(() => {
-        if (!localSchedule.list.length || !confirmedDrafts.length) return null;
-        const latest = [...confirmedDrafts].sort((a,b) => (b.meetingDate||'').localeCompare(a.meetingDate||''))[0];
-        if (!latest?.teams) return null;
-        const teams = latest.teams.map((_,i) => getTeamName(i));
-        const matchupCounts = {}, totalMatches = {};
-        teams.forEach(t => { matchupCounts[t] = {}; teams.forEach(o => { if(t!==o) matchupCounts[t][o]=0; }); totalMatches[t]=0; });
-        localSchedule.list.forEach(session => { session.matches.forEach(m => { const[t1,t2]=m.match; matchupCounts[t1][t2]++; matchupCounts[t2][t1]++; totalMatches[t1]++; totalMatches[t2]++; }); });
-        return {matchupCounts, totalMatches, teams};
-    }, [localSchedule, confirmedDrafts]);
-    // ─────────────────────────────────────────────────────────────────────────────
 
-    // ============================
-    // 뷰 렌더링
-    // ============================
-
-    // 로딩
     if (appView === 'loading') return (
         <div className="min-h-screen flex flex-col items-center justify-center">
             <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -782,9 +279,6 @@ function App() {
         </div>
     );
 
-    // ============================
-    // 메인 회원 앱
-    // ============================
     const memberName = memberInfo?.name || memberData?.name || '회원';
     const myTeamIdx = myTeamInfo?.teamIdx ?? -1;
 
@@ -795,173 +289,135 @@ function App() {
                     🧪 테스트 모드 — GPS·QR 시간·거리 제한이 해제된 상태입니다.
                 </div>
             )}
-            {/* 헤더 */}
-            <div className="px-5 pt-12 pb-6 member-header-bg">
-                <div className="flex items-center justify-between mb-4">
-                    <div>
-                        <p className="text-teal-600 text-xs tracking-widest uppercase font-bold">OTP FC</p>
-                        <h1 className="text-2xl font-black text-slate-800 mt-0.5">{memberName} 님</h1>
-                    </div>
-                    <div className="flex flex-col items-end gap-1.5">
-                        <div className="flex gap-1.5">
-                            <button onClick={()=>window.location.href='index.html'} className="p-2 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all text-slate-500"><Icon.Home size={15}/></button>
-                            {isAdmin && (
-                                <button onClick={toggleAdminMode}
-                                    className="flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1.5 rounded-lg transition-all active:scale-95"
-                                    style={isAdminMode
-                                        ? {background:'linear-gradient(135deg,#14b8a6,#0d9488)',color:'white'}
-                                        : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
-                                    {isAdminMode && <span className="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0 animate-ping"/>}
-                                    {isAdminMode ? '관리자 ON' : '⚙️'}
-                                </button>
-                            )}
-                            <button onClick={handleLogout} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all">로그아웃</button>
-                            <button onClick={toggleTheme} className="p-2 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all text-slate-500" title="테마">{darkMode ? <Icon.Sun size={15}/> : <Icon.Moon size={15}/>}</button>
-                        </div>
-                        <img src="icon.png" alt="OTP FC" className="w-10 h-10 object-contain opacity-70" onError={e=>e.target.style.display='none'}/>
-                    </div>
-                </div>
-
-                {/* 오늘 모임 정보 */}
-                {meetingSettings && (
-                    <div className="card rounded-2xl p-4 mt-2">
-                        <p className="text-[10px] text-teal-500 font-black uppercase tracking-widest mb-2">다음 모임</p>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="font-black text-lg">{meetingSettings.date}</p>
-                                <p className="text-slate-400 text-xs mt-0.5">{meetingSettings.start} ~ {meetingSettings.end}</p>
-                                {meetingSettings.location && <p className="text-slate-400 text-xs mt-0.5 flex items-center gap-1"><Icon.MapPin size={11}/>{meetingSettings.location}</p>}
-                            </div>
-                            {mySession?.checkedIn
-                                ? <div className="bg-emerald-500 px-4 py-2 rounded-xl text-sm font-black text-white">✓ 출석</div>
-                                : !teamReady
-                                    ? <div className="bg-slate-100 px-3 py-2 rounded-xl text-[10px] font-black text-slate-400 text-center leading-tight">
-                                        🔒<br/>{allowFromDisplay} 공개
-                                      </div>
-                                    : myTeamInfo
-                                        ? <div className={`${getTeamBadge(myTeamIdx)} px-3 py-2 rounded-xl text-sm font-black text-center`}>
-                                            <div>{myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</div>
-                                            <div className="text-[10px] opacity-80">{getTeamColorName(myTeamIdx)} 조끼</div>
-                                          </div>
-                                        : <div className="bg-slate-100 px-4 py-2 rounded-xl text-xs font-black text-slate-400">미편성</div>
-                            }
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* 탭 콘텐츠 */}
+            <MemberHeader
+                testMode={testMode} memberName={memberName} meetingSettings={meetingSettings}
+                mySession={mySession} teamReady={teamReady} allowFromDisplay={allowFromDisplay}
+                myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx} isAdmin={isAdmin}
+                isAdminMode={isAdminMode} toggleAdminMode={toggleAdminMode}
+                handleLogout={handleLogout} toggleTheme={toggleTheme} darkMode={darkMode}
+            />
             <div className="px-4 pt-4">
-
-                {/* ===== 홈 탭 ===== */}
                 {tab === 'home' && (
                     <TabHome
-                        notifPermission={notifPermission}
-                        registerFcmToken={registerFcmToken}
-                        onTabChange={setTab}
-                        meetingDayInfo={meetingDayInfo}
-                        teamReady={teamReady}
-                        allowFromDisplay={allowFromDisplay}
-                        myTeamInfo={myTeamInfo}
-                        myTeamIdx={myTeamIdx}
-                        memberData={memberData}
-                        mySession={mySession}
-                        meetingSettings={meetingSettings}
-                        darkMode={darkMode}
-                        memberName={memberName}
-                        announcements={announcements}
+                        notifPermission={notifPermission} registerFcmToken={registerFcmToken}
+                        onTabChange={setTab} meetingDayInfo={meetingDayInfo} teamReady={teamReady}
+                        allowFromDisplay={allowFromDisplay} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
+                        memberData={memberData} mySession={mySession} meetingSettings={meetingSettings}
+                        darkMode={darkMode} memberName={memberName} announcements={announcements}
                     />
                 )}
-
-                {/* ===== 팀 탭 ===== */}
                 {tab === 'team' && (
                     <TabTeam
-                        isAdminMode={isAdminMode} isTeamPanelOpen={isTeamPanelOpen} setIsTeamPanelOpen={setIsTeamPanelOpen}
-                        teamMakerTab={teamMakerTab} setTeamMakerTab={setTeamMakerTab}
-                        teamingSettings={teamingSettings} setTeamingSettings={setTeamingSettings}
-                        excludedIds={excludedIds} setExcludedIds={setExcludedIds}
-                        editTeams={editTeams} editMeetingDate={editMeetingDate} editIsConfirmed={editIsConfirmed}
-                        selectedMemberTM={selectedMemberTM} setSelectedMemberTM={setSelectedMemberTM}
-                        selectedTeamTM={selectedTeamTM} setSelectedTeamTM={setSelectedTeamTM}
-                        draggedItem={draggedItem} dropIndicator={dropIndicator} setDropIndicator={setDropIndicator}
-                        savedDrafts={savedDrafts} confirmedDrafts={confirmedDrafts}
-                        teamStorageSubTab={teamStorageSubTab} setTeamStorageSubTab={setTeamStorageSubTab}
-                        previewDraft={previewDraft} setPreviewDraft={setPreviewDraft}
-                        isCapturing={isCapturing} teamDraftData={teamDraftData} teamReady={teamReady} allowFromDisplay={allowFromDisplay}
-                        myTeamIdx={myTeamIdx} memberData={memberData} allMembers={allMembers}
-                        tmMeetingDate={tmMeetingDate} tmActiveList={tmActiveList} tmEntryList={tmEntryList} tmLevelStats={tmLevelStats} tmUnassigned={tmUnassigned}
-                        generateTeams={generateTeams} tmCapture={tmCapture} tmSaveDraft={tmSaveDraft} tmConfirm={tmConfirm} tmReset={tmReset} tmReGenerate={tmReGenerate}
-                        tmDragStart={tmDragStart} tmDragEnd={tmDragEnd} tmMemberDragOver={tmMemberDragOver} tmTeamDragOver={tmTeamDragOver} tmTeamDragLeave={tmTeamDragLeave}
-                        tmDrop={tmDrop} tmMemberClick={tmMemberClick} tmMoveToTeam={tmMoveToTeam} tmTeamBadgeClick={tmTeamBadgeClick} showConfirm={showConfirm}
+                        isAdminMode={isAdminMode} isTeamPanelOpen={team.isTeamPanelOpen} setIsTeamPanelOpen={team.setIsTeamPanelOpen}
+                        teamMakerTab={team.teamMakerTab} setTeamMakerTab={team.setTeamMakerTab}
+                        teamingSettings={team.teamingSettings} setTeamingSettings={team.setTeamingSettings}
+                        excludedIds={team.excludedIds} setExcludedIds={team.setExcludedIds}
+                        editTeams={team.editTeams} editMeetingDate={team.editMeetingDate} editIsConfirmed={team.editIsConfirmed}
+                        selectedMemberTM={team.selectedMemberTM} setSelectedMemberTM={team.setSelectedMemberTM}
+                        selectedTeamTM={team.selectedTeamTM} setSelectedTeamTM={team.setSelectedTeamTM}
+                        draggedItem={team.draggedItem} dropIndicator={team.dropIndicator} setDropIndicator={team.setDropIndicator}
+                        savedDrafts={team.savedDrafts} confirmedDrafts={team.confirmedDrafts}
+                        teamStorageSubTab={team.teamStorageSubTab} setTeamStorageSubTab={team.setTeamStorageSubTab}
+                        previewDraft={team.previewDraft} setPreviewDraft={team.setPreviewDraft}
+                        isCapturing={team.isCapturing} teamDraftData={team.teamDraftData}
+                        teamReady={teamReady} allowFromDisplay={allowFromDisplay}
+                        myTeamIdx={myTeamIdx} memberData={memberData} allMembers={roster.allMembers}
+                        tmMeetingDate={team.tmMeetingDate} tmActiveList={team.tmActiveList}
+                        tmEntryList={team.tmEntryList} tmLevelStats={team.tmLevelStats} tmUnassigned={team.tmUnassigned}
+                        generateTeams={generateTeams} tmCapture={tmCapture} tmSaveDraft={tmSaveDraft}
+                        tmConfirm={tmConfirm} tmReset={tmReset} tmReGenerate={tmReGenerate}
+                        tmDragStart={tmDragStart} tmDragEnd={tmDragEnd} tmMemberDragOver={tmMemberDragOver}
+                        tmTeamDragOver={tmTeamDragOver} tmTeamDragLeave={tmTeamDragLeave}
+                        tmDrop={tmDrop} tmMemberClick={tmMemberClick} tmMoveToTeam={tmMoveToTeam}
+                        tmTeamBadgeClick={tmTeamBadgeClick} showConfirm={showConfirm}
                     />
                 )}
-
-                {/* ===== 매치 탭 ===== */}
                 {tab === 'match' && (
                     <TabMatch
-                        isAdminMode={isAdminMode} isMatchPanelOpen={isMatchPanelOpen} setIsMatchPanelOpen={setIsMatchPanelOpen}
-                        matchAdminView={matchAdminView} setMatchAdminView={setMatchAdminView}
-                        localSchedule={localSchedule} localCompletedMatches={localCompletedMatches} setLocalCompletedMatches={setLocalCompletedMatches} localMatchIndex={localMatchIndex}
-                        matchConfig={matchConfig} setMatchConfig={setMatchConfig} matchIsSaving={matchIsSaving} matchIsCapturing={matchIsCapturing}
-                        presets={presets} selectedPresetId={selectedPresetId} setSelectedPresetId={setSelectedPresetId} presetToggles={presetToggles}
-                        confirmedDrafts={confirmedDrafts} matchStatsData={matchStatsData}
+                        isAdminMode={isAdminMode} isMatchPanelOpen={match.isMatchPanelOpen} setIsMatchPanelOpen={match.setIsMatchPanelOpen}
+                        matchAdminView={match.matchAdminView} setMatchAdminView={match.setMatchAdminView}
+                        localSchedule={match.localSchedule} localCompletedMatches={match.localCompletedMatches}
+                        setLocalCompletedMatches={match.setLocalCompletedMatches} localMatchIndex={match.localMatchIndex}
+                        matchConfig={match.matchConfig} setMatchConfig={match.setMatchConfig}
+                        matchIsSaving={match.matchIsSaving} matchIsCapturing={match.matchIsCapturing}
+                        presets={match.presets} selectedPresetId={match.selectedPresetId}
+                        setSelectedPresetId={match.setSelectedPresetId} presetToggles={match.presetToggles}
+                        confirmedDrafts={team.confirmedDrafts} matchStatsData={match.matchStatsData}
                         scheduleData={scheduleData} matchViewMode={matchViewMode} setMatchViewMode={setMatchViewMode}
                         myTeamInfo={myTeamInfo}
-                        matchSaveSchedule={matchSaveSchedule} matchHandleCapture={matchHandleCapture} matchGenerateTable={matchGenerateTable}
-                        matchHandleNextMatch={matchHandleNextMatch} matchHandlePresetSelect={matchHandlePresetSelect} matchToggleSubCourt={matchToggleSubCourt}
-                        splitTime={splitTime} setIsLoadMatchModalOpen={setIsLoadMatchModalOpen} setIsPresetModalOpen={setIsPresetModalOpen}
+                        matchSaveSchedule={matchSaveSchedule} matchHandleCapture={matchHandleCapture}
+                        matchGenerateTable={matchGenerateTable} matchHandleNextMatch={matchHandleNextMatch}
+                        matchHandlePresetSelect={matchHandlePresetSelect} matchToggleSubCourt={matchToggleSubCourt}
+                        splitTime={splitTime} setIsLoadMatchModalOpen={match.setIsLoadMatchModalOpen}
+                        setIsPresetModalOpen={match.setIsPresetModalOpen}
                     />
                 )}
-
-                {/* ===== 출석 탭 ===== */}
                 {tab === 'attend' && (
                     <TabAttend
-                        isAdminMode={isAdminMode}
-                        isAttendPanelOpen={isAttendPanelOpen} setIsAttendPanelOpen={setIsAttendPanelOpen}
-                        generateAttendQRCode={generateAttendQRCode} attendToggleTestMode={attendToggleTestMode} testMode={testMode}
-                        attendSubTab={attendSubTab} setAttendSubTab={setAttendSubTab}
-                        selectedHistoryDetail={selectedHistoryDetail} setSelectedHistoryDetail={setSelectedHistoryDetail}
-                        attendActiveList={attendActiveList} attendIsPending={attendIsPending} attendSaveAndReset={attendSaveAndReset}
-                        darkMode={darkMode} meetingSettings={meetingSettings} updateMeetingSettingsAdmin={updateMeetingSettingsAdmin}
-                        attendActiveParticipants={attendActiveParticipants} snapMin={snapMin} attendHourOptions={attendHourOptions} attendMinuteOptions={attendMinuteOptions}
-                        setIsLocationPickerOpen={setIsLocationPickerOpen} localMaxLimit={localMaxLimit} setLocalMaxLimit={setLocalMaxLimit}
-                        memberData={memberData} attendNormalMembers={attendNormalMembers} tmSessionData={tmSessionData}
-                        attendToggleParticipant={attendToggleParticipant} setIsAttendGuestModalOpen={setIsAttendGuestModalOpen}
-                        attendHandleTestSelect={attendHandleTestSelect} attendHandleResetSelection={attendHandleResetSelection}
-                        attendGuestEligibleMembers={attendGuestEligibleMembers} attendToggleParticipantAsGuest={attendToggleParticipantAsGuest}
-                        attendCheckedInCount={attendCheckedInCount} attendWaitingList={attendWaitingList} attendGroupedTeams={attendGroupedTeams}
-                        setAttendModal={setAttendModal} attendUnassignedActive={attendUnassignedActive} attendLimit={attendLimit} attendHistory={attendHistory}
-                        setHistorySortKey={setHistorySortKey} setHistorySortOrder={setHistorySortOrder} historySortKey={historySortKey} historySortOrder={historySortOrder}
-                        isEditingHistoryLocation={isEditingHistoryLocation} setIsEditingHistoryLocation={setIsEditingHistoryLocation}
-                        editHistoryLocationValue={editHistoryLocationValue} setEditHistoryLocationValue={setEditHistoryLocationValue}
-                        handleUpdateHistoryLocation={handleUpdateHistoryLocation} sortedHistoryRecords={sortedHistoryRecords} setHistoryEditTarget={setHistoryEditTarget}
+                        isAdminMode={isAdminMode} isAttendPanelOpen={attend.isAttendPanelOpen}
+                        setIsAttendPanelOpen={attend.setIsAttendPanelOpen}
+                        generateAttendQRCode={generateAttendQRCode} attendToggleTestMode={attendToggleTestMode}
+                        testMode={testMode} attendSubTab={attend.attendSubTab} setAttendSubTab={attend.setAttendSubTab}
+                        selectedHistoryDetail={attend.selectedHistoryDetail}
+                        setSelectedHistoryDetail={attend.setSelectedHistoryDetail}
+                        attendActiveList={attend.attendActiveList} attendIsPending={attend.attendIsPending}
+                        attendSaveAndReset={attendSaveAndReset} darkMode={darkMode}
+                        meetingSettings={meetingSettings} updateMeetingSettingsAdmin={updateMeetingSettingsAdmin}
+                        attendActiveParticipants={attend.attendActiveParticipants}
+                        snapMin={attend.snapMin} attendHourOptions={attend.attendHourOptions}
+                        attendMinuteOptions={attend.attendMinuteOptions}
+                        setIsLocationPickerOpen={attend.setIsLocationPickerOpen}
+                        localMaxLimit={attend.localMaxLimit} setLocalMaxLimit={attend.setLocalMaxLimit}
+                        memberData={memberData} attendNormalMembers={attend.attendNormalMembers}
+                        tmSessionData={team.tmSessionData}
+                        attendToggleParticipant={attendToggleParticipant}
+                        setIsAttendGuestModalOpen={attend.setIsAttendGuestModalOpen}
+                        attendHandleTestSelect={attendHandleTestSelect}
+                        attendHandleResetSelection={attendHandleResetSelection}
+                        attendGuestEligibleMembers={attend.attendGuestEligibleMembers}
+                        attendToggleParticipantAsGuest={attendToggleParticipantAsGuest}
+                        attendCheckedInCount={attend.attendCheckedInCount}
+                        attendWaitingList={attend.attendWaitingList}
+                        attendGroupedTeams={attend.attendGroupedTeams}
+                        setAttendModal={attend.setAttendModal}
+                        attendUnassignedActive={attend.attendUnassignedActive}
+                        attendLimit={attend.attendLimit} attendHistory={attend.attendHistory}
+                        setHistorySortKey={attend.setHistorySortKey}
+                        setHistorySortOrder={attend.setHistorySortOrder}
+                        historySortKey={attend.historySortKey} historySortOrder={attend.historySortOrder}
+                        isEditingHistoryLocation={attend.isEditingHistoryLocation}
+                        setIsEditingHistoryLocation={attend.setIsEditingHistoryLocation}
+                        editHistoryLocationValue={attend.editHistoryLocationValue}
+                        setEditHistoryLocationValue={attend.setEditHistoryLocationValue}
+                        handleUpdateHistoryLocation={handleUpdateHistoryLocation}
+                        sortedHistoryRecords={attend.sortedHistoryRecords}
+                        setHistoryEditTarget={attend.setHistoryEditTarget}
                         attendHandleDeleteHistory={attendHandleDeleteHistory} mySession={mySession}
-                        qrStatus={qrStatus} qrMessage={qrMessage} setQrStatus={setQrStatus} setIsQRScannerOpen={setIsQRScannerOpen}
-                        gpsStatus={gpsStatus} distance={distance} handleGPSCheckIn={handleGPSCheckIn} handleGPSAttend={handleGPSAttend}
+                        qrStatus={qrStatus} qrMessage={qrMessage} setQrStatus={setQrStatus}
+                        setIsQRScannerOpen={setIsQRScannerOpen} gpsStatus={gpsStatus} distance={distance}
+                        handleGPSCheckIn={handleGPSCheckIn} handleGPSAttend={handleGPSAttend}
                         isCheckingIn={isCheckingIn} setGpsStatus={setGpsStatus}
                     />
                 )}
-
-
-                {/* ===== 명단 탭 (관리자 모드 전용) ===== */}
                 {tab === 'roster' && isAdminMode && (
                     <TabRoster
-                        rosterSubTab={rosterSubTab} setRosterSubTab={setRosterSubTab}
-                        setIsAddModalOpen={setIsAddModalOpen}
-                        activeMembers={activeMembers} allMembers={allMembers} resignedMembers={resignedMembers}
-                        setEditingMember={setEditingMember}
-                        setResigningMember={setResigningMember} setResignForm={setResignForm}
-                        moveMonth={moveMonth} targetMonth={targetMonth}
-                        filterCounts={filterCounts} filterCategory={filterCategory} setFilterCategory={setFilterCategory}
-                        filteredMembers={filteredMembers}
-                        monthlyStatuses={monthlyStatuses} monthlyReasons={monthlyReasons}
-                        monthlyPaymentDates={monthlyPaymentDates}
+                        rosterSubTab={roster.rosterSubTab} setRosterSubTab={roster.setRosterSubTab}
+                        setIsAddModalOpen={roster.setIsAddModalOpen}
+                        activeMembers={roster.activeMembers} allMembers={roster.allMembers}
+                        resignedMembers={roster.resignedMembers}
+                        setEditingMember={roster.setEditingMember}
+                        setResigningMember={roster.setResigningMember} setResignForm={roster.setResignForm}
+                        moveMonth={moveMonth} targetMonth={roster.targetMonth}
+                        filterCounts={roster.filterCounts} filterCategory={roster.filterCategory}
+                        setFilterCategory={roster.setFilterCategory}
+                        filteredMembers={roster.filteredMembers}
+                        monthlyStatuses={roster.monthlyStatuses} monthlyReasons={roster.monthlyReasons}
+                        monthlyPaymentDates={roster.monthlyPaymentDates}
                         handleBillingMemberClick={handleBillingMemberClick}
                     />
                 )}
             </div>
 
-            {/* 하단 탭바 */}
             <div className="tab-bar fixed bottom-0 left-0 right-0 z-50 pb-safe">
                 <div className="flex items-center h-16 max-w-sm mx-auto px-2">
                     {[
@@ -980,54 +436,55 @@ function App() {
                 </div>
             </div>
 
-            {/* 토스트 알림 */}
             {toast.show && (
                 <div className={`fixed bottom-20 left-1/2 -translate-x-1/2 px-5 py-3 rounded-full text-sm font-black shadow-xl z-50 whitespace-nowrap transition-all ${toast.type==='error'?'bg-red-500 text-white':toast.type==='success'?'bg-emerald-500 text-white':'bg-slate-700 text-white'}`}>
                     {toast.msg}
                 </div>
             )}
-            {/* ===== 모달 모음 ===== */}
             <AppModals
-                billingMember={billingMember} setBillingMember={setBillingMember}
-                actionStep={actionStep} setActionStep={setActionStep}
-                paymentDateInput={paymentDateInput} setPaymentDateInput={setPaymentDateInput}
-                manualEndDate={manualEndDate} setManualEndDate={setManualEndDate}
-                selectedAction={selectedAction} setSelectedAction={setSelectedAction}
+                billingMember={roster.billingMember} setBillingMember={roster.setBillingMember}
+                actionStep={roster.actionStep} setActionStep={roster.setActionStep}
+                paymentDateInput={roster.paymentDateInput} setPaymentDateInput={roster.setPaymentDateInput}
+                manualEndDate={roster.manualEndDate} setManualEndDate={roster.setManualEndDate}
+                selectedAction={roster.selectedAction} setSelectedAction={roster.setSelectedAction}
                 processAction={processAction}
-                specialRestReason={specialRestReason} setSpecialRestReason={setSpecialRestReason}
-                targetMonth={targetMonth}
-                isAddModalOpen={isAddModalOpen} setIsAddModalOpen={setIsAddModalOpen}
-                newMemberForm={newMemberForm} setNewMemberForm={setNewMemberForm}
-                activeMembers={activeMembers} handleAddMember={handleAddMember}
-                editingMember={editingMember} setEditingMember={setEditingMember}
+                specialRestReason={roster.specialRestReason} setSpecialRestReason={roster.setSpecialRestReason}
+                targetMonth={roster.targetMonth}
+                isAddModalOpen={roster.isAddModalOpen} setIsAddModalOpen={roster.setIsAddModalOpen}
+                newMemberForm={roster.newMemberForm} setNewMemberForm={roster.setNewMemberForm}
+                activeMembers={roster.activeMembers} handleAddMember={handleAddMember}
+                editingMember={roster.editingMember} setEditingMember={roster.setEditingMember}
                 handleUpdateMember={handleUpdateMember}
-                resigningMember={resigningMember} setResigningMember={setResigningMember}
-                resignForm={resignForm} setResignForm={setResignForm}
+                resigningMember={roster.resigningMember} setResigningMember={roster.setResigningMember}
+                resignForm={roster.resignForm} setResignForm={roster.setResignForm}
                 handleResignConfirm={handleResignConfirm}
-                previewDraft={previewDraft} setPreviewDraft={setPreviewDraft}
+                previewDraft={team.previewDraft} setPreviewDraft={team.setPreviewDraft}
                 tmLoadDraft={tmLoadDraft}
-                isLoadMatchModalOpen={isLoadMatchModalOpen} setIsLoadMatchModalOpen={setIsLoadMatchModalOpen}
-                savedMatchSchedules={savedMatchSchedules}
-                setLocalSchedule={setLocalSchedule} setMatchConfig={setMatchConfig}
-                setLocalCompletedMatches={setLocalCompletedMatches} setLocalMatchIndex={setLocalMatchIndex}
-                setActiveMatchScheduleId={setActiveMatchScheduleId} setMatchAdminView={setMatchAdminView}
-                showConfirm={showConfirm}
-                isPresetModalOpen={isPresetModalOpen} setIsPresetModalOpen={setIsPresetModalOpen}
-                presetForm={presetForm} setPresetForm={setPresetForm}
+                isLoadMatchModalOpen={match.isLoadMatchModalOpen} setIsLoadMatchModalOpen={match.setIsLoadMatchModalOpen}
+                savedMatchSchedules={match.savedMatchSchedules}
+                setLocalSchedule={match.setLocalSchedule} setMatchConfig={match.setMatchConfig}
+                setLocalCompletedMatches={match.setLocalCompletedMatches}
+                setLocalMatchIndex={match.setLocalMatchIndex}
+                setActiveMatchScheduleId={match.setActiveMatchScheduleId}
+                setMatchAdminView={match.setMatchAdminView} showConfirm={showConfirm}
+                isPresetModalOpen={match.isPresetModalOpen} setIsPresetModalOpen={match.setIsPresetModalOpen}
+                presetForm={match.presetForm} setPresetForm={match.setPresetForm}
                 matchSavePreset={matchSavePreset}
                 alertModal={alertModal} setAlertModal={setAlertModal}
                 isQRScannerOpen={isQRScannerOpen} setIsQRScannerOpen={setIsQRScannerOpen}
                 handleInAppQRScan={handleInAppQRScan}
-                attendModal={attendModal} setAttendModal={setAttendModal}
+                attendModal={attend.attendModal} setAttendModal={attend.setAttendModal}
                 attendHandleUncheckIn={attendHandleUncheckIn} attendHandleCheckIn={attendHandleCheckIn}
-                isAttendGuestModalOpen={isAttendGuestModalOpen} setIsAttendGuestModalOpen={setIsAttendGuestModalOpen}
-                attendNewGuest={attendNewGuest} setAttendNewGuest={setAttendNewGuest}
-                attendIsPending={attendIsPending} attendHandleAddGuest={attendHandleAddGuest}
-                historyEditTarget={historyEditTarget} setHistoryEditTarget={setHistoryEditTarget}
+                isAttendGuestModalOpen={attend.isAttendGuestModalOpen}
+                setIsAttendGuestModalOpen={attend.setIsAttendGuestModalOpen}
+                attendNewGuest={attend.attendNewGuest} setAttendNewGuest={attend.setAttendNewGuest}
+                attendIsPending={attend.attendIsPending} attendHandleAddGuest={attendHandleAddGuest}
+                historyEditTarget={attend.historyEditTarget} setHistoryEditTarget={attend.setHistoryEditTarget}
                 handleHistoryStatusUpdate={handleHistoryStatusUpdate}
-                isQRGenModalOpen={isQRGenModalOpen} setIsQRGenModalOpen={setIsQRGenModalOpen}
+                isQRGenModalOpen={attend.isQRGenModalOpen} setIsQRGenModalOpen={attend.setIsQRGenModalOpen}
                 meetingSettings={meetingSettings}
-                isLocationPickerOpen={isLocationPickerOpen} setIsLocationPickerOpen={setIsLocationPickerOpen}
+                isLocationPickerOpen={attend.isLocationPickerOpen}
+                setIsLocationPickerOpen={attend.setIsLocationPickerOpen}
                 updateMeetingSettingsAdmin={updateMeetingSettingsAdmin}
             />
         </div>

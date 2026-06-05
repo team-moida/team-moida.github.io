@@ -78,7 +78,7 @@
 
 ---
 
-# member.html — 진행 중
+# member.html ✅ 목표 달성
 
 목표: 500줄 이하 / 원칙: 기능·UI·Firestore 구조 변경 금지
 
@@ -89,8 +89,9 @@
 | 원본 | 3,967줄 | - |
 | 1차 분리 | 2,333줄 | -1,634줄 |
 | 2차 분리 | 1,819줄 | -514줄 |
-| 3차 분리 (현재) | 1,039줄 | -780줄 |
-| 목표 | 500줄 이하 | -539줄 더 필요 |
+| 3차 분리 | 1,039줄 | -780줄 |
+| 4차 분리 (현재) | **497줄** | -542줄 |
+| 목표 | 500줄 이하 | ✅ 달성 |
 
 ## 완료된 분리 파일
 
@@ -112,39 +113,15 @@
 | `handlers-roster.js` | 회원/회비 핸들러 팩토리 |
 | `handlers-team.js` | 팀 편성 핸들러 팩토리 |
 | `handlers-match.js` | 매치 핸들러 팩토리 |
+| `member-header.js` | 헤더 JSX 컴포넌트 (모임 정보 + 버튼 바) |
+| `use-roster.js` | 명단/회비 기능 custom hook (state + Firebase 구독 + computed) |
+| `use-team.js` | 팀 편성 기능 custom hook (state + Firebase 구독 + computed) |
+| `use-match.js` | 매치 기능 custom hook (state + Firebase 구독 + computed) |
+| `use-attend.js` | 출석 기능 custom hook (state + Firebase 구독 + computed) |
+| `use-fcm.js` | FCM/알림 + 공지사항 custom hook |
 
-## 현재 App에 남아있는 내용
+## 분리 원칙 (4차)
 
-| 항목 | 예상 줄 수 | 이동 가능 여부 |
-|------|------------|----------------|
-| HTML head + script 태그 | ~48줄 | 불가 |
-| `useState` 상태 선언 | ~138줄 | custom hook으로만 이동 가능 |
-| `useEffect` 훅 | ~227줄 | custom hook으로만 이동 가능 |
-| `useMemo` 계산값 | ~156줄 | 로직 일부 외부화 가능 |
-| 소형 함수 (toggleTheme 등) | ~30줄 | 이동 가능 |
-| 팩토리 호출 4개 | ~55줄 | 유지 |
-| JSX 렌더 (헤더 + 탭 + 토스트) | ~180줄 | 컴포넌트화 가능 |
-| ReactDOM + script 닫기 | ~5줄 | 불가 |
-
-## 다음 단계 선택지
-
-### 방법 A: custom hook 미사용 (현재 원칙 유지)
-
-| 작업 | 방법 | 예상 절감 |
-|------|------|-----------|
-| 헤더 JSX 컴포넌트화 | `MemberHeader.js` 신규 | ~55줄 |
-| `useMemo` 로직 외부화 | 순수 계산 함수 → 외부 파일 | ~80줄 |
-
-→ 합계 ~135줄 절감 → **최종 약 904줄** (500줄 도달 불가)
-
-### 방법 B: custom hook 도입 (원칙 완화 필요)
-
-| 후보 파일 | 내용 | 예상 절감 |
-|-----------|------|-----------|
-| `useAppState.js` | 모든 useState 선언 | ~138줄 |
-| `useFirebaseSubscriptions.js` | Firebase onSnapshot useEffect | ~150줄 |
-| `useAttendComputed.js` | 출석 관련 useMemo | ~60줄 |
-
-→ 합계 ~350줄 + 헤더/useMemo 외부화 = **500줄 이하 도달 가능**
-
-> **결론**: custom hook 도입 없이 500줄 불가. 다음 세션에서 방향 결정 필요.
+- 기능별 custom hook: useState + useEffect + useMemo를 기능 단위로 묶음
+- 각 hook은 `isAdminMode`, `meetingSettings` 등 최소 의존성만 props로 받음
+- App은 hook 결과를 조합해 핸들러 팩토리와 JSX에 전달하는 역할만 수행
