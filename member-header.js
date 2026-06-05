@@ -1,6 +1,6 @@
 function MemberHeader({
     testMode, memberName, meetingSettings, mySession, teamReady, allowFromDisplay,
-    myTeamInfo, myTeamIdx, isAdmin, isAdminMode, toggleAdminMode, handleLogout, toggleTheme, darkMode
+    myTeamInfo, myTeamIdx, handleLogout, toggleTheme, darkMode
 }) {
     return (
         <div className="px-5 pt-12 pb-6 member-header-bg">
@@ -12,16 +12,6 @@ function MemberHeader({
                 <div className="flex flex-col items-end gap-1.5">
                     <div className="flex gap-1.5">
                         <button onClick={()=>window.location.href='index.html'} className="p-2 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all text-slate-500"><Icon.Home size={15}/></button>
-                        {isAdmin && (
-                            <button onClick={toggleAdminMode}
-                                className="flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1.5 rounded-lg transition-all active:scale-95"
-                                style={isAdminMode
-                                    ? {background:'linear-gradient(135deg,#14b8a6,#0d9488)',color:'white'}
-                                    : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
-                                {isAdminMode && <span className="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0 animate-ping"/>}
-                                {isAdminMode ? '관리자 ON' : '⚙️'}
-                            </button>
-                        )}
                         <button onClick={handleLogout} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all">로그아웃</button>
                         <button onClick={toggleTheme} className="p-2 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all text-slate-500" title="테마">{darkMode ? <Icon.Sun size={15}/> : <Icon.Moon size={15}/>}</button>
                     </div>
