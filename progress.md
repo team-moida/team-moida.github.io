@@ -179,3 +179,30 @@
 - 순수 함수(generateSchedule, computeStats, captureMatchTable)와 순수 컴포넌트(SetupTab, ResultsTab, StatsTab, LoadModal, PresetModal)만 외부 파일로 분리
 - 모든 상태(useState, useEffect, useMemo)는 App 컴포넌트 내부에 유지
 - match/ 서브폴더 구조 적용
+
+---
+
+# index.html ✅ 목표 달성
+
+목표: 500줄 이하 / 원칙: 기능·UI 변경 금지
+
+## 줄 수 변화
+
+| 단계 | 줄 수 | 감소 |
+|------|-------|------|
+| 원본 | 646줄 | - |
+| 1단계 (현재) | **249줄** | -397줄 |
+| 목표 | 500줄 이하 | ✅ 달성 |
+
+## 완료된 분리 파일
+
+| 파일 | 내용 |
+|------|------|
+| `index.css` | 애니메이션, 다크모드 CSS 변수 및 오버라이드 |
+| `handlers-kakao.js` | 카카오 로그인·회원가입·계정연결 핸들러 + 앱 초기화 + 다크모드 토글 |
+
+## 분리 원칙
+
+- 다크모드 flash 방지 inline script(`<head>`)는 index.html에 유지
+- Firebase 초기화는 기존 `firebase-init.js` 재사용 (`STAFF_ROLES` 공유)
+- JS 파일은 body 최하단에서 로드 (DOM 완성 후 실행 보장)
