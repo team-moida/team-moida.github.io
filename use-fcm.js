@@ -3,7 +3,7 @@ function useFCM({ memberData, showToast }) {
 
     const [announcements, setAnnouncements] = useState([]);
     useEffect(() => {
-        const unsub = getCol('notifications').orderBy('sentAt', 'desc').limit(10).onSnapshot(snap => {
+        const unsub = getCol('notifications').orderBy('sentAt', 'desc').limit(20).onSnapshot(snap => {
             const list = [];
             snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
             setAnnouncements(list);

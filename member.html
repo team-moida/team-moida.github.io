@@ -73,6 +73,7 @@ function App() {
     const testMode = !!meetingSettings?.testMode;
     const [mySession, setMySession] = useState(null);
     const [alertModal, setAlertModal] = useState({show:false,title:'',content:'',type:'info',onConfirm:null});
+    const [announcementModal, setAnnouncementModal] = useState({ open: false, mode: 'add', data: null });
     const showAlert = (title, content, type='info', onConfirm=null) => setAlertModal({show:true, title, content, type, onConfirm});
     const showConfirm = (title, content, onConfirm) => setAlertModal({show:true, title, content, type:'confirm', onConfirm});
     const [toast, setToast] = useState({ show:false, msg:'', type:'info' });
@@ -194,6 +195,17 @@ function App() {
     }, [urlParams.token, appView]);
 
     const handleLogout = () => { localStorage.removeItem('moida_member_data'); location.href = 'index.html'; };
+    const handleSaveAnnouncement = async ({ title, body, id, mode }) => {
+        const senderName = memberInfo?.name || memberData?.name || '관리자';
+        if (mode === 'add') {
+            await getCol('notifications').add({ title, body, sentAt: new Date().toISOString(), sentBy: senderName });
+        } else {
+            await getCol('notifications').doc(id).update({ title, body, updatedAt: new Date().toISOString() });
+        }
+    };
+    const handleDeleteAnnouncement = (id) => showConfirm('공지 삭제', '이 공지를 삭제하시겠습니까?', async () => {
+        await getCol('notifications').doc(id).delete();
+    });
     const toggleTheme = () => { const isDark = !darkMode; setDarkMode(isDark); document.documentElement.classList.toggle('dark', isDark); localStorage.setItem('moida_theme', isDark ? 'dark' : 'light'); };
 
     const { updateMeetingSettingsAdmin, attendHandleCheckIn, attendHandleUncheckIn,
@@ -303,6 +315,10 @@ function App() {
                         allowFromDisplay={allowFromDisplay} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                         memberData={memberData} mySession={mySession} meetingSettings={meetingSettings}
                         darkMode={darkMode} memberName={memberName} announcements={announcements}
+                        isAdminMode={isAdminMode}
+                        onAddAnnouncement={()=>setAnnouncementModal({open:true,mode:'add',data:null})}
+                        onEditAnnouncement={(a)=>setAnnouncementModal({open:true,mode:'edit',data:a})}
+                        onDeleteAnnouncement={handleDeleteAnnouncement}
                     />
                 )}
                 {tab === 'team' && (
@@ -495,6 +511,8 @@ function App() {
                 isLocationPickerOpen={attend.isLocationPickerOpen}
                 setIsLocationPickerOpen={attend.setIsLocationPickerOpen}
                 updateMeetingSettingsAdmin={updateMeetingSettingsAdmin}
+                announcementModal={announcementModal} setAnnouncementModal={setAnnouncementModal}
+                handleSaveAnnouncement={handleSaveAnnouncement}
             />
         </div>
     );

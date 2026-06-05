@@ -1,3 +1,65 @@
+// ─── 공지 작성/수정 모달 ─────────────────────────────────────────────────────
+function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSaveAnnouncement }) {
+    const { useState, useEffect } = React;
+    const [form, setForm] = useState({ title: '', body: '' });
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (announcementModal?.open) {
+            setForm({ title: announcementModal.data?.title || '', body: announcementModal.data?.body || '' });
+        }
+    }, [announcementModal?.open]);
+
+    if (!announcementModal?.open) return null;
+    const close = () => setAnnouncementModal({ open: false, mode: 'add', data: null });
+    const isAdd = announcementModal.mode === 'add';
+
+    const handleSave = async () => {
+        if (!form.title.trim()) return;
+        setIsSaving(true);
+        try {
+            await handleSaveAnnouncement({ ...form, id: announcementModal.data?.id, mode: announcementModal.mode });
+            close();
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" style={{zIndex:60}} onClick={close}>
+            <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={e=>e.stopPropagation()}>
+                <h2 className="text-xl font-black text-slate-800 mb-4">{isAdd ? '공지 작성' : '공지 수정'}</h2>
+                <div className="space-y-3">
+                    <div>
+                        <p className="text-xs font-black text-slate-500 mb-1">제목</p>
+                        <input type="text" style={{userSelect:'text'}} placeholder="제목 입력"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                            value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))}/>
+                    </div>
+                    <div>
+                        <p className="text-xs font-black text-slate-500 mb-1">내용</p>
+                        <textarea style={{userSelect:'text'}} placeholder="내용 입력"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 leading-relaxed resize-none"
+                            rows={6} value={form.body} onChange={e=>setForm(p=>({...p,body:e.target.value}))}/>
+                    </div>
+                    {isAdd && (
+                        <div className="bg-teal-50 border border-teal-100 rounded-xl p-3">
+                            <p className="text-xs text-teal-600 font-black">저장 시 전체 회원에게 푸시 알림이 발송됩니다</p>
+                        </div>
+                    )}
+                </div>
+                <div className="flex gap-2 mt-5">
+                    <button onClick={close} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
+                    <button onClick={handleSave} disabled={isSaving || !form.title.trim()}
+                        className={`flex-1 py-3 rounded-2xl font-black text-sm transition-all ${(isSaving||!form.title.trim())?'bg-teal-200 text-white':'bg-teal-500 text-white'}`}>
+                        {isSaving ? '저장 중...' : isAdd ? '발송' : '저장'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── 회원 완전 삭제 모달 ─────────────────────────────────────────────────────
 function DeleteMemberModal({ deletingMember, setDeletingMember, handleDeleteMember }) {
     const { useState } = React;
@@ -90,6 +152,8 @@ const AppModals = ({
     // 지도 장소 선택 모달
     isLocationPickerOpen, setIsLocationPickerOpen,
     updateMeetingSettingsAdmin,
+    // 공지 작성/수정 모달
+    announcementModal, setAnnouncementModal, handleSaveAnnouncement,
 }) => (
     <>
         {/* ===== 회비 액션 모달 (바텀시트) ===== */}
@@ -549,6 +613,13 @@ const AppModals = ({
                 updateMeetingSettingsAdmin({...meetingSettings, location:name, locationLat:lat, locationLng:lng});
                 setIsLocationPickerOpen(false);
             }}
+        />
+
+        {/* ===== 공지 작성/수정 모달 ===== */}
+        <AnnouncementModal
+            announcementModal={announcementModal}
+            setAnnouncementModal={setAnnouncementModal}
+            handleSaveAnnouncement={handleSaveAnnouncement}
         />
     </>
 );
