@@ -43,6 +43,17 @@ exports.sendPushNotification = onDocumentCreated(
       const res = await admin.messaging().sendEachForMulticast({
         tokens: chunk,
         notification: { title, body },
+        android: {
+          priority: 'high',
+          notification: {
+            priority: 'high',
+            defaultSound: true,
+          },
+        },
+        apns: {
+          headers: { 'apns-priority': '10' },
+          payload: { aps: { sound: 'default' } },
+        },
         webpush: {
           fcmOptions: { link: "https://nakdo0415-crypto.github.io/moida/" },
           notification: {
