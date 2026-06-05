@@ -1,0 +1,22 @@
+.leaflet-container{font-family:'Esamanru',sans-serif}
+.leaflet-control-zoom a{font-family:sans-serif}
+@font-face{font-family:'Esamanru';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10@1.0/GongGothicLight.woff') format('woff');font-weight:300}
+body{font-family:'Esamanru',sans-serif!important;-webkit-tap-highlight-color:transparent;background:#f8fafc;user-select:none;overscroll-behavior-y:none;-webkit-font-smoothing:antialiased;touch-action:manipulation}
+.custom-scrollbar::-webkit-scrollbar{width:5px}
+.custom-scrollbar::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
+select,input{transition:border-color 0.2s}
+select:focus,input:focus{border-color:#14b8a6!important}
+#qr-canvas-area canvas{margin:0 auto}
+html.dark .bg-slate-200\/70{background:rgba(71,85,105,.7)!important}
+html.dark .bg-lime-400,html.dark .bg-yellow-400{color:#1e293b!important}
+html.dark .bg-blue-50{background:#0c1a2e!important}html.dark .border-blue-100{border-color:#1e3a5f!important}html.dark .bg-blue-100{background:#1e3a5f!important}
+html.dark .bg-emerald-50{background:#022c22!important}html.dark .border-emerald-100{border-color:#064e3b!important}html.dark .bg-emerald-100{background:#064e3b!important}
+html.dark .bg-violet-50{background:#1e1b4b!important}html.dark .border-violet-100{border-color:#2e1065!important}html.dark .bg-violet-100{background:#2e1065!important}
+html.dark .bg-rose-50{background:#2d0a11!important}html.dark .border-rose-100{border-color:#4c0519!important}html.dark .bg-rose-100{background:#4c0519!important}
+html.dark .bg-amber-50{background:#1c1002!important}html.dark .border-amber-100{border-color:#451a03!important}html.dark .bg-amber-100{background:#451a03!important}
+html.dark .bg-red-50{background:#2d0a11!important}html.dark .border-red-100,html.dark .border-red-200{border-color:#4c0519!important}
+html.dark .text-teal-400{color:#5eead4!important}
+html.dark .text-emerald-500{color:#34d399!important}html.dark .text-emerald-600{color:#34d399!important}
+html.dark .text-violet-600{color:#a78bfa!important}html.dark .text-rose-500{color:#fb7185!important}
+html.dark .text-amber-500{color:#fbbf24!important}html.dark .text-amber-600{color:#fbbf24!important}
+html.dark .text-red-400{color:#f87171!important}html.dark .text-red-500{color:#f87171!important}

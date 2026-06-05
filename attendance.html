@@ -11,6 +11,7 @@
     <title>모이다 - 출결 관리</title>
     <script>(function(){if(localStorage.getItem('moida_theme')==='dark')document.documentElement.classList.add('dark');})();</script>
     <link rel="stylesheet" href="common.css">
+    <link rel="stylesheet" href="attendance.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
@@ -26,33 +27,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <style>
-        .leaflet-container { font-family: 'Esamanru', sans-serif; }
-        .leaflet-control-zoom a { font-family: sans-serif; }
-    </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <style>
-        @font-face { font-family:'Esamanru'; src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10@1.0/GongGothicLight.woff') format('woff'); font-weight:300; }
-        body { font-family:'Esamanru',sans-serif!important; -webkit-tap-highlight-color:transparent; background:#f8fafc; user-select:none; overscroll-behavior-y:none; -webkit-font-smoothing:antialiased; touch-action:manipulation; }
-        .custom-scrollbar::-webkit-scrollbar{width:5px} .custom-scrollbar::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
-        select,input{transition:border-color 0.2s}
-        select:focus,input:focus{border-color:#14b8a6!important}
-        #qr-canvas-area canvas { margin: 0 auto; }
-        /* ── 페이지별 다크모드 ── */
-        html.dark .bg-slate-200\/70{background:rgba(71,85,105,.7)!important}
-        html.dark .bg-lime-400,html.dark .bg-yellow-400{color:#1e293b!important}
-        html.dark .bg-blue-50{background:#0c1a2e!important} html.dark .border-blue-100{border-color:#1e3a5f!important} html.dark .bg-blue-100{background:#1e3a5f!important}
-        html.dark .bg-emerald-50{background:#022c22!important} html.dark .border-emerald-100{border-color:#064e3b!important} html.dark .bg-emerald-100{background:#064e3b!important}
-        html.dark .bg-violet-50{background:#1e1b4b!important} html.dark .border-violet-100{border-color:#2e1065!important} html.dark .bg-violet-100{background:#2e1065!important}
-        html.dark .bg-rose-50{background:#2d0a11!important} html.dark .border-rose-100{border-color:#4c0519!important} html.dark .bg-rose-100{background:#4c0519!important}
-        html.dark .bg-amber-50{background:#1c1002!important} html.dark .border-amber-100{border-color:#451a03!important} html.dark .bg-amber-100{background:#451a03!important}
-        html.dark .bg-red-50{background:#2d0a11!important} html.dark .border-red-100,html.dark .border-red-200{border-color:#4c0519!important}
-        html.dark .text-teal-400{color:#5eead4!important}
-        html.dark .text-emerald-500{color:#34d399!important} html.dark .text-emerald-600{color:#34d399!important}
-        html.dark .text-violet-600{color:#a78bfa!important} html.dark .text-rose-500{color:#fb7185!important}
-        html.dark .text-amber-500{color:#fbbf24!important} html.dark .text-amber-600{color:#fbbf24!important}
-        html.dark .text-red-400{color:#f87171!important} html.dark .text-red-500{color:#f87171!important}
-    </style>
     <script type="text/babel" src="location-picker.js"></script>
     <script type="text/babel" src="tab-attend-history.js"></script>
     <script type="text/babel" src="handlers-attend-qr.js"></script>
@@ -61,6 +36,7 @@
     <script type="text/babel" src="tab-attend-main.js"></script>
     <script type="text/babel" src="modals-attend.js"></script>
     <script type="text/babel" src="handlers-attend-session.js"></script>
+    <script type="text/babel" src="AttendNavBar.js"></script>
 </head>
 <body>
 <div id="loading-screen">
@@ -128,9 +104,6 @@ function App() {
     const qrCanvasRef = useRef(null);
     const hasAutoNoShowRef = useRef(false);
     const hasAutoFixedRef = useRef(false);
-
-    // ⋮ 더보기 메뉴
-    const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
     // 푸시 알림 발송 모달
     const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
@@ -206,7 +179,6 @@ function App() {
     const showAlert = (title, content, type='info', onConfirm=null) => setAlertModal({show:true,title,content,type,onConfirm});
     const showConfirm = (title, content, onConfirm) => setAlertModal({show:true,title,content,type:'confirm',onConfirm});
 
-    // QR 핸들러
     const { generateQRCode } = makeQRHandlers({ meetingTimes, setCurrentQRToken, setIsQRModalOpen, showAlert });
     const { sendPushNotification, startEditNotif, cancelEditNotif, saveEditNotif, deleteNotif } = makeNotifHandlers({
         loggedInManager, notifTitle, notifBody, editingNotifId, editTitle, editBody,
@@ -214,7 +186,6 @@ function App() {
         setNotifTitle, setNotifBody, setEditingNotifId, setEditTitle, setEditBody
     });
 
-    // QR 코드 렌더링
     useEffect(() => {
         if (isQRModalOpen && currentQRToken) {
             setTimeout(() => {
@@ -398,75 +369,23 @@ function App() {
     const assignedIds = new Set(groupedTeams.flatMap(g => g.members.map(m => m.id)));
     const unassignedActive = activeList.filter(p => !assignedIds.has(p.id));
 
-    // ===================== RENDER =====================
-
     return (
         <div className="min-h-screen pb-40 text-slate-900">
             {!isAppLocked && (
-                <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 h-16 flex items-center px-4 shadow-sm">
-                    <div className="max-w-5xl mx-auto w-full flex justify-between items-center">
-                        <div className="flex items-center gap-1">
-                            {['attendance','setup','history_list'].map(v => (
-                                <button key={v} onClick={()=>setView(v)} className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${view===v?'bg-teal-500 text-white shadow-lg':'text-slate-400 hover:text-slate-600'}`}>
-                                    {v==='attendance'?'출석':v==='setup'?'선정':'기록'}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {pendingRegistrations.length > 0 && (
-                                <button onClick={()=>setIsPendingModalOpen(true)} className="relative p-2.5 rounded-xl bg-rose-50 text-rose-500">
-                                    <Icon.Bell size={18} />
-                                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">{pendingRegistrations.length}</span>
-                                </button>
-                            )}
-                            <button onClick={generateQRCode} className="p-2.5 rounded-xl bg-violet-50 text-violet-600 hover:bg-violet-100" title="QR 출석 생성">
-                                <Icon.QrCode size={18} />
-                            </button>
-                            {/* 회원 모드 토글 — OFF 상태 */}
-                            <button onClick={()=>{localStorage.setItem('moida_admin_mode','true');window.location.href='member.html';}}
-                                className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-black bg-slate-100 text-slate-400 hover:bg-slate-200 transition-all" title="회원 모드">
-                                <span className="w-2 h-2 rounded-full bg-slate-300 flex-shrink-0"/>
-                                회원
-                            </button>
-                            <button onClick={()=>window.location.href='index.html'} className="p-2.5 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"><Icon.Home size={18}/></button>
-                            {/* ⋮ 더보기 */}
-                            <div className="relative">
-                                <button onClick={()=>setIsMoreMenuOpen(v=>!v)} className={`p-2.5 rounded-xl transition-all ${isMoreMenuOpen?'bg-slate-200 text-slate-700':'bg-slate-100 text-slate-500 hover:bg-slate-200'}`} title="더보기">
-                                    <Icon.DotsVertical size={18}/>
-                                </button>
-                                {isMoreMenuOpen && (
-                                    <>
-                                        <div className="fixed inset-0" style={{zIndex:199}} onClick={()=>setIsMoreMenuOpen(false)}/>
-                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl overflow-hidden" style={{zIndex:200,border:'1px solid #e2e8f0',top:'100%'}}>
-                                            <button onClick={()=>{setIsNotifModalOpen(true);setIsMoreMenuOpen(false);}} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-teal-600 hover:bg-teal-50 active:bg-teal-100">
-                                                <Icon.Bell size={16}/> 공지 발송
-                                            </button>
-                                            <div style={{height:1,background:'#f1f5f9',margin:'0 16px'}}/>
-                                            <button onClick={()=>{window.location.reload();}} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100">
-                                                <Icon.Refresh size={16}/> 새로고침
-                                            </button>
-                                            <button onClick={()=>{toggleTheme();}} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100">
-                                                {darkMode ? <Icon.Sun size={16}/> : <Icon.Moon size={16}/>} {darkMode?'라이트 모드':'다크 모드'}
-                                            </button>
-                                            <button onClick={()=>{toggleTestMode();setIsMoreMenuOpen(false);}} className={`w-full flex items-center gap-3 px-4 py-3 text-sm ${testMode?'bg-amber-50 text-amber-600 font-bold':'text-slate-700 hover:bg-slate-50 active:bg-slate-100'}`}>
-                                                <Icon.Beaker size={16}/> 테스트 모드 {testMode?'ON':'OFF'}
-                                            </button>
-                                            <div style={{height:1,background:'#f1f5f9',margin:'0 16px'}}/>
-                                            <button onClick={()=>{setIsMoreMenuOpen(false);handleLogout();}} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 active:bg-red-100">
-                                                <Icon.LogOut size={16}/> 로그아웃
-                                            </button>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </nav>
+                <AttendNavBar
+                    view={view} setView={setView}
+                    pendingRegistrations={pendingRegistrations}
+                    setIsPendingModalOpen={setIsPendingModalOpen}
+                    generateQRCode={generateQRCode}
+                    darkMode={darkMode} toggleTheme={toggleTheme}
+                    testMode={testMode} toggleTestMode={toggleTestMode}
+                    handleLogout={handleLogout}
+                    setIsNotifModalOpen={setIsNotifModalOpen}
+                />
             )}
 
             <main className={`p-4 max-w-6xl mx-auto animate-zoom-in ${isAppLocked?'pt-16':''}`}>
 
-                {/* ===== 출석 탭 ===== */}
                 {view === 'attendance' && !isAppLocked && (
                     <AttendMainTab
                         meetingTimes={meetingTimes}
@@ -485,7 +404,6 @@ function App() {
                         showAlert={showAlert}
                     />
                 )}
-                {/* ===== 선정 탭 ===== */}
                 {view === 'setup' && (
                     <AttendSetupTab
                         darkMode={darkMode}
@@ -507,7 +425,6 @@ function App() {
                     />
                 )}
 
-                {/* ===== 기록 탭 ===== */}
                 {view === 'history_list' && (
                     <AttendHistoryTab
                         history={history}
@@ -528,8 +445,6 @@ function App() {
                     />
                 )}
             </main>
-
-            {/* ===== 모달들 ===== */}
 
             <CheckInModal modal={modal} setModal={setModal} handleCheckIn={handleCheckIn} handleUncheckIn={handleUncheckIn} />
 
@@ -556,7 +471,6 @@ function App() {
 
             <AlertModal alertModal={alertModal} setAlertModal={setAlertModal} />
 
-            {/* 지도 장소 선택 모달 */}
             <LocationPickerModal
                 isOpen={isLocationPickerOpen}
                 onClose={() => setIsLocationPickerOpen(false)}
