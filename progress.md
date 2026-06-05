@@ -234,3 +234,25 @@
 - "⚙️ 출석 관리" 버튼을 좌측 상단 → 우측으로 이동
 - 좌측에 "출석" 레이블 추가
 - 팀 탭("편성 관리"), 매치 탭("매치 관리")과 동일한 레이아웃 패턴 적용
+
+## 2026-06-06
+
+### 탈퇴 회원 — 탈퇴 철회 + 완전 삭제
+
+수정 파일: `use-roster.js`, `handlers-roster.js`, `roster-members.js`, `roster.html`, `tab-roster.js`, `modals.js`, `member.html`
+
+- 탈퇴 회원 카드에 복구(초록) / 완전 삭제(빨강) 버튼 추가
+- **탈퇴 철회**: `isResigned`, `resignDate`, `resignReason`, `isForcedResign` 필드 삭제로 활성 회원 복구
+- **완전 삭제**: 이름 직접 입력 이중 확인 → Firestore 회원 문서 영구 삭제 (출석 기록은 유지)
+- roster.html(인라인 상태/핸들러)과 member.html(use-roster + handlers-roster 계열) 양쪽에 독립 구현
+
+### 회칙 탭 추가
+
+신규 파일: `tab-rules.js`
+수정 파일: `member.html`, `CLAUDE.md`
+
+- 하단 탭바 매치 다음에 "회칙" 탭 추가 (ShieldCheck 아이콘)
+- 일반 회원: 읽기 전용 (줄바꿈 보존 표시, 마지막 수정일 표시)
+- 관리자: 우측 상단 편집 버튼 → textarea → 저장/취소
+- Firestore: `settings/club_rules { content, updatedAt, updatedBy }`
+- 탭 수: 일반 회원 5개, 관리자 6개
