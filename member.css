@@ -1,0 +1,55 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f8fafc;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    overscroll-behavior-y: none;
+}
+.animate-in { animation: slideUp 0.3s ease-out; }
+@keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+.pulse-ring { animation: pulseRing 2s infinite; }
+@keyframes pulseRing { 0%{transform:scale(1);opacity:1} 70%{transform:scale(1.4);opacity:0} 100%{transform:scale(1.4);opacity:0} }
+button:active { transform: scale(0.96); opacity: 0.85; }
+input:focus { outline: none; }
+.card { background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.card-white { background: white; }
+select { appearance: none; }
+.tab-bar { background: rgba(255,255,255,0.95); border-top: 1px solid #e2e8f0; backdrop-filter: blur(10px); }
+.qr-scan-line { animation: scanLine 2s ease-in-out infinite; }
+@keyframes scanLine { 0%{top:8px} 50%{top:calc(100% - 10px)} 100%{top:8px} }
+.member-header-bg{background:linear-gradient(160deg,#f0fdfa,#e6fffa)}
+/* ── 페이지별 다크모드 ── */
+html.dark .card{background:var(--t-surface)!important;border-color:var(--t-border)!important}
+html.dark .tab-bar{background:rgba(15,23,42,.97)!important;border-color:var(--t-border)!important}
+html.dark .member-header-bg{background:linear-gradient(160deg,#0f172a,#1e293b)}
+html.dark .bg-slate-200\/70{background:rgba(71,85,105,.7)!important}
+html.dark .bg-emerald-50{background:#022c22!important} html.dark .border-emerald-100,html.dark .border-emerald-200{border-color:#064e3b!important}
+html.dark .bg-violet-50{background:#1e1b4b!important} html.dark .border-violet-100,html.dark .border-violet-200{border-color:#2e1065!important}
+html.dark .bg-amber-50{background:#1c1002!important} html.dark .bg-amber-100{background:#451a03!important} html.dark .border-amber-100,html.dark .border-amber-200{border-color:#451a03!important}
+html.dark .bg-red-50{background:#2d0a11!important} html.dark .border-red-100,html.dark .border-red-200{border-color:#4c0519!important}
+html.dark .text-teal-400{color:#5eead4!important}
+html.dark .text-emerald-500{color:#34d399!important} html.dark .text-amber-500{color:#fbbf24!important} html.dark .text-red-500{color:#f87171!important}
+html.dark .bg-blue-50{background:#0c1634!important} html.dark .text-blue-500{color:#60a5fa!important}
+html.dark .bg-pink-100{background:#3d0a1e!important} html.dark .text-pink-600{color:#f472b6!important}
+html.dark .bg-orange-50{background:#1a0800!important} html.dark .text-orange-400,html.dark .text-orange-500{color:#fb923c!important}
+/* ── 팀편성 드래그 ── */
+.tm-dragging{opacity:0.3;border:2px dashed #3b82f6!important;background:#eff6ff!important;transform:scale(0.96)}
+.tm-drop-target{border-color:#14b8a6!important;background:#f0fdfa!important;transform:scale(1.01)}
+.tm-drop-indicator{border:2px dashed #14b8a6;background:rgba(240,253,250,.5);transition:all .1s}
+.match-row{transition:all 0.2s ease;cursor:pointer}
+.match-row:active{background:#f1f5f9}
+.match-completed{opacity:0.45;background:#f8fafc}
+html.dark .match-row:active{background:#334155!important}
+html.dark .match-completed{background:var(--t-bg)!important}
+html.dark .tm-drop-target{background:#042f2e!important}
+html.dark .tm-drop-indicator{background:rgba(20,184,166,.1)!important;border-color:#2dd4bf!important}
+html.dark .bg-blue-50{background:#0c1634!important}
+html.dark .border-blue-100{border-color:#1e3a5f!important}
+html.dark .bg-sky-50{background:#082f49!important} html.dark .border-sky-200{border-color:#0c4a6e!important}
+html.dark .bg-lime-50{background:#1a2e05!important} html.dark .border-lime-200{border-color:#3f6212!important}
+html.dark .bg-yellow-50{background:#1c1002!important} html.dark .border-yellow-200{border-color:#713f12!important}
+html.dark .bg-red-50{background:#2d0a11!important} html.dark .border-red-200{border-color:#4c0519!important}
+html.dark .bg-pink-50{background:#2d0a1e!important} html.dark .border-pink-200{border-color:#500724!important}
+html.dark .bg-orange-50{background:#1a0800!important} html.dark .border-orange-100{border-color:#431407!important}
+html.dark .text-orange-500{color:#fb923c!important} html.dark .text-orange-600{color:#fb923c!important}
+html.dark .text-yellow-500{color:#fbbf24!important} html.dark .text-yellow-600{color:#fbbf24!important}
