@@ -40,6 +40,18 @@ const formatPhoneInput = (v) => {
     return `${d.slice(0,3)}-${d.slice(3,7)}-${d.slice(7,11)}`;
 };
 
+/* ── 포지션/팀 색상 ── */
+const getPosColorClass = (pos) => {
+    if (!pos) return 'bg-slate-50 text-slate-400 border-slate-100';
+    const p = String(pos).toLowerCase();
+    if (p.includes('피보')) return 'bg-red-50 text-red-500 border-red-100';
+    if (p.includes('아라')) return 'bg-green-50 text-green-600 border-green-100';
+    if (p.includes('픽소')) return 'bg-blue-50 text-blue-500 border-blue-100';
+    if (p.includes('골레이로')) return 'bg-purple-50 text-purple-600 border-purple-100';
+    return 'bg-yellow-50 text-yellow-600 border-yellow-100';
+};
+const getTeamNumberColor = (index) => ['text-pink-500','text-sky-400','text-lime-500','text-yellow-400','text-blue-600','text-red-500'][index] || 'text-slate-300';
+
 /* ── 회비 날짜 계산 ── */
 const calculateEndDate = (startMonthStr, durationMonths) => {
     if(!startMonthStr)return '';

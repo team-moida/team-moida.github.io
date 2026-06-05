@@ -58,6 +58,7 @@ const getSessionCol  = () => getCol('weekly_session');
 const getHistoryCol  = () => getCol('history');
 const getSettingsCol = () => getCol('settings');
 const getQRCol       = () => getCol('qr_tokens');
+const getPendingCol  = () => getCol('pending_registrations');
 const KAKAO_REST_KEY = 'bdebf2ece4ae2d9315448ec55001d7b2';
 const KAKAO_PROXY    = 'https://corsproxy.io/?url=';
 const getThisSunday = () => {
