@@ -214,12 +214,14 @@ function App() {
     });
 
     const { moveMonth, handleAddMember, handleUpdateMember, handleResignConfirm,
+            handleRestoreResigned, handleDeleteMember,
             handleBillingMemberClick, processAction } = makeRosterHandlers({
         newMemberForm: roster.newMemberForm, setNewMemberForm: roster.setNewMemberForm,
         setIsAddModalOpen: roster.setIsAddModalOpen,
         editingMember: roster.editingMember, setEditingMember: roster.setEditingMember,
         resigningMember: roster.resigningMember, setResigningMember: roster.setResigningMember,
         resignForm: roster.resignForm,
+        deletingMember: roster.deletingMember, setDeletingMember: roster.setDeletingMember,
         billingMember: roster.billingMember, setBillingMember: roster.setBillingMember,
         targetMonth: roster.targetMonth,
         monthlyReasons: roster.monthlyReasons, paymentDateInput: roster.paymentDateInput,
@@ -406,6 +408,7 @@ function App() {
                         resignedMembers={roster.resignedMembers}
                         setEditingMember={roster.setEditingMember}
                         setResigningMember={roster.setResigningMember} setResignForm={roster.setResignForm}
+                        handleRestoreResigned={handleRestoreResigned} setDeletingMember={roster.setDeletingMember}
                         moveMonth={moveMonth} targetMonth={roster.targetMonth}
                         filterCounts={roster.filterCounts} filterCategory={roster.filterCategory}
                         setFilterCategory={roster.setFilterCategory}
@@ -457,6 +460,8 @@ function App() {
                 resigningMember={roster.resigningMember} setResigningMember={roster.setResigningMember}
                 resignForm={roster.resignForm} setResignForm={roster.setResignForm}
                 handleResignConfirm={handleResignConfirm}
+                deletingMember={roster.deletingMember} setDeletingMember={roster.setDeletingMember}
+                handleDeleteMember={handleDeleteMember}
                 previewDraft={team.previewDraft} setPreviewDraft={team.setPreviewDraft}
                 tmLoadDraft={tmLoadDraft}
                 isLoadMatchModalOpen={match.isLoadMatchModalOpen} setIsLoadMatchModalOpen={match.setIsLoadMatchModalOpen}

@@ -1,3 +1,35 @@
+// ─── 회원 완전 삭제 모달 ─────────────────────────────────────────────────────
+function DeleteMemberModal({ deletingMember, setDeletingMember, handleDeleteMember }) {
+    const { useState } = React;
+    const [confirmName, setConfirmName] = useState('');
+    if (!deletingMember) return null;
+    const isMatch = confirmName === deletingMember.name;
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" style={{zIndex:60}} onClick={()=>{setDeletingMember(null);setConfirmName('');}}>
+            <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={e=>e.stopPropagation()}>
+                <h2 className="text-xl font-black text-red-600 mb-1">회원 완전 삭제</h2>
+                <p className="text-sm text-slate-500 mb-1">{deletingMember.name}</p>
+                <p className="text-xs text-red-500 font-black mb-4">⚠ 이 작업은 되돌릴 수 없습니다.</p>
+                <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-4">
+                    <p className="text-xs text-slate-600">Firestore에서 회원 정보가 영구 삭제됩니다.<br/>출석 기록은 그대로 남습니다.</p>
+                </div>
+                <div>
+                    <p className="text-xs font-black text-slate-500 mb-1">확인을 위해 회원 이름을 입력하세요</p>
+                    <input type="text" style={{userSelect:'text'}} placeholder={deletingMember.name} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                        value={confirmName} onChange={e=>setConfirmName(e.target.value)}/>
+                </div>
+                <div className="flex gap-2 mt-5">
+                    <button onClick={()=>{setDeletingMember(null);setConfirmName('');}} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
+                    <button onClick={()=>{if(isMatch)handleDeleteMember();}} disabled={!isMatch}
+                        className={`flex-1 py-3 rounded-2xl font-black text-sm transition-all ${isMatch?'bg-red-500 text-white':'bg-red-100 text-red-300 cursor-not-allowed'}`}>
+                        영구 삭제
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── 모달 모음 ────────────────────────────────────────────────────────────────
 const AppModals = ({
     // 회비 액션 모달
@@ -20,6 +52,9 @@ const AppModals = ({
     resigningMember, setResigningMember,
     resignForm, setResignForm,
     handleResignConfirm,
+    // 완전 삭제 모달
+    deletingMember, setDeletingMember,
+    handleDeleteMember,
     // 팀 편성 미리보기 모달
     previewDraft, setPreviewDraft,
     tmLoadDraft,
@@ -277,6 +312,9 @@ const AppModals = ({
                 </div>
             </div>
         )}
+
+        {/* ===== 완전 삭제 모달 ===== */}
+        <DeleteMemberModal deletingMember={deletingMember} setDeletingMember={setDeletingMember} handleDeleteMember={handleDeleteMember}/>
 
         {/* ===== 팀 편성 미리보기 모달 ===== */}
         {previewDraft && (

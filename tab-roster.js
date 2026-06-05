@@ -5,6 +5,7 @@ const TabRoster = ({
     activeMembers, allMembers, resignedMembers,
     setEditingMember,
     setResigningMember, setResignForm,
+    handleRestoreResigned, setDeletingMember,
     moveMonth, targetMonth,
     filterCounts, filterCategory, setFilterCategory,
     filteredMembers,
@@ -64,10 +65,19 @@ const TabRoster = ({
                     <div className="mt-6">
                         <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">탈퇴 회원 {resignedMembers.length}명</p>
                         {[...resignedMembers].sort((a,b)=>a.name.localeCompare(b.name)).map(m=>(
-                            <div key={m.id} className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-xl mb-1.5 opacity-60">
-                                <span className="font-black text-slate-400 text-sm">{m.name}</span>
-                                <span className="text-[10px] text-slate-400">{m.resignDate}</span>
-                                {m.isForcedResign&&<span className="text-[9px] px-1.5 py-0.5 bg-red-50 text-red-500 rounded-lg font-black">강제탈퇴</span>}
+                            <div key={m.id} className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-xl mb-1.5">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="font-black text-slate-400 text-sm">{m.name}</span>
+                                        <span className="text-[10px] text-slate-400">{m.resignDate}</span>
+                                        {m.isForcedResign&&<span className="text-[9px] px-1.5 py-0.5 bg-red-50 text-red-500 rounded-lg font-black">강제탈퇴</span>}
+                                    </div>
+                                    {m.resignReason&&m.resignReason!=='사유 미작성'&&<p className="text-[10px] text-slate-400 mt-0.5">{m.resignReason}</p>}
+                                </div>
+                                <div className="flex gap-1.5 flex-shrink-0">
+                                    <button onClick={()=>handleRestoreResigned(m)} className="p-1.5 rounded-lg bg-emerald-50 text-emerald-500" title="탈퇴 철회"><Icon.RotateCcw size={13}/></button>
+                                    <button onClick={()=>setDeletingMember(m)} className="p-1.5 rounded-lg bg-red-50 text-red-400" title="완전 삭제"><Icon.Trash size={13}/></button>
+                                </div>
                             </div>
                         ))}
                     </div>
