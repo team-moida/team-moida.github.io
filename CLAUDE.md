@@ -1,7 +1,7 @@
 # CLAUDE.md — OTP FC 모이다 프로젝트
 
-Version: 3.0
-Last Updated: 2026-06-05
+Version: 3.1
+Last Updated: 2026-06-06
 
 ---
 
@@ -9,65 +9,78 @@ Last Updated: 2026-06-05
 
 아마추어 혼성 풋살팀 OTP FC 운영 관리 웹앱 "모이다"
 
-기술 스택: React 18 · Firebase Firestore · Firebase 익명 로그인 · Tailwind CSS · Leaflet · PWA · GitHub Pages
+기술 스택: React 18 · Firebase Firestore · Firebase 익명/카카오 로그인 · Tailwind CSS · Leaflet · 카카오맵 · PWA · Cloud Functions(FCM) · GitHub Pages
 
 - Firebase Project ID: moida-otpfc
 - 기본 컬렉션 경로: artifacts/moida-otpfc/public/data/
 
-상세 구조 분석(기능별 역할·데이터·위험요소)은 project_moida_otpfc.md 참고.
-이 파일에는 적지 않는다.
+이 앱은 독립된 두 개의 앱으로 나뉜다. 작업 전 어느 쪽인지 먼저 확인한다.
+
+- member.html = 회원용 + 통합 화면 (홈 / 회원·회비 / 팀편성 / 매치 / 출석)
+- attendance.html = 관리자 출석 관리 전용
+
+각 파일의 상세 역할은 project_moida_otpfc.md(전체 인벤토리) 참고.
+이 파일에는 상세 설명을 쌓지 않는다. 지도와 규칙만 둔다.
 
 ---
 
 # 파일 지도 (가장 중요)
 
-작업 전 반드시 이 지도부터 본다.
-요청한 기능에 해당하는 파일만 읽는다.
-지도에 없는 파일은 읽지 않는다.
+작업 전 이 지도부터 본다. 요청 기능에 해당하는 파일만 읽는다.
+지도에 없거나 무관한 파일은 읽지 않는다.
 
-## 홈 / 공통 진입
+## 공통 부품 (양쪽 앱에서 재사용)
 
-- 홈 화면, 페이지 이동, 로그인, 카카오 공유, 다크모드, PWA 설치 → index.html
+- 장소 선택 (지도/GPS/카카오 검색/핀) → location-picker.js
+- QR 카메라 스캔 → qr-scanner.js
+- Firebase 초기화 (db, auth, getCol, APP_ID, STAFF_ROLES) → firebase-init.js
+- 공통 유틸 (레벨/팀 색상, 이름 포맷, 날짜 계산) → utils.js
+- 회원권 상태 / 거리계산 / 카카오 API 키 → member-helpers.js
+- 아이콘 → member-icons.js  (※ "중복 주의" 참고)
+- 용도 미확인(점검 필요) → common.js, firebase-config.js
 
-## 출석
+## member.html (회원 + 통합)
 
-- 출석 관리 → attendance.html  (※ 아직 단일 파일, 분리 예정)
-- 모임 생성 / 수정 / 삭제 → (담당 파일 확정 후 여기에 기입)
-
-## 회원 / 회비  → roster/
-
-- 회원 목록, 등록, 수정, 탈퇴 → roster/roster-members.js
-- 회비 관리 → roster/roster-payment.js
+- 로그인 / 회원가입 / 홈 / 라우팅 → handlers-kakao.js, tab-home.js
+- 회원 관리 (목록/추가/수정/탈퇴) → tab-roster.js, handlers-roster.js, use-roster.js, roster/roster-members.js
+- 회비 관리 → handlers-roster.js, roster/roster-payment.js
 - 휴식 회원 관리 → roster/roster-rest.js
 - 운영진 관리 → roster/roster-admin.js
-- roster 공통 유틸 → roster/roster-utils.js
+- 팀 편성 → tab-team.js, handlers-team.js, use-team.js, team-maker/team-balance.js, team-maker/team-dragdrop.js, team-maker/team-storage.js
+- 팀 이미지 저장 → team-maker/team-export.js
+- 매치 → tab-match.js, handlers-match.js, use-match.js, match/match-generator.js, match/match-results.js, match/match-score.js
+- 매치 이미지 저장 → match/match-export.js
+- 회원용 출석 / 체크인 → tab-attend.js, handlers-attend.js, use-attend.js
+- 알림(FCM) 토큰/공지 → use-fcm.js
+- 상단 헤더 → member-header.js
+- 회원 화면 모달 전체 → modals.js
 
-## 팀 편성  → team-maker/
+## attendance.html (관리자 출석)
 
-- 밸런스 / 레벨 계산 → team-maker/team-balance.js
-- 팀 이동, 드래그앤드롭 → team-maker/team-dragdrop.js
-- 임시 저장, 최종 확정 → team-maker/team-storage.js
-- 이미지 저장 → team-maker/team-export.js
-- team-maker 공통 유틸 → team-maker/team-utils.js
+- 모임 설정 (날짜/시간/장소/GPS반경/QR/선착순/담당자) → tab-attend-setup.js, handlers-attend-session.js
+- 출석 현황 (실시간 시계/팀 카드/대기자/기록 확정) → tab-attend-main.js
+- 출결 기록 (목록/상세/정렬/장소편집/상태변경/삭제) → tab-attend-history.js
+- 가입 신청 승인/거부 → handlers-attend-member.js
+- QR 코드 생성 → handlers-attend-qr.js
+- 하단 네비게이션 → AttendNavBar.js
+- 출석 화면 모달 → modals-attend.js
 
-## 매치  → match/
+## 서버 / 배포
 
-- 경기 일정 / 경기표 생성 → match/match-generator.js
-- 점수 입력 → match/match-score.js
-- 경기 완료 처리, 결과 저장 → match/match-results.js
-- 이미지 저장 → match/match-export.js
-- match 공통 유틸 → match/match-utils.js
+- 백그라운드 알림 수신 + 캐시 → sw.js
+- 푸시 알림 발송 (Cloud Function) → functions/index.js
 
-## 회원 전용
+---
 
-- 회원 전용 기능 → member.html  (※ 아직 단일 파일, 분리 예정)
+# 중복 주의 (수정 시 반드시 양쪽 확인)
 
-## 전체 공통
+아래는 같은 로직/정의가 두 곳 이상에 존재한다.
+한쪽만 고치면 다른 쪽에서 버그가 난다. 하나를 수정하면 짝 파일도 영향 없는지 먼저 확인하고 보고한다.
 
-- Firebase 설정 → firebase-config.js
-- 공통 상수 / 유틸 → common.js
-- 서비스워커 → sw.js
-- 앱 설정 → manifest.json
+- 팀 생성 알고리즘 → team-maker/team-balance.js + handlers-team.js
+- 매치 스케줄 알고리즘 → match/match-generator.js + handlers-match.js
+- 출석 기능 → member.html 계열(tab-attend.js / handlers-attend.js)과 attendance.html 계열(tab-attend-*.js)은 서로 별개. 어느 앱인지 먼저 확정.
+- 아이콘 정의 → member-icons.js / roster/roster-utils.js / team-maker/team-utils.js / match/match-utils.js 에 흩어져 있음.
 
 ---
 
@@ -96,7 +109,7 @@ Last Updated: 2026-06-05
 
 사용자는 코드를 작성하지 않는다.
 설명은 함수·변수·훅·컴포넌트 기준이 아니라 기능 기준으로 한다.
-(예: "함수 수정" 대신 "출석 기능 수정", "회비 기능 수정")
+(예: "함수 수정" 대신 "회비 기능 수정", "출석 기능 수정")
 
 ---
 
@@ -107,8 +120,8 @@ Last Updated: 2026-06-05
 1. 이해한 요청
 2. 읽을 파일 (파일 지도 기준)
 3. 수정될 기능
-4. 영향 받는 화면
-5. 위험 요소
+4. 영향 받는 화면 / 어느 앱(member.html / attendance.html)
+5. 위험 요소 (중복 파일 포함)
 
 설명 후 작업한다.
 
@@ -163,14 +176,14 @@ Last Updated: 2026-06-05
 # 공통 모듈 원칙
 
 중복 코드는 공통 모듈 사용을 우선 고려한다.
-(Firebase 설정 → firebase-config.js, 공통 상수·유틸 → common.js, *-utils.js)
-기능 변경 없이 안전한 경우에만 적용한다.
+(Firebase → firebase-init.js, 공통 유틸 → utils.js / member-helpers.js, 아이콘 통합 등)
+기능 변경 없이 안전한 경우에만 적용한다. 중복 정리는 반드시 계획 제시 후 승인받고 진행한다.
 
 ---
 
 # PWA 및 배포
 
-배포 관련 작업 시 Service Worker · manifest · 캐시 영향 여부를 확인한다.
+배포 관련 작업 시 Service Worker(sw.js) · manifest · 캐시 영향 여부를 확인한다.
 기존 사용자 데이터는 유지한다.
 
 ---
@@ -184,7 +197,7 @@ Last Updated: 2026-06-05
 
 # 메모리 파일
 
-project_moida_otpfc.md 사용.
+project_moida_otpfc.md = 전체 파일 인벤토리 + 상세 역할.
 중요 기능 변경 시에만 갱신한다. 사소한 수정은 갱신하지 않는다.
 
 ---
