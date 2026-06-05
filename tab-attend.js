@@ -610,13 +610,13 @@ const TabAttend = ({
 
         {/* 키오스크 모달 */}
         {isKioskOpen && (
-            <div className="fixed inset-0 z-50 flex flex-col" style={{background:'#f8fafc'}}>
+            <div className="fixed inset-0 z-50 flex flex-col" style={{background:'#f8fafc',overscrollBehavior:'none'}}>
                 {/* 상단 바 */}
                 <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'14px 16px',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                     <div>
                         <p style={{color:'#1e293b',fontWeight:900,fontSize:'1rem'}}>직접 출석</p>
                         <p style={{color:'#64748b',fontSize:'0.75rem',marginTop:'2px'}}>{meetingSettings?.date} · <span style={{color:'#0d9488',fontWeight:900}}>{attendCheckedInCount}명 출석</span> / {attendActiveList.length}명</p>
-                        <p style={{color:'#94a3b8',fontSize:'0.75rem',marginTop:'1px'}}><KioskClock /></p>
+                        <p style={{color:'#1e293b',fontSize:'1.5rem',fontWeight:900,marginTop:'4px',letterSpacing:'0.05em'}}><KioskClock /></p>
                     </div>
                     <button onClick={() => setIsKioskOpen(false)}
                         style={{width:'40px',height:'40px',borderRadius:'12px',background:'#f1f5f9',color:'#64748b',display:'flex',alignItems:'center',justifyContent:'center',border:'none',cursor:'pointer',fontSize:'20px',fontWeight:900}}>
