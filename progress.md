@@ -206,3 +206,31 @@
 - 다크모드 flash 방지 inline script(`<head>`)는 index.html에 유지
 - Firebase 초기화는 기존 `firebase-init.js` 재사용 (`STAFF_ROLES` 공유)
 - JS 파일은 body 최하단에서 로드 (DOM 완성 후 실행 보장)
+
+---
+
+# 기능 추가 이력
+
+## 2026-06-05~06
+
+### member.html 출석 탭 — 새 모임 만들기
+
+수정 파일: `handlers-attend.js`, `tab-attend.js`, `member.html`
+
+- 출석 탭 모임 설정 영역(관리자 모드)에 **새 모임** 버튼 추가
+- 동작 순서:
+  1. 확인 대화상자 표시
+  2. 현재 날짜 기록이 history에 없으면 자동 저장
+  3. `weekly_session` 현재 날짜 참가자 전체 삭제
+  4. `meeting_schedule_v2`를 다음 일요일 + 08:00~10:00으로 초기화
+- `handlers-attend.js`: `attendHandleCreateNew` 함수 추가 (makeAttendHandlers 반환 객체에 포함)
+- `tab-attend.js`: 모임 설정 카드 헤더에 버튼 렌더링
+- `member.html`: `attendHandleCreateNew` 구조분해 추가 + TabAttend props 전달
+
+### member.html 출석 탭 — 출석 관리 버튼 레이아웃 조정
+
+수정 파일: `tab-attend.js`
+
+- "⚙️ 출석 관리" 버튼을 좌측 상단 → 우측으로 이동
+- 좌측에 "출석" 레이블 추가
+- 팀 탭("편성 관리"), 매치 탭("매치 관리")과 동일한 레이아웃 패턴 적용
