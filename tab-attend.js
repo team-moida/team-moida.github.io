@@ -6,6 +6,16 @@ const KioskClock = () => {
     return <span style={{fontVariantNumeric:'tabular-nums'}}>{time}</span>;
 };
 
+// ─── 키오스크 열릴 때 body pull-to-refresh 차단 ──────────────────────────────────
+const KioskScrollLock = () => {
+    React.useEffect(() => {
+        const prev = document.body.style.overscrollBehavior;
+        document.body.style.overscrollBehavior = 'none';
+        return () => { document.body.style.overscrollBehavior = prev; };
+    }, []);
+    return null;
+};
+
 // ─── 출석 탭 ────────────────────────────────────────────────────────────────────
 const TabAttend = ({
     isAdminMode,
@@ -611,6 +621,7 @@ const TabAttend = ({
         {/* 키오스크 모달 */}
         {isKioskOpen && (
             <div className="fixed inset-0 z-50 flex flex-col" style={{background:'#f8fafc',overscrollBehavior:'none'}}>
+                <KioskScrollLock />
                 {/* 상단 바 */}
                 <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'14px 16px',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                     <div>
