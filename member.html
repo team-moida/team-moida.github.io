@@ -421,7 +421,7 @@ function App() {
                 )}
             </div>
 
-            <div className="tab-bar fixed bottom-0 left-0 right-0 z-50 pb-safe">
+            {!attend.isKioskOpen && <div className="tab-bar fixed bottom-0 left-0 right-0 z-50 pb-safe">
                 <div className="flex items-center h-16 max-w-sm mx-auto px-2">
                     {[
                         {key:'home',   label:'홈',   icon:<Icon.Home size={20}/>},
@@ -437,7 +437,7 @@ function App() {
                         </button>
                     ))}
                 </div>
-            </div>
+            </div>}
 
             {toast.show && (
                 <div className={`fixed bottom-20 left-1/2 -translate-x-1/2 px-5 py-3 rounded-full text-sm font-black shadow-xl z-50 whitespace-nowrap transition-all ${toast.type==='error'?'bg-red-500 text-white':toast.type==='success'?'bg-emerald-500 text-white':'bg-slate-700 text-white'}`}>
