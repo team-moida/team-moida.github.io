@@ -37,12 +37,16 @@
     <script type="text/babel" src="tab-attend.js"></script>
     <script type="text/babel" src="tab-roster.js"></script>
     <script type="text/babel" src="modals.js"></script>
+    <script src="handlers-roster.js"></script>
+    <script src="handlers-attend.js"></script>
+    <script src="handlers-team.js"></script>
+    <script src="handlers-match.js"></script>
 </head>
 <body class="min-h-screen">
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useEffect, useMemo, useRef, useCallback } = React;
+const { useState, useEffect, useMemo, useRef } = React;
 
 function App() {
     // 앱 상태
@@ -101,6 +105,8 @@ function App() {
     const [specialRestReason, setSpecialRestReason] = useState('');
     const [tempRestCount, setTempRestCount] = useState(0);
     const [alertModal, setAlertModal] = useState({show:false,title:'',content:'',type:'info',onConfirm:null});
+    const showAlert = (title, content, type='info', onConfirm=null) => setAlertModal({show:true, title, content, type, onConfirm});
+    const showConfirm = (title, content, onConfirm) => setAlertModal({show:true, title, content, type:'confirm', onConfirm});
     // ─────────────────────────────────────────────────────────────────────────────
 
     // ── 팀 편성 관리자 패널 ──────────────────────────────────────────────────────
@@ -491,82 +497,11 @@ function App() {
         if (memberData?.memberId) setAppView('app');
     }, []);
 
-    // QR 토큰 공통 처리 (URL 방식 + 인앱 스캔 공유)
-    const processQRToken = useCallback(async (token, date) => {
-        if (!token || !date) return;
-        if (!memberData?.memberId) { setQrMessage('로그인 후 이용 가능합니다.'); setQrStatus('error'); return; }
-        setQrStatus('processing');
-        setTab('attend');
-        try {
-            const tokenDoc = await getCol('qr_tokens').doc(date).get();
-            if (!tokenDoc.exists) { setQrMessage('유효하지 않은 QR코드입니다.'); setQrStatus('error'); return; }
-            const tokenData = tokenDoc.data();
-            if (tokenData.token !== token) { setQrMessage('QR 코드가 일치하지 않습니다.'); setQrStatus('error'); return; }
-
-            const now = new Date();
-            if (!testMode) {
-                if (now < new Date(tokenData.validFrom)) { setQrMessage(`아직 출석 시간이 아닙니다.\n출석 가능: ${new Date(tokenData.validFrom).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`); setQrStatus('error'); return; }
-                if (now > new Date(tokenData.validUntil)) { setQrMessage('QR 코드 유효 시간이 지났습니다.'); setQrStatus('error'); return; }
-            }
-
-            const usedBy = tokenData.usedBy || [];
-            if (usedBy.includes(memberData.memberId)) { setQrMessage('이미 QR 출석이 완료되었습니다.'); setQrStatus('success'); return; }
-
-            const sessionSnap = await getCol('weekly_session')
-                .where('memberId', '==', memberData.memberId)
-                .where('date', '==', date)
-                .get();
-            if (sessionSnap.empty) { setQrMessage('오늘 선정 명단에 없습니다.\n관리자에게 문의하세요.'); setQrStatus('error'); return; }
-
-            const sessionDoc = sessionSnap.docs[0];
-            if (sessionDoc.data().checkedIn) { setQrMessage('이미 출석 처리되었습니다.'); setQrStatus('success'); return; }
-
-            const [sy,sm,sd] = date.split('-');
-            // state 로딩 타이밍 이슈 방지: Firestore에서 직접 조회
-            const settingsDoc = await getCol('settings').doc('meeting_schedule_v2').get();
-            const startStr = settingsDoc.exists ? (settingsDoc.data().start || '08:00') : '08:00';
-            const [shr,smin] = startStr.split(':');
-            const meetingStart = new Date(sy,sm-1,sd,parseInt(shr),parseInt(smin),0);
-            // 정상: start-70분~start-9분(07:51) / 지각: 07:51:01~종료 (+1분 여유)
-            const normalThreshold = new Date(meetingStart.getTime() - 9*60*1000);
-            const status = now <= normalThreshold ? '정상' : '지각';
-            const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
-
-            const batch = db.batch();
-            batch.update(getCol('weekly_session').doc(sessionDoc.id), { checkedIn:true, checkInTime:timeStr, status });
-            batch.update(getCol('qr_tokens').doc(date), { usedBy: firebase.firestore.FieldValue.arrayUnion(memberData.memberId) });
-            await batch.commit();
-
-            setQrMessage(`출석 완료! (${status})\n${timeStr}`);
-            setQrStatus('success');
-        } catch(e) {
-            console.error(e);
-            setQrMessage('오류가 발생했습니다: ' + e.message);
-            setQrStatus('error');
-        }
-    }, [memberData, testMode]);
-
-    // URL 파라미터로 진입한 경우 (외부 카메라 앱 스캔)
-    const handleQRAttendance = useCallback(async () => {
-        if (!urlParams.token || !urlParams.date) return;
-        await processQRToken(urlParams.token, urlParams.date);
-        window.history.replaceState({}, '', window.location.pathname);
-    }, [urlParams, processQRToken]);
-
-    // 인앱 카메라로 스캔한 경우
-    const handleInAppQRScan = useCallback((scannedUrl) => {
-        setIsQRScannerOpen(false);
-        try {
-            const url = new URL(scannedUrl);
-            const token = url.searchParams.get('token');
-            const date = url.searchParams.get('date');
-            if (!token || !date) { setQrMessage('올바른 모이다 QR코드가 아닙니다.'); setQrStatus('error'); setTab('attend'); return; }
-            setLastScannedQR({ token, date });
-            processQRToken(token, date);
-        } catch(_) {
-            setQrMessage('QR코드를 읽을 수 없습니다.'); setQrStatus('error'); setTab('attend');
-        }
-    }, [processQRToken]);
+    const { processQRToken, handleQRAttendance, handleInAppQRScan, handleGPSCheckIn, handleGPSAttend } = makeQRGPSHandlers({
+        memberData, testMode, meetingSettings, mySession, urlParams,
+        setQrMessage, setQrStatus, setTab, setIsQRScannerOpen,
+        setGpsStatus, setDistance, setIsCheckingIn, showToast
+    });
 
     useEffect(() => {
         if (urlParams.token && appView === 'app') handleQRAttendance();
@@ -593,61 +528,7 @@ function App() {
         if (!next && tab === 'roster') setTab('home');
     };
 
-    // GPS 출석 체크
-    const handleGPSCheckIn = async () => {
-        if (!memberData?.memberId) return;
-        setGpsStatus('checking');
-        if (!navigator.geolocation) { setGpsStatus('error'); showToast('이 기기는 GPS를 지원하지 않습니다.', 'error'); return; }
 
-        navigator.geolocation.getCurrentPosition(async (pos) => {
-            const { latitude, longitude } = pos.coords;
-            const locationLat = meetingSettings?.locationLat;
-            const locationLng = meetingSettings?.locationLng;
-
-            if (!locationLat || !locationLng) {
-                setGpsStatus('no_location');
-                showToast('관리자가 모임 장소를 아직 설정하지 않았습니다.', 'error');
-                return;
-            }
-
-            const dist = calcDistance(latitude, longitude, locationLat, locationLng);
-            setDistance(Math.round(dist));
-            const radius = meetingSettings?.locationRadius || 100;
-
-            if (testMode || dist <= radius) {
-                setGpsStatus('within');
-            } else {
-                setGpsStatus('outside');
-            }
-        }, (err) => {
-            setGpsStatus('error');
-            const msg = err.code === 1 ? '위치 권한을 허용해주세요.' : err.code === 2 ? 'GPS 신호를 찾을 수 없습니다.' : '위치 확인 시간이 초과되었습니다.';
-            showToast(msg, 'error');
-        }, { timeout: 10000, maximumAge: 0, enableHighAccuracy: true });
-    };
-
-    const handleGPSAttend = async () => {
-        if (!mySession) return showToast('오늘 선정 명단에 없습니다. 관리자에게 문의하세요.', 'error');
-        if (mySession.checkedIn) return showToast('이미 출석 처리되었습니다.', 'info');
-        setIsCheckingIn(true);
-        try {
-            const now = new Date();
-            const[sy,sm,sd] = meetingSettings.date.split('-');
-            const[shr,smin] = meetingSettings.start.split(':');
-            const[ehr,emin] = (meetingSettings.end || '10:00').split(':');
-            const meetingStart = new Date(sy,sm-1,sd,parseInt(shr),parseInt(smin),0);
-            const meetingEnd   = new Date(sy,sm-1,sd,parseInt(ehr),parseInt(emin),0);
-            const allowFrom = new Date(meetingStart.getTime() - 70*60*1000);
-            if (!testMode && now < allowFrom) { showToast('아직 출석 가능 시간이 아닙니다.', 'error'); setIsCheckingIn(false); return; }
-            if (!testMode && now > meetingEnd) { showToast('모임이 종료되었습니다.\n자동 노쇼 처리되었습니다.', 'error'); setIsCheckingIn(false); return; }
-            const normalThreshold = new Date(meetingStart.getTime() - 9*60*1000);
-            const status = now <= normalThreshold ? '정상' : '지각';
-            const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
-            await getCol('weekly_session').doc(mySession.id).update({ checkedIn:true, checkInTime:timeStr, status });
-            showToast(`출석 완료! ${status} (${timeStr})`, 'success');
-        } catch(e) { showToast('출석 실패: ' + e.message, 'error'); }
-        finally { setIsCheckingIn(false); }
-    };
 
     // 내 팀 정보
     const myTeamInfo = useMemo(() => {
@@ -828,715 +709,55 @@ function App() {
     }, [tmActiveList, allMembers]);
     // ─────────────────────────────────────────────────────────────────────────────
 
-    // ── 출석 관리 핸들러 ──────────────────────────────────────────────────────────
-    const updateMeetingSettingsAdmin = async (newData) => {
-        try { await getSettingsCol().doc('meeting_schedule_v2').set(newData); }
-        catch(e) { showAlert('오류','설정 저장 실패'); }
-    };
-    const attendHandleCheckIn = async (participant) => {
-        if (participant.date !== meetingSettings?.date) return showAlert('오류','날짜 불일치\n새로고침 후 다시 시도해주세요.');
-        const now = new Date();
-        const [sy,sm,sd] = participant.date.split('-');
-        const [shr,smin] = (meetingSettings?.start||'08:00').split(':');
-        const [ehr,emin] = (meetingSettings?.end||'10:00').split(':');
-        const meetingStart = new Date(parseInt(sy),parseInt(sm)-1,parseInt(sd),parseInt(shr),parseInt(smin),0);
-        const meetingEnd   = new Date(parseInt(sy),parseInt(sm)-1,parseInt(sd),parseInt(ehr),parseInt(emin),0);
-        const allowFrom = new Date(meetingStart.getTime()-70*60*1000);
-        if (!testMode && now < allowFrom) return showAlert('출석 불가',`출석 가능: ${allowFrom.toLocaleTimeString('ko-KR',{hour12:false,hour:'2-digit',minute:'2-digit'})}부터`);
-        if (!testMode && now > meetingEnd) return showAlert('출석 불가','모임이 종료되었습니다.');
-        const normalThreshold = new Date(meetingStart.getTime()-9*60*1000);
-        const finalStatus = now <= normalThreshold ? '정상' : '지각';
-        const timeStr = now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
-        try {
-            await getSessionCol().doc(participant.id).update({checkedIn:true, checkInTime:timeStr, status:finalStatus});
-            setAttendModal({type:'checkin', data:{...participant, checkedIn:true, checkInTime:timeStr, status:finalStatus}});
-        } catch(e) { showAlert('오류','출석 실패'); }
-    };
-    const attendHandleUncheckIn = async (participant) => {
-        showConfirm('출석 취소',`${participant.name}의 출석을 취소하시겠습니까?`, async () => {
-            try { await getSessionCol().doc(participant.id).update({checkedIn:false, checkInTime:null, status:'미출석'}); setAttendModal({type:null,data:null}); }
-            catch(e) { showAlert('오류','출석 취소 실패'); }
-        });
-    };
-    const attendToggleParticipant = async (member) => {
-        const existing = tmSessionData.find(p => p.memberId===member.id && p.date===meetingSettings?.date);
-        if (existing) { await getSessionCol().doc(existing.id).delete(); }
-        else { await getSessionCol().add({memberId:member.id, name:member.name, gender:member.gender, level:member.level, date:meetingSettings?.date, checkedIn:false, checkInTime:null, status:'미출석', isGuest:false, team:'', createdAt:new Date().toISOString()}); }
-    };
-    const attendToggleParticipantAsGuest = async (member) => {
-        const existing = tmSessionData.find(p => p.memberId===member.id && p.date===meetingSettings?.date);
-        if (existing) { await getSessionCol().doc(existing.id).delete(); }
-        else { await getSessionCol().add({memberId:member.id, name:member.name, gender:member.gender, level:member.level, date:meetingSettings?.date, checkedIn:false, checkInTime:null, status:'미출석', isGuest:true, team:'', createdAt:new Date().toISOString()}); }
-    };
-    const attendHandleResetSelection = () => {
-        const targets = tmSessionData.filter(p => p.date===meetingSettings?.date);
-        if (targets.length===0) return showAlert('알림','초기화할 명단이 없습니다.');
-        showConfirm('명단 초기화','이번 모임 선정 인원을 전체 해제하시겠습니까?', async () => {
-            setAttendIsPending(true);
-            try { const batch=db.batch(); targets.forEach(p=>batch.delete(getSessionCol().doc(p.id))); await batch.commit(); }
-            catch(e) { showAlert('오류','초기화 실패'); } finally { setAttendIsPending(false); }
-        });
-    };
-    const attendHandleAddGuest = async () => {
-        if (!attendNewGuest.name.trim()) return showAlert('알림','게스트 이름을 입력해주세요.');
-        if (attendIsPending) return;
-        setAttendIsPending(true);
-        const inviter = activeMembers.find(m=>m.id===attendNewGuest.inviterId);
-        try {
-            await getSessionCol().add({memberId:'guest_'+Date.now(), name:attendNewGuest.name, inviterName:inviter?.name||'없음', inviterId:attendNewGuest.inviterId||'', gender:attendNewGuest.gender, level:attendNewGuest.level, date:meetingSettings?.date, checkedIn:false, checkInTime:null, status:'미출석', isGuest:true, createdAt:new Date().toISOString()});
-            setIsAttendGuestModalOpen(false);
-            setAttendNewGuest({name:'',gender:'남성',inviterId:'',level:'1'});
-        } catch(e) { showAlert('오류','게스트 등록 실패'); } finally { setAttendIsPending(false); }
-    };
-    const attendHandleTestSelect = async () => {
-        if (!meetingSettings) return;
-        const d = new Date();
-        const todayStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-        await updateMeetingSettingsAdmin({...meetingSettings, date:todayStr});
-        const toAdd = activeMembers.filter(m => !m.isResigned && !tmSessionData.some(p=>p.memberId===m.id&&p.date===todayStr));
-        await Promise.all(toAdd.map(m => getSessionCol().add({memberId:m.id, name:m.name, gender:m.gender, level:m.level, date:todayStr, checkedIn:false, checkInTime:null, status:'미출석', isGuest:false, team:'', createdAt:new Date().toISOString()})));
-        showAlert('테스트 선정 완료',`오늘(${todayStr}) 기준 ${toAdd.length}명 선정됨`);
-    };
-    const attendSaveAndReset = async () => {
-        const current = tmSessionData.filter(p => p.date===meetingSettings?.date);
-        if (current.length===0) return showAlert('확인','현재 출석부에 인원이 없습니다.');
-        showConfirm('기록 확정','기록을 저장하고 다음 주로 날짜를 넘기시겠습니까?', async () => {
-            setAttendIsPending(true);
-            try {
-                const limit = meetingSettings?.maxLimit || 18;
-                const sorted = [...current].sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||'')||a.name.localeCompare(b.name));
-                const records = sorted.map((p,idx) => {
-                    const isWaiting = idx+1 > limit;
-                    const finalStatus = isWaiting ? '대기' : p.checkedIn ? (p.status||'정상') : '노쇼';
-                    return {name:p.isGuest?`${p.name} - 초대:${p.inviterName||'없음'}`:p.name, gender:p.gender, status:finalStatus, checkInTime:p.checkedIn?(p.checkInTime||'-'):'미출석', type:isWaiting?'대기자':(p.isGuest?'게스트':'정규'), level:p.level||'-', team:p.team||'-', timestamp:p.checkedIn?p.checkInTime:'99:99:99'};
-                });
-                const presentCount = records.filter(r=>r.status==='정상'||r.status==='지각').length;
-                await getHistoryCol().add({date:meetingSettings.date, meetingTime:`${meetingSettings.start}~${meetingSettings.end}`, location:meetingSettings.location||'장소 미지정', locationLat:meetingSettings.locationLat||null, locationLng:meetingSettings.locationLng||null, managerName:meetingSettings.managerName||'미지정', total:records.length, present:presentCount, records, createdAt:new Date().toISOString()});
-                const batch = db.batch();
-                current.forEach(p => batch.delete(getSessionCol().doc(p.id)));
-                const nextSun = getNextSundayFromDate(meetingSettings.date);
-                const nextSettings = {...meetingSettings, date:nextSun, managerId:'', managerName:''};
-                batch.set(getSettingsCol().doc('meeting_schedule_v2'), nextSettings);
-                await batch.commit();
-                setMeetingSettings(nextSettings);
-                showAlert('기록 완료',`저장되었습니다.\n다음 모임: ${nextSun}`);
-            } catch(e) { showAlert('오류','저장 실패'); } finally { setAttendIsPending(false); }
-        });
-    };
-    const attendHandleDeleteHistory = () => {
-        if (!selectedHistoryDetail) return;
-        showConfirm('기록 삭제','이 기록을 영구 삭제하시겠습니까?', async () => {
-            try { await getHistoryCol().doc(selectedHistoryDetail.id).delete(); setSelectedHistoryDetail(null); }
-            catch(e) { showAlert('오류','삭제 실패'); }
-        });
-    };
-    const handleHistoryStatusUpdate = async (newStatus) => {
-        if (!historyEditTarget || !selectedHistoryDetail) return;
-        const {docId, recordIndex} = historyEditTarget;
-        try {
-            const updatedRecords = [...selectedHistoryDetail.records];
-            updatedRecords[recordIndex] = {...updatedRecords[recordIndex], status:newStatus};
-            await getHistoryCol().doc(docId).update({records:updatedRecords});
-            setSelectedHistoryDetail(prev=>({...prev, records:updatedRecords}));
-            setHistoryEditTarget(null);
-        } catch(e) { showAlert('오류','수정 실패'); }
-    };
-    const handleUpdateHistoryLocation = async () => {
-        if (!selectedHistoryDetail) return;
-        try {
-            await getHistoryCol().doc(selectedHistoryDetail.id).update({location:editHistoryLocationValue});
-            setSelectedHistoryDetail(prev=>({...prev, location:editHistoryLocationValue}));
-            setIsEditingHistoryLocation(false);
-        } catch(e) { showAlert('오류','장소명 수정 실패'); }
-    };
-    const generateAttendQRCode = async () => {
-        if (!meetingSettings?.date) return;
-        try {
-            const token = Math.random().toString(36).substring(2,10).toUpperCase()+Date.now().toString(36).toUpperCase();
-            const [sy,sm,sd] = meetingSettings.date.split('-');
-            const [startH,startM] = (meetingSettings.start||'08:00').split(':');
-            const [endH,endM] = (meetingSettings.end||'10:00').split(':');
-            const meetingStartTs = new Date(parseInt(sy),parseInt(sm)-1,parseInt(sd),parseInt(startH),parseInt(startM),0);
-            const validFrom = new Date(meetingStartTs.getTime()-70*60*1000).toISOString();
-            const validUntil = new Date(parseInt(sy),parseInt(sm)-1,parseInt(sd),parseInt(endH),parseInt(endM),0).toISOString();
-            await getQRCol().doc(meetingSettings.date).set({token, date:meetingSettings.date, validFrom, validUntil, createdAt:new Date().toISOString(), usedBy:[]});
-            setCurrentQRToken(token);
-            setIsQRGenModalOpen(true);
-        } catch(e) { showAlert('오류','QR 생성 실패: '+e.message); }
-    };
-    const attendToggleTestMode = async () => {
-        const n = !testMode;
-        if (n) {
-            const d = new Date();
-            const todayStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-            if (!meetingSettings?.testMode) {
-                setTestModeBackup({...meetingSettings});
-                localStorage.setItem('moida_testmode_backup', JSON.stringify({...meetingSettings}));
-                await getSettingsCol().doc('test_backup').set({originalSettings:{...meetingSettings}, createdAt:new Date().toISOString()});
-            }
-            const startTime = new Date(d.getTime()+12*60*1000);
-            const endTime   = new Date(startTime.getTime()+5*60*1000);
-            const h=String(startTime.getHours()).padStart(2,'0'), m=String(startTime.getMinutes()).padStart(2,'0');
-            const endH=String(endTime.getHours()).padStart(2,'0'), endM=String(endTime.getMinutes()).padStart(2,'0');
-            let testLat=meetingSettings?.locationLat||null, testLng=meetingSettings?.locationLng||null, testLocation=meetingSettings?.location||'';
-            let gpsMsg='';
-            if (navigator.geolocation) {
-                try {
-                    const pos = await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:8000}));
-                    testLat=pos.coords.latitude; testLng=pos.coords.longitude; testLocation='📍 테스트 현재위치';
-                    gpsMsg=`\nGPS: 현재위치 자동 설정됨`;
-                } catch(e) { gpsMsg='\nGPS: 위치 취득 실패 — 기존 장소 유지'; }
-            }
-            const updatedTimes = {...meetingSettings, date:todayStr, start:`${h}:${m}`, end:`${endH}:${endM}`, location:testLocation, locationLat:testLat, locationLng:testLng, testMode:true};
-            await getSettingsCol().doc('meeting_schedule_v2').update({...updatedTimes});
-            setTimeout(async () => {
-                try {
-                    const activeMemberList = activeMembers.filter(m => !m.isResigned);
-                    const sessionSnap = await getSessionCol().where('date','==',todayStr).get();
-                    const existingIds = new Set(sessionSnap.docs.map(d=>d.data().memberId));
-                    const toAdd = activeMemberList.filter(m=>!existingIds.has(m.id));
-                    if (toAdd.length>0) await Promise.all(toAdd.map(m=>getSessionCol().add({memberId:m.id,name:m.name,gender:m.gender,level:m.level,date:todayStr,checkedIn:false,checkInTime:null,status:'미출석',isGuest:false,team:'',createdAt:new Date().toISOString()})));
-                    showAlert('테스트 모드 활성화',`${toAdd.length}명 자동 선정됨\n\n시작: ${h}:${m} (12분 후)\n종료: ${endH}:${endM}\n3분 이내 체크인 → 정상\n3분 이후 → 지각${gpsMsg}`);
-                } catch(e) { showAlert('알림','인원 자동 선정 실패'); }
-            }, 500);
-        } else {
-            showConfirm('테스트 모드 종료','테스트 데이터를 삭제하고 복원하시겠습니까?', async () => {
-                try {
-                    const testDate = meetingSettings?.date;
-                    let originalSettings = testModeBackup;
-                    if (!originalSettings) { try { const lsRaw=localStorage.getItem('moida_testmode_backup'); if(lsRaw) originalSettings=JSON.parse(lsRaw); } catch(e) {} }
-                    if (!originalSettings) { const backupDoc=await getSettingsCol().doc('test_backup').get(); if(backupDoc.exists) originalSettings=backupDoc.data().originalSettings; }
-                    localStorage.removeItem('moida_testmode_backup');
-                    const sessionSnap = await getSessionCol().where('date','==',testDate).get();
-                    const batch = db.batch();
-                    sessionSnap.docs.forEach(d => batch.delete(getSessionCol().doc(d.id)));
-                    batch.delete(getQRCol().doc(testDate));
-                    batch.delete(getSettingsCol().doc('test_backup'));
-                    const restoredSettings = originalSettings ? {...originalSettings, testMode:false} : {...meetingSettings, testMode:false, start:'08:00', end:'10:00', date:getNextSundayFromDate(testDate), managerId:'', managerName:''};
-                    batch.set(getSettingsCol().doc('meeting_schedule_v2'), restoredSettings);
-                    await batch.commit();
-                    setMeetingSettings(restoredSettings);
-                    setTestModeBackup(null);
-                    showAlert('테스트 모드 종료', originalSettings ? '복원되었습니다.' : '기본값으로 복원됩니다. 시간을 확인해 주세요.');
-                } catch(e) { showAlert('오류','복원 실패: '+e.message); }
-            });
-        }
-    };
-    // ─────────────────────────────────────────────────────────────────────────────
+    const { updateMeetingSettingsAdmin, attendHandleCheckIn, attendHandleUncheckIn,
+            attendToggleParticipant, attendToggleParticipantAsGuest, attendHandleResetSelection,
+            attendHandleAddGuest, attendHandleTestSelect, attendSaveAndReset,
+            attendHandleDeleteHistory, handleHistoryStatusUpdate, handleUpdateHistoryLocation,
+            generateAttendQRCode, attendToggleTestMode } = makeAttendHandlers({
+        meetingSettings, testMode, showAlert, showConfirm, setAttendModal,
+        tmSessionData, activeMembers, selectedHistoryDetail, setSelectedHistoryDetail,
+        setMeetingSettings, historyEditTarget, setHistoryEditTarget, editHistoryLocationValue,
+        setIsEditingHistoryLocation, attendIsPending, setAttendIsPending,
+        setIsAttendGuestModalOpen, setAttendNewGuest, attendNewGuest,
+        setCurrentQRToken, setIsQRGenModalOpen, testModeBackup, setTestModeBackup
+    });
 
-    // ── 명단/회비 핸들러 ──────────────────────────────────────────────────────────
-    const showAlert = (title, content, type='info', onConfirm=null) => setAlertModal({show:true, title, content, type, onConfirm});
-    const showConfirm = (title, content, onConfirm) => setAlertModal({show:true, title, content, type:'confirm', onConfirm});
-    const moveMonth = (offset) => {
-        const [y,m] = targetMonth.split('-').map(Number);
-        const d = new Date(y, m-1+offset, 1);
-        setTargetMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
-        setFilterCategory('all');
-    };
-    const handleAddMember = async () => {
-        if (!newMemberForm.name.trim()) return showAlert('알림', '이름을 입력해주세요.');
-        try {
-            await getMemberCol().add({...newMemberForm, birth:String(newMemberForm.birth).replace(/[^0-9]/g,''), createdAt:new Date().toISOString()});
-            setNewMemberForm({name:'',birth:'',gender:'남성',position:'all',level:'4',role:'회원',coupleId:'',joinDate:'',address:'',phone:''});
-            setIsAddModalOpen(false);
-            showAlert('성공', '회원이 등록되었습니다.');
-        } catch(e) { showAlert('오류', '등록 실패'); }
-    };
-    const handleUpdateMember = async () => {
-        try {
-            await getMemberCol().doc(editingMember.id).update({...editingMember, birth:String(editingMember.birth||'').replace(/[^0-9]/g,'')});
-            setEditingMember(null);
-            showAlert('완료', '정보가 수정되었습니다.');
-        } catch(e) { showAlert('오류', '수정 실패'); }
-    };
-    const handleResignConfirm = async () => {
-        if (!resignForm.date) return showAlert('알림', '탈퇴 일자를 선택해주세요.');
-        try {
-            await getMemberCol().doc(resigningMember.id).update({isResigned:true, resignDate:resignForm.date, resignReason:resignForm.reason||'사유 미작성', isForcedResign:resignForm.isForced});
-            setResigningMember(null);
-            showAlert('성공', `${resigningMember.name}님이 탈퇴 처리되었습니다.`);
-        } catch(e) { showAlert('오류', '탈퇴 처리 실패'); }
-    };
-    const handleBillingMemberClick = (m) => {
-        setBillingMember(m);
-        setActionStep('main');
-        setSelectedAction(null);
-        const today = new Date();
-        setPaymentDateInput(`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`);
-        setSpecialRestReason(monthlyReasons[m.id] || '');
-        setTempRestCount(m.totalRestMonths || 0);
-        setManualEndDate(m.membershipEndDate || '');
-    };
-    const processAction = async (actionType) => {
-        if (!billingMember || !targetMonth) return;
-        try {
-            const batch = db.batch();
-            const monthRef = getMonthlyCol().doc(targetMonth);
-            const memberRef = getMemberCol().doc(billingMember.id);
-            const mid = billingMember.id;
-            if (actionType === 'monthly_paid') {
-                batch.set(monthRef, {statuses:{[mid]:'paid'}, paymentDates:{[mid]:paymentDateInput}, updatedAt:new Date().toISOString()}, {merge:true});
-                batch.update(monthRef, {[`reasons.${mid}`]: firebase.firestore.FieldValue.delete()});
-                batch.update(memberRef, {membershipType:'monthly', membershipStartDate:'', membershipEndDate:'', totalRestMonths:0});
-            } else if (actionType === 'start_half') {
-                const finalEnd = manualEndDate || calculateEndDate(targetMonth, 6);
-                batch.update(memberRef, {membershipType:'half_year', membershipStartDate:`${targetMonth}-01`, membershipEndDate:finalEnd, totalRestMonths:0});
-                batch.set(monthRef, {paymentDates:{[mid]:paymentDateInput}, updatedAt:new Date().toISOString()}, {merge:true});
-                batch.update(monthRef, {[`statuses.${mid}`]: firebase.firestore.FieldValue.delete(), [`reasons.${mid}`]: firebase.firestore.FieldValue.delete()});
-            } else if (actionType === 'start_full') {
-                const finalEnd = manualEndDate || calculateEndDate(targetMonth, 12);
-                batch.update(memberRef, {membershipType:'full_year', membershipStartDate:`${targetMonth}-01`, membershipEndDate:finalEnd, totalRestMonths:0});
-                batch.set(monthRef, {paymentDates:{[mid]:paymentDateInput}, updatedAt:new Date().toISOString()}, {merge:true});
-                batch.update(monthRef, {[`statuses.${mid}`]: firebase.firestore.FieldValue.delete(), [`reasons.${mid}`]: firebase.firestore.FieldValue.delete()});
-            } else if (actionType === 'rest') {
-                const isLong = billingMember.membershipType==='half_year' || billingMember.membershipType==='full_year';
-                if (billingMember.membershipType==='half_year' && (billingMember.totalRestMonths||0)>=3) return showAlert('알림','반년납 최대 3회 휴식');
-                if (billingMember.membershipType==='full_year' && (billingMember.totalRestMonths||0)>=6) return showAlert('알림','1년납 최대 6회 휴식');
-                batch.set(monthRef, {statuses:{[mid]:'rest'}, updatedAt:new Date().toISOString()}, {merge:true});
-                if (isLong) {
-                    batch.update(memberRef, {membershipEndDate:extendEndDate(billingMember.membershipEndDate,1), totalRestMonths:firebase.firestore.FieldValue.increment(1)});
-                    batch.update(monthRef, {[`reasons.${mid}`]:firebase.firestore.FieldValue.delete(), [`paymentDates.${mid}`]:firebase.firestore.FieldValue.delete()});
-                } else {
-                    batch.set(monthRef, {paymentDates:{[mid]:paymentDateInput}, updatedAt:new Date().toISOString()}, {merge:true});
-                    batch.update(monthRef, {[`reasons.${mid}`]:firebase.firestore.FieldValue.delete()});
-                }
-            } else if (actionType === 'cancel_rest') {
-                batch.update(monthRef, {[`statuses.${mid}`]:firebase.firestore.FieldValue.delete(), [`reasons.${mid}`]:firebase.firestore.FieldValue.delete(), [`paymentDates.${mid}`]:firebase.firestore.FieldValue.delete()});
-                if (billingMember.membershipType==='half_year'||billingMember.membershipType==='full_year') {
-                    batch.update(memberRef, {membershipEndDate:extendEndDate(billingMember.membershipEndDate,-1), totalRestMonths:firebase.firestore.FieldValue.increment(-1)});
-                }
-            } else if (actionType === 'special_rest') {
-                batch.update(memberRef, {isSpecialRest:true, specialRestReason:specialRestReason||'특별 휴식', specialRestStartMonth:targetMonth});
-                batch.update(monthRef, {[`statuses.${mid}`]:firebase.firestore.FieldValue.delete(), [`reasons.${mid}`]:firebase.firestore.FieldValue.delete(), [`paymentDates.${mid}`]:firebase.firestore.FieldValue.delete()});
-            } else if (actionType === 'cancel_special_rest') {
-                const sm = billingMember.specialRestStartMonth;
-                let ext = 0;
-                if (sm) { const[sy,smm]=sm.split('-').map(Number); const[ty,tm]=targetMonth.split('-').map(Number); ext=(ty-sy)*12+(tm-smm); }
-                const upd = {isSpecialRest:false, specialRestReason:firebase.firestore.FieldValue.delete(), specialRestStartMonth:firebase.firestore.FieldValue.delete()};
-                if (ext>0&&(billingMember.membershipType==='half_year'||billingMember.membershipType==='full_year')) upd.membershipEndDate=extendEndDate(billingMember.membershipEndDate,ext);
-                batch.update(memberRef, upd);
-            } else if (actionType === 'end_membership') {
-                batch.update(memberRef, {membershipType:'monthly', membershipStartDate:'', membershipEndDate:'', totalRestMonths:0});
-                batch.update(monthRef, {[`statuses.${mid}`]:firebase.firestore.FieldValue.delete(), [`reasons.${mid}`]:firebase.firestore.FieldValue.delete()});
-            } else if (actionType === 'clear') {
-                batch.update(monthRef, {[`statuses.${mid}`]:firebase.firestore.FieldValue.delete(), [`reasons.${mid}`]:firebase.firestore.FieldValue.delete(), [`paymentDates.${mid}`]:firebase.firestore.FieldValue.delete()});
-            } else if (actionType === 'update_longterm_info') {
-                batch.update(memberRef, {membershipEndDate:manualEndDate, totalRestMonths:tempRestCount});
-                batch.set(monthRef, {paymentDates:{[mid]:paymentDateInput}, updatedAt:new Date().toISOString()}, {merge:true});
-            }
-            await batch.commit();
-            setBillingMember(null);
-            showAlert('성공','상태가 반영되었습니다.');
-        } catch(e) { console.error(e); showAlert('오류','처리 실패'); }
-    };
-    // ─────────────────────────────────────────────────────────────────────────────
+    const { moveMonth, handleAddMember, handleUpdateMember, handleResignConfirm,
+            handleBillingMemberClick, processAction } = makeRosterHandlers({
+        newMemberForm, setNewMemberForm, setIsAddModalOpen,
+        editingMember, setEditingMember,
+        resigningMember, setResigningMember, resignForm,
+        billingMember, setBillingMember, targetMonth,
+        monthlyReasons, paymentDateInput, specialRestReason,
+        manualEndDate, tempRestCount,
+        setActionStep, setSelectedAction, setPaymentDateInput,
+        setSpecialRestReason, setTempRestCount, setManualEndDate,
+        setTargetMonth, setFilterCategory,
+        showAlert, showConfirm
+    });
 
-    // ── 팀 편성 핸들러 ───────────────────────────────────────────────────────────
-    const tmSaveDraft = async () => {
-        try {
-            const now = new Date();
-            await getCol('team_drafts').add({
-                meetingDate: editMeetingDate || tmMeetingDate,
-                meetingTimeRange: `${meetingSettings?.start||''} ~ ${meetingSettings?.end||''}`,
-                createdAt: now.toISOString(),
-                timeLabel: now.toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit',second:'2-digit'}),
-                teams: editTeams, isConfirmed: false
-            });
-            showAlert('저장완료', '임시 저장되었습니다.');
-        } catch(e) { showAlert('오류', '임시 저장 실패'); }
-    };
+    const { tmSaveDraft, tmLoadDraft, tmConfirm, tmReset, generateTeams, tmReGenerate,
+            tmDragStart, tmDragEnd, tmMemberDragOver, tmTeamDragOver, tmTeamDragLeave,
+            tmDrop, tmMemberClick, tmMoveToTeam, tmTeamBadgeClick, tmCapture } = makeTeamHandlers({
+        meetingSettings, editTeams, setEditTeams, editIsConfirmed, setEditIsConfirmed,
+        editMeetingDate, setEditMeetingDate, setTeamMakerTab, teamingSettings,
+        tmActiveList, allMembers, tmMeetingDate, confirmedDrafts, pastTeammatesMap,
+        excludedIds, draggedItem, setDraggedItem, dropIndicator, setDropIndicator,
+        selectedMemberTM, setSelectedMemberTM, selectedTeamTM, setSelectedTeamTM,
+        isDraggingRef, setPreviewDraft, setIsCapturing,
+        showAlert, showConfirm
+    });
 
-    const tmLoadDraft = (draft) => {
-        setEditTeams(draft.teams || []);
-        setEditIsConfirmed(draft.isConfirmed || false);
-        setEditMeetingDate(draft.meetingDate || '');
-        setPreviewDraft(null);
-        setTeamMakerTab('results');
-    };
-
-    const tmConfirm = async () => {
-        setEditIsConfirmed(true);
-        try {
-            const now = new Date();
-            const draftsRef = getCol('team_drafts');
-            const snap = await draftsRef.where('meetingDate', '==', tmMeetingDate).where('isConfirmed', '==', true).get();
-            if (!snap.empty) {
-                await draftsRef.doc(snap.docs[0].id).update({ teams: editTeams, updatedAt: now.toISOString() });
-                showAlert('업데이트', '기존 확정 기록을 업데이트했습니다.');
-            } else {
-                await draftsRef.add({
-                    meetingDate: tmMeetingDate,
-                    meetingTimeRange: `${meetingSettings?.start||''} ~ ${meetingSettings?.end||''}`,
-                    createdAt: now.toISOString(),
-                    timeLabel: now.toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit',second:'2-digit'}),
-                    teams: editTeams, isConfirmed: true
-                });
-                showAlert('확정 완료', '편성이 확정되어 출결 시스템에 반영됩니다.');
-            }
-        } catch(e) { showAlert('오류', '서버 저장 실패'); }
-    };
-
-    const tmReset = () => {
-        showConfirm('편성 초기화', '현재 편성을 초기화하시겠습니까?', () => {
-            setEditTeams([]); setEditIsConfirmed(false); setEditMeetingDate('');
-            setTeamMakerTab('generator');
-        });
-    };
-
-    const generateTeams = () => {
-        const { teamCount, keepCouples, avoidOverlap } = teamingSettings;
-        const total = tmActiveList.length;
-        if (total < teamCount) { showAlert('알림', `선정 인원(${total}명)이 팀 수(${teamCount})보다 적습니다.`); return; }
-        setEditIsConfirmed(false);
-
-        const pool = tmActiveList.map(p => {
-            const mi = allMembers.find(mm => mm.id === p.memberId) || {};
-            const lvl = parseInt(mi.level || p.level || 4);
-            return { ...p, name: mi.name || p.name, level: lvl, tierOrder: mi.tierOrder ?? 99, points: getLevelPoints(lvl), coupleId: mi.coupleId || '', gender: mi.gender || p.gender || '남성', isGuest: p.isGuest || false };
-        });
-
-        const baseCapacity = Math.floor(total / teamCount);
-        const remainder = total % teamCount;
-        const resultTeams = Array.from({length: teamCount}, (_, i) => ({
-            id: i, members: [], scoreSum: 0, capacity: baseCapacity + (i < remainder ? 1 : 0), femaleCount: 0
-        }));
-
-        const getPastOverlap = (teamMembers, newMembers) => {
-            let count = 0;
-            newMembers.forEach(nm => {
-                const ps = pastTeammatesMap[nm.memberId || nm.id];
-                if (ps) teamMembers.forEach(tm => { if (ps.has(tm.memberId || tm.id)) count++; });
-            });
-            return count;
-        };
-
-        const usedIds = new Set();
-        const coupleUnits = [];
-        if (keepCouples) {
-            const processed = new Set();
-            pool.forEach(p => {
-                const pid = p.memberId || p.id;
-                if (processed.has(pid) || !p.coupleId) return;
-                const partner = pool.find(o => { const oid = o.memberId || o.id; return oid === p.coupleId && !processed.has(oid); });
-                if (partner) {
-                    coupleUnits.push({ members: [p, partner], totalPoints: p.points + partner.points, femaleCount: [p, partner].filter(m => m.gender === '여성').length });
-                    processed.add(pid); processed.add(partner.memberId || partner.id);
-                    usedIds.add(pid); usedIds.add(partner.memberId || partner.id);
-                }
-            });
-        }
-        const singles = pool.filter(p => !usedIds.has(p.memberId || p.id));
-        const singleFemales = shuffleArray(singles.filter(m => m.gender === '여성')).sort((a, b) => a.level - b.level);
-        const singleMales = shuffleArray(singles.filter(m => m.gender !== '여성')).sort((a, b) => a.level - b.level || (a.tierOrder || 99) - (b.tierOrder || 99));
-
-        coupleUnits.sort((a, b) => b.femaleCount - a.femaleCount || b.totalPoints - a.totalPoints);
-        coupleUnits.forEach(unit => {
-            const required = unit.members.length;
-            let cands = resultTeams.filter(t => t.members.length + required <= t.capacity);
-            if (!cands.length) cands = [...resultTeams];
-            cands.sort((a, b) => {
-                if (unit.femaleCount > 0 && a.femaleCount !== b.femaleCount) return a.femaleCount - b.femaleCount;
-                if (avoidOverlap) { const oA = getPastOverlap(a.members, unit.members), oB = getPastOverlap(b.members, unit.members); if (oA !== oB && Math.abs(a.scoreSum - b.scoreSum) <= 2.5) return oA - oB; }
-                return a.scoreSum - b.scoreSum || Math.random() - 0.5;
-            });
-            const t = cands[0];
-            t.members.push(...unit.members); t.scoreSum += unit.totalPoints; t.femaleCount += unit.femaleCount;
-        });
-
-        singleFemales.forEach(female => {
-            let cands = resultTeams.filter(t => t.members.length < t.capacity);
-            if (!cands.length) cands = [...resultTeams];
-            cands.sort((a, b) => {
-                if (a.femaleCount !== b.femaleCount) return a.femaleCount - b.femaleCount;
-                if (avoidOverlap) { const oA = getPastOverlap(a.members, [female]), oB = getPastOverlap(b.members, [female]); if (oA !== oB) return oA - oB; }
-                return a.scoreSum - b.scoreSum;
-            });
-            const t = cands[0]; t.members.push(female); t.scoreSum += female.points; t.femaleCount += 1;
-        });
-
-        const maleQueue = [...singleMales]; let draftFwd = true;
-        const baseOrder = Array.from({length: teamCount}, (_, i) => i);
-        while (maleQueue.length > 0) {
-            const order = draftFwd ? [...baseOrder] : [...baseOrder].reverse();
-            let anyAssigned = false;
-            for (const tid of order) {
-                if (!maleQueue.length) break;
-                const t = resultTeams[tid];
-                if (t.members.length >= t.capacity) continue;
-                let chosenIdx = 0;
-                if (avoidOverlap && maleQueue.length > 1) {
-                    const look = Math.min(maleQueue.length, teamCount);
-                    let minOvlp = getPastOverlap(t.members, [maleQueue[0]]);
-                    for (let k = 1; k < look; k++) {
-                        if (maleQueue[k].level - maleQueue[0].level > 1) break;
-                        const ovlp = getPastOverlap(t.members, [maleQueue[k]]);
-                        if (ovlp < minOvlp) { minOvlp = ovlp; chosenIdx = k; }
-                    }
-                }
-                const male = maleQueue.splice(chosenIdx, 1)[0];
-                t.members.push(male); t.scoreSum += male.points; anyAssigned = true;
-            }
-            if (!anyAssigned) break;
-            draftFwd = !draftFwd;
-        }
-        maleQueue.forEach(m => {
-            const t = resultTeams.reduce((min, cur) => cur.members.length < min.members.length ? cur : min, resultTeams[0]);
-            t.members.push(m); t.scoreSum += m.points;
-        });
-
-        let improved = true, iters = 0;
-        while (improved && iters < 150) {
-            improved = false; iters++;
-            resultTeams.sort((a, b) => b.scoreSum - a.scoreSum);
-            const strong = resultTeams[0], weak = resultTeams[resultTeams.length - 1];
-            let bestSwap = null, bestDiff = strong.scoreSum - weak.scoreSum;
-            for (let i = 0; i < strong.members.length; i++) {
-                const m1 = strong.members[i];
-                if (m1.gender === '여성' || (keepCouples && m1.coupleId)) continue;
-                for (let j = 0; j < weak.members.length; j++) {
-                    const m2 = weak.members[j];
-                    if (m2.gender === '여성' || (keepCouples && m2.coupleId)) continue;
-                    const newDiff = Math.abs((strong.scoreSum - m1.points + m2.points) - (weak.scoreSum - m2.points + m1.points));
-                    if (newDiff < bestDiff) { bestDiff = newDiff; bestSwap = {si: i, wi: j}; }
-                }
-            }
-            if (bestSwap) {
-                const m1 = strong.members[bestSwap.si], m2 = weak.members[bestSwap.wi];
-                strong.members[bestSwap.si] = m2; weak.members[bestSwap.wi] = m1;
-                strong.scoreSum = strong.scoreSum - m1.points + m2.points;
-                weak.scoreSum = weak.scoreSum - m2.points + m1.points;
-                improved = true;
-            }
-        }
-
-        const arrangeMembers = (teamMembers, capacity) => {
-            const females = [...teamMembers.filter(m => m.gender === '여성')];
-            const males = teamMembers.filter(m => m.gender !== '여성').sort((a, b) => a.level - b.level || (a.tierOrder || 99) - (b.tierOrder || 99));
-            const result = new Array(capacity).fill(null);
-            const malePool = [...males]; const femalePool = [...females];
-            if (capacity > 2) {
-                if (femalePool.length > 0) result[2] = femalePool.shift();
-                else if (malePool.length > 0) result[2] = malePool.pop();
-            }
-            const slot2 = capacity >= 6 ? 5 : capacity === 5 ? 4 : -1;
-            if (slot2 >= 0 && femalePool.length > 0) result[slot2] = femalePool.shift();
-            const fill = [...malePool, ...femalePool];
-            for (let i = 0; i < capacity; i++) { if (result[i] === null && fill.length) result[i] = fill.shift(); }
-            return result.filter(Boolean);
-        };
-
-        resultTeams.sort((a, b) => a.id - b.id);
-        const finalTeams = resultTeams.map(t => ({ members: arrangeMembers(t.members, t.capacity), scoreSum: t.scoreSum }));
-        setEditMeetingDate(tmMeetingDate);
-        setEditTeams(finalTeams);
-        setTeamMakerTab('results');
-    };
-
-    const tmReGenerate = () => {
-        if (editIsConfirmed) {
-            showConfirm('재편성 확인', '이미 확정된 편성입니다.\n재편성하면 확정이 취소됩니다. 계속할까요?', generateTeams);
-        } else { generateTeams(); }
-    };
-
-    // 드래그 앤 드롭
-    const tmDragStart = (e, teamIdx, memberIdx) => { isDraggingRef.current = true; setSelectedMemberTM(null); setDraggedItem({teamIdx, memberIdx}); e.dataTransfer.effectAllowed = 'move'; };
-    const tmDragEnd = () => { setTimeout(() => { isDraggingRef.current = false; }, 50); setDraggedItem(null); setDropIndicator(null); };
-    const tmMemberDragOver = (e, teamIdx, memberIdx) => { e.preventDefault(); e.stopPropagation(); if (!draggedItem) return; const rect = e.currentTarget.getBoundingClientRect(); const insertIdx = e.clientY < (rect.top + rect.height / 2) ? memberIdx : memberIdx + 1; setDropIndicator({teamIdx, insertIdx}); };
-    const tmTeamDragOver = (e, teamIdx) => { e.preventDefault(); if (!draggedItem) return; setDropIndicator({teamIdx, insertIdx: editTeams[teamIdx]?.members.length ?? 0}); };
-    const tmTeamDragLeave = (e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDropIndicator(null); };
-    const tmDrop = (e, teamIdx) => {
-        e.preventDefault();
-        if (!draggedItem) return;
-        const insertIdx = dropIndicator?.teamIdx === teamIdx ? dropIndicator.insertIdx : (editTeams[teamIdx]?.members.length ?? 0);
-        const newTeams = editTeams.map(t => ({...t, members: [...t.members]}));
-        const moved = newTeams[draggedItem.teamIdx].members.splice(draggedItem.memberIdx, 1)[0];
-        let finalIdx = insertIdx;
-        if (draggedItem.teamIdx === teamIdx && draggedItem.memberIdx < insertIdx) finalIdx = insertIdx - 1;
-        newTeams[teamIdx].members.splice(Math.max(0, finalIdx), 0, moved);
-        newTeams[draggedItem.teamIdx].scoreSum = newTeams[draggedItem.teamIdx].members.reduce((s, m) => s + (m.points||0), 0);
-        if (draggedItem.teamIdx !== teamIdx) newTeams[teamIdx].scoreSum = newTeams[teamIdx].members.reduce((s, m) => s + (m.points||0), 0);
-        setEditTeams(newTeams); setDraggedItem(null); setDropIndicator(null);
-    };
-
-    // 탭 선택 조정 (모바일)
-    const tmMemberClick = (teamIdx, memberIdx) => {
-        if (isDraggingRef.current) return;
-        setSelectedTeamTM(null);
-        if (!selectedMemberTM) { setSelectedMemberTM({teamIdx, memberIdx}); return; }
-        if (selectedMemberTM.teamIdx === teamIdx && selectedMemberTM.memberIdx === memberIdx) { setSelectedMemberTM(null); return; }
-        const newTeams = editTeams.map(t => ({...t, members: [...t.members]}));
-        const a = newTeams[selectedMemberTM.teamIdx].members[selectedMemberTM.memberIdx];
-        newTeams[selectedMemberTM.teamIdx].members[selectedMemberTM.memberIdx] = newTeams[teamIdx].members[memberIdx];
-        newTeams[teamIdx].members[memberIdx] = a;
-        newTeams[selectedMemberTM.teamIdx].scoreSum = newTeams[selectedMemberTM.teamIdx].members.reduce((s, m) => s + (m.points||0), 0);
-        if (teamIdx !== selectedMemberTM.teamIdx) newTeams[teamIdx].scoreSum = newTeams[teamIdx].members.reduce((s, m) => s + (m.points||0), 0);
-        setEditTeams(newTeams); setSelectedMemberTM(null);
-    };
-    const tmMoveToTeam = (targetTeamIdx) => {
-        if (!selectedMemberTM) return;
-        if (selectedMemberTM.teamIdx === targetTeamIdx) { setSelectedMemberTM(null); return; }
-        const newTeams = editTeams.map(t => ({...t, members: [...t.members]}));
-        const [moved] = newTeams[selectedMemberTM.teamIdx].members.splice(selectedMemberTM.memberIdx, 1);
-        newTeams[targetTeamIdx].members.push(moved);
-        newTeams[selectedMemberTM.teamIdx].scoreSum = newTeams[selectedMemberTM.teamIdx].members.reduce((s, m) => s + (m.points||0), 0);
-        newTeams[targetTeamIdx].scoreSum = newTeams[targetTeamIdx].members.reduce((s, m) => s + (m.points||0), 0);
-        setEditTeams(newTeams); setSelectedMemberTM(null);
-    };
-    const tmTeamBadgeClick = (e, teamIdx) => {
-        e.stopPropagation(); setSelectedMemberTM(null);
-        if (selectedTeamTM === null) { setSelectedTeamTM(teamIdx); return; }
-        if (selectedTeamTM === teamIdx) { setSelectedTeamTM(null); return; }
-        const newTeams = editTeams.map(t => ({...t, members: [...t.members]}));
-        const tmp = { members: newTeams[selectedTeamTM].members, scoreSum: newTeams[selectedTeamTM].scoreSum };
-        newTeams[selectedTeamTM].members = newTeams[teamIdx].members;
-        newTeams[selectedTeamTM].scoreSum = newTeams[teamIdx].scoreSum;
-        newTeams[teamIdx].members = tmp.members; newTeams[teamIdx].scoreSum = tmp.scoreSum;
-        setEditTeams(newTeams); setSelectedTeamTM(null);
-    };
-
-    const tmCapture = async () => {
-        setIsCapturing(true);
-        await new Promise(r => setTimeout(r, 200));
-        try {
-            const el = document.getElementById('tm-capture-area');
-            if (!el) return;
-            const canvas = await window.html2canvas(el, { scale: 2, backgroundColor: '#f8fafc', useCORS: true });
-            const link = document.createElement('a');
-            link.download = `모이다_팀편성_${tmMeetingDate}.jpg`;
-            link.href = canvas.toDataURL('image/jpeg', 0.92);
-            link.click();
-        } catch(e) { showAlert('오류', '캡쳐 실패'); }
-        finally { setIsCapturing(false); }
-    };
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    // ── 매치 핸들러 ──────────────────────────────────────────────────────────────
-    const splitTime = (t) => { const p = (t||'08:00').split(':'); return {h:p[0]||'08', m:p[1]||'00'}; };
-
-    const matchGenerateTable = () => {
-        if (!confirmedDrafts.length) return showAlert('알림','팀 편성을 먼저 확정해주세요.');
-        const latest = [...confirmedDrafts].sort((a,b) => (b.meetingDate||'').localeCompare(a.meetingDate||''))[0];
-        const teams = latest.teams.map((_,i) => getTeamName(i));
-        const teamSizes = {}; latest.teams.forEach((t,i) => { teamSizes[getTeamName(i)] = t.members.length; });
-        const {courtCount, matchDuration, breakDuration, startTime, endTime} = matchConfig;
-        if (courtCount === 0) return showAlert('알림','구장을 1개 이상 선택해주세요.');
-        let currentTime = new Date(`2024-01-01T${startTime}:00`);
-        const limitTime = new Date(`2024-01-01T${endTime}:00`);
-        const teamStats = {}; teams.forEach(t => teamStats[t] = 0);
-        const matchupHistory = {}; teams.forEach(t1 => { matchupHistory[t1] = {}; teams.forEach(t2 => { if(t1!==t2) matchupHistory[t1][t2] = 0; }); });
-        const courtUsage = {}, lastOpponent = {};
-        teams.forEach(t => { courtUsage[t] = {}; for(let i=0;i<courtCount;i++) courtUsage[t][i]=0; lastOpponent[t]=null; });
-        const sessionList = []; let matchIdx = 1;
-        while (currentTime < limitTime) {
-            let usedInSession = new Set(), sessionMatches = [];
-            const sessionCourts = Array.from({length:courtCount},(_,i) => ({idx:i, type:matchConfig.fieldTypes[i]||'6vs6'}));
-            for (const court of sessionCourts) {
-                const isSmall = court.type === '5vs5';
-                let candidates = teams.filter(t => !usedInSession.has(t));
-                if (matchConfig.strictCourtSize && isSmall) candidates = candidates.filter(t => teamSizes[t] <= 5);
-                if (candidates.length < 2) continue;
-                candidates.sort(() => Math.random() - 0.5);
-                let bestPair = null, minScore = Infinity;
-                for (let i = 0; i < candidates.length; i++) {
-                    for (let j = i+1; j < candidates.length; j++) {
-                        const t1 = candidates[i], t2 = candidates[j];
-                        const isB2B = (lastOpponent[t1]===t2 || lastOpponent[t2]===t1);
-                        const score = matchupHistory[t1][t2]*10000 + (teamStats[t1]+teamStats[t2])*100 + (courtUsage[t1][court.idx]+courtUsage[t2][court.idx])*50 + (isB2B?500000:0) + Math.random();
-                        if (score < minScore) { minScore = score; bestPair = [t1,t2]; }
-                    }
-                }
-                if (bestPair) {
-                    const [t1,t2] = bestPair;
-                    sessionMatches.push({match:[t1,t2], fieldIdx:court.idx});
-                    usedInSession.add(t1); usedInSession.add(t2);
-                    matchupHistory[t1][t2]++; matchupHistory[t2][t1]++;
-                    teamStats[t1]++; teamStats[t2]++;
-                    courtUsage[t1][court.idx]++; courtUsage[t2][court.idx]++;
-                    lastOpponent[t1]=t2; lastOpponent[t2]=t1;
-                }
-            }
-            if (sessionMatches.length > 0) {
-                const startL = currentTime.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:false});
-                const endC = new Date(currentTime.getTime() + matchDuration*60000);
-                const endL = endC.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:false});
-                sessionList.push({id:matchIdx++, time:`${startL} - ${endL}`, startTime:startL, endTime:endL, matches:sessionMatches.sort((a,b)=>a.fieldIdx-b.fieldIdx), resting:teams.filter(t=>!usedInSession.has(t))});
-                currentTime = new Date(currentTime.getTime() + (matchDuration+breakDuration)*60000);
-                if (new Date(currentTime.getTime()-breakDuration*60000) >= limitTime) break;
-            } else break;
-        }
-        setLocalSchedule({list:sessionList, stats:teamStats});
-        setLocalCompletedMatches(new Set());
-        setLocalMatchIndex(0);
-        setActiveMatchScheduleId(null);
-        setMatchAdminView('results');
-    };
-
-    const matchSaveSchedule = async () => {
-        if (!localSchedule.list.length) return;
-        setMatchIsSaving(true);
-        try {
-            const docRef = await getCol('match_schedules').add({
-                schedule: localSchedule, config: matchConfig,
-                completedMatches: Array.from(localCompletedMatches),
-                currentMatchIndex: localMatchIndex,
-                createdAt: new Date().toISOString(), meetingDate: matchConfig.meetingDate,
-                label: `${matchConfig.meetingDate} 매치 (${localSchedule.list.length}라운드)`
-            });
-            setActiveMatchScheduleId(docRef.id);
-            showAlert('저장 완료','매치 테이블이 저장되었습니다.');
-        } catch(e) { showAlert('오류','저장 실패'); } finally { setMatchIsSaving(false); }
-    };
-
-    const matchHandleNextMatch = async () => {
-        if (!localSchedule.list.length || localMatchIndex >= localSchedule.list.length) return;
-        const newCompleted = new Set(localCompletedMatches);
-        newCompleted.add(localSchedule.list[localMatchIndex].id);
-        setLocalCompletedMatches(newCompleted);
-        const newIndex = localMatchIndex + 1;
-        setLocalMatchIndex(newIndex);
-        if (activeMatchScheduleId) {
-            try { await getCol('match_schedules').doc(activeMatchScheduleId).update({completedMatches:Array.from(newCompleted), currentMatchIndex:newIndex}); } catch(e) {}
-        }
-    };
-
-    const matchHandleCapture = async () => {
-        setMatchIsCapturing(true);
-        await new Promise(r => setTimeout(r, 300));
-        try {
-            const el = document.getElementById('match-capture-area');
-            if (!el) return;
-            const canvas = await window.html2canvas(el,{scale:2,backgroundColor:'#f8fafc',useCORS:true,scrollY:0});
-            const link = document.createElement('a');
-            link.download = `모이다_매치표_${matchConfig.meetingDate}.png`;
-            link.href = canvas.toDataURL('image/png',1.0);
-            link.click();
-        } catch(e) { showAlert('오류','캡쳐 실패'); } finally { setMatchIsCapturing(false); }
-    };
-
-    const matchHandlePresetSelect = (preset) => {
-        setSelectedPresetId(preset.id);
-        setPresetToggles(new Array(preset.courtCount).fill(false));
-        setMatchConfig(p => ({...p, courtCount:0, fieldNames:[], fieldTypes:[]}));
-    };
-
-    const matchToggleSubCourt = (idx) => {
-        const newToggles = [...presetToggles]; newToggles[idx] = !newToggles[idx]; setPresetToggles(newToggles);
-        const p = presets.find(pr => pr.id === selectedPresetId); if (!p) return;
-        const names = [], types = [];
-        newToggles.forEach((on,i) => { if(on) { names.push(p.fieldNames[i]); types.push(p.fieldTypes[i]); } });
-        setMatchConfig(prev => ({...prev, courtCount:names.length, fieldNames:names, fieldTypes:types}));
-    };
-
-    const matchSavePreset = async () => {
-        if (!presetForm.name.trim()) return showAlert('알림','프리셋 이름을 입력해주세요.');
-        try {
-            await getCol('court_presets').add({...presetForm, createdAt: new Date().toISOString()});
-            setIsPresetModalOpen(false);
-            setPresetForm({name:'',courtCount:3,fieldNames:['1구장','2구장','3구장'],fieldTypes:['6vs6','6vs6','6vs6']});
-            showAlert('완료','프리셋이 저장되었습니다.');
-        } catch(e) { showAlert('오류','저장 실패'); }
-    };
-
+    const { splitTime, matchGenerateTable, matchSaveSchedule, matchHandleNextMatch,
+            matchHandleCapture, matchHandlePresetSelect, matchToggleSubCourt,
+            matchSavePreset } = makeMatchHandlers({
+        confirmedDrafts, matchConfig, setMatchConfig,
+        localSchedule, setLocalSchedule, localCompletedMatches, setLocalCompletedMatches,
+        localMatchIndex, setLocalMatchIndex, activeMatchScheduleId, setActiveMatchScheduleId,
+        setMatchIsSaving, setMatchIsCapturing, presets, presetToggles, setPresetToggles,
+        selectedPresetId, setSelectedPresetId, presetForm, setPresetForm,
+        setIsPresetModalOpen, setMatchAdminView, showAlert
+    });
     const matchStatsData = useMemo(() => {
         if (!localSchedule.list.length || !confirmedDrafts.length) return null;
         const latest = [...confirmedDrafts].sort((a,b) => (b.meetingDate||'').localeCompare(a.meetingDate||''))[0];
