@@ -63,6 +63,11 @@ Last Updated: 2026-06-06
 - 매치 아이콘 / 구장 프리셋 → match/match-utils.js
 - (member.html) 매치탭 → tab-match.js, handlers-match.js, use-match.js
 
+## 회칙  (member.html 회칙탭)
+
+- 회칙 조회(전체) / 작성·수정(관리자) → tab-rules.js
+- Firestore: settings/club_rules { content, updatedAt, updatedBy }
+
 ## 홈 / 로그인 / 알림  (member.html)
 
 - 로그인 / 회원가입 / 홈 / 라우팅 → handlers-kakao.js, tab-home.js

@@ -36,6 +36,7 @@
     <script type="text/babel" src="tab-match.js"></script>
     <script type="text/babel" src="tab-attend.js"></script>
     <script type="text/babel" src="tab-roster.js"></script>
+    <script type="text/babel" src="tab-rules.js"></script>
     <script type="text/babel" src="modals.js"></script>
     <script type="text/babel" src="member-header.js"></script>
     <script type="text/babel" src="use-roster.js"></script>
@@ -400,6 +401,9 @@ function App() {
                         attendHandleCheckIn={attendHandleCheckIn}
                     />
                 )}
+                {tab === 'rules' && (
+                    <TabRules isAdminMode={isAdminMode} showAlert={showAlert} memberName={memberName}/>
+                )}
                 {tab === 'roster' && isAdminMode && (
                     <TabRoster
                         rosterSubTab={roster.rosterSubTab} setRosterSubTab={roster.setRosterSubTab}
@@ -427,6 +431,7 @@ function App() {
                         {key:'attend', label:'출석', icon:<Icon.CheckSq size={20}/>},
                         {key:'team',   label:'팀',   icon:<Icon.Users size={20}/>},
                         {key:'match',  label:'매치', icon:<Icon.Calendar size={20}/>},
+                        {key:'rules',  label:'회칙', icon:<Icon.ShieldCheck size={20}/>},
                         ...(isAdminMode ? [{key:'roster', label:'명단', icon:<Icon.List size={20}/>}] : []),
                     ].map(({key,label,icon})=>(
                         <button key={key} onClick={()=>setTab(key)}
