@@ -11,7 +11,7 @@ const TabAttend = ({
     setIsLocationPickerOpen, localMaxLimit, setLocalMaxLimit,
     memberData, attendNormalMembers, tmSessionData,
     attendToggleParticipant, setIsAttendGuestModalOpen,
-    attendHandleTestSelect, attendHandleResetSelection,
+    attendHandleTestSelect, attendHandleResetSelection, attendHandleCreateNew,
     attendGuestEligibleMembers, attendToggleParticipantAsGuest,
     attendCheckedInCount, attendWaitingList, attendGroupedTeams,
     setAttendModal, attendUnassignedActive, attendLimit, attendHistory,
@@ -85,7 +85,13 @@ const TabAttend = ({
 
                         {/* 모임 설정 카드 */}
                         <div className="card border-slate-100 rounded-2xl p-4 mb-4">
-                            <p className="text-xs font-black text-teal-500 uppercase tracking-widest mb-3">모임 설정</p>
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-xs font-black text-teal-500 uppercase tracking-widest">모임 설정</p>
+                                <button onClick={attendHandleCreateNew} disabled={attendIsPending}
+                                    className="px-3 py-1.5 bg-teal-50 text-teal-600 text-xs font-black rounded-xl flex items-center gap-1 disabled:opacity-30">
+                                    <Icon.Plus size={12}/> 새 모임
+                                </button>
+                            </div>
                             <div className="space-y-3">
                                 <div>
                                     <label className="text-[10px] font-black text-slate-400 uppercase">날짜</label>

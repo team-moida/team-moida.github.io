@@ -202,7 +202,7 @@ function App() {
             attendToggleParticipant, attendToggleParticipantAsGuest, attendHandleResetSelection,
             attendHandleAddGuest, attendHandleTestSelect, attendSaveAndReset,
             attendHandleDeleteHistory, handleHistoryStatusUpdate, handleUpdateHistoryLocation,
-            generateAttendQRCode, attendToggleTestMode } = makeAttendHandlers({
+            generateAttendQRCode, attendToggleTestMode, attendHandleCreateNew } = makeAttendHandlers({
         meetingSettings, testMode, showAlert, showConfirm, setAttendModal: attend.setAttendModal,
         tmSessionData: team.tmSessionData, activeMembers: roster.activeMembers,
         selectedHistoryDetail: attend.selectedHistoryDetail, setSelectedHistoryDetail: attend.setSelectedHistoryDetail,
@@ -374,6 +374,7 @@ function App() {
                         setIsAttendGuestModalOpen={attend.setIsAttendGuestModalOpen}
                         attendHandleTestSelect={attendHandleTestSelect}
                         attendHandleResetSelection={attendHandleResetSelection}
+                        attendHandleCreateNew={attendHandleCreateNew}
                         attendGuestEligibleMembers={attend.attendGuestEligibleMembers}
                         attendToggleParticipantAsGuest={attendToggleParticipantAsGuest}
                         attendCheckedInCount={attend.attendCheckedInCount}

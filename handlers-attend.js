@@ -185,6 +185,55 @@ function makeAttendHandlers(ctx) {
         });
     };
 
+    const attendHandleCreateNew = async () => {
+        const current = tmSessionData.filter(p => p.date === meetingSettings?.date);
+        showConfirm('새 모임 만들기', '현재 선정 명단이 모두 삭제됩니다. 새 모임을 만드시겠습니까?', async () => {
+            setAttendIsPending(true);
+            try {
+                if (current.length > 0) {
+                    const histSnap = await getHistoryCol().where('date', '==', meetingSettings.date).get();
+                    if (histSnap.empty) {
+                        const limit = meetingSettings?.maxLimit || 18;
+                        const sorted = [...current].sort((a, b) =>
+                            (a.createdAt || '').localeCompare(b.createdAt || '') || a.name.localeCompare(b.name));
+                        const records = sorted.map((p, idx) => {
+                            const isWaiting = idx + 1 > limit;
+                            const finalStatus = isWaiting ? '대기' : p.checkedIn ? (p.status || '정상') : '노쇼';
+                            return {
+                                name: p.isGuest ? `${p.name} - 초대:${p.inviterName || '없음'}` : p.name,
+                                gender: p.gender, status: finalStatus,
+                                checkInTime: p.checkedIn ? (p.checkInTime || '-') : '미출석',
+                                type: isWaiting ? '대기자' : (p.isGuest ? '게스트' : '정규'),
+                                level: p.level || '-', team: p.team || '-',
+                                timestamp: p.checkedIn ? p.checkInTime : '99:99:99'
+                            };
+                        });
+                        const presentCount = records.filter(r => r.status === '정상' || r.status === '지각').length;
+                        await getHistoryCol().add({
+                            date: meetingSettings.date,
+                            meetingTime: `${meetingSettings.start}~${meetingSettings.end}`,
+                            location: meetingSettings.location || '장소 미지정',
+                            locationLat: meetingSettings.locationLat || null,
+                            locationLng: meetingSettings.locationLng || null,
+                            managerName: meetingSettings.managerName || '미지정',
+                            total: records.length, present: presentCount, records,
+                            createdAt: new Date().toISOString()
+                        });
+                    }
+                }
+                const nextSun = getNextSundayFromDate(meetingSettings?.date || new Date().toISOString().slice(0, 10));
+                const nextSettings = {...meetingSettings, date: nextSun, start: '08:00', end: '10:00', managerId: '', managerName: ''};
+                const batch = db.batch();
+                current.forEach(p => batch.delete(getSessionCol().doc(p.id)));
+                batch.set(getSettingsCol().doc('meeting_schedule_v2'), nextSettings);
+                await batch.commit();
+                setMeetingSettings(nextSettings);
+                showAlert('새 모임 생성 완료', `다음 모임: ${nextSun}`);
+            } catch(e) { showAlert('오류', '처리 실패: ' + e.message); }
+            finally { setAttendIsPending(false); }
+        });
+    };
+
     const attendHandleAddGuest = async () => {
         if (!attendNewGuest.name.trim()) return showAlert('알림', '게스트 이름을 입력해주세요.');
         if (attendIsPending) return;
@@ -343,6 +392,6 @@ function makeAttendHandlers(ctx) {
         attendToggleParticipant, attendToggleParticipantAsGuest, attendHandleResetSelection,
         attendHandleAddGuest, attendHandleTestSelect, attendSaveAndReset,
         attendHandleDeleteHistory, handleHistoryStatusUpdate, handleUpdateHistoryLocation,
-        generateAttendQRCode, attendToggleTestMode
+        generateAttendQRCode, attendToggleTestMode, attendHandleCreateNew
     };
 }
