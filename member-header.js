@@ -12,6 +12,7 @@ function MemberHeader({
                 <div className="flex flex-col items-end gap-1.5">
                     <div className="flex gap-1.5">
                         <button onClick={()=>window.location.href='index.html'} className="p-2 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all text-slate-500"><Icon.Home size={15}/></button>
+                        <button onClick={()=>window.location.reload()} className="p-2 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all text-slate-500" title="새로고침"><Icon.Refresh size={15}/></button>
                         <button onClick={handleLogout} className="text-[10px] font-black text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all">로그아웃</button>
                         <button onClick={toggleTheme} className="p-2 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all text-slate-500" title="테마">{darkMode ? <Icon.Sun size={15}/> : <Icon.Moon size={15}/>}</button>
                     </div>
