@@ -41,9 +41,9 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
                 const r2 = await fetch(KAKAO_PROXY + encodeURIComponent(addr), { headers: { Authorization: `KakaoAK ${KAKAO_REST_KEY}` } });
                 const d2 = await r2.json();
                 if (d2.documents && d2.documents.length > 0) setResults(d2.documents.map(d => ({place_name:d.address_name,road_address_name:(d.road_address&&d.road_address.address_name)||'',x:d.x,y:d.y})));
-                else alert('검색 결과가 없습니다.');
+                else alert('검색 결과가 없습니다.\n업체명이나 주소를 다르게 입력해보세요.');
             }
-        } catch (_) { alert('검색 중 오류가 발생했습니다.'); }
+        } catch (_) { alert('검색 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.'); }
         setSearching(false);
     };
     const selectResult = (place) => {
@@ -109,6 +109,7 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
                             <button key={i} onClick={() => selectResult(place)} style={{ width:'100%', textAlign:'left', padding:'12px 16px', background:'none', border:'none', borderBottom:'1px solid var(--t-border)', cursor:'pointer', fontFamily:'inherit' }}>
                                 <p style={{ fontSize:13, fontWeight:700, color:'var(--t-text)', margin:0 }}>{place.place_name}</p>
                                 <p style={{ fontSize:10, color:'#94a3b8', margin:'2px 0 0' }}>{place.road_address_name||place.address_name||''}</p>
+                                {place.category_name && <p style={{ fontSize:10, color:'#ec4899', margin:'2px 0 0' }}>{place.category_name}</p>}
                             </button>
                         ))}
                         <button onClick={() => setResults([])} style={{ width:'100%', padding:'10px', background:'var(--t-s2)', border:'none', fontSize:11, color:'#94a3b8', cursor:'pointer', fontFamily:'inherit', fontWeight:700 }}>닫기</button>
@@ -120,7 +121,7 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
                 <div>
                     <div style={{ display:'flex', justifyContent:'space-between', margin:'0 0 4px 4px' }}>
                         <p style={{ fontSize:10, fontWeight:700, color:'#ec4899', textTransform:'uppercase', margin:0 }}>장소명</p>
-                        {geocodeFailed && <p style={{ fontSize:10, fontWeight:700, color:'#ef4444', margin:0 }}>⚠ 주소 자동 조회 실패 — 직접 입력</p>}
+                        {geocodeFailed && <p style={{ fontSize:10, fontWeight:700, color:'#ef4444', margin:0 }}>⚠ 주소 자동 조회 실패 — 직접 입력해주세요</p>}
                     </div>
                     <input type="text" value={placeName} onChange={e=>{ setPlaceName(e.target.value); setGeocodeFailed(false); }} placeholder="장소명을 직접 수정할 수 있습니다"
                         style={{ width:'100%', background:'var(--t-s2)', border:'1px solid var(--t-border)', borderRadius:12, padding:'12px 16px', fontSize:14, fontFamily:'inherit', fontWeight:700, outline:'none', boxSizing:'border-box', userSelect:'text', WebkitUserSelect:'text', color:'var(--t-text)' }} />
