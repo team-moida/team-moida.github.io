@@ -3,6 +3,7 @@ function makeRosterHandlers(ctx) {
         newMemberForm, setNewMemberForm, setIsAddModalOpen,
         editingMember, setEditingMember,
         resigningMember, setResigningMember, resignForm,
+        deletingMember, setDeletingMember,
         billingMember, setBillingMember, targetMonth,
         monthlyReasons, paymentDateInput, specialRestReason,
         manualEndDate, tempRestCount,
@@ -44,6 +45,29 @@ function makeRosterHandlers(ctx) {
             setResigningMember(null);
             showAlert('성공', `${resigningMember.name}님이 탈퇴 처리되었습니다.`);
         } catch(e) { showAlert('오류', '탈퇴 처리 실패'); }
+    };
+
+    const handleRestoreResigned = (m) => {
+        showConfirm('탈퇴 철회', `${m.name}님을 활성 회원으로 복구하시겠습니까?`, async () => {
+            try {
+                await getMemberCol().doc(m.id).update({
+                    isResigned: firebase.firestore.FieldValue.delete(),
+                    resignDate: firebase.firestore.FieldValue.delete(),
+                    resignReason: firebase.firestore.FieldValue.delete(),
+                    isForcedResign: firebase.firestore.FieldValue.delete(),
+                });
+                showAlert('완료', `${m.name}님이 활성 회원으로 복구되었습니다.`);
+            } catch(e) { showAlert('오류', '복구 실패'); }
+        });
+    };
+
+    const handleDeleteMember = async () => {
+        if (!deletingMember) return;
+        try {
+            await getMemberCol().doc(deletingMember.id).delete();
+            setDeletingMember(null);
+            showAlert('완료', `${deletingMember.name}님의 회원 정보가 삭제되었습니다.`);
+        } catch(e) { showAlert('오류', '삭제 실패'); }
     };
 
     const handleBillingMemberClick = (m) => {
@@ -120,5 +144,5 @@ function makeRosterHandlers(ctx) {
         } catch(e) { console.error(e); showAlert('오류', '처리 실패'); }
     };
 
-    return { moveMonth, handleAddMember, handleUpdateMember, handleResignConfirm, handleBillingMemberClick, processAction };
+    return { moveMonth, handleAddMember, handleUpdateMember, handleResignConfirm, handleRestoreResigned, handleDeleteMember, handleBillingMemberClick, processAction };
 }

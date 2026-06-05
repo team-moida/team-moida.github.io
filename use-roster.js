@@ -16,6 +16,7 @@ function useRoster({ isAdminMode }) {
     const [editingMember, setEditingMember] = useState(null);
     const [resigningMember, setResigningMember] = useState(null);
     const [resignForm, setResignForm] = useState({date:'',reason:'',isForced:false});
+    const [deletingMember, setDeletingMember] = useState(null);
     const [billingMember, setBillingMember] = useState(null);
     const [actionStep, setActionStep] = useState('main');
     const [selectedAction, setSelectedAction] = useState(null);
@@ -78,6 +79,7 @@ function useRoster({ isAdminMode }) {
         editingMember, setEditingMember,
         resigningMember, setResigningMember,
         resignForm, setResignForm,
+        deletingMember, setDeletingMember,
         billingMember, setBillingMember,
         actionStep, setActionStep,
         selectedAction, setSelectedAction,

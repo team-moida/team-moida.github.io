@@ -1,4 +1,4 @@
-function DirectoryTab({ members, activeMembers, resignedMembers, setEditingMember, setResigningMember, setResignForm }) {
+function DirectoryTab({ members, activeMembers, resignedMembers, setEditingMember, setResigningMember, setResignForm, handleRestoreResigned, setDeletingMember }) {
     return (
         <div>
             <div className="mb-3 flex items-center justify-between">
@@ -40,10 +40,19 @@ function DirectoryTab({ members, activeMembers, resignedMembers, setEditingMembe
                 <div className="mt-6">
                     <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 px-1">탈퇴 회원 {resignedMembers.length}명</p>
                     {resignedMembers.sort((a,b)=>a.name.localeCompare(b.name)).map(m=>(
-                        <div key={m.id} className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-xl mb-1.5 opacity-60">
-                            <span className="font-black text-slate-400 text-sm">{m.name}</span>
-                            <span className="text-[10px] text-slate-400">{m.resignDate}</span>
-                            {m.isForcedResign&&<span className="text-[9px] px-1.5 py-0.5 bg-red-100 text-red-500 rounded-lg font-black">강제탈퇴</span>}
+                        <div key={m.id} className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-xl mb-1.5">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-black text-slate-400 text-sm">{m.name}</span>
+                                    <span className="text-[10px] text-slate-400">{m.resignDate}</span>
+                                    {m.isForcedResign&&<span className="text-[9px] px-1.5 py-0.5 bg-red-100 text-red-500 rounded-lg font-black">강제탈퇴</span>}
+                                </div>
+                                {m.resignReason&&m.resignReason!=='사유 미작성'&&<p className="text-[10px] text-slate-400 mt-0.5">{m.resignReason}</p>}
+                            </div>
+                            <div className="flex gap-1.5 flex-shrink-0">
+                                <button onClick={()=>handleRestoreResigned(m)} className="p-1.5 rounded-lg bg-emerald-50 text-emerald-500" title="탈퇴 철회"><Icon.RotateCcw size={13}/></button>
+                                <button onClick={()=>setDeletingMember(m)} className="p-1.5 rounded-lg bg-red-50 text-red-400" title="완전 삭제"><Icon.Trash size={13}/></button>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -170,6 +179,37 @@ function EditMemberModal({ editingMember, setEditingMember, activeMembers, handl
                 <div className="flex gap-2 mt-5">
                     <button onClick={()=>setEditingMember(null)} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
                     <button onClick={handleUpdateMember} className="flex-1 py-3 bg-teal-500 text-white rounded-2xl font-black text-sm">저장</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function DeleteMemberModal({ deletingMember, setDeletingMember, handleDeleteMember }) {
+    const { useState } = React;
+    const [confirmName, setConfirmName] = useState('');
+    if (!deletingMember) return null;
+    const isMatch = confirmName === deletingMember.name;
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={()=>{setDeletingMember(null);setConfirmName('');}}>
+            <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={e=>e.stopPropagation()}>
+                <h2 className="text-xl font-black text-red-600 mb-1">회원 완전 삭제</h2>
+                <p className="text-sm text-slate-500 mb-1">{deletingMember.name}</p>
+                <p className="text-xs text-red-500 font-black mb-4">⚠ 이 작업은 되돌릴 수 없습니다.</p>
+                <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-4">
+                    <p className="text-xs text-slate-600">Firestore에서 회원 정보가 영구 삭제됩니다.<br/>출석 기록은 그대로 남습니다.</p>
+                </div>
+                <div>
+                    <p className="text-xs font-black text-slate-500 mb-1">확인을 위해 회원 이름을 입력하세요</p>
+                    <input type="text" placeholder={deletingMember.name} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                        value={confirmName} onChange={e=>setConfirmName(e.target.value)}/>
+                </div>
+                <div className="flex gap-2 mt-5">
+                    <button onClick={()=>{setDeletingMember(null);setConfirmName('');}} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
+                    <button onClick={()=>{if(isMatch)handleDeleteMember();}} disabled={!isMatch}
+                        className={`flex-1 py-3 rounded-2xl font-black text-sm transition-all ${isMatch?'bg-red-500 text-white':'bg-red-100 text-red-300 cursor-not-allowed'}`}>
+                        영구 삭제
+                    </button>
                 </div>
             </div>
         </div>
