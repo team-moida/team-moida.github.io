@@ -23,6 +23,7 @@ const TabAttend = ({
     qrStatus, qrMessage, setQrStatus, setIsQRScannerOpen,
     gpsStatus, distance, handleGPSCheckIn, handleGPSAttend,
     isCheckingIn, setGpsStatus,
+    isKioskOpen, setIsKioskOpen, attendHandleCheckIn,
 }) => (
     <div className="animate-in space-y-4">
 
@@ -583,6 +584,117 @@ const TabAttend = ({
                     <span style={{fontSize:20}}>📷</span> QR 스캔하기
                 </button>
                 <p className="text-slate-600 text-xs text-center mt-2">관리자가 보여주는 QR코드를 스캔하세요</p>
+            </div>
+        )}
+
+        {/* 직접 출석 카드 (관리자 ON + 패널 닫힌 상태, 참가자 있을 때만) */}
+        {isAdminMode && !isAttendPanelOpen && attendActiveList.length > 0 && (
+            <div className="card rounded-3xl p-5">
+                <p className="text-xs font-black text-orange-400 uppercase tracking-widest mb-3">직접 출석</p>
+                <button onClick={() => setIsKioskOpen(true)}
+                    className="w-full py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 text-white"
+                    style={{ background:'linear-gradient(135deg,#f97316,#ea580c)' }}>
+                    <span style={{fontSize:20}}>📋</span> 키오스크 모드 열기
+                </button>
+                <p className="text-slate-500 text-xs text-center mt-2">회원들이 직접 이름을 탭해서 출석 처리합니다</p>
+            </div>
+        )}
+
+        {/* 키오스크 모달 */}
+        {isKioskOpen && (
+            <div className="fixed inset-0 z-50 flex flex-col" style={{background:'#0f172a'}}>
+                {/* 상단 바 */}
+                <div style={{background:'#1e293b',padding:'14px 16px',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                    <div>
+                        <p style={{color:'white',fontWeight:900,fontSize:'1rem'}}>직접 출석</p>
+                        <p style={{color:'#94a3b8',fontSize:'0.75rem',marginTop:'2px'}}>{meetingSettings?.date} · <span style={{color:'#34d399',fontWeight:900}}>{attendCheckedInCount}명 출석</span> / {attendActiveList.length}명</p>
+                    </div>
+                    <button onClick={() => setIsKioskOpen(false)}
+                        style={{width:'40px',height:'40px',borderRadius:'12px',background:'#334155',color:'white',display:'flex',alignItems:'center',justifyContent:'center',border:'none',cursor:'pointer'}}>
+                        <Icon.X size={20}/>
+                    </button>
+                </div>
+                {/* 출석 진행 바 */}
+                {attendActiveList.length > 0 && (
+                    <div style={{height:'4px',background:'#334155',flexShrink:0}}>
+                        <div style={{height:'100%',background:'#10b981',transition:'width 0.7s',width:`${Math.round(attendCheckedInCount/attendActiveList.length*100)}%`}}/>
+                    </div>
+                )}
+                {/* 본문 */}
+                <div className="overflow-y-auto flex-1" style={{padding:'16px'}}>
+                    {attendGroupedTeams.length > 0 ? (
+                        attendGroupedTeams.map((group) => (
+                            <div key={group.teamName} className="mb-6">
+                                <div className={`flex items-center gap-2 rounded-2xl p-3 mb-3 border ${getTeamCard(group.teamIdx)}`}>
+                                    <span className={`w-9 h-9 rounded-xl text-sm font-black flex items-center justify-center text-white ${getTeamBadge(group.teamIdx)}`}>{group.teamName}</span>
+                                    <div className="flex-1">
+                                        <p className="font-black text-slate-700">{group.teamName}팀 · {getTeamColorName(group.teamIdx)} 조끼</p>
+                                        <p className="text-xs text-slate-400">출석 {group.members.filter(m=>m.checkedIn).length}/{group.members.length}명</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {group.members.map(p => (
+                                        <button key={p.id}
+                                            onClick={() => p.checkedIn
+                                                ? setAttendModal({type:'checkin', data:{...p, teamIdx:group.teamIdx, teamName:group.teamName}})
+                                                : attendHandleCheckIn(p)
+                                            }
+                                            style={{minHeight:'88px'}}
+                                            className={`relative overflow-hidden rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95 transition-all text-white ${getTeamBadge(group.teamIdx)} ${p.checkedIn?'opacity-40':''}`}>
+                                            {p.checkedIn && (
+                                                <div className="absolute inset-0 flex items-center justify-center" style={{background:'rgba(0,0,0,0.2)'}}>
+                                                    <div style={{width:'40px',height:'40px',borderRadius:'50%',background:'rgba(255,255,255,0.3)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                                                        <Icon.Check size={20} className="text-white"/>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <span style={{fontSize:'11px',fontWeight:900,opacity:0.6}}>{p.jerseyNumber}번</span>
+                                            <span className="font-black text-lg text-center leading-tight px-1" style={{wordBreak:'keep-all'}}>{p.name}</span>
+                                            {p.gender==='여성'&&<span style={{fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'#ec4899',color:'white'}}>W</span>}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ))
+                    ) : attendActiveList.length > 0 ? (
+                        <div className="space-y-2">
+                            <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 px-1">미출석</p>
+                            {attendActiveList.filter(p=>!p.checkedIn&&p.status!=='노쇼').map(p => (
+                                <button key={p.id} onClick={() => attendHandleCheckIn(p)}
+                                    style={{minHeight:'64px',width:'100%',borderRadius:'16px',background:'#14b8a6',color:'white',fontWeight:900,fontSize:'1.2rem',display:'flex',alignItems:'center',gap:'12px',padding:'0 20px',border:'none',cursor:'pointer',transition:'transform 0.1s'}}
+                                    className="active:scale-95">
+                                    <span style={{flex:1,textAlign:'left'}}>{p.name}</span>
+                                    {p.gender==='여성'&&<span style={{fontSize:'11px',background:'#ec4899',padding:'3px 8px',borderRadius:'6px',fontWeight:900}}>W</span>}
+                                    {p.isGuest&&<span style={{fontSize:'11px',background:'#1e293b',padding:'3px 8px',borderRadius:'6px',fontWeight:900}}>G</span>}
+                                </button>
+                            ))}
+                            {attendActiveList.some(p=>p.checkedIn) && (
+                                <p className="text-xs font-black text-slate-500 uppercase tracking-widest mt-5 mb-3 px-1">출석 완료</p>
+                            )}
+                            {attendActiveList.filter(p=>p.checkedIn).map(p => (
+                                <button key={p.id} onClick={() => setAttendModal({type:'checkin', data:p})}
+                                    style={{minHeight:'56px',width:'100%',borderRadius:'16px',background:'rgba(6,78,59,0.4)',border:'1px solid rgba(16,185,129,0.2)',color:'#34d399',fontWeight:900,display:'flex',alignItems:'center',gap:'12px',padding:'0 20px',cursor:'pointer',opacity:0.6,transition:'transform 0.1s'}}
+                                    className="active:scale-95">
+                                    <Icon.Check size={18}/>
+                                    <span style={{flex:1,textAlign:'left'}}>{p.name}</span>
+                                    <span style={{fontSize:'0.875rem',color:'#64748b'}}>{p.checkInTime}</span>
+                                </button>
+                            ))}
+                            {attendActiveList.filter(p=>p.status==='노쇼').map(p => (
+                                <button key={p.id} onClick={() => setAttendModal({type:'checkin', data:p})}
+                                    style={{minHeight:'52px',width:'100%',borderRadius:'16px',background:'rgba(127,29,29,0.3)',color:'#f87171',fontWeight:900,display:'flex',alignItems:'center',gap:'12px',padding:'0 20px',cursor:'pointer',opacity:0.4,border:'none'}}>
+                                    <span style={{flex:1,textAlign:'left'}}>{p.name}</span>
+                                    <span style={{fontSize:'0.875rem'}}>노쇼</span>
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center" style={{paddingTop:'80px',color:'#475569'}}>
+                            <p style={{fontSize:'3rem',marginBottom:'16px'}}>📋</p>
+                            <p style={{fontWeight:900,fontSize:'1.1rem',color:'#64748b'}}>선정된 인원이 없습니다</p>
+                        </div>
+                    )}
+                </div>
             </div>
         )}
     </div>

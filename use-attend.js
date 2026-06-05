@@ -18,6 +18,7 @@ function useAttend({ isAdminMode, meetingSettings, tmSessionData, activeMembers,
     const [currentQRToken, setCurrentQRToken] = useState('');
     const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
     const [attendIsPending, setAttendIsPending] = useState(false);
+    const [isKioskOpen, setIsKioskOpen] = useState(false);
     const [localMaxLimit, setLocalMaxLimit] = useState(null);
     const [testModeBackup, setTestModeBackup] = useState(null);
     const hasAutoNoShowRef = useRef(false);
@@ -156,6 +157,7 @@ function useAttend({ isAdminMode, meetingSettings, tmSessionData, activeMembers,
         currentQRToken, setCurrentQRToken,
         isLocationPickerOpen, setIsLocationPickerOpen,
         attendIsPending, setAttendIsPending,
+        isKioskOpen, setIsKioskOpen,
         localMaxLimit, setLocalMaxLimit,
         testModeBackup, setTestModeBackup,
         hasAutoNoShowRef, hasAutoFixedRef,

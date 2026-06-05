@@ -398,6 +398,8 @@ function App() {
                         setIsQRScannerOpen={setIsQRScannerOpen} gpsStatus={gpsStatus} distance={distance}
                         handleGPSCheckIn={handleGPSCheckIn} handleGPSAttend={handleGPSAttend}
                         isCheckingIn={isCheckingIn} setGpsStatus={setGpsStatus}
+                        isKioskOpen={attend.isKioskOpen} setIsKioskOpen={attend.setIsKioskOpen}
+                        attendHandleCheckIn={attendHandleCheckIn}
                     />
                 )}
                 {tab === 'roster' && isAdminMode && (
