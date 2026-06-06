@@ -36,7 +36,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ── 기존 캐시 로직 ──────────────────────────────────────
-const CACHE_NAME = 'moida-v1';
+const CACHE_NAME = 'moida-v2';
 const CACHE_URLS = [
     '/moida/index.html',
     '/moida/attendance.html',
@@ -49,11 +49,10 @@ const CACHE_URLS = [
 ];
 
 self.addEventListener('install', event => {
-    self.skipWaiting();
     event.waitUntil(
-        caches.open(CACHE_NAME).then(cache =>
-            cache.addAll(CACHE_URLS).catch(err => console.warn('캐시 일부 실패 (정상):', err))
-        )
+        caches.open(CACHE_NAME)
+            .then(cache => cache.addAll(CACHE_URLS).catch(err => console.warn('캐시 일부 실패 (정상):', err)))
+            .then(() => self.skipWaiting())
     );
 });
 
@@ -76,8 +75,14 @@ self.addEventListener('fetch', event => {
         url.includes('gstatic.com')
     ) return;
 
+    // HTML/JS/CSS는 HTTP 캐시 우회 → 항상 서버에서 최신 파일 수신
+    const isCodeFile = /\.(html|js|css)(\?|$)/.test(url);
+    const fetchRequest = isCodeFile
+        ? new Request(event.request, { cache: 'no-store' })
+        : event.request;
+
     event.respondWith(
-        fetch(event.request)
+        fetch(fetchRequest)
             .then(response => {
                 if (response && response.status === 200) {
                     const clone = response.clone();
