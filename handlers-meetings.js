@@ -23,7 +23,12 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
                 maxLimit: data.maxLimit || 18,
                 managerId: data.managerId || '',
                 managerName: data.managerName || '',
-                testMode: false
+                testMode: false,
+                isRegistrationEnabled: data.isRegistrationEnabled || false,
+                registrationOpenAt: data.registrationOpenAt || '',
+                registrationCloseAt: data.registrationCloseAt || '',
+                confirmedCount: data.confirmedCount || 0,
+                waitingCount: data.waitingCount || 0,
             });
         } catch(e) {
             console.error('meeting_schedule_v2 미러 동기화 실패:', e);
@@ -57,6 +62,11 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
                 status: originalMeeting?.status || 'upcoming',
                 createdAt: originalMeeting?.createdAt || new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
+                isRegistrationEnabled: formData.isRegistrationEnabled || false,
+                registrationOpenAt: formData.registrationOpenAt || '',
+                registrationCloseAt: formData.registrationCloseAt || '',
+                confirmedCount: originalMeeting?.confirmedCount || 0,
+                waitingCount: originalMeeting?.waitingCount || 0,
             };
 
             const batch = db.batch();

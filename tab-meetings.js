@@ -3,30 +3,48 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
     const { useState } = React;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'' });
+    const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59' });
     const [isSaving, setIsSaving] = useState(false);
 
     const sortedMeetings = [...meetings].sort((a, b) => a.date.localeCompare(b.date));
 
     const openAdd = () => {
         setEditingId(null);
-        setForm({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'' });
+        setForm({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59' });
         setIsModalOpen(true);
     };
 
     const openEdit = (m) => {
         setEditingId(m.id);
+        const parseRegDT = (isoStr) => {
+            if (!isoStr) return { date: '', hour: '09', minute: '00' };
+            const [d, t] = isoStr.split('T');
+            const [h, min] = (t || '09:00').split(':');
+            return { date: d || '', hour: h || '09', minute: (min || '00').substring(0, 2) };
+        };
+        const openDT = parseRegDT(m.registrationOpenAt);
+        const closeDT = parseRegDT(m.registrationCloseAt);
         setForm({
             date: m.date, start: m.start||'08:00', end: m.end||'10:00',
             location: m.location||'', maxLimit: m.maxLimit||18,
-            managerId: m.managerId||'', managerName: m.managerName||''
+            managerId: m.managerId||'', managerName: m.managerName||'',
+            isRegistrationEnabled: m.isRegistrationEnabled || false,
+            regOpenDate: openDT.date, regOpenHour: openDT.hour, regOpenMinute: openDT.minute,
+            regCloseDate: closeDT.date, regCloseHour: closeDT.hour, regCloseMinute: closeDT.minute,
         });
         setIsModalOpen(true);
     };
 
     const handleSave = async () => {
         setIsSaving(true);
-        await handleSaveMeeting(form, editingId, () => setIsModalOpen(false));
+        const combinedForm = {
+            ...form,
+            registrationOpenAt: form.isRegistrationEnabled && form.regOpenDate
+                ? `${form.regOpenDate}T${form.regOpenHour}:${form.regOpenMinute}` : '',
+            registrationCloseAt: form.isRegistrationEnabled && form.regCloseDate
+                ? `${form.regCloseDate}T${form.regCloseHour}:${form.regCloseMinute}` : '',
+        };
+        await handleSaveMeeting(combinedForm, editingId, () => setIsModalOpen(false));
         setIsSaving(false);
     };
 
@@ -60,6 +78,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                             {isDone && <span className="text-[10px] font-black bg-slate-300 text-slate-600 px-2 py-0.5 rounded-full">종료됨</span>}
                                         </div>
                                         <p className="text-xs text-slate-400">{m.start} ~ {m.end} · 최대 {m.maxLimit||18}명</p>
+                                        {m.isRegistrationEnabled && <span className="text-[9px] font-black px-1.5 py-0.5 bg-orange-100 text-orange-500 rounded-lg mt-0.5 inline-block">선착순</span>}
                                         {m.location ? <p className="text-xs text-slate-400 mt-0.5 truncate"><Icon.MapPin size={10} className="inline mr-0.5"/>{m.location}</p> : null}
                                         {m.managerName ? <p className="text-xs text-slate-400 mt-0.5">담당: {m.managerName}</p> : null}
                                     </div>
@@ -134,6 +153,55 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                     <option value="">담당자 없음</option>
                                     {managers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                                 </select>
+                            </div>
+                            <div className="pt-2 border-t border-slate-100">
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="text-xs font-black text-slate-500">선착순 신청</label>
+                                    <button onClick={() => setForm(f => ({...f, isRegistrationEnabled: !f.isRegistrationEnabled}))}
+                                        className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${form.isRegistrationEnabled ? 'bg-teal-500' : 'bg-slate-200'}`}>
+                                        <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${form.isRegistrationEnabled ? 'left-6' : 'left-0.5'}`}/>
+                                    </button>
+                                </div>
+                                {form.isRegistrationEnabled && (
+                                    <div className="mt-3 space-y-3">
+                                        <div>
+                                            <label className="text-xs font-black text-slate-500 mb-1 block">신청 시작</label>
+                                            <div className="flex gap-2">
+                                                <input type="date" value={form.regOpenDate}
+                                                    onChange={e => setForm(f => ({...f, regOpenDate: e.target.value}))}
+                                                    className="flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+                                                <select value={form.regOpenHour}
+                                                    onChange={e => setForm(f => ({...f, regOpenHour: e.target.value}))}
+                                                    className="w-16 border border-slate-200 rounded-xl px-2 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400">
+                                                    {Array.from({length:24},(_,i)=>String(i).padStart(2,'0')).map(h=><option key={h} value={h}>{h}시</option>)}
+                                                </select>
+                                                <select value={form.regOpenMinute}
+                                                    onChange={e => setForm(f => ({...f, regOpenMinute: e.target.value}))}
+                                                    className="w-16 border border-slate-200 rounded-xl px-2 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400">
+                                                    {['00','10','20','30','40','50'].map(mn=><option key={mn} value={mn}>{mn}분</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-black text-slate-500 mb-1 block">신청 마감</label>
+                                            <div className="flex gap-2">
+                                                <input type="date" value={form.regCloseDate}
+                                                    onChange={e => setForm(f => ({...f, regCloseDate: e.target.value}))}
+                                                    className="flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+                                                <select value={form.regCloseHour}
+                                                    onChange={e => setForm(f => ({...f, regCloseHour: e.target.value}))}
+                                                    className="w-16 border border-slate-200 rounded-xl px-2 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400">
+                                                    {Array.from({length:24},(_,i)=>String(i).padStart(2,'0')).map(h=><option key={h} value={h}>{h}시</option>)}
+                                                </select>
+                                                <select value={form.regCloseMinute}
+                                                    onChange={e => setForm(f => ({...f, regCloseMinute: e.target.value}))}
+                                                    className="w-16 border border-slate-200 rounded-xl px-2 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400">
+                                                    {['00','10','20','30','40','50'].map(mn=><option key={mn} value={mn}>{mn}분</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <button onClick={handleSave} disabled={isSaving}

@@ -175,6 +175,159 @@ const KioskModal = ({
     );
 };
 
+// ─── 선착순 신청 설정 섹션 (관리자 선정 탭용) ─────────────────────────────────────
+const RegSettingsSection = ({ meetingSettings, updateMeetingSettingsAdmin }) => {
+    const { useState, useEffect } = React;
+    const hourOptions = Array.from({length:24},(_,i)=>String(i).padStart(2,'0'));
+    const minuteOptions = ['00','10','20','30','40','50'];
+
+    const parseRegDT = (isoStr) => {
+        if (!isoStr) return { date:'', hour:'09', minute:'00' };
+        const [d, t] = isoStr.split('T');
+        const [h, mn] = (t||'09:00').split(':');
+        return { date:d||'', hour:h||'09', minute:(mn||'00').substring(0,2) };
+    };
+
+    const [enabled, setEnabled] = useState(!!meetingSettings?.isRegistrationEnabled);
+    const [openDT, setOpenDT] = useState(() => parseRegDT(meetingSettings?.registrationOpenAt));
+    const [closeDT, setCloseDT] = useState(() => parseRegDT(meetingSettings?.registrationCloseAt));
+
+    useEffect(() => {
+        setEnabled(!!meetingSettings?.isRegistrationEnabled);
+        setOpenDT(parseRegDT(meetingSettings?.registrationOpenAt));
+        setCloseDT(parseRegDT(meetingSettings?.registrationCloseAt));
+    }, [meetingSettings?.date]);
+
+    const handleSave = async () => {
+        const meetingDate = meetingSettings?.date;
+        if (!meetingDate) return;
+        const newReg = {
+            isRegistrationEnabled: enabled,
+            registrationOpenAt: enabled && openDT.date ? `${openDT.date}T${openDT.hour}:${openDT.minute}` : '',
+            registrationCloseAt: enabled && closeDT.date ? `${closeDT.date}T${closeDT.hour}:${closeDT.minute}` : '',
+        };
+        updateMeetingSettingsAdmin({ ...meetingSettings, ...newReg });
+        try {
+            await getMeetingsCol().doc(meetingDate).update(newReg);
+        } catch(e) { console.error('신청 설정 저장 실패:', e); }
+    };
+
+    const DTRow = ({ label, dt, setDT }) => (
+        <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block">{label}</label>
+            <div className="flex gap-1">
+                <input type="date" value={dt.date} onChange={e=>setDT(d=>({...d,date:e.target.value}))}
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+                <select value={dt.hour} onChange={e=>setDT(d=>({...d,hour:e.target.value}))}
+                    className="w-14 bg-slate-50 border border-slate-200 rounded-xl px-1 py-2 text-xs font-medium focus:outline-none">
+                    {hourOptions.map(h=><option key={h} value={h}>{h}시</option>)}
+                </select>
+                <select value={dt.minute} onChange={e=>setDT(d=>({...d,minute:e.target.value}))}
+                    className="w-14 bg-slate-50 border border-slate-200 rounded-xl px-1 py-2 text-xs font-medium focus:outline-none">
+                    {minuteOptions.map(mn=><option key={mn} value={mn}>{mn}분</option>)}
+                </select>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-between mb-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase">선착순 신청</label>
+                <button onClick={()=>setEnabled(e=>!e)}
+                    className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${enabled?'bg-teal-500':'bg-slate-200'}`}>
+                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${enabled?'left-6':'left-0.5'}`}/>
+                </button>
+            </div>
+            {enabled && (
+                <div className="space-y-2 mt-2">
+                    <DTRow label="신청 시작" dt={openDT} setDT={setOpenDT}/>
+                    <DTRow label="신청 마감" dt={closeDT} setDT={setCloseDT}/>
+                </div>
+            )}
+            <button onClick={handleSave}
+                className={`w-full py-2 rounded-xl font-black text-xs mt-2 ${enabled?'bg-teal-500 text-white':'bg-slate-100 text-slate-500'}`}>
+                신청 설정 저장
+            </button>
+        </div>
+    );
+};
+
+// ─── 회원용 신청 카드 ─────────────────────────────────────────────────────────────
+const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel }) => {
+    if (!meetingSettings?.isRegistrationEnabled) return null;
+
+    const now = new Date();
+    const openAt = meetingSettings?.registrationOpenAt ? new Date(meetingSettings.registrationOpenAt) : null;
+    const closeAt = meetingSettings?.registrationCloseAt ? new Date(meetingSettings.registrationCloseAt) : null;
+    const isBeforeOpen = openAt && now < openAt;
+    const isAfterClose = closeAt && now > closeAt;
+    const isOpen = !isBeforeOpen && !isAfterClose;
+    const maxLimit = meetingSettings?.maxLimit || 18;
+
+    const fmtDT = (isoStr) => {
+        if (!isoStr) return '';
+        const d = new Date(isoStr);
+        return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    };
+
+    return (
+        <div className="card rounded-3xl p-5">
+            <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-black text-orange-500 uppercase tracking-widest">선착순 신청</p>
+                <span className="text-xs font-black text-slate-400">{regConfirmedCount} / {maxLimit}명</span>
+            </div>
+
+            {isBeforeOpen && (
+                <div className="text-center py-3">
+                    <p className="text-sm font-black text-slate-400">신청 시작 전</p>
+                    <p className="text-xs text-slate-300 mt-1">{fmtDT(meetingSettings.registrationOpenAt)} 부터 신청 가능</p>
+                </div>
+            )}
+
+            {isOpen && !myRegistration && (
+                <button onClick={handleRegister}
+                    className="w-full py-3.5 bg-orange-500 text-white rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all">
+                    신청하기
+                </button>
+            )}
+
+            {isOpen && myRegistration?.status === 'confirmed' && (
+                <div>
+                    <div className="bg-teal-50 border border-teal-200 rounded-2xl p-3 mb-3 text-center">
+                        <p className="font-black text-teal-500">참가 확정 ✓</p>
+                    </div>
+                    <button onClick={handleCancel}
+                        className="w-full py-2.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm active:scale-95">
+                        신청 취소
+                    </button>
+                </div>
+            )}
+
+            {isOpen && myRegistration?.status === 'waiting' && (
+                <div>
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-3 text-center">
+                        <p className="font-black text-amber-500">대기 중 {myWaitingPosition}번</p>
+                    </div>
+                    <button onClick={handleCancel}
+                        className="w-full py-2.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm active:scale-95">
+                        신청 취소
+                    </button>
+                </div>
+            )}
+
+            {isAfterClose && (
+                <div className="text-center py-2">
+                    <p className="text-sm font-black text-slate-400">신청 마감</p>
+                    {myRegistration?.status === 'confirmed' && <p className="text-xs text-teal-500 font-black mt-1">참가 확정 ✓</p>}
+                    {myRegistration?.status === 'waiting' && <p className="text-xs text-amber-500 font-black mt-1">대기 {myWaitingPosition}번</p>}
+                    {!myRegistration && <p className="text-xs text-slate-300 mt-1">미신청</p>}
+                </div>
+            )}
+        </div>
+    );
+};
+
 // ─── 출석 탭 ────────────────────────────────────────────────────────────────────
 const TabAttend = ({
     isAdminMode,
@@ -204,6 +357,7 @@ const TabAttend = ({
     isMeetingOver, attendHandleEndMeeting,
     meetings, activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers,
     showAlert,
+    myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel,
 }) => (
     <div className="animate-in space-y-4">
 
@@ -381,10 +535,16 @@ const TabAttend = ({
                                             className="px-4 py-2.5 bg-teal-500 text-white rounded-xl text-xs font-black">내가 담당</button>
                                     </div>
                                 </div>
+                                <RegSettingsSection meetingSettings={meetingSettings} updateMeetingSettingsAdmin={updateMeetingSettingsAdmin} />
                             </div>
                         </div>
 
                         {/* 회원 선정 */}
+                        {meetingSettings?.isRegistrationEnabled && (
+                            <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-2xl mb-3 text-xs font-black text-amber-600">
+                                ⚠️ 선착순 신청 진행 중 — 수동 편집 시 신청 카운터와 어긋날 수 있습니다
+                            </div>
+                        )}
                         <div className="flex items-center justify-between mb-3 px-1">
                             <p className="text-xs font-black text-slate-700 uppercase tracking-widest">회원 선정</p>
                             <div className="flex gap-1.5">
@@ -647,6 +807,18 @@ const TabAttend = ({
                 )}
             </div>
         ) : null}
+
+        {/* 선착순 신청 카드 (관리자 패널 닫혔을 때만) */}
+        {!(isAdminMode && isAttendPanelOpen) && (
+            <RegistrationCard
+                meetingSettings={meetingSettings}
+                myRegistration={myRegistration}
+                regConfirmedCount={regConfirmedCount}
+                myWaitingPosition={myWaitingPosition}
+                handleRegister={handleRegister}
+                handleCancel={handleCancel}
+            />
+        )}
 
         {/* 현재 출석 상태 (관리자 패널 닫혔을 때만) */}
         {!(isAdminMode && isAttendPanelOpen) && mySession?.checkedIn && (

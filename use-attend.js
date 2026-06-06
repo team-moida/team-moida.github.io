@@ -1,4 +1,4 @@
-function useAttend({ isAdminMode, meetingSettings, tmSessionData, activeMembers, tmMonthlyStatuses, teamDraftData }) {
+function useAttend({ isAdminMode, memberData, meetingSettings, tmSessionData, activeMembers, tmMonthlyStatuses, teamDraftData }) {
     const { useState, useEffect, useMemo, useRef } = React;
     const testMode = !!meetingSettings?.testMode;
 
@@ -24,6 +24,7 @@ function useAttend({ isAdminMode, meetingSettings, tmSessionData, activeMembers,
     const hasAutoNoShowRef = useRef(false);
     const hasAutoFixedRef = useRef(false);
     const [attendCurrentTime, setAttendCurrentTime] = useState(() => new Date());
+    const [registrationList, setRegistrationList] = useState([]);
 
     useEffect(() => {
         if (!isAdminMode) return;
@@ -38,6 +39,17 @@ function useAttend({ isAdminMode, meetingSettings, tmSessionData, activeMembers,
         const t = setInterval(() => setAttendCurrentTime(new Date()), 10000);
         return () => clearInterval(t);
     }, [isAdminMode]);
+
+    useEffect(() => {
+        const meetingDate = meetingSettings?.date;
+        if (!meetingDate) { setRegistrationList([]); return; }
+        const unsub = getRegistrationsCol()
+            .where('meetingDate', '==', meetingDate)
+            .onSnapshot(snap => {
+                setRegistrationList(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+            }, () => {});
+        return () => unsub();
+    }, [meetingSettings?.date]);
 
     useEffect(() => {
         if (!isQRGenModalOpen || !currentQRToken || !meetingSettings?.date) return;
@@ -91,6 +103,25 @@ function useAttend({ isAdminMode, meetingSettings, tmSessionData, activeMembers,
         const [hr,min] = meetingSettings.end.split(':');
         return attendCurrentTime >= new Date(parseInt(y),parseInt(m)-1,parseInt(d),parseInt(hr),parseInt(min),0);
     }, [meetingSettings?.date, meetingSettings?.end, attendCurrentTime]);
+
+    const myRegistration = useMemo(() =>
+        registrationList.find(r => r.memberId === memberData?.memberId) || null,
+    [registrationList, memberData?.memberId]);
+
+    const regConfirmedCount = useMemo(() =>
+        registrationList.filter(r => r.status === 'confirmed').length,
+    [registrationList]);
+
+    const regWaitingList = useMemo(() =>
+        registrationList
+            .filter(r => r.status === 'waiting')
+            .sort((a, b) => (a.registeredAt?.seconds || 0) - (b.registeredAt?.seconds || 0)),
+    [registrationList]);
+
+    const myWaitingPosition = useMemo(() => {
+        if (myRegistration?.status !== 'waiting') return null;
+        return regWaitingList.findIndex(r => r.memberId === memberData?.memberId) + 1;
+    }, [myRegistration, regWaitingList, memberData?.memberId]);
 
     const attendLimit = useMemo(() => testMode ? attendActiveParticipants.length : (meetingSettings?.maxLimit || 18), [testMode, attendActiveParticipants.length, meetingSettings?.maxLimit]);
     const attendActiveList = useMemo(() => attendActiveParticipants.slice(0, attendLimit), [attendActiveParticipants, attendLimit]);
@@ -167,5 +198,6 @@ function useAttend({ isAdminMode, meetingSettings, tmSessionData, activeMembers,
         attendLimit, attendActiveList, attendWaitingList,
         attendCheckedInCount, attendAssignedIds, attendUnassignedActive,
         sortedHistoryRecords, attendHourOptions, attendMinuteOptions, snapMin,
+        registrationList, myRegistration, regConfirmedCount, regWaitingList, myWaitingPosition,
     };
 }

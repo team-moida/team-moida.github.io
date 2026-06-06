@@ -35,6 +35,7 @@
     <script type="text/babel" src="tab-team.js"></script>
     <script type="text/babel" src="tab-match.js"></script>
     <script type="text/babel" src="handlers-meetings.js"></script>
+    <script type="text/babel" src="handlers-registration.js"></script>
     <script type="text/babel" src="tab-meetings.js"></script>
     <script type="text/babel" src="tab-attend.js"></script>
     <script type="text/babel" src="tab-roster.js"></script>
@@ -98,11 +99,18 @@ function App() {
     const match = useMatch({ isAdminMode, meetingSettings, confirmedDrafts: team.confirmedDrafts });
     const { scheduleData, matchViewMode, setMatchViewMode } = match;
     const attend = useAttend({
-        isAdminMode, meetingSettings,
+        isAdminMode, memberData, meetingSettings,
         tmSessionData: team.tmSessionData,
         activeMembers: roster.activeMembers,
         tmMonthlyStatuses: team.tmMonthlyStatuses,
         teamDraftData: team.teamDraftData,
+    });
+    const { handleRegister, handleCancel } = makeRegistrationHandlers({
+        meetingDate: meetingSettings?.date,
+        memberData,
+        meetingSettings,
+        showToast,
+        showAlert,
     });
 
     useEffect(() => {
@@ -444,6 +452,11 @@ function App() {
                         handleDeleteMeeting={handleDeleteMeeting}
                         managers={managers}
                         showAlert={showAlert}
+                        myRegistration={attend.myRegistration}
+                        regConfirmedCount={attend.regConfirmedCount}
+                        myWaitingPosition={attend.myWaitingPosition}
+                        handleRegister={handleRegister}
+                        handleCancel={handleCancel}
                     />
                 )}
                 {tab === 'rules' && (
