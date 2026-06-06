@@ -87,7 +87,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                             <Icon.Edit size={14}/>
                                         </button>
                                         <button onClick={() => handleDeleteMeeting(m)}
-                                            className={`p-2 rounded-xl active:scale-95 transition-all ${isActive ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-red-50 text-red-400'}`}>
+                                            className="p-2 rounded-xl active:scale-95 transition-all bg-red-50 text-red-400">
                                             <Icon.Trash size={14}/>
                                         </button>
                                     </div>

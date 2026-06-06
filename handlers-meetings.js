@@ -88,13 +88,36 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
     };
 
     const handleDeleteMeeting = (meeting) => {
-        if (activeMeeting?.id === meeting.id) {
-            showAlert('삭제 불가', '현재 진행 예정인 모임은 삭제할 수 없습니다.');
-            return;
-        }
-        showConfirm('모임 삭제', `${meeting.date} 모임을 삭제하시겠습니까?`, async () => {
+        const isCurrentMeeting = activeMeeting?.id === meeting.id;
+        const confirmMsg = isCurrentMeeting
+            ? `현재 진행 예정 모임입니다. 삭제 시 신청 및 참가자 정보도 모두 사라집니다. 정말 삭제하시겠습니까?`
+            : `${meeting.date} 모임을 삭제하시겠습니까?`;
+        showConfirm('모임 삭제', confirmMsg, async () => {
             try {
-                await getMeetingsCol().doc(meeting.id).delete();
+                const [regSnap, sessionSnap] = await Promise.all([
+                    getCol('registrations').where('meetingDate', '==', meeting.id).get(),
+                    getCol('weekly_session').where('date', '==', meeting.id).get(),
+                ]);
+                const batch = db.batch();
+                batch.delete(getMeetingsCol().doc(meeting.id));
+                regSnap.docs.forEach(d => batch.delete(d.ref));
+                sessionSnap.docs.forEach(d => batch.delete(d.ref));
+                await batch.commit();
+                if (isCurrentMeeting) {
+                    const remaining = meetings.filter(m => m.id !== meeting.id);
+                    const nextMeeting = getActiveMeeting(remaining);
+                    if (nextMeeting) {
+                        await syncMirror(nextMeeting);
+                    } else {
+                        await getSettingsCol().doc('meeting_schedule_v2').set({
+                            date: '', start: '', end: '', location: '',
+                            locationLat: null, locationLng: null, locationRadius: 100,
+                            maxLimit: 18, managerId: '', managerName: '', testMode: false,
+                            isRegistrationEnabled: false, registrationOpenAt: '', registrationCloseAt: '',
+                            confirmedCount: 0, waitingCount: 0,
+                        });
+                    }
+                }
             } catch(e) {
                 showAlert('오류', '삭제 실패: ' + e.message);
             }

@@ -21,7 +21,7 @@ function MemberHeader({
                     <img src="icon.png" alt="OTP FC" className="w-10 h-10 object-contain opacity-70" onError={e=>e.target.style.display='none'}/>
                 </div>
             </div>
-            {meetingSettings && (
+            {meetingSettings?.date && (
                 <div className="relative">
                     <div className={`card rounded-2xl p-4 mt-2 transition-all${showOverlay ? ' blur-sm' : ''}`}>
                         <p className="text-[10px] text-teal-500 font-black uppercase tracking-widest mb-2">다음 모임</p>
