@@ -234,7 +234,8 @@ function App() {
         setIsAttendGuestModalOpen: attend.setIsAttendGuestModalOpen,
         setAttendNewGuest: attend.setAttendNewGuest, attendNewGuest: attend.attendNewGuest,
         setCurrentQRToken: attend.setCurrentQRToken, setIsQRGenModalOpen: attend.setIsQRGenModalOpen,
-        testModeBackup: attend.testModeBackup, setTestModeBackup: attend.setTestModeBackup
+        testModeBackup: attend.testModeBackup, setTestModeBackup: attend.setTestModeBackup,
+        meetings
     });
 
     const { activeMeeting, handleSaveMeeting, handleDeleteMeeting } = makeMeetingHandlers({ meetings, showAlert, showConfirm });

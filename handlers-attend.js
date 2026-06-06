@@ -128,7 +128,8 @@ function makeAttendHandlers(ctx) {
         setMeetingSettings, historyEditTarget, setHistoryEditTarget, editHistoryLocationValue,
         setIsEditingHistoryLocation, attendIsPending, setAttendIsPending,
         setIsAttendGuestModalOpen, setAttendNewGuest, attendNewGuest,
-        setCurrentQRToken, setIsQRGenModalOpen, testModeBackup, setTestModeBackup
+        setCurrentQRToken, setIsQRGenModalOpen, testModeBackup, setTestModeBackup,
+        meetings
     } = ctx;
 
     const updateMeetingSettingsAdmin = async (newData) => {
@@ -407,7 +408,38 @@ function makeAttendHandlers(ctx) {
                 });
                 const presentCount = records.filter(r => r.status === '정상' || r.status === '지각').length;
                 await getHistoryCol().add({date: meetingSettings.date, meetingTime: `${meetingSettings.start}~${meetingSettings.end}`, location: meetingSettings.location || '장소 미지정', locationLat: meetingSettings.locationLat || null, locationLng: meetingSettings.locationLng || null, managerName: meetingSettings.managerName || '미지정', total: records.length, present: presentCount, records, createdAt: new Date().toISOString()});
-                showAlert('모임 종료', `기록이 저장되었습니다.\n출석 ${presentCount}명 / 전체 ${records.length}명`);
+
+                // 현재 모임 done 처리
+                try { await getMeetingsCol().doc(meetingSettings.date).update({ status: 'done' }); } catch(_) {}
+
+                // 다음 모임 탐색 (status !== 'done', 현재 날짜 이후, 가장 가까운 것)
+                const nextMeeting = [...(meetings || [])]
+                    .filter(m => m.status !== 'done' && m.date > meetingSettings.date)
+                    .sort((a, b) => a.date.localeCompare(b.date))[0] || null;
+
+                if (nextMeeting) {
+                    try {
+                        await getSettingsCol().doc('meeting_schedule_v2').set({
+                            date: nextMeeting.date,
+                            start: nextMeeting.start || '08:00',
+                            end: nextMeeting.end || '10:00',
+                            location: nextMeeting.location || '',
+                            locationLat: nextMeeting.locationLat || null,
+                            locationLng: nextMeeting.locationLng || null,
+                            locationRadius: nextMeeting.locationRadius || 100,
+                            maxLimit: nextMeeting.maxLimit || 18,
+                            managerId: nextMeeting.managerId || '',
+                            managerName: nextMeeting.managerName || '',
+                            testMode: false
+                        });
+                        setMeetingSettings({ ...nextMeeting, testMode: false });
+                        showAlert('모임 종료', `기록이 저장되었습니다.\n출석 ${presentCount}명 / 전체 ${records.length}명\n\n다음 모임 (${nextMeeting.date})으로 전환되었습니다.`);
+                    } catch(e) {
+                        showAlert('모임 종료', `기록이 저장되었습니다.\n출석 ${presentCount}명 / 전체 ${records.length}명\n\n다음 모임 전환 실패: ${e.message}`);
+                    }
+                } else {
+                    showAlert('모임 종료', `기록이 저장되었습니다.\n출석 ${presentCount}명 / 전체 ${records.length}명\n\n등록된 다음 모임이 없습니다.\n[모임] 탭에서 새 모임을 추가해주세요.`);
+                }
             } catch(e) { showAlert('오류', '저장 실패: ' + e.message); } finally { setAttendIsPending(false); }
         });
     };
