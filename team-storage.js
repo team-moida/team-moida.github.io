@@ -82,7 +82,7 @@ function makeTeamStorageHandlers({ teams, displayedMeetingDate, meetingDate, mee
     return { saveDraft, loadDraft, confirmTeams, resetTeams, reGenerateTeams, deleteConfirmed, deleteSelectedDrafts };
 }
 
-function StorageTab({ confirmedHistory, savedDrafts, storageSubTab, setStorageSubTab, setPreviewDraft, showConfirm, deleteConfirmed, deleteSelectedDrafts }) {
+function StorageTab({ confirmedHistory, savedDrafts, storageSubTab, setStorageSubTab, setPreviewDraft, showConfirm, deleteSelectedDrafts }) {
     const { useState } = React;
     const [draftSelectMode, setDraftSelectMode] = useState(false);
     const [selectedDraftIds, setSelectedDraftIds] = useState([]);
@@ -109,7 +109,7 @@ function StorageTab({ confirmedHistory, savedDrafts, storageSubTab, setStorageSu
                                 <span className="text-[9px] font-black px-1.5 py-0.5 bg-emerald-100 text-emerald-600 rounded-lg mt-1 inline-block">{d.teams?.length || 0}팀 확정</span>
                             </div>
                             <button onClick={() => setPreviewDraft(d)} className="px-3 py-1.5 bg-teal-50 text-teal-500 rounded-xl font-black text-xs">미리보기</button>
-                            <button onClick={() => deleteConfirmed(d.id)} className="p-2 bg-red-50 text-red-400 rounded-xl"><Icon.Trash size={14}/></button>
+                            <button onClick={() => showConfirm('확정 기록 삭제', '이 확정 기록을 삭제하시겠습니까?\n삭제 시 회원 화면에서 팀이 사라집니다.', async () => { await getCol('team_drafts').doc(d.id).delete(); })} className="p-2 bg-red-50 text-red-400 rounded-xl"><Icon.Trash size={14}/></button>
                         </div>
                     ))
             )}

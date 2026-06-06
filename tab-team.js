@@ -260,7 +260,7 @@ const TabTeam = ({
                                             <span className="text-[9px] font-black px-1.5 py-0.5 bg-emerald-100 text-emerald-600 rounded mt-0.5 inline-block">{d.teams?.length||0}팀 확정</span>
                                         </div>
                                         <button onClick={() => setPreviewDraft({...d})} className="px-2.5 py-1.5 bg-teal-50 text-teal-500 rounded-lg font-black text-xs">미리보기</button>
-                                        <button onClick={() => tmDeleteConfirmed(d.id)} className="p-2 bg-red-50 text-red-400 rounded-lg"><Icon.Trash size={13}/></button>
+                                        <button onClick={() => showConfirm('확정 기록 삭제', '이 확정 기록을 삭제하시겠습니까?\n삭제 시 회원 화면에서 팀이 사라집니다.', async () => { await getCol('team_drafts').doc(d.id).delete(); })} className="p-2 bg-red-50 text-red-400 rounded-lg"><Icon.Trash size={13}/></button>
                                     </div>
                                 ))
                         )}
