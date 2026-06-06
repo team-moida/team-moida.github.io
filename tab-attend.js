@@ -16,6 +16,165 @@ const KioskScrollLock = () => {
     return null;
 };
 
+// ─── 키오스크 모달 ────────────────────────────────────────────────────────────────
+const KioskModal = ({
+    isKioskOpen, setIsKioskOpen,
+    attendGroupedTeams, attendActiveList,
+    attendCheckedInCount, meetingSettings,
+    attendHandleCheckIn, setAttendModal,
+}) => {
+    const [confirmTarget, setConfirmTarget] = React.useState(null);
+    if (!isKioskOpen) return null;
+
+    const handleConfirm = () => {
+        attendHandleCheckIn(confirmTarget);
+        setConfirmTarget(null);
+    };
+    const teamBadgeClass = confirmTarget?.teamIdx != null ? getTeamBadge(confirmTarget.teamIdx) : 'bg-teal-500';
+    const teamColorLabel = confirmTarget?.teamIdx != null ? getTeamColorName(confirmTarget.teamIdx) : '';
+
+    return (
+        <div className="fixed inset-0 z-50 flex flex-col" style={{background:'#f8fafc',overscrollBehavior:'none'}}>
+            <KioskScrollLock />
+            {/* 상단 바 */}
+            <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'14px 16px',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <div>
+                    <p style={{color:'#1e293b',fontWeight:900,fontSize:'1rem'}}>직접 출석</p>
+                    <p style={{color:'#64748b',fontSize:'0.75rem',marginTop:'2px'}}>{meetingSettings?.date} · <span style={{color:'#0d9488',fontWeight:900}}>{attendCheckedInCount}명 출석</span> / {attendActiveList.length}명</p>
+                    <p style={{color:'#1e293b',fontSize:'1.5rem',fontWeight:900,marginTop:'4px',letterSpacing:'0.05em'}}><KioskClock /></p>
+                </div>
+                <button onClick={() => setIsKioskOpen(false)}
+                    style={{width:'40px',height:'40px',borderRadius:'12px',background:'#f1f5f9',color:'#64748b',display:'flex',alignItems:'center',justifyContent:'center',border:'none',cursor:'pointer',fontSize:'20px',fontWeight:900}}>
+                    ✕
+                </button>
+            </div>
+            {/* 출석 진행 바 */}
+            {attendActiveList.length > 0 && (
+                <div style={{height:'4px',background:'#e2e8f0',flexShrink:0}}>
+                    <div style={{height:'100%',background:'#10b981',transition:'width 0.7s',width:`${Math.round(attendCheckedInCount/attendActiveList.length*100)}%`}}/>
+                </div>
+            )}
+            {/* 본문 */}
+            <div className="overflow-y-auto flex-1" style={{padding:'16px'}}>
+                {attendGroupedTeams.length > 0 ? (
+                    attendGroupedTeams.map((group) => (
+                        <div key={group.teamName} className="mb-6">
+                            <div className={`flex items-center gap-2 rounded-2xl p-3 mb-3 border ${getTeamCard(group.teamIdx)}`}>
+                                <span className={`w-9 h-9 rounded-xl text-sm font-black flex items-center justify-center text-white ${getTeamBadge(group.teamIdx)}`}>{group.teamName}</span>
+                                <div className="flex-1">
+                                    <p className="font-black text-slate-700">{group.teamName}팀 · <span className="font-black">{getTeamColorName(group.teamIdx)}</span> 조끼</p>
+                                    <p className="text-xs text-slate-400">출석 {group.members.filter(m=>m.checkedIn).length}/{group.members.length}명</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2.5">
+                                {group.members.map(p => (
+                                    <button key={p.id}
+                                        onClick={() => p.checkedIn
+                                            ? setAttendModal({type:'checkin', data:{...p, teamIdx:group.teamIdx, teamName:group.teamName}})
+                                            : setConfirmTarget({...p, teamIdx:group.teamIdx, teamName:group.teamName})
+                                        }
+                                        style={{minHeight:'100px'}}
+                                        className={`relative overflow-hidden rounded-2xl active:scale-95 transition-all text-white ${getTeamBadge(group.teamIdx)} ${p.checkedIn?'opacity-40':''}`}>
+                                        {p.checkedIn && (
+                                            <div className="absolute inset-0 flex items-center justify-center" style={{background:'rgba(0,0,0,0.2)'}}>
+                                                <div style={{width:'40px',height:'40px',borderRadius:'50%',background:'rgba(255,255,255,0.3)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                                                    <Icon.Check size={20} className="text-white"/>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div style={{position:'absolute',top:'8px',left:'10px',fontSize:'1.9rem',fontWeight:900,lineHeight:1,opacity:0.9,pointerEvents:'none',userSelect:'none'}}>
+                                            {p.jerseyNumber}
+                                        </div>
+                                        <div style={{position:'absolute',bottom:'10px',left:0,right:0,display:'flex',flexDirection:'column',alignItems:'center',gap:'3px',pointerEvents:'none',userSelect:'none'}}>
+                                            <span style={{fontWeight:900,fontSize:'1rem',textAlign:'center',wordBreak:'keep-all',lineHeight:1.2,paddingLeft:'4px',paddingRight:'4px'}}>{p.name}</span>
+                                            <div style={{display:'flex',gap:'3px'}}>
+                                                {p.gender==='여성'&&<span style={{fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'#ec4899',color:'white'}}>W</span>}
+                                                {p.isGuest&&<span style={{fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'rgba(0,0,0,0.3)',color:'white'}}>G</span>}
+                                            </div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    ))
+                ) : attendActiveList.length > 0 ? (
+                    <div className="space-y-2">
+                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 px-1">미출석</p>
+                        {attendActiveList.filter(p=>!p.checkedIn&&p.status!=='노쇼').map(p => (
+                            <button key={p.id} onClick={() => setConfirmTarget(p)}
+                                style={{minHeight:'64px',width:'100%',borderRadius:'16px',background:'#14b8a6',color:'white',fontWeight:900,fontSize:'1.2rem',display:'flex',alignItems:'center',gap:'12px',padding:'0 20px',border:'none',cursor:'pointer',transition:'transform 0.1s'}}
+                                className="active:scale-95">
+                                <span style={{fontSize:'1.5rem',fontWeight:900,opacity:0.9,minWidth:'2.5rem',textAlign:'center'}}>{p.jerseyNumber || ''}</span>
+                                <span style={{flex:1,textAlign:'left'}}>{p.name}</span>
+                                {p.gender==='여성'&&<span style={{fontSize:'11px',background:'#ec4899',padding:'3px 8px',borderRadius:'6px',fontWeight:900}}>W</span>}
+                                {p.isGuest&&<span style={{fontSize:'11px',background:'#1e293b',padding:'3px 8px',borderRadius:'6px',fontWeight:900}}>G</span>}
+                            </button>
+                        ))}
+                        {attendActiveList.some(p=>p.checkedIn) && (
+                            <p className="text-xs font-black text-slate-500 uppercase tracking-widest mt-5 mb-3 px-1">출석 완료</p>
+                        )}
+                        {attendActiveList.filter(p=>p.checkedIn).map(p => (
+                            <button key={p.id} onClick={() => setAttendModal({type:'checkin', data:p})}
+                                style={{minHeight:'56px',width:'100%',borderRadius:'16px',background:'rgba(6,78,59,0.4)',border:'1px solid rgba(16,185,129,0.2)',color:'#34d399',fontWeight:900,display:'flex',alignItems:'center',gap:'12px',padding:'0 20px',cursor:'pointer',opacity:0.6,transition:'transform 0.1s'}}
+                                className="active:scale-95">
+                                <Icon.Check size={18}/>
+                                <span style={{flex:1,textAlign:'left'}}>{p.name}</span>
+                                <span style={{fontSize:'0.875rem',color:'#64748b'}}>{p.checkInTime}</span>
+                            </button>
+                        ))}
+                        {attendActiveList.filter(p=>p.status==='노쇼').map(p => (
+                            <button key={p.id} onClick={() => setAttendModal({type:'checkin', data:p})}
+                                style={{minHeight:'52px',width:'100%',borderRadius:'16px',background:'rgba(127,29,29,0.3)',color:'#f87171',fontWeight:900,display:'flex',alignItems:'center',gap:'12px',padding:'0 20px',cursor:'pointer',opacity:0.4,border:'none'}}>
+                                <span style={{flex:1,textAlign:'left'}}>{p.name}</span>
+                                <span style={{fontSize:'0.875rem'}}>노쇼</span>
+                            </button>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center" style={{paddingTop:'80px',color:'#475569'}}>
+                        <p style={{fontSize:'3rem',marginBottom:'16px'}}>📋</p>
+                        <p style={{fontWeight:900,fontSize:'1.1rem',color:'#64748b'}}>선정된 인원이 없습니다</p>
+                    </div>
+                )}
+            </div>
+            {/* 확인 팝업 */}
+            {confirmTarget && (
+                <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,zIndex:10,background:'rgba(0,0,0,0.55)',display:'flex',alignItems:'center',justifyContent:'center',padding:'24px'}}
+                    onClick={() => setConfirmTarget(null)}>
+                    <div style={{background:'white',borderRadius:'28px',overflow:'hidden',width:'100%',maxWidth:'320px',boxShadow:'0 25px 50px rgba(0,0,0,0.35)'}}
+                        onClick={e => e.stopPropagation()}>
+                        <div style={{height:'10px'}} className={teamBadgeClass}/>
+                        <div style={{padding:'28px 24px 24px',textAlign:'center',userSelect:'none'}}>
+                            {confirmTarget.jerseyNumber && (
+                                <div style={{fontSize:'5rem',fontWeight:900,lineHeight:1,marginBottom:'8px',color:'#1e293b'}}>
+                                    {confirmTarget.jerseyNumber}
+                                </div>
+                            )}
+                            <p style={{fontSize:'2.2rem',fontWeight:900,color:'#0f172a',lineHeight:1.2,marginBottom:'10px',wordBreak:'keep-all'}}>{confirmTarget.name}</p>
+                            {confirmTarget.teamName
+                                ? <p style={{fontSize:'1rem',color:'#64748b',marginBottom:'24px'}}>{confirmTarget.teamName}팀 · {teamColorLabel} 조끼</p>
+                                : <div style={{marginBottom:'24px'}}/>
+                            }
+                            <div style={{display:'flex',gap:'10px'}}>
+                                <button onClick={() => setConfirmTarget(null)}
+                                    style={{flex:1,height:'56px',borderRadius:'16px',background:'#f1f5f9',color:'#475569',fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
+                                    className="active:scale-95 hover:bg-slate-200 transition-all">
+                                    취소
+                                </button>
+                                <button onClick={handleConfirm}
+                                    style={{flex:1,height:'56px',borderRadius:'16px',color:'white',fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
+                                    className={`${teamBadgeClass} active:scale-95 hover:opacity-90 transition-all`}>
+                                    확인
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 // ─── 출석 탭 ────────────────────────────────────────────────────────────────────
 const TabAttend = ({
     isAdminMode,
@@ -618,105 +777,16 @@ const TabAttend = ({
             </div>
         )}
 
-        {/* 키오스크 모달 */}
-        {isKioskOpen && (
-            <div className="fixed inset-0 z-50 flex flex-col" style={{background:'#f8fafc',overscrollBehavior:'none'}}>
-                <KioskScrollLock />
-                {/* 상단 바 */}
-                <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'14px 16px',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                    <div>
-                        <p style={{color:'#1e293b',fontWeight:900,fontSize:'1rem'}}>직접 출석</p>
-                        <p style={{color:'#64748b',fontSize:'0.75rem',marginTop:'2px'}}>{meetingSettings?.date} · <span style={{color:'#0d9488',fontWeight:900}}>{attendCheckedInCount}명 출석</span> / {attendActiveList.length}명</p>
-                        <p style={{color:'#1e293b',fontSize:'1.5rem',fontWeight:900,marginTop:'4px',letterSpacing:'0.05em'}}><KioskClock /></p>
-                    </div>
-                    <button onClick={() => setIsKioskOpen(false)}
-                        style={{width:'40px',height:'40px',borderRadius:'12px',background:'#f1f5f9',color:'#64748b',display:'flex',alignItems:'center',justifyContent:'center',border:'none',cursor:'pointer',fontSize:'20px',fontWeight:900}}>
-                        ✕
-                    </button>
-                </div>
-                {/* 출석 진행 바 */}
-                {attendActiveList.length > 0 && (
-                    <div style={{height:'4px',background:'#e2e8f0',flexShrink:0}}>
-                        <div style={{height:'100%',background:'#10b981',transition:'width 0.7s',width:`${Math.round(attendCheckedInCount/attendActiveList.length*100)}%`}}/>
-                    </div>
-                )}
-                {/* 본문 */}
-                <div className="overflow-y-auto flex-1" style={{padding:'16px'}}>
-                    {attendGroupedTeams.length > 0 ? (
-                        attendGroupedTeams.map((group) => (
-                            <div key={group.teamName} className="mb-6">
-                                <div className={`flex items-center gap-2 rounded-2xl p-3 mb-3 border ${getTeamCard(group.teamIdx)}`}>
-                                    <span className={`w-9 h-9 rounded-xl text-sm font-black flex items-center justify-center text-white ${getTeamBadge(group.teamIdx)}`}>{group.teamName}</span>
-                                    <div className="flex-1">
-                                        <p className="font-black text-slate-700">{group.teamName}팀 · {getTeamColorName(group.teamIdx)} 조끼</p>
-                                        <p className="text-xs text-slate-400">출석 {group.members.filter(m=>m.checkedIn).length}/{group.members.length}명</p>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {group.members.map(p => (
-                                        <button key={p.id}
-                                            onClick={() => p.checkedIn
-                                                ? setAttendModal({type:'checkin', data:{...p, teamIdx:group.teamIdx, teamName:group.teamName}})
-                                                : attendHandleCheckIn(p)
-                                            }
-                                            style={{minHeight:'88px'}}
-                                            className={`relative overflow-hidden rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95 transition-all text-white ${getTeamBadge(group.teamIdx)} ${p.checkedIn?'opacity-40':''}`}>
-                                            {p.checkedIn && (
-                                                <div className="absolute inset-0 flex items-center justify-center" style={{background:'rgba(0,0,0,0.2)'}}>
-                                                    <div style={{width:'40px',height:'40px',borderRadius:'50%',background:'rgba(255,255,255,0.3)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                                                        <Icon.Check size={20} className="text-white"/>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <span style={{fontSize:'11px',fontWeight:900,opacity:0.6}}>{p.jerseyNumber}번</span>
-                                            <span className="font-black text-lg text-center leading-tight px-1" style={{wordBreak:'keep-all'}}>{p.name}</span>
-                                            {p.gender==='여성'&&<span style={{fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'#ec4899',color:'white'}}>W</span>}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        ))
-                    ) : attendActiveList.length > 0 ? (
-                        <div className="space-y-2">
-                            <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 px-1">미출석</p>
-                            {attendActiveList.filter(p=>!p.checkedIn&&p.status!=='노쇼').map(p => (
-                                <button key={p.id} onClick={() => attendHandleCheckIn(p)}
-                                    style={{minHeight:'64px',width:'100%',borderRadius:'16px',background:'#14b8a6',color:'white',fontWeight:900,fontSize:'1.2rem',display:'flex',alignItems:'center',gap:'12px',padding:'0 20px',border:'none',cursor:'pointer',transition:'transform 0.1s'}}
-                                    className="active:scale-95">
-                                    <span style={{flex:1,textAlign:'left'}}>{p.name}</span>
-                                    {p.gender==='여성'&&<span style={{fontSize:'11px',background:'#ec4899',padding:'3px 8px',borderRadius:'6px',fontWeight:900}}>W</span>}
-                                    {p.isGuest&&<span style={{fontSize:'11px',background:'#1e293b',padding:'3px 8px',borderRadius:'6px',fontWeight:900}}>G</span>}
-                                </button>
-                            ))}
-                            {attendActiveList.some(p=>p.checkedIn) && (
-                                <p className="text-xs font-black text-slate-500 uppercase tracking-widest mt-5 mb-3 px-1">출석 완료</p>
-                            )}
-                            {attendActiveList.filter(p=>p.checkedIn).map(p => (
-                                <button key={p.id} onClick={() => setAttendModal({type:'checkin', data:p})}
-                                    style={{minHeight:'56px',width:'100%',borderRadius:'16px',background:'rgba(6,78,59,0.4)',border:'1px solid rgba(16,185,129,0.2)',color:'#34d399',fontWeight:900,display:'flex',alignItems:'center',gap:'12px',padding:'0 20px',cursor:'pointer',opacity:0.6,transition:'transform 0.1s'}}
-                                    className="active:scale-95">
-                                    <Icon.Check size={18}/>
-                                    <span style={{flex:1,textAlign:'left'}}>{p.name}</span>
-                                    <span style={{fontSize:'0.875rem',color:'#64748b'}}>{p.checkInTime}</span>
-                                </button>
-                            ))}
-                            {attendActiveList.filter(p=>p.status==='노쇼').map(p => (
-                                <button key={p.id} onClick={() => setAttendModal({type:'checkin', data:p})}
-                                    style={{minHeight:'52px',width:'100%',borderRadius:'16px',background:'rgba(127,29,29,0.3)',color:'#f87171',fontWeight:900,display:'flex',alignItems:'center',gap:'12px',padding:'0 20px',cursor:'pointer',opacity:0.4,border:'none'}}>
-                                    <span style={{flex:1,textAlign:'left'}}>{p.name}</span>
-                                    <span style={{fontSize:'0.875rem'}}>노쇼</span>
-                                </button>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center" style={{paddingTop:'80px',color:'#475569'}}>
-                            <p style={{fontSize:'3rem',marginBottom:'16px'}}>📋</p>
-                            <p style={{fontWeight:900,fontSize:'1.1rem',color:'#64748b'}}>선정된 인원이 없습니다</p>
-                        </div>
-                    )}
-                </div>
-            </div>
-        )}
+        <KioskModal
+            isKioskOpen={isKioskOpen}
+            setIsKioskOpen={setIsKioskOpen}
+            attendGroupedTeams={attendGroupedTeams}
+            attendActiveList={attendActiveList}
+            attendCheckedInCount={attendCheckedInCount}
+            meetingSettings={meetingSettings}
+            attendHandleCheckIn={attendHandleCheckIn}
+            setAttendModal={setAttendModal}
+        />
     </div>
 );
 // ─────────────────────────────────────────────────────────────────────────────
