@@ -26,9 +26,16 @@ function useFCM({ memberData, showToast }) {
             const messaging = firebase.messaging();
             const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
             if (token && memberData?.memberId) {
+                if (memberData.kakaoId) {
+                    const existing = await getCol('fcm_tokens').where('kakaoId', '==', memberData.kakaoId).get();
+                    const batch = db.batch();
+                    existing.forEach(d => batch.delete(d.ref));
+                    await batch.commit();
+                }
                 await getCol('fcm_tokens').doc(memberData.memberId).set({
                     token,
                     name: memberData.name || '',
+                    kakaoId: memberData.kakaoId || '',
                     updatedAt: new Date().toISOString(),
                 });
                 showToast('알림이 등록됐어요!', 'success');
@@ -44,8 +51,14 @@ function useFCM({ memberData, showToast }) {
                 const messaging = firebase.messaging();
                 const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
                 if (token) {
+                    if (memberData?.kakaoId) {
+                        const existing = await getCol('fcm_tokens').where('kakaoId', '==', memberData.kakaoId).get();
+                        const batch = db.batch();
+                        existing.forEach(d => batch.delete(d.ref));
+                        await batch.commit();
+                    }
                     await getCol('fcm_tokens').doc(memberData.memberId).set({
-                        token, name: memberData.name || '', updatedAt: new Date().toISOString(),
+                        token, name: memberData.name || '', kakaoId: memberData.kakaoId || '', updatedAt: new Date().toISOString(),
                     });
                 }
             } catch(e) { console.warn('FCM 토큰 갱신 실패:', e); }
