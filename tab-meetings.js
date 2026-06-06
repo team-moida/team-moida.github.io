@@ -1,5 +1,5 @@
 // ── 모임 목록 탭 ──────────────────────────────────────────────────────────────
-function MeetingsTab({ meetings, activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers, showAlert }) {
+function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers = [], showAlert }) {
     const { useState } = React;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);

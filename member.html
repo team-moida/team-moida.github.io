@@ -34,9 +34,9 @@
     <script type="text/babel" src="tab-home.js"></script>
     <script type="text/babel" src="tab-team.js"></script>
     <script type="text/babel" src="tab-match.js"></script>
-    <script type="text/babel" src="tab-attend.js"></script>
     <script type="text/babel" src="handlers-meetings.js"></script>
     <script type="text/babel" src="tab-meetings.js"></script>
+    <script type="text/babel" src="tab-attend.js"></script>
     <script type="text/babel" src="tab-roster.js"></script>
     <script type="text/babel" src="tab-rules.js"></script>
     <script type="text/babel" src="modals.js"></script>
@@ -118,7 +118,7 @@ function App() {
     }, []);
 
     useEffect(() => {
-        const unsub = getMeetingsCol().onSnapshot(snap =>
+        const unsub = getCol('meetings').onSnapshot(snap =>
             setMeetings(snap.docs.map(d => ({id: d.id, ...d.data()})))
         );
         return () => unsub();
