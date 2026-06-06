@@ -72,8 +72,8 @@ function useFCM({ memberData, showToast }) {
             try {
                 const messaging = firebase.messaging();
                 unsub = messaging.onMessage(payload => {
-                    const title = payload.notification?.title || '모이다';
-                    const body  = payload.notification?.body  || '';
+                    const title = payload.data?.title || '모이다';
+                    const body  = payload.data?.body  || '';
                     swReg.showNotification(title, {
                         body,
                         icon:  '/moida/icon.png',

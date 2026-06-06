@@ -43,14 +43,8 @@ exports.sendPushNotification = onDocumentCreated(
     for (const chunk of chunks) {
       const res = await admin.messaging().sendEachForMulticast({
         tokens: chunk,
-        notification: { title, body },
-        android: {
-          priority: 'high',
-          notification: {
-            priority: 'high',
-            defaultSound: true,
-          },
-        },
+        data: { title, body },
+        android: { priority: 'high' },
         apns: {
           headers: { 'apns-priority': '10' },
           payload: { aps: { sound: 'default' } },

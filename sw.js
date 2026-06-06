@@ -14,13 +14,17 @@ const messaging = firebase.messaging();
 
 // 앱이 백그라운드일 때 푸시 수신
 messaging.onBackgroundMessage((payload) => {
-    const title = payload.notification?.title || '모이다';
-    const body  = payload.notification?.body  || '';
+    const title = payload.data?.title || '모이다';
+    const body  = payload.data?.body  || '';
     self.registration.showNotification(title, {
         body,
         icon:  '/moida/icon.png',
         badge: '/moida/icon.png',
         data:  { url: 'https://nakdo0415-crypto.github.io/moida/' },
+        vibrate: [200, 100, 200],
+        requireInteraction: false,
+        tag: 'moida',
+        renotify: true,
     });
 });
 
