@@ -1,8 +1,8 @@
 function AttendNavBar({ view, setView, pendingRegistrations, setIsPendingModalOpen, generateQRCode, darkMode, toggleTheme, testMode, toggleTestMode, handleLogout, setIsNotifModalOpen }) {
     const [isMoreMenuOpen, setIsMoreMenuOpen] = React.useState(false);
     return (
-        <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 h-16 flex items-center px-4 shadow-sm">
-            <div className="max-w-5xl mx-auto w-full flex justify-between items-center">
+        <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 shadow-sm" style={{paddingTop:'env(safe-area-inset-top)'}}>
+            <div className="h-16 flex items-center px-4 max-w-5xl mx-auto w-full justify-between">
                 <div className="flex items-center gap-1">
                     {['attendance','setup','history_list'].map(v => (
                         <button key={v} onClick={()=>setView(v)} className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${view===v?'bg-teal-500 text-white shadow-lg':'text-slate-400 hover:text-slate-600'}`}>

@@ -3,7 +3,7 @@ function MemberHeader({
     myTeamInfo, myTeamIdx, handleLogout, toggleTheme, darkMode
 }) {
     return (
-        <div className="px-5 pt-12 pb-6 member-header-bg">
+        <div className="px-5 pb-6 member-header-bg" style={{paddingTop:'max(3rem, env(safe-area-inset-top))'}}>
             <div className="flex items-center justify-between mb-4">
                 <div>
                     <p className="text-teal-600 text-xs tracking-widest uppercase font-bold">OTP FC</p>

@@ -288,8 +288,8 @@ function App() {
 
     return (
         <div className="min-h-screen pb-32 text-slate-900">
-            <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 h-16 flex items-center px-4 shadow-sm">
-                <div className="max-w-5xl mx-auto w-full flex justify-between items-center">
+            <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 shadow-sm" style={{paddingTop:'env(safe-area-inset-top)'}}>
+                <div className="h-16 flex items-center px-4 max-w-5xl mx-auto w-full justify-between">
                     <div className="flex items-center gap-1">
                         {[['directory','명단'],['monthly','회비']].map(([v,l])=>(
                             <button key={v} onClick={()=>setSubTab(v)} className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${subTab===v?'bg-teal-500 text-white shadow-lg':'text-slate-400 hover:text-slate-600'}`}>{l}</button>

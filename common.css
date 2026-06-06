@@ -1,6 +1,10 @@
 /* ── 전역 스크롤 ── */
 html,body{overscroll-behavior:none}
 
+/* ── iOS 세이프 에어리어 ── */
+.safe-top{padding-top:env(safe-area-inset-top)}
+.safe-bottom{padding-bottom:env(safe-area-inset-bottom)}
+
 /* ── 폰트 ── */
 @font-face{font-family:'Esamanru';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10@1.0/GongGothicMedium.woff') format('woff');font-weight:normal}
 @font-face{font-family:'Esamanru';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10@1.0/GongGothicBold.woff') format('woff');font-weight:700}
