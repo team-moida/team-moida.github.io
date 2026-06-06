@@ -14,6 +14,10 @@ const getCol = (n) => db.collection('artifacts').doc(APP_ID).collection('public'
 const STAFF_ROLES = ['회장','매니저','총무','부총무'];
 
 // iOS 사파리 당겨서 새로고침 차단
+document.addEventListener('touchstart', function(e) {
+    window._touchStartY = e.touches[0].clientY;
+}, { passive: true });
+
 document.addEventListener('touchmove', function(e) {
     let el = e.target;
     while (el && el !== document.body) {
@@ -21,5 +25,6 @@ document.addEventListener('touchmove', function(e) {
         if ((ov === 'auto' || ov === 'scroll') && el.scrollHeight > el.clientHeight) return;
         el = el.parentElement;
     }
-    if (window.scrollY === 0 && e.touches[0].clientY > 0) e.preventDefault();
+    const dy = e.touches[0].clientY - (window._touchStartY || 0);
+    if (window.scrollY === 0 && dy > 0) e.preventDefault();
 }, { passive: false });
