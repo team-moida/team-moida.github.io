@@ -220,9 +220,9 @@ function App() {
 
     const { updateMeetingSettingsAdmin, attendHandleCheckIn, attendHandleUncheckIn,
             attendToggleParticipant, attendToggleParticipantAsGuest, attendHandleResetSelection,
-            attendHandleAddGuest, attendHandleTestSelect, attendSaveAndReset,
+            attendHandleAddGuest, attendHandleTestSelect,
             attendHandleDeleteHistory, handleHistoryStatusUpdate, handleUpdateHistoryLocation,
-            generateAttendQRCode, attendToggleTestMode, attendHandleCreateNew,
+            generateAttendQRCode, attendToggleTestMode,
             attendHandleEndMeeting } = makeAttendHandlers({
         meetingSettings, testMode, showAlert, showConfirm, setAttendModal: attend.setAttendModal,
         tmSessionData: team.tmSessionData, activeMembers: roster.activeMembers,
@@ -395,7 +395,7 @@ function App() {
                         selectedHistoryDetail={attend.selectedHistoryDetail}
                         setSelectedHistoryDetail={attend.setSelectedHistoryDetail}
                         attendActiveList={attend.attendActiveList} attendIsPending={attend.attendIsPending}
-                        attendSaveAndReset={attendSaveAndReset} darkMode={darkMode}
+                        darkMode={darkMode}
                         meetingSettings={meetingSettings} updateMeetingSettingsAdmin={updateMeetingSettingsAdmin}
                         attendActiveParticipants={attend.attendActiveParticipants}
                         snapMin={attend.snapMin} attendHourOptions={attend.attendHourOptions}
@@ -408,7 +408,6 @@ function App() {
                         setIsAttendGuestModalOpen={attend.setIsAttendGuestModalOpen}
                         attendHandleTestSelect={attendHandleTestSelect}
                         attendHandleResetSelection={attendHandleResetSelection}
-                        attendHandleCreateNew={attendHandleCreateNew}
                         attendGuestEligibleMembers={attend.attendGuestEligibleMembers}
                         attendToggleParticipantAsGuest={attendToggleParticipantAsGuest}
                         attendCheckedInCount={attend.attendCheckedInCount}

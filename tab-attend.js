@@ -182,13 +182,13 @@ const TabAttend = ({
     generateAttendQRCode, attendToggleTestMode, testMode,
     attendSubTab, setAttendSubTab,
     selectedHistoryDetail, setSelectedHistoryDetail,
-    attendActiveList, attendIsPending, attendSaveAndReset,
+    attendActiveList, attendIsPending,
     darkMode, meetingSettings, updateMeetingSettingsAdmin,
     attendActiveParticipants, snapMin, attendHourOptions, attendMinuteOptions,
     setIsLocationPickerOpen, localMaxLimit, setLocalMaxLimit,
     memberData, attendNormalMembers, tmSessionData,
     attendToggleParticipant, setIsAttendGuestModalOpen,
-    attendHandleTestSelect, attendHandleResetSelection, attendHandleCreateNew,
+    attendHandleTestSelect, attendHandleResetSelection,
     attendGuestEligibleMembers, attendToggleParticipantAsGuest,
     attendCheckedInCount, attendWaitingList, attendGroupedTeams,
     setAttendModal, attendUnassignedActive, attendLimit, attendHistory,
@@ -252,10 +252,6 @@ const TabAttend = ({
                                 className={`px-3 py-2 rounded-xl font-black text-xs transition-all disabled:opacity-30 ${attendHistory.some(h => h.date === meetingSettings?.date) ? 'bg-emerald-50 text-emerald-500' : isMeetingOver ? 'bg-rose-500 text-white active:scale-95' : 'bg-slate-100 text-slate-300'}`}>
                                 {attendHistory.some(h => h.date === meetingSettings?.date) ? '저장 완료 ✓' : '모임 종료'}
                             </button>
-                            <button onClick={attendSaveAndReset} disabled={attendIsPending||attendActiveList.length===0}
-                                className="px-3 py-2 bg-teal-500 text-white rounded-xl font-black text-xs disabled:opacity-30">
-                                {attendIsPending?'처리 중...':'기록 확정 →'}
-                            </button>
                         </>
                     )}
                 </div>
@@ -290,12 +286,8 @@ const TabAttend = ({
 
                         {/* 모임 설정 카드 */}
                         <div className="card border-slate-100 rounded-2xl p-4 mb-4">
-                            <div className="flex items-center justify-between mb-3">
+                            <div className="mb-3">
                                 <p className="text-xs font-black text-teal-500 uppercase tracking-widest">모임 설정</p>
-                                <button onClick={attendHandleCreateNew} disabled={attendIsPending}
-                                    className="px-3 py-1.5 bg-teal-50 text-teal-600 text-xs font-black rounded-xl flex items-center gap-1 disabled:opacity-30">
-                                    <Icon.Plus size={12}/> 새 모임
-                                </button>
                             </div>
                             <div className="space-y-3">
                                 <div>
