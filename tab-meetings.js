@@ -1,5 +1,5 @@
 // ── 모임 목록 탭 ──────────────────────────────────────────────────────────────
-function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers = [], showAlert }) {
+function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers = [], showAlert, onSelectMeeting = null }) {
     const { useState } = React;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
@@ -71,7 +71,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                         return (
                             <div key={m.id} className={`card rounded-2xl p-4 transition-all ${isActive ? 'ring-2 ring-teal-400' : ''} ${isDone ? 'opacity-50' : ''}`}>
                                 <div className="flex items-center gap-3">
-                                    <div className="flex-1 min-w-0">
+                                    <button className="flex-1 min-w-0 text-left" onClick={() => onSelectMeeting && onSelectMeeting(m)}>
                                         <div className="flex items-center gap-2 flex-wrap mb-0.5">
                                             <p className="font-black text-base">{m.date}</p>
                                             {isActive && <span className="text-[10px] font-black bg-teal-500 text-white px-2 py-0.5 rounded-full">현재 모임</span>}
@@ -81,7 +81,8 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                         {m.isRegistrationEnabled && <span className="text-[9px] font-black px-1.5 py-0.5 bg-orange-100 text-orange-500 rounded-lg mt-0.5 inline-block">선착순</span>}
                                         {m.location ? <p className="text-xs text-slate-400 mt-0.5 truncate"><Icon.MapPin size={10} className="inline mr-0.5"/>{m.location}</p> : null}
                                         {m.managerName ? <p className="text-xs text-slate-400 mt-0.5">담당: {m.managerName}</p> : null}
-                                    </div>
+                                        {onSelectMeeting && <p className="text-[9px] text-teal-400 font-black mt-1">탭하여 선정 관리 →</p>}
+                                    </button>
                                     <div className="flex gap-1.5 flex-shrink-0">
                                         <button onClick={() => openEdit(m)} className="p-2 rounded-xl bg-blue-50 text-blue-500 active:scale-95 transition-all">
                                             <Icon.Edit size={14}/>

@@ -358,7 +358,9 @@ const TabAttend = ({
     meetings, activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers,
     showAlert,
     myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel,
-}) => (
+}) => {
+    const [selectedMeeting, setSelectedMeeting] = React.useState(null);
+    return (
     <div className="animate-in space-y-4">
 
         {/* 관리자 ⚙️ 토글 */}
@@ -394,7 +396,7 @@ const TabAttend = ({
             <div>
                 {/* 서브탭 */}
                 <div className="flex gap-2 mb-4">
-                    {[['meetings','모임'],['setup','선정'],['history','기록']].map(([v,l]) => (
+                    {[['meetings','모임목록'],['history','기록']].map(([v,l]) => (
                         <button key={v} onClick={() => { setAttendSubTab(v); setSelectedHistoryDetail(null); }}
                             className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${attendSubTab===v?'bg-teal-500 text-white shadow':'text-slate-400 bg-slate-100'}`}>{l}</button>
                     ))}
@@ -410,188 +412,243 @@ const TabAttend = ({
                     )}
                 </div>
 
-                {/* ── 모임 서브탭 ── */}
+                {/* ── 모임목록 서브탭 ── */}
                 {attendSubTab === 'meetings' && (
-                    <MeetingsTab
-                        meetings={meetings}
-                        activeMeeting={activeMeeting}
-                        handleSaveMeeting={handleSaveMeeting}
-                        handleDeleteMeeting={handleDeleteMeeting}
-                        managers={managers}
-                        showAlert={showAlert}
-                    />
-                )}
-
-                {/* ── 선정 서브탭 ── */}
-                {attendSubTab === 'setup' && (
-                    <div>
-                        {/* sticky 인원 카운터 */}
-                        <div style={{position:'sticky',top:0,zIndex:40,marginLeft:'-1rem',marginRight:'-1rem',marginBottom:16,padding:'10px 1rem',background:darkMode?'rgba(15,23,42,0.96)':'rgba(248,250,252,0.96)',backdropFilter:'blur(8px)',borderBottom:`1px solid ${darkMode?'#334155':'#e2e8f0'}`,boxShadow:'0 1px 6px rgba(0,0,0,0.06)'}}>
-                            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                                <span style={{fontSize:10,fontWeight:900,color:'#94a3b8',textTransform:'uppercase',letterSpacing:'0.1em'}}>선정 인원</span>
-                                <div style={{display:'flex',alignItems:'center',gap:8}}>
-                                    <span style={{fontSize:15,fontWeight:900,color:attendActiveParticipants.length>=(meetingSettings?.maxLimit||18)?'#14b8a6':darkMode?'#f1f5f9':'#1e293b'}}>
-                                        {attendActiveParticipants.length} / {meetingSettings?.maxLimit||18}명
-                                    </span>
-                                    {attendActiveParticipants.length>=(meetingSettings?.maxLimit||18)&&<span style={{fontSize:9,fontWeight:900,padding:'2px 8px',background:'#ccfbf1',color:'#0d9488',borderRadius:6}}>마감</span>}
-                                </div>
-                            </div>
+                    <div className={selectedMeeting ? 'md:flex md:gap-4 md:items-start' : ''}>
+                        {/* 모임 목록 */}
+                        <div className={selectedMeeting ? 'hidden md:block md:w-64 flex-shrink-0' : ''}>
+                            <MeetingsTab
+                                meetings={meetings}
+                                activeMeeting={activeMeeting}
+                                handleSaveMeeting={handleSaveMeeting}
+                                handleDeleteMeeting={handleDeleteMeeting}
+                                managers={managers}
+                                showAlert={showAlert}
+                                onSelectMeeting={setSelectedMeeting}
+                            />
                         </div>
 
-                        {/* 모임 설정 카드 */}
-                        <div className="card border-slate-100 rounded-2xl p-4 mb-4">
-                            <div className="mb-3">
-                                <p className="text-xs font-black text-teal-500 uppercase tracking-widest">모임 설정</p>
-                            </div>
-                            <div className="space-y-3">
-                                <div>
-                                    <label className="text-[10px] font-black text-slate-400 uppercase">날짜</label>
-                                    <input type="date" style={{userSelect:'text'}} className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
-                                        value={meetingSettings?.date||''} onChange={e=>updateMeetingSettingsAdmin({...meetingSettings, date:e.target.value})} />
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label className="text-[10px] font-black text-slate-400 uppercase">시작</label>
-                                        <div className="flex gap-1 mt-1">
-                                            <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-black"
-                                                value={(meetingSettings?.start||'08:00').split(':')[0]} onChange={e=>updateMeetingSettingsAdmin({...meetingSettings,start:`${e.target.value}:${snapMin((meetingSettings?.start||'08:00').split(':')[1])}`})}>
-                                                {attendHourOptions.map(h=><option key={h} value={h}>{h}시</option>)}
-                                            </select>
-                                            <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-black"
-                                                value={snapMin((meetingSettings?.start||'08:00').split(':')[1])} onChange={e=>updateMeetingSettingsAdmin({...meetingSettings,start:`${(meetingSettings?.start||'08:00').split(':')[0]}:${e.target.value}`})}>
-                                                {attendMinuteOptions.map(m=><option key={m} value={m}>{m}분</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-black text-rose-400 uppercase">종료</label>
-                                        <div className="flex gap-1 mt-1">
-                                            <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-black"
-                                                value={(meetingSettings?.end||'10:00').split(':')[0]} onChange={e=>updateMeetingSettingsAdmin({...meetingSettings,end:`${e.target.value}:${snapMin((meetingSettings?.end||'10:00').split(':')[1])}`})}>
-                                                {attendHourOptions.map(h=><option key={h} value={h}>{h}시</option>)}
-                                            </select>
-                                            <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-black"
-                                                value={snapMin((meetingSettings?.end||'10:00').split(':')[1])} onChange={e=>updateMeetingSettingsAdmin({...meetingSettings,end:`${(meetingSettings?.end||'10:00').split(':')[0]}:${e.target.value}`})}>
-                                                {attendMinuteOptions.map(m=><option key={m} value={m}>{m}분</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-slate-400 uppercase">장소</label>
-                                    <div className="flex gap-2 mt-1">
-                                        <input type="text" placeholder="장소명 직접 입력" style={{userSelect:'text'}} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
-                                            value={meetingSettings?.location||''} onChange={e=>updateMeetingSettingsAdmin({...meetingSettings, location:e.target.value})} />
-                                        <button onClick={() => setIsLocationPickerOpen(true)}
-                                            className={`shrink-0 px-3 py-2.5 rounded-xl text-sm font-black border transition-all ${meetingSettings?.locationLat ? 'bg-teal-500 text-white border-teal-500' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
-                                            <Icon.MapPin size={16} />
-                                        </button>
-                                    </div>
-                                    {meetingSettings?.locationLat && (
-                                        <div className="flex items-center gap-2 mt-1 px-1">
-                                            <span className="text-[10px] text-slate-400 font-mono">{meetingSettings.locationLat.toFixed(5)}, {meetingSettings.locationLng.toFixed(5)}</span>
-                                            <a href={`https://map.kakao.com/link/map/${encodeURIComponent(meetingSettings.location||'위치')},${meetingSettings.locationLat},${meetingSettings.locationLng}`} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 font-black underline">지도 →</a>
-                                            <button onClick={()=>updateMeetingSettingsAdmin({...meetingSettings,locationLat:null,locationLng:null})} className="text-[10px] text-slate-300 hover:text-red-400 font-black ml-auto">좌표 삭제</button>
-                                        </div>
-                                    )}
-                                    <div className="mt-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase">GPS 인정 반경</label>
-                                        <div className="flex gap-1.5 mt-1">
-                                            {[30,50,100,150,200].map(r => (
-                                                <button key={r} onClick={() => updateMeetingSettingsAdmin({...meetingSettings, locationRadius:r})}
-                                                    className={`flex-1 py-2 rounded-xl text-xs font-black border transition-all ${(meetingSettings?.locationRadius||100)===r?'bg-teal-500 text-white border-teal-500':'bg-slate-50 text-slate-500 border-slate-200'}`}>
-                                                    {r}m
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-slate-400 uppercase">출석 방식</label>
-                                    <div onClick={() => updateMeetingSettingsAdmin({...meetingSettings, enableQR:!meetingSettings?.enableQR})}
-                                        className="mt-1.5 flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 cursor-pointer active:bg-slate-100" style={{minHeight:52}}>
-                                        <div>
-                                            <p className="text-sm font-black text-slate-700">QR 출석 허용</p>
-                                            <p className="text-[10px] text-slate-400 mt-0.5">GPS가 기본, QR을 추가로 허용</p>
-                                        </div>
-                                        <div className={`relative w-12 h-7 rounded-full transition-colors shrink-0 ml-3 ${meetingSettings?.enableQR?'bg-violet-500':'bg-slate-300'}`}>
-                                            <span className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${meetingSettings?.enableQR?'translate-x-6':'translate-x-1'}`}/>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-slate-400 uppercase">선착순 인원</label>
-                                    <input type="number" style={{userSelect:'text'}} className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black text-center"
-                                        value={localMaxLimit !== null ? localMaxLimit : (meetingSettings?.maxLimit||18)}
-                                        onChange={e=>setLocalMaxLimit(e.target.value)}
-                                        onBlur={e=>{ const v=parseInt(e.target.value); if(v>0) updateMeetingSettingsAdmin({...meetingSettings,maxLimit:v}); setLocalMaxLimit(null); }} />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-slate-400 uppercase">담당 관리자</label>
-                                    <div className="flex gap-2 mt-1">
-                                        <input type="text" readOnly className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
-                                            value={meetingSettings?.managerName||''} placeholder="미지정" />
-                                        <button onClick={()=>updateMeetingSettingsAdmin({...meetingSettings, managerId:memberData?.memberId||'', managerName:memberData?.name||''})}
-                                            className="px-4 py-2.5 bg-teal-500 text-white rounded-xl text-xs font-black">내가 담당</button>
-                                    </div>
-                                </div>
-                                <RegSettingsSection meetingSettings={meetingSettings} updateMeetingSettingsAdmin={updateMeetingSettingsAdmin} />
-                            </div>
-                        </div>
-
-                        {/* 회원 선정 */}
-                        {meetingSettings?.isRegistrationEnabled && (
-                            <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-2xl mb-3 text-xs font-black text-amber-600">
-                                ⚠️ 선착순 신청 진행 중 — 수동 편집 시 신청 카운터와 어긋날 수 있습니다
-                            </div>
-                        )}
-                        <div className="flex items-center justify-between mb-3 px-1">
-                            <p className="text-xs font-black text-slate-700 uppercase tracking-widest">회원 선정</p>
-                            <div className="flex gap-1.5">
-                                <button onClick={()=>setIsAttendGuestModalOpen(true)} className="px-2.5 py-1.5 bg-slate-100 text-slate-600 text-xs font-black rounded-xl flex items-center gap-1"><Icon.UserPlus size={12}/> 게스트</button>
-                                <button onClick={attendHandleTestSelect} className="px-2.5 py-1.5 bg-amber-50 text-amber-600 text-xs font-black rounded-xl flex items-center gap-1"><Icon.Beaker size={12}/> 테스트</button>
-                                <button onClick={attendHandleResetSelection} className="px-2.5 py-1.5 bg-red-50 text-red-500 text-xs font-black rounded-xl flex items-center gap-1"><Icon.RotateCcw size={12}/> 초기화</button>
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            {attendNormalMembers.map(member => {
-                                const isSelected = tmSessionData.some(p=>p.memberId===member.id&&p.date===meetingSettings?.date);
-                                return (
-                                    <button key={member.id} onClick={()=>attendToggleParticipant(member)}
-                                        className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-teal-50 border-teal-300':'card border-slate-100 hover:border-slate-200'}`}>
-                                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${isSelected?'bg-teal-500 border-teal-500':'border-slate-300'}`}>
-                                            {isSelected&&<Icon.Check size={10} className="text-white"/>}
-                                        </div>
-                                        <span className="font-black text-sm text-slate-800 flex-1">{member.name}</span>
-                                        {member.gender==='여성'&&<span className="text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
-                                        {ADMIN_ROLES.includes(member.role)&&<span className={`text-[9px] px-1.5 py-0.5 rounded-lg font-black ${getRoleBadgeClass(member.role)}`}>{member.role}</span>}
-                                        <span className="text-[9px] font-black text-slate-400">Lv.{member.level}</span>
+                        {/* 상세 패널 */}
+                        {selectedMeeting && (
+                            <div className="flex-1 min-w-0">
+                                {/* 헤더: 뒤로가기 + 모임 정보 + 모임 종료 */}
+                                <div className="flex items-center gap-3 mb-4">
+                                    <button onClick={() => setSelectedMeeting(null)}
+                                        className="p-2 rounded-xl bg-slate-100 text-slate-600 md:hidden">
+                                        <Icon.ArrowLeft size={18}/>
                                     </button>
-                                );
-                            })}
-                        </div>
-                        {attendGuestEligibleMembers.length > 0 && (
-                            <div className="mt-4">
-                                <p className="text-xs font-black text-orange-500 uppercase tracking-widest mb-2 px-1">게스트 참여 가능</p>
+                                    <button onClick={() => setSelectedMeeting(null)}
+                                        className="hidden md:flex items-center gap-1 p-2 pr-3 rounded-xl bg-slate-100 text-slate-600 text-xs font-black">
+                                        <Icon.ArrowLeft size={14}/> 목록
+                                    </button>
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <p className="font-black text-slate-800">{selectedMeeting.date}</p>
+                                            {selectedMeeting.id === activeMeeting?.id && <span className="text-[10px] font-black bg-teal-500 text-white px-1.5 py-0.5 rounded-full">현재 모임</span>}
+                                        </div>
+                                        <p className="text-xs text-slate-400">{selectedMeeting.start} ~ {selectedMeeting.end}</p>
+                                    </div>
+                                    {selectedMeeting.id === activeMeeting?.id && (
+                                        <button onClick={attendHandleEndMeeting}
+                                            disabled={attendIsPending || !isMeetingOver || attendHistory.some(h => h.date === meetingSettings?.date)}
+                                            className={`px-3 py-2 rounded-xl font-black text-xs transition-all disabled:opacity-30 ${attendHistory.some(h => h.date === meetingSettings?.date) ? 'bg-emerald-50 text-emerald-500' : isMeetingOver ? 'bg-rose-500 text-white active:scale-95' : 'bg-slate-100 text-slate-300'}`}>
+                                            {attendHistory.some(h => h.date === meetingSettings?.date) ? '저장 완료 ✓' : '모임 종료'}
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* sticky 인원 카운터 */}
+                                <div style={{position:'sticky',top:0,zIndex:40,marginLeft:'-1rem',marginRight:'-1rem',marginBottom:16,padding:'10px 1rem',background:darkMode?'rgba(15,23,42,0.96)':'rgba(248,250,252,0.96)',backdropFilter:'blur(8px)',borderBottom:`1px solid ${darkMode?'#334155':'#e2e8f0'}`,boxShadow:'0 1px 6px rgba(0,0,0,0.06)'}}>
+                                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                                        <span style={{fontSize:10,fontWeight:900,color:'#94a3b8',textTransform:'uppercase',letterSpacing:'0.1em'}}>선정 인원</span>
+                                        <div style={{display:'flex',alignItems:'center',gap:8}}>
+                                            <span style={{fontSize:15,fontWeight:900,color:attendActiveParticipants.length>=(meetingSettings?.maxLimit||18)?'#14b8a6':darkMode?'#f1f5f9':'#1e293b'}}>
+                                                {attendActiveParticipants.length} / {meetingSettings?.maxLimit||18}명
+                                            </span>
+                                            {attendActiveParticipants.length>=(meetingSettings?.maxLimit||18)&&<span style={{fontSize:9,fontWeight:900,padding:'2px 8px',background:'#ccfbf1',color:'#0d9488',borderRadius:6}}>마감</span>}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 모임 설정 카드 */}
+                                <div className="card border-slate-100 rounded-2xl p-4 mb-4">
+                                    <div className="mb-3">
+                                        <p className="text-xs font-black text-teal-500 uppercase tracking-widest">모임 설정</p>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase">날짜</label>
+                                            <input type="date" style={{userSelect:'text'}} className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                                                value={meetingSettings?.date||''} onChange={e=>updateMeetingSettingsAdmin({...meetingSettings, date:e.target.value})} />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="text-[10px] font-black text-slate-400 uppercase">시작</label>
+                                                <div className="flex gap-1 mt-1">
+                                                    <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-black"
+                                                        value={(meetingSettings?.start||'08:00').split(':')[0]} onChange={e=>updateMeetingSettingsAdmin({...meetingSettings,start:`${e.target.value}:${snapMin((meetingSettings?.start||'08:00').split(':')[1])}`})}>
+                                                        {attendHourOptions.map(h=><option key={h} value={h}>{h}시</option>)}
+                                                    </select>
+                                                    <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-black"
+                                                        value={snapMin((meetingSettings?.start||'08:00').split(':')[1])} onChange={e=>updateMeetingSettingsAdmin({...meetingSettings,start:`${(meetingSettings?.start||'08:00').split(':')[0]}:${e.target.value}`})}>
+                                                        {attendMinuteOptions.map(m=><option key={m} value={m}>{m}분</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-rose-400 uppercase">종료</label>
+                                                <div className="flex gap-1 mt-1">
+                                                    <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-black"
+                                                        value={(meetingSettings?.end||'10:00').split(':')[0]} onChange={e=>updateMeetingSettingsAdmin({...meetingSettings,end:`${e.target.value}:${snapMin((meetingSettings?.end||'10:00').split(':')[1])}`})}>
+                                                        {attendHourOptions.map(h=><option key={h} value={h}>{h}시</option>)}
+                                                    </select>
+                                                    <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 text-xs font-black"
+                                                        value={snapMin((meetingSettings?.end||'10:00').split(':')[1])} onChange={e=>updateMeetingSettingsAdmin({...meetingSettings,end:`${(meetingSettings?.end||'10:00').split(':')[0]}:${e.target.value}`})}>
+                                                        {attendMinuteOptions.map(m=><option key={m} value={m}>{m}분</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase">장소</label>
+                                            <div className="flex gap-2 mt-1">
+                                                <input type="text" placeholder="장소명 직접 입력" style={{userSelect:'text'}} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                                                    value={meetingSettings?.location||''} onChange={e=>updateMeetingSettingsAdmin({...meetingSettings, location:e.target.value})} />
+                                                <button onClick={() => setIsLocationPickerOpen(true)}
+                                                    className={`shrink-0 px-3 py-2.5 rounded-xl text-sm font-black border transition-all ${meetingSettings?.locationLat ? 'bg-teal-500 text-white border-teal-500' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                                                    <Icon.MapPin size={16} />
+                                                </button>
+                                            </div>
+                                            {meetingSettings?.locationLat && (
+                                                <div className="flex items-center gap-2 mt-1 px-1">
+                                                    <span className="text-[10px] text-slate-400 font-mono">{meetingSettings.locationLat.toFixed(5)}, {meetingSettings.locationLng.toFixed(5)}</span>
+                                                    <a href={`https://map.kakao.com/link/map/${encodeURIComponent(meetingSettings.location||'위치')},${meetingSettings.locationLat},${meetingSettings.locationLng}`} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 font-black underline">지도 →</a>
+                                                    <button onClick={()=>updateMeetingSettingsAdmin({...meetingSettings,locationLat:null,locationLng:null})} className="text-[10px] text-slate-300 hover:text-red-400 font-black ml-auto">좌표 삭제</button>
+                                                </div>
+                                            )}
+                                            <div className="mt-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase">GPS 인정 반경</label>
+                                                <div className="flex gap-1.5 mt-1">
+                                                    {[30,50,100,150,200].map(r => (
+                                                        <button key={r} onClick={() => updateMeetingSettingsAdmin({...meetingSettings, locationRadius:r})}
+                                                            className={`flex-1 py-2 rounded-xl text-xs font-black border transition-all ${(meetingSettings?.locationRadius||100)===r?'bg-teal-500 text-white border-teal-500':'bg-slate-50 text-slate-500 border-slate-200'}`}>
+                                                            {r}m
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase">출석 방식</label>
+                                            <div onClick={() => updateMeetingSettingsAdmin({...meetingSettings, enableQR:!meetingSettings?.enableQR})}
+                                                className="mt-1.5 flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 cursor-pointer active:bg-slate-100" style={{minHeight:52}}>
+                                                <div>
+                                                    <p className="text-sm font-black text-slate-700">QR 출석 허용</p>
+                                                    <p className="text-[10px] text-slate-400 mt-0.5">GPS가 기본, QR을 추가로 허용</p>
+                                                </div>
+                                                <div className={`relative w-12 h-7 rounded-full transition-colors shrink-0 ml-3 ${meetingSettings?.enableQR?'bg-violet-500':'bg-slate-300'}`}>
+                                                    <span className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${meetingSettings?.enableQR?'translate-x-6':'translate-x-1'}`}/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase">선착순 인원</label>
+                                            <input type="number" style={{userSelect:'text'}} className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black text-center"
+                                                value={localMaxLimit !== null ? localMaxLimit : (meetingSettings?.maxLimit||18)}
+                                                onChange={e=>setLocalMaxLimit(e.target.value)}
+                                                onBlur={e=>{ const v=parseInt(e.target.value); if(v>0) updateMeetingSettingsAdmin({...meetingSettings,maxLimit:v}); setLocalMaxLimit(null); }} />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase">담당 관리자</label>
+                                            <div className="flex gap-2 mt-1">
+                                                <input type="text" readOnly className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                                                    value={meetingSettings?.managerName||''} placeholder="미지정" />
+                                                <button onClick={()=>updateMeetingSettingsAdmin({...meetingSettings, managerId:memberData?.memberId||'', managerName:memberData?.name||''})}
+                                                    className="px-4 py-2.5 bg-teal-500 text-white rounded-xl text-xs font-black">내가 담당</button>
+                                            </div>
+                                        </div>
+                                        <RegSettingsSection meetingSettings={meetingSettings} updateMeetingSettingsAdmin={updateMeetingSettingsAdmin} />
+                                    </div>
+                                </div>
+
+                                {/* 회원 선정 */}
+                                {meetingSettings?.isRegistrationEnabled && (
+                                    <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-2xl mb-3 text-xs font-black text-amber-600">
+                                        ⚠️ 선착순 신청 진행 중 — 수동 편집 시 신청 카운터와 어긋날 수 있습니다
+                                    </div>
+                                )}
+                                <div className="flex items-center justify-between mb-3 px-1">
+                                    <p className="text-xs font-black text-slate-700 uppercase tracking-widest">회원 선정</p>
+                                    <div className="flex gap-1.5">
+                                        <button onClick={()=>setIsAttendGuestModalOpen(true)} className="px-2.5 py-1.5 bg-slate-100 text-slate-600 text-xs font-black rounded-xl flex items-center gap-1"><Icon.UserPlus size={12}/> 게스트</button>
+                                        <button onClick={attendHandleTestSelect} className="px-2.5 py-1.5 bg-amber-50 text-amber-600 text-xs font-black rounded-xl flex items-center gap-1"><Icon.Beaker size={12}/> 테스트</button>
+                                        <button onClick={attendHandleResetSelection} className="px-2.5 py-1.5 bg-red-50 text-red-500 text-xs font-black rounded-xl flex items-center gap-1"><Icon.RotateCcw size={12}/> 초기화</button>
+                                    </div>
+                                </div>
                                 <div className="space-y-1.5">
-                                    {attendGuestEligibleMembers.map(member => {
+                                    {attendNormalMembers.map(member => {
                                         const isSelected = tmSessionData.some(p=>p.memberId===member.id&&p.date===meetingSettings?.date);
-                                        const msType = getMembershipStatus(member, meetingSettings?.date?.substring(0,7)||'')?.type;
-                                        const badge = member.isSpecialRest ? '특별휴식' : (msType==='반년'?'반년납 휴식':'1년납 휴식');
                                         return (
-                                            <button key={member.id} onClick={()=>attendToggleParticipantAsGuest(member)}
-                                                className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-orange-50 border-orange-300':'card border-slate-100 hover:border-slate-200'}`}>
-                                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${isSelected?'bg-orange-400 border-orange-400':'border-slate-300'}`}>
+                                            <button key={member.id} onClick={()=>attendToggleParticipant(member)}
+                                                className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-teal-50 border-teal-300':'card border-slate-100 hover:border-slate-200'}`}>
+                                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${isSelected?'bg-teal-500 border-teal-500':'border-slate-300'}`}>
                                                     {isSelected&&<Icon.Check size={10} className="text-white"/>}
                                                 </div>
                                                 <span className="font-black text-sm text-slate-800 flex-1">{member.name}</span>
                                                 {member.gender==='여성'&&<span className="text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
-                                                <span className="text-[9px] px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-lg font-black">{badge}</span>
+                                                {ADMIN_ROLES.includes(member.role)&&<span className={`text-[9px] px-1.5 py-0.5 rounded-lg font-black ${getRoleBadgeClass(member.role)}`}>{member.role}</span>}
                                                 <span className="text-[9px] font-black text-slate-400">Lv.{member.level}</span>
                                             </button>
                                         );
                                     })}
                                 </div>
+                                {attendGuestEligibleMembers.length > 0 && (
+                                    <div className="mt-4">
+                                        <p className="text-xs font-black text-orange-500 uppercase tracking-widest mb-2 px-1">게스트 참여 가능</p>
+                                        <div className="space-y-1.5">
+                                            {attendGuestEligibleMembers.map(member => {
+                                                const isSelected = tmSessionData.some(p=>p.memberId===member.id&&p.date===meetingSettings?.date);
+                                                const msType = getMembershipStatus(member, meetingSettings?.date?.substring(0,7)||'')?.type;
+                                                const badge = member.isSpecialRest ? '특별휴식' : (msType==='반년'?'반년납 휴식':'1년납 휴식');
+                                                return (
+                                                    <button key={member.id} onClick={()=>attendToggleParticipantAsGuest(member)}
+                                                        className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-orange-50 border-orange-300':'card border-slate-100 hover:border-slate-200'}`}>
+                                                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${isSelected?'bg-orange-400 border-orange-400':'border-slate-300'}`}>
+                                                            {isSelected&&<Icon.Check size={10} className="text-white"/>}
+                                                        </div>
+                                                        <span className="font-black text-sm text-slate-800 flex-1">{member.name}</span>
+                                                        {member.gender==='여성'&&<span className="text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
+                                                        <span className="text-[9px] px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-lg font-black">{badge}</span>
+                                                        <span className="text-[9px] font-black text-slate-400">Lv.{member.level}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 출석 현황 요약 (현재 모임일 때만) */}
+                                {selectedMeeting.id === activeMeeting?.id && (
+                                    <div className="mt-6 pt-4 border-t border-slate-100">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">출석 현황</p>
+                                            {attendActiveList.length > 0 && (
+                                                <button onClick={() => setIsKioskOpen(true)}
+                                                    className="px-3 py-1.5 rounded-xl text-xs font-black text-white flex items-center gap-1"
+                                                    style={{background:'linear-gradient(135deg,#f97316,#ea580c)'}}>
+                                                    📋 키오스크
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="card rounded-2xl p-4">
+                                            <div className="flex gap-2 text-center">
+                                                <div className="flex-1 bg-teal-50 rounded-xl p-2.5"><p className="text-xl font-black text-teal-500">{attendActiveList.length}</p><p className="text-[9px] text-teal-400">선정</p></div>
+                                                <div className="flex-1 bg-emerald-50 rounded-xl p-2.5"><p className="text-xl font-black text-emerald-500">{attendCheckedInCount}</p><p className="text-[9px] text-emerald-400">출석</p></div>
+                                                <div className="flex-1 bg-slate-50 rounded-xl p-2.5"><p className="text-xl font-black text-slate-500">{attendWaitingList.length}</p><p className="text-[9px] text-slate-400">대기</p></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -972,5 +1029,6 @@ const TabAttend = ({
             setAttendModal={setAttendModal}
         />
     </div>
-);
+    );
+};
 // ─────────────────────────────────────────────────────────────────────────────
