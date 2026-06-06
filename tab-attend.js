@@ -201,6 +201,7 @@ const TabAttend = ({
     gpsStatus, distance, handleGPSCheckIn, handleGPSAttend,
     isCheckingIn, setGpsStatus,
     isKioskOpen, setIsKioskOpen, attendHandleCheckIn,
+    isMeetingOver, attendHandleEndMeeting,
 }) => (
     <div className="animate-in space-y-4">
 
@@ -244,6 +245,11 @@ const TabAttend = ({
                     {attendSubTab === 'attend' && attendActiveList.length > 0 && (
                         <>
                             <div className="flex-1"/>
+                            <button onClick={attendHandleEndMeeting}
+                                disabled={attendIsPending || !isMeetingOver || attendHistory.some(h => h.date === meetingSettings?.date)}
+                                className={`px-3 py-2 rounded-xl font-black text-xs transition-all disabled:opacity-30 ${attendHistory.some(h => h.date === meetingSettings?.date) ? 'bg-emerald-50 text-emerald-500' : isMeetingOver ? 'bg-rose-500 text-white active:scale-95' : 'bg-slate-100 text-slate-300'}`}>
+                                {attendHistory.some(h => h.date === meetingSettings?.date) ? '저장 완료 ✓' : '모임 종료'}
+                            </button>
                             <button onClick={attendSaveAndReset} disabled={attendIsPending||attendActiveList.length===0}
                                 className="px-3 py-2 bg-teal-500 text-white rounded-xl font-black text-xs disabled:opacity-30">
                                 {attendIsPending?'처리 중...':'기록 확정 →'}

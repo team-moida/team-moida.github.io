@@ -212,7 +212,8 @@ function App() {
             attendToggleParticipant, attendToggleParticipantAsGuest, attendHandleResetSelection,
             attendHandleAddGuest, attendHandleTestSelect, attendSaveAndReset,
             attendHandleDeleteHistory, handleHistoryStatusUpdate, handleUpdateHistoryLocation,
-            generateAttendQRCode, attendToggleTestMode, attendHandleCreateNew } = makeAttendHandlers({
+            generateAttendQRCode, attendToggleTestMode, attendHandleCreateNew,
+            attendHandleEndMeeting } = makeAttendHandlers({
         meetingSettings, testMode, showAlert, showConfirm, setAttendModal: attend.setAttendModal,
         tmSessionData: team.tmSessionData, activeMembers: roster.activeMembers,
         selectedHistoryDetail: attend.selectedHistoryDetail, setSelectedHistoryDetail: attend.setSelectedHistoryDetail,
@@ -415,6 +416,8 @@ function App() {
                         isCheckingIn={isCheckingIn} setGpsStatus={setGpsStatus}
                         isKioskOpen={attend.isKioskOpen} setIsKioskOpen={attend.setIsKioskOpen}
                         attendHandleCheckIn={attendHandleCheckIn}
+                        isMeetingOver={attend.isMeetingOver}
+                        attendHandleEndMeeting={attendHandleEndMeeting}
                     />
                 )}
                 {tab === 'rules' && (

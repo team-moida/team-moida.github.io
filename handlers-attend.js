@@ -270,7 +270,10 @@ function makeAttendHandlers(ctx) {
                     return {name: p.isGuest ? `${p.name} - 초대:${p.inviterName || '없음'}` : p.name, gender: p.gender, status: finalStatus, checkInTime: p.checkedIn ? (p.checkInTime || '-') : '미출석', type: isWaiting ? '대기자' : (p.isGuest ? '게스트' : '정규'), level: p.level || '-', team: p.team || '-', timestamp: p.checkedIn ? p.checkInTime : '99:99:99'};
                 });
                 const presentCount = records.filter(r => r.status === '정상' || r.status === '지각').length;
-                await getHistoryCol().add({date: meetingSettings.date, meetingTime: `${meetingSettings.start}~${meetingSettings.end}`, location: meetingSettings.location || '장소 미지정', locationLat: meetingSettings.locationLat || null, locationLng: meetingSettings.locationLng || null, managerName: meetingSettings.managerName || '미지정', total: records.length, present: presentCount, records, createdAt: new Date().toISOString()});
+                const existingHist = await getHistoryCol().where('date', '==', meetingSettings.date).get();
+                if (existingHist.empty) {
+                    await getHistoryCol().add({date: meetingSettings.date, meetingTime: `${meetingSettings.start}~${meetingSettings.end}`, location: meetingSettings.location || '장소 미지정', locationLat: meetingSettings.locationLat || null, locationLng: meetingSettings.locationLng || null, managerName: meetingSettings.managerName || '미지정', total: records.length, present: presentCount, records, createdAt: new Date().toISOString()});
+                }
                 const batch = db.batch();
                 current.forEach(p => batch.delete(getSessionCol().doc(p.id)));
                 const nextSun = getNextSundayFromDate(meetingSettings.date);
@@ -387,11 +390,33 @@ function makeAttendHandlers(ctx) {
         }
     };
 
+    const attendHandleEndMeeting = async () => {
+        const current = tmSessionData.filter(p => p.date === meetingSettings?.date);
+        if (current.length === 0) return showAlert('확인', '현재 출석부에 인원이 없습니다.');
+        showConfirm('모임 종료', `${meetingSettings.date} 모임 기록을 저장하시겠습니까?`, async () => {
+            setAttendIsPending(true);
+            try {
+                const existingHist = await getHistoryCol().where('date', '==', meetingSettings.date).get();
+                if (!existingHist.empty) { showAlert('알림', '이미 저장된 기록이 있습니다.'); return; }
+                const limit = meetingSettings?.maxLimit || 18;
+                const sorted = [...current].sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || '') || a.name.localeCompare(b.name));
+                const records = sorted.map((p, idx) => {
+                    const isWaiting = idx + 1 > limit;
+                    const finalStatus = isWaiting ? '대기' : p.checkedIn ? (p.status || '정상') : '노쇼';
+                    return {name: p.isGuest ? `${p.name} - 초대:${p.inviterName || '없음'}` : p.name, gender: p.gender, status: finalStatus, checkInTime: p.checkedIn ? (p.checkInTime || '-') : '미출석', type: isWaiting ? '대기자' : (p.isGuest ? '게스트' : '정규'), level: p.level || '-', team: p.team || '-', timestamp: p.checkedIn ? p.checkInTime : '99:99:99'};
+                });
+                const presentCount = records.filter(r => r.status === '정상' || r.status === '지각').length;
+                await getHistoryCol().add({date: meetingSettings.date, meetingTime: `${meetingSettings.start}~${meetingSettings.end}`, location: meetingSettings.location || '장소 미지정', locationLat: meetingSettings.locationLat || null, locationLng: meetingSettings.locationLng || null, managerName: meetingSettings.managerName || '미지정', total: records.length, present: presentCount, records, createdAt: new Date().toISOString()});
+                showAlert('모임 종료', `기록이 저장되었습니다.\n출석 ${presentCount}명 / 전체 ${records.length}명`);
+            } catch(e) { showAlert('오류', '저장 실패: ' + e.message); } finally { setAttendIsPending(false); }
+        });
+    };
+
     return {
         updateMeetingSettingsAdmin, attendHandleCheckIn, attendHandleUncheckIn,
         attendToggleParticipant, attendToggleParticipantAsGuest, attendHandleResetSelection,
         attendHandleAddGuest, attendHandleTestSelect, attendSaveAndReset,
         attendHandleDeleteHistory, handleHistoryStatusUpdate, handleUpdateHistoryLocation,
-        generateAttendQRCode, attendToggleTestMode, attendHandleCreateNew
+        generateAttendQRCode, attendToggleTestMode, attendHandleCreateNew, attendHandleEndMeeting
     };
 }
