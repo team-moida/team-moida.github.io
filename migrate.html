@@ -45,6 +45,21 @@
                 GitHub에서 삭제해도 됩니다.
             </p>
         </div>
+
+        <!-- 모임 일정 이전 섹션 -->
+        <div class="mt-8 pt-8 border-t border-slate-100">
+            <h2 class="text-base font-black text-slate-700 mb-1">📅 모임 일정 이전</h2>
+            <p class="text-xs text-slate-500 mb-4">
+                현재 설정된 모임(meeting_schedule_v2)을<br>
+                새 모임 목록(meetings)으로 복사합니다.<br>
+                같은 날짜 모임이 이미 있으면 건너뜁니다.
+            </p>
+            <div id="meeting-log-area" class="hidden max-h-28 overflow-y-auto space-y-1 mb-4 bg-slate-50 rounded-2xl p-3 text-xs font-mono"></div>
+            <button id="migrate-meeting-btn" onclick="migrateMeetingSchedule()"
+                class="w-full py-3 bg-teal-600 text-white rounded-2xl font-black text-sm shadow-md active:scale-95 transition-all">
+                📅 모임 일정 이전 실행
+            </button>
+        </div>
     </div>
 
     <!-- Firebase SDK -->
@@ -178,6 +193,76 @@
                 addLog('❌ 오류: ' + e.message, 'error');
                 btn.disabled = false;
                 btn.textContent = '🔄 다시 시도';
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        function addMeetingLog(msg, type = 'info') {
+            const area = document.getElementById('meeting-log-area');
+            area.classList.remove('hidden');
+            const el = document.createElement('div');
+            const colors = { info: 'text-slate-500', success: 'text-green-600 font-bold', error: 'text-red-500 font-bold' };
+            el.className = colors[type] || colors.info;
+            el.textContent = msg;
+            area.appendChild(el);
+            area.scrollTop = area.scrollHeight;
+        }
+
+        async function migrateMeetingSchedule() {
+            const btn = document.getElementById('migrate-meeting-btn');
+            btn.disabled = true;
+            btn.textContent = '⏳ 처리 중...';
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('meeting-log-area').innerHTML = '';
+
+            try {
+                addMeetingLog('서버 연결 중...');
+                await firebase.auth(newApp).signInAnonymously();
+                addMeetingLog('✅ 연결 성공!', 'success');
+
+                const settingsDoc = await newPath('settings').doc('meeting_schedule_v2').get();
+                if (!settingsDoc.exists) {
+                    addMeetingLog('❌ meeting_schedule_v2 문서가 없습니다.', 'error');
+                    return;
+                }
+                const v2 = settingsDoc.data();
+                if (!v2.date) {
+                    addMeetingLog('❌ 날짜 정보가 없습니다.', 'error');
+                    return;
+                }
+
+                addMeetingLog(`현재 모임 날짜: ${v2.date}`);
+
+                const existing = await newPath('meetings').doc(v2.date).get();
+                if (existing.exists) {
+                    addMeetingLog(`이미 이전된 모임이 있습니다: ${v2.date}`, 'error');
+                    addMeetingLog('중복 실행 방지 — 추가 이전 불필요합니다.', 'info');
+                    return;
+                }
+
+                await newPath('meetings').doc(v2.date).set({
+                    date: v2.date,
+                    start: v2.start || '08:00',
+                    end: v2.end || '10:00',
+                    location: v2.location || '',
+                    locationLat: v2.locationLat || null,
+                    locationLng: v2.locationLng || null,
+                    locationRadius: v2.locationRadius || 100,
+                    maxLimit: v2.maxLimit || 18,
+                    managerId: v2.managerId || '',
+                    managerName: v2.managerName || '',
+                    status: 'upcoming',
+                    createdAt: new Date().toISOString()
+                });
+
+                addMeetingLog(`✅ 완료: ${v2.date} 모임이 목록에 등록되었습니다.`, 'success');
+                addMeetingLog('attendance.html > [모임] 탭에서 확인하세요.', 'info');
+            } catch(e) {
+                console.error(e);
+                addMeetingLog('❌ 오류: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '📅 모임 일정 이전 실행';
                 btn.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         }

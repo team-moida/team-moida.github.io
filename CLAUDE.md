@@ -70,6 +70,7 @@ Firestore: settings/club_rules { content, updatedAt, updatedBy }
 
 출석 관리  (attendance.html)
 
+모임 목록 (여러 모임 등록/수정/삭제, 현재 모임·mirror 동기화) → handlers-meetings.js, tab-meetings.js
 모임 설정 (날짜/시간/장소/GPS반경/QR/선착순/담당자) → tab-attend-setup.js, handlers-attend-session.js
 출석 현황 (실시간 시계/팀 카드/대기자/기록 확정) → tab-attend-main.js
 출결 기록 (목록/상세/정렬/장소편집/상태변경/삭제) → tab-attend-history.js

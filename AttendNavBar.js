@@ -4,9 +4,9 @@ function AttendNavBar({ view, setView, pendingRegistrations, setIsPendingModalOp
         <nav className="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 shadow-sm" style={{paddingTop:'env(safe-area-inset-top)'}}>
             <div className="h-16 flex items-center px-4 max-w-5xl mx-auto w-full justify-between">
                 <div className="flex items-center gap-1">
-                    {['attendance','setup','history_list'].map(v => (
+                    {['attendance','setup','meetings','history_list'].map(v => (
                         <button key={v} onClick={()=>setView(v)} className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${view===v?'bg-teal-500 text-white shadow-lg':'text-slate-400 hover:text-slate-600'}`}>
-                            {v==='attendance'?'출석':v==='setup'?'선정':'기록'}
+                            {v==='attendance'?'출석':v==='setup'?'선정':v==='meetings'?'모임':'기록'}
                         </button>
                     ))}
                 </div>

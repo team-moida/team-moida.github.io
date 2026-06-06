@@ -36,6 +36,8 @@
     <script type="text/babel" src="tab-attend-main.js"></script>
     <script type="text/babel" src="modals-attend.js"></script>
     <script type="text/babel" src="handlers-attend-session.js"></script>
+    <script type="text/babel" src="handlers-meetings.js"></script>
+    <script type="text/babel" src="tab-meetings.js"></script>
     <script type="text/babel" src="AttendNavBar.js"></script>
 </head>
 <body>
@@ -95,6 +97,7 @@ function App() {
     const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
     const [testMode, setTestMode] = useState(false);
     const [testModeBackup, setTestModeBackup] = useState(null);
+    const [meetings, setMeetings] = useState([]);
     const [isPasswordChangeModalOpen, setIsPasswordChangeModalOpen] = useState(false);
     const [passwordForm, setPasswordForm] = useState({ current:'', next:'', confirm:'' });
     // QR 관련 상태
@@ -235,6 +238,8 @@ function App() {
         return { normalMembers: normal, guestEligibleMembers: guestEligible };
     }, [activeMembers, setupTabRestMembers, setupTabMonthlyMembers, meetingTimes.date]);
 
+    const { activeMeeting, handleSaveMeeting, handleDeleteMeeting } = makeMeetingHandlers({ meetings, showAlert, showConfirm });
+
     const { handleCheckIn, handleUncheckIn } = makeCheckInHandlers({ testMode, activeParticipants, meetingTimes, showAlert, showConfirm, setModal });
     const { handleApprovePending, handleRejectPending } = makePendingHandlers({ loggedInManager, showConfirm, showAlert });
 
@@ -276,6 +281,7 @@ function App() {
                 });
                 getTeamDraftsCol().orderBy('createdAt','desc').limit(1).onSnapshot(snap => { setTeamData(snap.empty?null:snap.docs[0].data()); });
                 getPendingCol().where('status','==','pending').onSnapshot(snap => setPendingRegistrations(snap.docs.map(d=>({id:d.id,...d.data()}))));
+                getMeetingsCol().onSnapshot(snap => setMeetings(snap.docs.map(d=>({id:d.id,...d.data()}))));
             }
         });
         const timer = setInterval(() => setCurrentTime(new Date()), 10000);
@@ -422,6 +428,17 @@ function App() {
                         handleResetSelection={handleResetSelection}
                         setIsGuestModalOpen={setIsGuestModalOpen}
                         setIsLocationPickerOpen={setIsLocationPickerOpen}
+                    />
+                )}
+
+                {view === 'meetings' && (
+                    <MeetingsTab
+                        meetings={meetings}
+                        activeMeeting={activeMeeting}
+                        handleSaveMeeting={handleSaveMeeting}
+                        handleDeleteMeeting={handleDeleteMeeting}
+                        managers={managers}
+                        showAlert={showAlert}
                     />
                 )}
 
