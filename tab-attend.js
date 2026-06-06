@@ -203,6 +203,7 @@ const TabAttend = ({
     isKioskOpen, setIsKioskOpen, attendHandleCheckIn,
     isMeetingOver, attendHandleEndMeeting,
     meetings, activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers,
+    showAlert,
 }) => (
     <div className="animate-in space-y-4">
 
