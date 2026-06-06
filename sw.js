@@ -20,7 +20,7 @@ messaging.onBackgroundMessage((payload) => {
         body,
         icon:  '/moida/icon.png',
         badge: '/moida/icon.png',
-        data:  { url: 'https://nakdo0415-crypto.github.io/moida/' },
+        data:  { url: 'https://nakdo0415-crypto.github.io/moida/member.html' },
         vibrate: [200, 100, 200],
         requireInteraction: false,
         tag: 'moida',
@@ -31,8 +31,14 @@ messaging.onBackgroundMessage((payload) => {
 // 알림 클릭 시 앱으로 이동
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    const url = event.notification.data?.url || 'https://nakdo0415-crypto.github.io/moida/';
-    event.waitUntil(clients.openWindow(url));
+    const url = event.notification.data?.url || 'https://nakdo0415-crypto.github.io/moida/member.html';
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+            const existing = clientList.find(c => c.url.includes('/moida/member'));
+            if (existing && 'focus' in existing) return existing.focus();
+            return clients.openWindow(url);
+        })
+    );
 });
 
 // ── 기존 캐시 로직 ──────────────────────────────────────

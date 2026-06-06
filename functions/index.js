@@ -50,11 +50,7 @@ exports.sendPushNotification = onDocumentCreated(
           payload: { aps: { sound: 'default' } },
         },
         webpush: {
-          fcmOptions: { link: "https://nakdo0415-crypto.github.io/moida/" },
-          notification: {
-            icon: "https://nakdo0415-crypto.github.io/moida/icon.png",
-            badge: "https://nakdo0415-crypto.github.io/moida/icon.png",
-          },
+          fcmOptions: { link: "https://nakdo0415-crypto.github.io/moida/member.html" },
         },
       });
 
