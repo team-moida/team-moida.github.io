@@ -17,7 +17,11 @@ const TabTeam = ({
     generateTeams, tmCapture, tmSaveDraft, tmConfirm, tmReset, tmReGenerate,
     tmDragStart, tmDragEnd, tmMemberDragOver, tmTeamDragOver, tmTeamDragLeave,
     tmDrop, tmMemberClick, tmMoveToTeam, tmTeamBadgeClick, showConfirm,
-}) => (
+    selectedDraftIds, setSelectedDraftIds, tmDeleteConfirmed, tmDeleteSelectedDrafts,
+}) => {
+    const { useState } = React;
+    const [draftSelectMode, setDraftSelectMode] = useState(false);
+    return (
     <div className="animate-in">
         {/* 관리자 패널 토글 버튼 */}
         {isAdminMode && (
@@ -240,7 +244,7 @@ const TabTeam = ({
                     <div>
                         <div className="flex gap-2 mb-3">
                             {[['confirmed','✓ 확정',confirmedDrafts.length],['draft','💾 임시',savedDrafts.length]].map(([v,l,cnt]) => (
-                                <button key={v} onClick={() => setTeamStorageSubTab(v)}
+                                <button key={v} onClick={() => { setTeamStorageSubTab(v); setDraftSelectMode(false); setSelectedDraftIds([]); }}
                                     className={`flex-1 py-2 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 ${teamStorageSubTab===v?'bg-teal-500 text-white shadow':'bg-slate-100 text-slate-500'}`}>
                                     {l} <span className={`text-[9px] px-1.5 py-0.5 rounded font-black ${teamStorageSubTab===v?'bg-white/20 text-white':'bg-slate-200 text-slate-400'}`}>{cnt}</span>
                                 </button>
@@ -250,31 +254,74 @@ const TabTeam = ({
                             confirmedDrafts.length === 0
                                 ? <div className="text-center py-16 text-slate-400"><p className="font-black">확정된 기록이 없습니다</p></div>
                                 : confirmedDrafts.map(d => (
-                                    <div key={d.meetingDate + d.createdAt} className="flex items-center gap-2 p-3 card border-emerald-100 rounded-xl mb-2">
+                                    <div key={d.id} className="flex items-center gap-2 p-3 card border-emerald-100 rounded-xl mb-2">
                                         <div className="flex-1">
                                             <p className="font-black text-slate-800 text-sm">{d.meetingDate}</p>
                                             <span className="text-[9px] font-black px-1.5 py-0.5 bg-emerald-100 text-emerald-600 rounded mt-0.5 inline-block">{d.teams?.length||0}팀 확정</span>
                                         </div>
                                         <button onClick={() => setPreviewDraft({...d})} className="px-2.5 py-1.5 bg-teal-50 text-teal-500 rounded-lg font-black text-xs">미리보기</button>
+                                        <button onClick={() => tmDeleteConfirmed(d.id)} className="p-2 bg-red-50 text-red-400 rounded-lg"><Icon.Trash size={13}/></button>
                                     </div>
                                 ))
                         )}
                         {teamStorageSubTab === 'draft' && (
                             savedDrafts.length === 0
                                 ? <div className="text-center py-16 text-slate-400"><p className="font-black">임시 저장된 기록이 없습니다</p></div>
-                                : savedDrafts.map(d => (
-                                    <div key={d.id} className="flex items-center gap-2 p-3 card border-slate-100 rounded-xl mb-2">
-                                        <div className="flex-1">
-                                            <p className="font-black text-slate-800 text-sm">{d.meetingDate}</p>
-                                            <p className="text-xs text-slate-400 mt-0.5">{d.timeLabel}</p>
+                                : (
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            {draftSelectMode ? (
+                                                <>
+                                                    <button onClick={() => {
+                                                        if (selectedDraftIds.length === savedDrafts.length) setSelectedDraftIds([]);
+                                                        else setSelectedDraftIds(savedDrafts.map(d => d.id));
+                                                    }} className="text-xs font-black text-teal-600">
+                                                        {selectedDraftIds.length === savedDrafts.length ? '전체 해제' : `전체 선택 (${savedDrafts.length})`}
+                                                    </button>
+                                                    <div className="flex items-center gap-2">
+                                                        {selectedDraftIds.length > 0 && (
+                                                            <button onClick={() => tmDeleteSelectedDrafts(selectedDraftIds, () => { setSelectedDraftIds([]); setDraftSelectMode(false); })}
+                                                                className="px-3 py-1.5 bg-red-500 text-white rounded-lg font-black text-xs">
+                                                                {selectedDraftIds.length}개 삭제
+                                                            </button>
+                                                        )}
+                                                        <button onClick={() => { setDraftSelectMode(false); setSelectedDraftIds([]); }}
+                                                            className="text-xs font-black text-slate-400 px-2 py-1 bg-slate-100 rounded-lg">취소</button>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <button onClick={() => setDraftSelectMode(true)}
+                                                    className="ml-auto text-xs font-black text-slate-400 px-2 py-1 bg-slate-100 rounded-lg">선택</button>
+                                            )}
                                         </div>
-                                        <button onClick={() => setPreviewDraft(d)} className="px-2.5 py-1.5 bg-teal-50 text-teal-500 rounded-lg font-black text-xs">미리보기</button>
-                                        <button onClick={() => showConfirm('삭제','이 기록을 삭제하시겠습니까?', async () => { await getCol('team_drafts').doc(d.id).delete(); })}
-                                            className="p-2 bg-red-50 text-red-400 rounded-lg">
-                                            <Icon.Trash size={13}/>
-                                        </button>
+                                        {savedDrafts.map(d => (
+                                            <div key={d.id} className="flex items-center gap-2 p-3 card border-slate-100 rounded-xl mb-2">
+                                                {draftSelectMode && (
+                                                    <button onClick={() => setSelectedDraftIds(prev =>
+                                                        prev.includes(d.id) ? prev.filter(id => id !== d.id) : [...prev, d.id]
+                                                    )} className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                                                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center ${selectedDraftIds.includes(d.id) ? 'bg-teal-500 border-teal-500' : 'border-slate-300'}`}>
+                                                            {selectedDraftIds.includes(d.id) && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                                                        </div>
+                                                    </button>
+                                                )}
+                                                <div className="flex-1">
+                                                    <p className="font-black text-slate-800 text-sm">{d.meetingDate}</p>
+                                                    <p className="text-xs text-slate-400 mt-0.5">{d.timeLabel}</p>
+                                                </div>
+                                                {!draftSelectMode && (
+                                                    <>
+                                                        <button onClick={() => setPreviewDraft(d)} className="px-2.5 py-1.5 bg-teal-50 text-teal-500 rounded-lg font-black text-xs">미리보기</button>
+                                                        <button onClick={() => showConfirm('삭제','이 기록을 삭제하시겠습니까?', async () => { await getCol('team_drafts').doc(d.id).delete(); })}
+                                                            className="p-2 bg-red-50 text-red-400 rounded-lg">
+                                                            <Icon.Trash size={13}/>
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
-                                ))
+                                )
                         )}
                     </div>
                 )}
@@ -318,5 +365,6 @@ const TabTeam = ({
                 )
         )}
     </div>
-);
+    );
+};
 // ─────────────────────────────────────────────────────────────────────────────

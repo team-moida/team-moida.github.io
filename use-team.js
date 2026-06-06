@@ -20,6 +20,7 @@ function useTeam({ isAdminMode, meetingSettings, allMembers }) {
     const [teamStorageSubTab, setTeamStorageSubTab] = useState('confirmed');
     const [previewDraft, setPreviewDraft] = useState(null);
     const [isCapturing, setIsCapturing] = useState(false);
+    const [selectedDraftIds, setSelectedDraftIds] = useState([]);
     const isDraggingRef = useRef(false);
 
     useEffect(() => {
@@ -146,6 +147,7 @@ function useTeam({ isAdminMode, meetingSettings, allMembers }) {
         teamStorageSubTab, setTeamStorageSubTab,
         previewDraft, setPreviewDraft,
         isCapturing, setIsCapturing,
+        selectedDraftIds, setSelectedDraftIds,
         isDraggingRef,
         tmMeetingDate, tmMaxLimit,
         pastTeammatesMap, tmAllAttendees, tmEntryList, tmActiveList, tmUnassigned, tmLevelStats,

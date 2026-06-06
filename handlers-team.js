@@ -287,9 +287,29 @@ function makeTeamHandlers(ctx) {
         finally { setIsCapturing(false); }
     };
 
+    const tmDeleteConfirmed = (id) => {
+        showConfirm('확정 기록 삭제', '이 확정 기록을 삭제하시겠습니까?\n삭제 시 회원 화면에서 팀이 사라집니다.', async () => {
+            try { await getCol('team_drafts').doc(id).delete(); }
+            catch(e) { showAlert('오류', '삭제 실패'); }
+        });
+    };
+
+    const tmDeleteSelectedDrafts = (ids, onSuccess) => {
+        if (!ids.length) return;
+        showConfirm('임시저장 삭제', `선택한 ${ids.length}개의 기록을 삭제하시겠습니까?`, async () => {
+            try {
+                const batch = db.batch();
+                ids.forEach(id => batch.delete(getCol('team_drafts').doc(id)));
+                await batch.commit();
+                if (onSuccess) onSuccess();
+            } catch(e) { showAlert('오류', '삭제 실패'); }
+        });
+    };
+
     return {
         tmSaveDraft, tmLoadDraft, tmConfirm, tmReset, generateTeams, tmReGenerate,
         tmDragStart, tmDragEnd, tmMemberDragOver, tmTeamDragOver, tmTeamDragLeave,
-        tmDrop, tmMemberClick, tmMoveToTeam, tmTeamBadgeClick, tmCapture
+        tmDrop, tmMemberClick, tmMoveToTeam, tmTeamBadgeClick, tmCapture,
+        tmDeleteConfirmed, tmDeleteSelectedDrafts
     };
 }

@@ -265,7 +265,8 @@ function App() {
 
     const { tmSaveDraft, tmLoadDraft, tmConfirm, tmReset, generateTeams, tmReGenerate,
             tmDragStart, tmDragEnd, tmMemberDragOver, tmTeamDragOver, tmTeamDragLeave,
-            tmDrop, tmMemberClick, tmMoveToTeam, tmTeamBadgeClick, tmCapture } = makeTeamHandlers({
+            tmDrop, tmMemberClick, tmMoveToTeam, tmTeamBadgeClick, tmCapture,
+            tmDeleteConfirmed, tmDeleteSelectedDrafts } = makeTeamHandlers({
         meetingSettings, editTeams: team.editTeams, setEditTeams: team.setEditTeams,
         editIsConfirmed: team.editIsConfirmed, setEditIsConfirmed: team.setEditIsConfirmed,
         editMeetingDate: team.editMeetingDate, setEditMeetingDate: team.setEditMeetingDate,
@@ -364,6 +365,8 @@ function App() {
                         tmTeamDragOver={tmTeamDragOver} tmTeamDragLeave={tmTeamDragLeave}
                         tmDrop={tmDrop} tmMemberClick={tmMemberClick} tmMoveToTeam={tmMoveToTeam}
                         tmTeamBadgeClick={tmTeamBadgeClick} showConfirm={showConfirm}
+                        selectedDraftIds={team.selectedDraftIds} setSelectedDraftIds={team.setSelectedDraftIds}
+                        tmDeleteConfirmed={tmDeleteConfirmed} tmDeleteSelectedDrafts={tmDeleteSelectedDrafts}
                     />
                 )}
                 {tab === 'match' && (
