@@ -6,6 +6,7 @@ const TabHome = ({
     mySession, meetingSettings, darkMode,
     memberName, announcements,
     isAdminMode, onAddAnnouncement, onEditAnnouncement, onDeleteAnnouncement,
+    isMeetingOver, onEndMeeting, isMeetingEndSaved,
 }) => (
     <div className="animate-in space-y-3">
         {/* iOS PWA 설치 안내 */}
@@ -55,6 +56,21 @@ const TabHome = ({
             </div>
         </button>
 
+        {/* 모임 종료 (관리자) */}
+        {isAdminMode && meetingSettings?.date && (meetingDayInfo?.type === 'today' || meetingDayInfo?.type === 'started' || isMeetingOver) && (
+            <div className="flex justify-end">
+                <button
+                    onClick={onEndMeeting}
+                    disabled={!isMeetingOver || isMeetingEndSaved}
+                    className={`px-4 py-2 rounded-xl font-black text-xs transition-all disabled:opacity-30 active:scale-95 ${
+                        isMeetingEndSaved ? 'bg-emerald-50 text-emerald-500' :
+                        isMeetingOver ? 'bg-rose-500 text-white' :
+                        'bg-slate-100 text-slate-300'
+                    }`}>
+                    {isMeetingEndSaved ? '저장 완료 ✓' : '모임 종료'}
+                </button>
+            </div>
+        )}
         {/* 내 팀 */}
         {!teamReady ? (
             <div className="card rounded-3xl p-5 text-center text-slate-400">

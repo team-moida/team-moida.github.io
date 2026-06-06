@@ -320,6 +320,9 @@ function App() {
                         onAddAnnouncement={()=>setAnnouncementModal({open:true,mode:'add',data:null})}
                         onEditAnnouncement={(a)=>setAnnouncementModal({open:true,mode:'edit',data:a})}
                         onDeleteAnnouncement={handleDeleteAnnouncement}
+                        isMeetingOver={attend.isMeetingOver}
+                        onEndMeeting={attendHandleEndMeeting}
+                        isMeetingEndSaved={attend.attendHistory?.some(h => h.date === meetingSettings?.date) || false}
                     />
                 )}
                 {tab === 'team' && (
