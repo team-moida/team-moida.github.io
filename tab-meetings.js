@@ -80,7 +80,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
             )}
 
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50"
+                <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-[60]"
                     onClick={e => { if(e.target === e.currentTarget) setIsModalOpen(false); }}>
                     <div className="bg-white w-full max-w-lg rounded-t-3xl p-6 space-y-4"
                         style={{paddingBottom:'max(1.5rem,env(safe-area-inset-bottom))'}}>
