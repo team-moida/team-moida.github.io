@@ -188,7 +188,7 @@ function App() {
             getCol('team_drafts').onSnapshot(snap=>{
                 const all=snap.docs.map(d=>({id:d.id,...d.data()}));
                 setSavedDrafts(all.filter(d=>!d.isConfirmed).sort((a,b)=>b.createdAt.localeCompare(a.createdAt)));
-                setConfirmedHistory(all.filter(d=>d.isConfirmed).sort((a,b)=>b.meetingDate.localeCompare(a.meetingDate)));
+                setConfirmedHistory(all.filter(d=>d.isConfirmed).sort((a,b)=>(b.updatedAt||b.createdAt||'').localeCompare(a.updatedAt||a.createdAt||'')));
             });
         });
         return()=>unsubAuth();

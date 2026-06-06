@@ -26,9 +26,10 @@ function useTeam({ isAdminMode, meetingSettings, allMembers }) {
         const unsub = getCol('team_drafts')
             .where('isConfirmed', '==', true)
             .onSnapshot(snap => {
-                const list = [];
-                snap.forEach(d => list.push(d.data()));
-                setConfirmedDrafts(list);
+                const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                setConfirmedDrafts(list.sort((a, b) =>
+                    (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || '')
+                ));
             }, () => {});
         return () => unsub();
     }, []);
