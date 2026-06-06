@@ -202,6 +202,7 @@ const TabAttend = ({
     isCheckingIn, setGpsStatus,
     isKioskOpen, setIsKioskOpen, attendHandleCheckIn,
     isMeetingOver, attendHandleEndMeeting,
+    meetings, activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers,
 }) => (
     <div className="animate-in space-y-4">
 
@@ -238,7 +239,7 @@ const TabAttend = ({
             <div>
                 {/* 서브탭 */}
                 <div className="flex gap-2 mb-4">
-                    {[['setup','선정'],['history','기록']].map(([v,l]) => (
+                    {[['meetings','모임'],['setup','선정'],['history','기록']].map(([v,l]) => (
                         <button key={v} onClick={() => { setAttendSubTab(v); setSelectedHistoryDetail(null); }}
                             className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${attendSubTab===v?'bg-teal-500 text-white shadow':'text-slate-400 bg-slate-100'}`}>{l}</button>
                     ))}
@@ -257,6 +258,18 @@ const TabAttend = ({
                         </>
                     )}
                 </div>
+
+                {/* ── 모임 서브탭 ── */}
+                {attendSubTab === 'meetings' && (
+                    <MeetingsTab
+                        meetings={meetings}
+                        activeMeeting={activeMeeting}
+                        handleSaveMeeting={handleSaveMeeting}
+                        handleDeleteMeeting={handleDeleteMeeting}
+                        managers={managers}
+                        showAlert={showAlert}
+                    />
+                )}
 
                 {/* ── 선정 서브탭 ── */}
                 {attendSubTab === 'setup' && (

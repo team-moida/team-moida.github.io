@@ -35,6 +35,8 @@
     <script type="text/babel" src="tab-team.js"></script>
     <script type="text/babel" src="tab-match.js"></script>
     <script type="text/babel" src="tab-attend.js"></script>
+    <script type="text/babel" src="handlers-meetings.js"></script>
+    <script type="text/babel" src="tab-meetings.js"></script>
     <script type="text/babel" src="tab-roster.js"></script>
     <script type="text/babel" src="tab-rules.js"></script>
     <script type="text/babel" src="modals.js"></script>
@@ -70,6 +72,7 @@ function App() {
     const isAdmin = ADMIN_ROLES.includes(memberData?.role);
     const isAdminMode = ADMIN_ROLES.includes(memberData?.role);
     const [meetingSettings, setMeetingSettings] = useState(null);
+    const [meetings, setMeetings] = useState([]);
     const testMode = !!meetingSettings?.testMode;
     const [mySession, setMySession] = useState(null);
     const [alertModal, setAlertModal] = useState({show:false,title:'',content:'',type:'info',onConfirm:null});
@@ -111,6 +114,13 @@ function App() {
         const unsub = getCol('settings').doc('meeting_schedule_v2').onSnapshot(doc => {
             if (doc.exists) setMeetingSettings(doc.data());
         });
+        return () => unsub();
+    }, []);
+
+    useEffect(() => {
+        const unsub = getMeetingsCol().onSnapshot(snap =>
+            setMeetings(snap.docs.map(d => ({id: d.id, ...d.data()})))
+        );
         return () => unsub();
     }, []);
 
@@ -226,6 +236,9 @@ function App() {
         setCurrentQRToken: attend.setCurrentQRToken, setIsQRGenModalOpen: attend.setIsQRGenModalOpen,
         testModeBackup: attend.testModeBackup, setTestModeBackup: attend.setTestModeBackup
     });
+
+    const { activeMeeting, handleSaveMeeting, handleDeleteMeeting } = makeMeetingHandlers({ meetings, showAlert, showConfirm });
+    const managers = roster.allMembers.filter(m => STAFF_ROLES.includes(m.role));
 
     const { moveMonth, handleAddMember, handleUpdateMember, handleResignConfirm,
             handleRestoreResigned, handleDeleteMember,
@@ -422,6 +435,11 @@ function App() {
                         attendHandleCheckIn={attendHandleCheckIn}
                         isMeetingOver={attend.isMeetingOver}
                         attendHandleEndMeeting={attendHandleEndMeeting}
+                        meetings={meetings}
+                        activeMeeting={activeMeeting}
+                        handleSaveMeeting={handleSaveMeeting}
+                        handleDeleteMeeting={handleDeleteMeeting}
+                        managers={managers}
                     />
                 )}
                 {tab === 'rules' && (
