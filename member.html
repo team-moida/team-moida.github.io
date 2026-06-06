@@ -307,6 +307,10 @@ function App() {
                 mySession={mySession} teamReady={teamReady} allowFromDisplay={allowFromDisplay}
                 myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                 handleLogout={handleLogout} toggleTheme={toggleTheme} darkMode={darkMode}
+                isAdminMode={isAdminMode}
+                isMeetingOver={attend.isMeetingOver}
+                onEndMeeting={attendHandleEndMeeting}
+                isMeetingEndSaved={attend.attendHistory?.some(h => h.date === meetingSettings?.date) || false}
             />
             <div className="px-4 pt-4">
                 {tab === 'home' && (
@@ -320,9 +324,6 @@ function App() {
                         onAddAnnouncement={()=>setAnnouncementModal({open:true,mode:'add',data:null})}
                         onEditAnnouncement={(a)=>setAnnouncementModal({open:true,mode:'edit',data:a})}
                         onDeleteAnnouncement={handleDeleteAnnouncement}
-                        isMeetingOver={attend.isMeetingOver}
-                        onEndMeeting={attendHandleEndMeeting}
-                        isMeetingEndSaved={attend.attendHistory?.some(h => h.date === meetingSettings?.date) || false}
                     />
                 )}
                 {tab === 'team' && (
