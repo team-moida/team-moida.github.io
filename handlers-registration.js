@@ -25,6 +25,7 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
                 const confirmedCount = meetingData.confirmedCount || 0;
                 const waitingCount = meetingData.waitingCount || 0;
 
+                const isFirstComeFirstServed = meetingData.isFirstComeFirstServed ?? true;
                 const regData = {
                     meetingDate,
                     memberId: memberData.memberId,
@@ -34,23 +35,30 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
                     registeredAt: FieldValue.serverTimestamp(),
                 };
 
-                if (confirmedCount < maxLimit) {
+                const sessionData = {
+                    memberId: memberData.memberId,
+                    name: memberData.name || '',
+                    gender: memberData.gender || '',
+                    level: memberData.level || '',
+                    date: meetingDate,
+                    checkedIn: false,
+                    checkInTime: null,
+                    status: 'active',
+                    isGuest: false,
+                    team: null,
+                    createdAt: FieldValue.serverTimestamp(),
+                };
+
+                if (!isFirstComeFirstServed) {
                     tx.set(regRef, { ...regData, status: 'confirmed', waitingNumber: null });
                     tx.update(meetingRef, { confirmedCount: FieldValue.increment(1) });
                     tx.update(mirrorRef, { confirmedCount: FieldValue.increment(1) });
-                    tx.set(sessionRef, {
-                        memberId: memberData.memberId,
-                        name: memberData.name || '',
-                        gender: memberData.gender || '',
-                        level: memberData.level || '',
-                        date: meetingDate,
-                        checkedIn: false,
-                        checkInTime: null,
-                        status: 'active',
-                        isGuest: false,
-                        team: null,
-                        createdAt: FieldValue.serverTimestamp(),
-                    });
+                    tx.set(sessionRef, sessionData);
+                } else if (confirmedCount < maxLimit) {
+                    tx.set(regRef, { ...regData, status: 'confirmed', waitingNumber: null });
+                    tx.update(meetingRef, { confirmedCount: FieldValue.increment(1) });
+                    tx.update(mirrorRef, { confirmedCount: FieldValue.increment(1) });
+                    tx.set(sessionRef, sessionData);
                 } else {
                     tx.set(regRef, { ...regData, status: 'waiting', waitingNumber: waitingCount + 1 });
                     tx.update(meetingRef, { waitingCount: FieldValue.increment(1) });

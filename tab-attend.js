@@ -189,11 +189,13 @@ const RegSettingsSection = ({ meetingSettings, updateMeetingSettingsAdmin }) => 
     };
 
     const [enabled, setEnabled] = useState(!!meetingSettings?.isRegistrationEnabled);
+    const [firstComeFirstServed, setFirstComeFirstServed] = useState(meetingSettings?.isFirstComeFirstServed ?? true);
     const [openDT, setOpenDT] = useState(() => parseRegDT(meetingSettings?.registrationOpenAt));
     const [closeDT, setCloseDT] = useState(() => parseRegDT(meetingSettings?.registrationCloseAt));
 
     useEffect(() => {
         setEnabled(!!meetingSettings?.isRegistrationEnabled);
+        setFirstComeFirstServed(meetingSettings?.isFirstComeFirstServed ?? true);
         setOpenDT(parseRegDT(meetingSettings?.registrationOpenAt));
         setCloseDT(parseRegDT(meetingSettings?.registrationCloseAt));
     }, [meetingSettings?.date]);
@@ -203,6 +205,7 @@ const RegSettingsSection = ({ meetingSettings, updateMeetingSettingsAdmin }) => 
         if (!meetingDate) return;
         const newReg = {
             isRegistrationEnabled: enabled,
+            isFirstComeFirstServed: firstComeFirstServed,
             registrationOpenAt: enabled && openDT.date ? `${openDT.date}T${openDT.hour}:${openDT.minute}` : '',
             registrationCloseAt: enabled && closeDT.date ? `${closeDT.date}T${closeDT.hour}:${closeDT.minute}` : '',
         };
@@ -233,7 +236,7 @@ const RegSettingsSection = ({ meetingSettings, updateMeetingSettingsAdmin }) => 
     return (
         <div className="pt-3 border-t border-slate-100">
             <div className="flex items-center justify-between mb-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase">선착순 신청</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase">신청 창구</label>
                 <button onClick={()=>setEnabled(e=>!e)}
                     className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${enabled?'bg-teal-500':'bg-slate-200'}`}>
                     <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${enabled?'left-6':'left-0.5'}`}/>
@@ -241,6 +244,14 @@ const RegSettingsSection = ({ meetingSettings, updateMeetingSettingsAdmin }) => 
             </div>
             {enabled && (
                 <div className="space-y-2 mt-2">
+                    <div className="flex items-center justify-between py-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase">선착순 제한</label>
+                        <button onClick={()=>setFirstComeFirstServed(v=>!v)}
+                            className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${firstComeFirstServed?'bg-orange-400':'bg-slate-200'}`}>
+                            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${firstComeFirstServed?'left-6':'left-0.5'}`}/>
+                        </button>
+                    </div>
+                    {!firstComeFirstServed && <p className="text-[10px] text-slate-400 pb-1">OFF: 정원 초과해도 모두 확정</p>}
                     <DTRow label="신청 시작" dt={openDT} setDT={setOpenDT}/>
                     <DTRow label="신청 마감" dt={closeDT} setDT={setCloseDT}/>
                 </div>
@@ -264,6 +275,7 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
     const isAfterClose = closeAt && now > closeAt;
     const isOpen = !isBeforeOpen && !isAfterClose;
     const maxLimit = meetingSettings?.maxLimit || 18;
+    const isFirstComeFirstServed = meetingSettings?.isFirstComeFirstServed ?? true;
 
     const fmtDT = (isoStr) => {
         if (!isoStr) return '';
@@ -274,8 +286,8 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
     return (
         <div className="card rounded-3xl p-5">
             <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-black text-orange-500 uppercase tracking-widest">선착순 신청</p>
-                <span className="text-xs font-black text-slate-400">{regConfirmedCount} / {maxLimit}명</span>
+                <p className="text-xs font-black text-orange-500 uppercase tracking-widest">{isFirstComeFirstServed ? '선착순 신청' : '모임 신청'}</p>
+                {isFirstComeFirstServed && <span className="text-xs font-black text-slate-400">{regConfirmedCount} / {maxLimit}명</span>}
             </div>
 
             {isBeforeOpen && (
@@ -304,7 +316,7 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
                 </div>
             )}
 
-            {isOpen && myRegistration?.status === 'waiting' && (
+            {isOpen && myRegistration?.status === 'waiting' && isFirstComeFirstServed && (
                 <div>
                     <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-3 text-center">
                         <p className="font-black text-amber-500">대기 중 {myWaitingPosition}번</p>
@@ -320,7 +332,7 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
                 <div className="text-center py-2">
                     <p className="text-sm font-black text-slate-400">신청 마감</p>
                     {myRegistration?.status === 'confirmed' && <p className="text-xs text-teal-500 font-black mt-1">참가 확정 ✓</p>}
-                    {myRegistration?.status === 'waiting' && <p className="text-xs text-amber-500 font-black mt-1">대기 {myWaitingPosition}번</p>}
+                    {isFirstComeFirstServed && myRegistration?.status === 'waiting' && <p className="text-xs text-amber-500 font-black mt-1">대기 {myWaitingPosition}번</p>}
                     {!myRegistration && <p className="text-xs text-slate-300 mt-1">미신청</p>}
                 </div>
             )}
@@ -552,7 +564,7 @@ const TabAttend = ({
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-black text-slate-400 uppercase">선착순 인원</label>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase">{(meetingSettings?.isFirstComeFirstServed ?? true) ? '선착순 인원' : '최대 인원 (표시용)'}</label>
                                             <input type="number" style={{userSelect:'text'}} className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black text-center"
                                                 value={localMaxLimit !== null ? localMaxLimit : (meetingSettings?.maxLimit||18)}
                                                 onChange={e=>setLocalMaxLimit(e.target.value)}

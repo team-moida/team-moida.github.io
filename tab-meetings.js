@@ -3,14 +3,14 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
     const { useState } = React;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59' });
+    const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59' });
     const [isSaving, setIsSaving] = useState(false);
 
     const sortedMeetings = [...meetings].sort((a, b) => a.date.localeCompare(b.date));
 
     const openAdd = () => {
         setEditingId(null);
-        setForm({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59' });
+        setForm({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59' });
         setIsModalOpen(true);
     };
 
@@ -29,6 +29,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
             location: m.location||'', maxLimit: m.maxLimit||18,
             managerId: m.managerId||'', managerName: m.managerName||'',
             isRegistrationEnabled: m.isRegistrationEnabled || false,
+            isFirstComeFirstServed: m.isFirstComeFirstServed ?? true,
             regOpenDate: openDT.date, regOpenHour: openDT.hour, regOpenMinute: openDT.minute,
             regCloseDate: closeDT.date, regCloseHour: closeDT.hour, regCloseMinute: closeDT.minute,
         });
@@ -157,7 +158,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                             </div>
                             <div className="pt-2 border-t border-slate-100">
                                 <div className="flex items-center justify-between mb-1">
-                                    <label className="text-xs font-black text-slate-500">선착순 신청</label>
+                                    <label className="text-xs font-black text-slate-500">신청 창구</label>
                                     <button onClick={() => setForm(f => ({...f, isRegistrationEnabled: !f.isRegistrationEnabled}))}
                                         className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${form.isRegistrationEnabled ? 'bg-teal-500' : 'bg-slate-200'}`}>
                                         <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${form.isRegistrationEnabled ? 'left-6' : 'left-0.5'}`}/>
@@ -165,6 +166,14 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                 </div>
                                 {form.isRegistrationEnabled && (
                                     <div className="mt-3 space-y-3">
+                                        <div className="flex items-center justify-between py-1">
+                                            <label className="text-xs font-black text-slate-500">선착순 제한</label>
+                                            <button onClick={() => setForm(f => ({...f, isFirstComeFirstServed: !f.isFirstComeFirstServed}))}
+                                                className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${form.isFirstComeFirstServed ? 'bg-orange-400' : 'bg-slate-200'}`}>
+                                                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${form.isFirstComeFirstServed ? 'left-6' : 'left-0.5'}`}/>
+                                            </button>
+                                        </div>
+                                        {!form.isFirstComeFirstServed && <p className="text-xs text-slate-400">OFF: 정원 초과해도 모두 확정</p>}
                                         <div>
                                             <label className="text-xs font-black text-slate-500 mb-1 block">신청 시작</label>
                                             <div className="flex gap-2">
