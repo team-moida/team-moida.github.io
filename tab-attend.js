@@ -369,7 +369,7 @@ const TabAttend = ({
     isMeetingOver, attendHandleEndMeeting,
     meetings, activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers,
     showAlert,
-    myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel,
+    myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel, adminAddRegistration,
 }) => {
     const [selectedMeeting, setSelectedMeeting] = React.useState(null);
     return (
@@ -601,16 +601,24 @@ const TabAttend = ({
                                     {attendNormalMembers.map(member => {
                                         const isSelected = tmSessionData.some(p=>p.memberId===member.id&&p.date===meetingSettings?.date);
                                         return (
-                                            <button key={member.id} onClick={()=>attendToggleParticipant(member)}
-                                                className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-teal-50 border-teal-300':'card border-slate-100 hover:border-slate-200'}`}>
-                                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${isSelected?'bg-teal-500 border-teal-500':'border-slate-300'}`}>
-                                                    {isSelected&&<Icon.Check size={10} className="text-white"/>}
-                                                </div>
-                                                <span className="font-black text-sm text-slate-800 flex-1">{member.name}</span>
-                                                {member.gender==='여성'&&<span className="text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
-                                                {ADMIN_ROLES.includes(member.role)&&<span className={`text-[9px] px-1.5 py-0.5 rounded-lg font-black ${getRoleBadgeClass(member.role)}`}>{member.role}</span>}
-                                                <span className="text-[9px] font-black text-slate-400">Lv.{member.level}</span>
-                                            </button>
+                                            <div key={member.id} className="flex items-center gap-1.5">
+                                                <button onClick={()=>attendToggleParticipant(member)}
+                                                    className={`flex-1 flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-teal-50 border-teal-300':'card border-slate-100 hover:border-slate-200'}`}>
+                                                    <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${isSelected?'bg-teal-500 border-teal-500':'border-slate-300'}`}>
+                                                        {isSelected&&<Icon.Check size={10} className="text-white"/>}
+                                                    </div>
+                                                    <span className="font-black text-sm text-slate-800 flex-1">{member.name}</span>
+                                                    {member.gender==='여성'&&<span className="text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
+                                                    {ADMIN_ROLES.includes(member.role)&&<span className={`text-[9px] px-1.5 py-0.5 rounded-lg font-black ${getRoleBadgeClass(member.role)}`}>{member.role}</span>}
+                                                    <span className="text-[9px] font-black text-slate-400">Lv.{member.level}</span>
+                                                </button>
+                                                {!isSelected && adminAddRegistration && (
+                                                    <button onClick={()=>adminAddRegistration(member, false)}
+                                                        className="px-2.5 py-3 bg-blue-50 text-blue-500 text-[10px] font-black rounded-2xl border border-blue-200 whitespace-nowrap flex-shrink-0 active:scale-95 transition-transform">
+                                                        +신규
+                                                    </button>
+                                                )}
+                                            </div>
                                         );
                                     })}
                                 </div>
@@ -623,16 +631,24 @@ const TabAttend = ({
                                                 const msType = getMembershipStatus(member, meetingSettings?.date?.substring(0,7)||'')?.type;
                                                 const badge = member.isSpecialRest ? '특별휴식' : (msType==='반년'?'반년납 휴식':'1년납 휴식');
                                                 return (
-                                                    <button key={member.id} onClick={()=>attendToggleParticipantAsGuest(member)}
-                                                        className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-orange-50 border-orange-300':'card border-slate-100 hover:border-slate-200'}`}>
-                                                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${isSelected?'bg-orange-400 border-orange-400':'border-slate-300'}`}>
-                                                            {isSelected&&<Icon.Check size={10} className="text-white"/>}
-                                                        </div>
-                                                        <span className="font-black text-sm text-slate-800 flex-1">{member.name}</span>
-                                                        {member.gender==='여성'&&<span className="text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
-                                                        <span className="text-[9px] px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-lg font-black">{badge}</span>
-                                                        <span className="text-[9px] font-black text-slate-400">Lv.{member.level}</span>
-                                                    </button>
+                                                    <div key={member.id} className="flex items-center gap-1.5">
+                                                        <button onClick={()=>attendToggleParticipantAsGuest(member)}
+                                                            className={`flex-1 flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-orange-50 border-orange-300':'card border-slate-100 hover:border-slate-200'}`}>
+                                                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${isSelected?'bg-orange-400 border-orange-400':'border-slate-300'}`}>
+                                                                {isSelected&&<Icon.Check size={10} className="text-white"/>}
+                                                            </div>
+                                                            <span className="font-black text-sm text-slate-800 flex-1">{member.name}</span>
+                                                            {member.gender==='여성'&&<span className="text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
+                                                            <span className="text-[9px] px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-lg font-black">{badge}</span>
+                                                            <span className="text-[9px] font-black text-slate-400">Lv.{member.level}</span>
+                                                        </button>
+                                                        {!isSelected && adminAddRegistration && (
+                                                            <button onClick={()=>adminAddRegistration(member, true)}
+                                                                className="px-2.5 py-3 bg-blue-50 text-blue-500 text-[10px] font-black rounded-2xl border border-blue-200 whitespace-nowrap flex-shrink-0 active:scale-95 transition-transform">
+                                                                +신규
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 );
                                             })}
                                         </div>
