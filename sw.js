@@ -13,20 +13,8 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // 앱이 백그라운드일 때 푸시 수신
-messaging.onBackgroundMessage((payload) => {
-    const title = payload.data?.title || '모이다';
-    const body  = payload.data?.body  || '';
-    self.registration.showNotification(title, {
-        body,
-        icon:  '/moida/icon.png',
-        badge: '/moida/icon.png',
-        data:  { url: 'https://nakdo0415-crypto.github.io/moida/member.html' },
-        vibrate: [200, 100, 200],
-        requireInteraction: false,
-        tag: 'moida',
-        renotify: true,
-    });
-});
+// webpush.notification 필드로 FCM SDK가 자동 표시 — 여기서 직접 띄우면 중복
+messaging.onBackgroundMessage((_payload) => {});
 
 // 알림 클릭 시 앱으로 이동
 self.addEventListener('notificationclick', (event) => {
