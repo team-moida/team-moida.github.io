@@ -1,5 +1,6 @@
 function useAttend({ isAdminMode, memberData, meetingSettings, tmSessionData, activeMembers, tmMonthlyStatuses, teamDraftData }) {
     const { useState, useEffect, useMemo, useRef } = React;
+    const ms = (v) => v?.toMillis?.() ?? (v?.seconds ? v.seconds * 1000 : (typeof v === 'string' ? (Date.parse(v) || 0) : 0));
     const testMode = !!meetingSettings?.testMode;
 
     const [isAttendPanelOpen, setIsAttendPanelOpen] = useState(false);
@@ -64,7 +65,7 @@ function useAttend({ isAdminMode, memberData, meetingSettings, tmSessionData, ac
 
     const attendActiveParticipants = useMemo(() =>
         tmSessionData.filter(p => p.date === (meetingSettings?.date || ''))
-            .sort((a,b) => (a.createdAt||'').localeCompare(b.createdAt||'') || a.name.localeCompare(b.name)),
+            .sort((a,b) => ms(a.createdAt) - ms(b.createdAt) || a.name.localeCompare(b.name)),
     [tmSessionData, meetingSettings?.date]);
 
     const { attendNormalMembers, attendGuestEligibleMembers } = useMemo(() => {
@@ -160,7 +161,7 @@ function useAttend({ isAdminMode, memberData, meetingSettings, tmSessionData, ac
         (async () => {
             try {
                 const snap = await getSessionCol().where('date','==',date).get();
-                const sorted = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||'')||a.name.localeCompare(b.name));
+                const sorted = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>ms(a.createdAt)-ms(b.createdAt)||a.name.localeCompare(b.name));
                 const toNoShow = sorted.slice(0,lim).filter(p=>!p.checkedIn&&p.status!=='노쇼');
                 if (toNoShow.length===0) return;
                 const batch = db.batch();

@@ -10,6 +10,7 @@ function makeAttendSessionHandlers(ctx) {
         setIsEditingManager,
         showAlert, showConfirm
     } = ctx;
+    const ms = (v) => v?.toMillis?.() ?? (v?.seconds ? v.seconds * 1000 : (typeof v === 'string' ? (Date.parse(v) || 0) : 0));
 
     const updateMeetingTimeSettings = async (newData) => {
         const prev = meetingTimes;
@@ -245,7 +246,7 @@ function makeAttendSessionHandlers(ctx) {
             setIsPending(true);
             try {
                 const limit = meetingTimes.maxLimit || 18;
-                const sorted = [...current].sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||'')||a.name.localeCompare(b.name));
+                const sorted = [...current].sort((a,b)=>ms(a.createdAt)-ms(b.createdAt)||a.name.localeCompare(b.name));
                 const records = sorted.map((p,idx) => {
                     const isWaiting = idx+1 > limit;
                     let finalStatus = isWaiting ? '대기' : p.checkedIn ? (p.status||'정상') : '노쇼';
