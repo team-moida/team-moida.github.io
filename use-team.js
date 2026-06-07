@@ -1,5 +1,6 @@
 function useTeam({ isAdminMode, meetingSettings, allMembers }) {
     const { useState, useEffect, useMemo, useRef } = React;
+    const ms = (v) => v?.toMillis?.() ?? (v?.seconds ? v.seconds * 1000 : (typeof v === 'string' ? (Date.parse(v) || 0) : 0));
 
     const [isTeamPanelOpen, setIsTeamPanelOpen] = useState(false);
     const [teamMakerTab, setTeamMakerTab] = useState('generator');
@@ -29,7 +30,7 @@ function useTeam({ isAdminMode, meetingSettings, allMembers }) {
             .onSnapshot(snap => {
                 const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 setConfirmedDrafts(list.sort((a, b) =>
-                    (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || '')
+                    ms(b.updatedAt || b.createdAt) - ms(a.updatedAt || a.createdAt)
                 ));
             }, () => {});
         return () => unsub();
@@ -40,7 +41,7 @@ function useTeam({ isAdminMode, meetingSettings, allMembers }) {
         if (!date || !confirmedDrafts.length) { setTeamDraftData(null); return; }
         const filtered = confirmedDrafts
             .filter(d => d.meetingDate === date)
-            .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+            .sort((a, b) => ms(b.createdAt) - ms(a.createdAt));
         setTeamDraftData(filtered[0] || null);
     }, [confirmedDrafts, meetingSettings?.date]);
 
@@ -66,7 +67,7 @@ function useTeam({ isAdminMode, meetingSettings, allMembers }) {
         if (!isAdminMode) return;
         const unsub = getCol('team_drafts').where('isConfirmed', '==', false).onSnapshot(snap => {
             const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            setSavedDrafts(list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')));
+            setSavedDrafts(list.sort((a, b) => ms(b.createdAt) - ms(a.createdAt)));
         }, () => {});
         return () => unsub();
     }, [isAdminMode]);
@@ -107,7 +108,7 @@ function useTeam({ isAdminMode, meetingSettings, allMembers }) {
             if (mi.isSpecialRest && targetMonthStr >= (mi.specialRestStartMonth || '0000-00')) return false;
             if (tmMonthlyStatuses[s.memberId] === 'rest') return false;
             return true;
-        }).sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || '') || a.name.localeCompare(b.name));
+        }).sort((a, b) => ms(a.createdAt) - ms(b.createdAt) || a.name.localeCompare(b.name));
     }, [tmSessionData, tmMeetingDate, allMembers, tmMonthlyStatuses]);
 
     const tmEntryList = useMemo(() => tmAllAttendees.slice(0, tmMaxLimit), [tmAllAttendees, tmMaxLimit]);
