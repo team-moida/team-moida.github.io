@@ -200,6 +200,8 @@ PWA 및 배포
 배포 작업 시 Service Worker(sw.js) · manifest · 캐시 영향 여부를 확인한다.
 기존 사용자 데이터는 유지한다.
 Cloud Functions(functions/index.js) 변경은 git push가 아니라 firebase deploy --only functions 로 별도 배포한다.
+대기 승급(onRegistrationDeleted)은 registrations 복합 색인 필요 — firestore.indexes.json에 기록됨, Firebase Console에서 생성 완료 (meetingDate + status + registeredAt).
+Firestore 색인 배포: firebase deploy --only firestore:indexes
 
 Git 규칙
 사용자가 요청하면 git pull / git push를 바로 수행한다.
