@@ -118,6 +118,8 @@ function App() {
     const [editTitle, setEditTitle] = useState('');
     const [editBody, setEditBody] = useState('');
     const [fcmTokenCount, setFcmTokenCount] = useState(null);
+    const [notifTargetMode, setNotifTargetMode] = useState('all');
+    const [selectedNotifMemberIds, setSelectedNotifMemberIds] = useState([]);
 
     useEffect(() => {
         const unsub = getCol('notifications')
@@ -183,10 +185,17 @@ function App() {
     const showConfirm = (title, content, onConfirm) => setAlertModal({show:true,title,content,type:'confirm',onConfirm});
 
     const { generateQRCode } = makeQRHandlers({ meetingTimes, setCurrentQRToken, setIsQRModalOpen, showAlert });
+    const handleNotifModalClose = () => {
+        setIsNotifModalOpen(false);
+        setNotifTargetMode('all');
+        setSelectedNotifMemberIds([]);
+    };
     const { sendPushNotification, startEditNotif, cancelEditNotif, saveEditNotif, deleteNotif } = makeNotifHandlers({
         loggedInManager, notifTitle, notifBody, editingNotifId, editTitle, editBody,
+        notifTargetMode, selectedNotifMemberIds,
         showAlert, showConfirm, setNotifSending, setIsNotifModalOpen,
-        setNotifTitle, setNotifBody, setEditingNotifId, setEditTitle, setEditBody
+        setNotifTitle, setNotifBody, setEditingNotifId, setEditTitle, setEditBody,
+        setNotifTargetMode, setSelectedNotifMemberIds
     });
 
     useEffect(() => {
@@ -473,7 +482,7 @@ function App() {
 
             <QRModal isOpen={isQRModalOpen} meetingTimes={meetingTimes} onClose={()=>setIsQRModalOpen(false)} />
 
-            <NotifModal isOpen={isNotifModalOpen} onClose={()=>setIsNotifModalOpen(false)}
+            <NotifModal isOpen={isNotifModalOpen} onClose={handleNotifModalClose}
                 fcmTokenCount={fcmTokenCount}
                 notifTitle={notifTitle} setNotifTitle={setNotifTitle}
                 notifBody={notifBody} setNotifBody={setNotifBody}
@@ -482,7 +491,10 @@ function App() {
                 editTitle={editTitle} setEditTitle={setEditTitle}
                 editBody={editBody} setEditBody={setEditBody}
                 onStartEdit={startEditNotif} onCancelEdit={cancelEditNotif}
-                onSaveEdit={saveEditNotif} onDeleteNotif={deleteNotif} />
+                onSaveEdit={saveEditNotif} onDeleteNotif={deleteNotif}
+                notifTargetMode={notifTargetMode} setNotifTargetMode={setNotifTargetMode}
+                selectedNotifMemberIds={selectedNotifMemberIds} setSelectedNotifMemberIds={setSelectedNotifMemberIds}
+                activeMembers={activeMembers} />
 
             <PendingModal isOpen={isPendingModalOpen} onClose={()=>setIsPendingModalOpen(false)} pendingRegistrations={pendingRegistrations} onApprove={handleApprovePending} onReject={handleRejectPending} />
 

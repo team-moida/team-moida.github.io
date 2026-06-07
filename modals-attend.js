@@ -78,8 +78,10 @@ const CheckInModal = ({ modal, setModal, handleCheckIn, handleUncheckIn }) => {
 
 // ========= makeNotifHandlers =========
 const makeNotifHandlers = ({ loggedInManager, notifTitle, notifBody, editingNotifId, editTitle, editBody,
+                              notifTargetMode, selectedNotifMemberIds,
                               showAlert, showConfirm, setNotifSending, setIsNotifModalOpen,
-                              setNotifTitle, setNotifBody, setEditingNotifId, setEditTitle, setEditBody }) => {
+                              setNotifTitle, setNotifBody, setEditingNotifId, setEditTitle, setEditBody,
+                              setNotifTargetMode, setSelectedNotifMemberIds }) => {
     const startEditNotif = (n) => { setEditingNotifId(n.id); setEditTitle(n.title || ''); setEditBody(n.body || ''); };
     const cancelEditNotif = () => setEditingNotifId(null);
     const saveEditNotif = async () => {
@@ -96,18 +98,29 @@ const makeNotifHandlers = ({ loggedInManager, notifTitle, notifBody, editingNoti
     };
     const sendPushNotification = async () => {
         if (!notifTitle.trim() || !notifBody.trim()) return showAlert('입력 오류', '제목과 내용을 모두 입력해주세요.');
+        if (notifTargetMode === 'select' && selectedNotifMemberIds.length === 0)
+            return showAlert('입력 오류', '대상 회원을 1명 이상 선택해주세요.');
         setNotifSending(true);
         try {
-            await getCol('notifications').add({
+            const notifDoc = {
                 title: notifTitle.trim(),
                 body: notifBody.trim(),
                 sentAt: new Date().toISOString(),
                 sentBy: loggedInManager?.name || '관리자',
-            });
+            };
+            if (notifTargetMode === 'select') {
+                notifDoc.targetMemberIds = selectedNotifMemberIds;
+            }
+            await getCol('notifications').add(notifDoc);
             setIsNotifModalOpen(false);
             setNotifTitle('');
             setNotifBody('');
-            showAlert('발송 완료', '푸시 알림이 전송되었습니다.');
+            setNotifTargetMode('all');
+            setSelectedNotifMemberIds([]);
+            const resultMsg = notifTargetMode === 'select'
+                ? `${selectedNotifMemberIds.length}명에게 푸시 알림이 전송되었습니다.`
+                : '푸시 알림이 전송되었습니다.';
+            showAlert('발송 완료', resultMsg);
         } catch(e) {
             showAlert('오류', '알림 발송 실패: ' + e.message);
         } finally {
@@ -121,11 +134,17 @@ const makeNotifHandlers = ({ loggedInManager, notifTitle, notifBody, editingNoti
 const NotifModal = ({ isOpen, onClose, fcmTokenCount, notifTitle, setNotifTitle, notifBody, setNotifBody,
                       notifSending, onSend, notifHistory, editingNotifId,
                       editTitle, setEditTitle, editBody, setEditBody,
-                      onStartEdit, onCancelEdit, onSaveEdit, onDeleteNotif }) => {
+                      onStartEdit, onCancelEdit, onSaveEdit, onDeleteNotif,
+                      notifTargetMode, setNotifTargetMode, selectedNotifMemberIds, setSelectedNotifMemberIds, activeMembers }) => {
     if (!isOpen) return null;
+    const sortedMembers = (activeMembers || []).slice().sort((a,b)=>a.name.localeCompare(b.name));
+    const allSelected = sortedMembers.length > 0 && selectedNotifMemberIds.length === sortedMembers.length;
+    const canSend = notifTargetMode === 'all'
+        ? (notifTitle.trim() && notifBody.trim())
+        : (notifTitle.trim() && notifBody.trim() && selectedNotifMemberIds.length > 0);
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={onClose}>
-            <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col" style={{maxHeight:'85vh'}} onClick={e=>e.stopPropagation()}>
+            <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col" style={{maxHeight:'90vh'}} onClick={e=>e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-1">
                     <h2 className="text-xl font-black text-slate-800">공지 발송</h2>
                     {fcmTokenCount !== null && (
@@ -134,8 +153,10 @@ const NotifModal = ({ isOpen, onClose, fcmTokenCount, notifTitle, setNotifTitle,
                         </span>
                     )}
                 </div>
-                <p className="text-xs text-slate-400 mb-5">알림을 허용한 모든 회원에게 전송됩니다</p>
-                <div className="space-y-3 mb-5">
+                <p className="text-xs text-slate-400 mb-4">
+                    {notifTargetMode === 'all' ? '알림을 허용한 모든 회원에게 전송됩니다' : `${selectedNotifMemberIds.length}명 선택됨`}
+                </p>
+                <div className="space-y-3 mb-4">
                     <div>
                         <p className="text-xs font-black text-slate-500 mb-1 ml-1">제목</p>
                         <input type="text" value={notifTitle} onChange={e=>setNotifTitle(e.target.value)}
@@ -150,9 +171,45 @@ const NotifModal = ({ isOpen, onClose, fcmTokenCount, notifTitle, setNotifTitle,
                             className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm font-medium text-slate-800 focus:border-teal-400 outline-none" />
                     </div>
                 </div>
+                {/* 발송 대상 선택 */}
+                <div className="mb-4">
+                    <p className="text-xs font-black text-slate-500 mb-2 ml-1">발송 대상</p>
+                    <div className="flex gap-2 mb-3">
+                        <button onClick={()=>setNotifTargetMode('all')}
+                            className={`flex-1 py-2 rounded-xl font-black text-sm transition-all ${notifTargetMode==='all'?'bg-teal-500 text-white':'bg-slate-100 text-slate-500'}`}>
+                            전체
+                        </button>
+                        <button onClick={()=>setNotifTargetMode('select')}
+                            className={`flex-1 py-2 rounded-xl font-black text-sm transition-all ${notifTargetMode==='select'?'bg-teal-500 text-white':'bg-slate-100 text-slate-500'}`}>
+                            직접 선택
+                        </button>
+                    </div>
+                    {notifTargetMode === 'select' && (
+                        <div className="border border-slate-200 rounded-2xl overflow-hidden">
+                            <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100">
+                                <span className="text-xs font-black text-slate-500">{selectedNotifMemberIds.length}명 선택</span>
+                                <button onClick={()=>{ if(allSelected) setSelectedNotifMemberIds([]); else setSelectedNotifMemberIds(sortedMembers.map(m=>m.id)); }}
+                                    className="text-xs font-black text-teal-500">
+                                    {allSelected ? '전체 해제' : '전체 선택'}
+                                </button>
+                            </div>
+                            <div className="overflow-y-auto" style={{maxHeight:'160px'}}>
+                                {sortedMembers.map(m => (
+                                    <label key={m.id} className="flex items-center gap-3 px-3 py-2.5 border-b border-slate-50 last:border-0 cursor-pointer active:bg-slate-50">
+                                        <input type="checkbox" className="w-4 h-4 accent-teal-500"
+                                            checked={selectedNotifMemberIds.includes(m.id)}
+                                            onChange={e=>{ if(e.target.checked) setSelectedNotifMemberIds(p=>[...p,m.id]); else setSelectedNotifMemberIds(p=>p.filter(id=>id!==m.id)); }}/>
+                                        <span className="text-sm font-black text-slate-700 flex-1">{m.name}</span>
+                                        {m.gender==='여성'&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg">W</span>}
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
                 <div className="flex gap-2 mb-5">
                     <button onClick={onClose} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
-                    <button onClick={onSend} disabled={notifSending || !notifTitle.trim() || !notifBody.trim()}
+                    <button onClick={onSend} disabled={notifSending || !canSend}
                         className="flex-1 py-3 bg-teal-500 text-white rounded-2xl font-black text-sm disabled:opacity-50">
                         {notifSending ? '발송 중...' : '발송'}
                     </button>

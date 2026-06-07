@@ -13,7 +13,7 @@ exports.sendPushNotification = onDocumentCreated(
   `${DB_PATH}/notifications/{notifId}`,
   async (event) => {
     const data = event.data.data();
-    const { title, body, targetMemberId } = data;
+    const { title, body, targetMemberId, targetMemberIds } = data;
 
     if (!title || !body) return;
 
@@ -24,11 +24,14 @@ exports.sendPushNotification = onDocumentCreated(
     if (tokensSnap.empty) return;
 
     // 특정 회원에게만 보내는 경우 필터링
+    // targetMemberIds(배열) 우선, 없으면 targetMemberId(단일, 대기승급용)
     const tokens = [];
     tokensSnap.forEach(doc => {
       const t = doc.data();
       if (!t.token) return;
-      if (targetMemberId && doc.id !== targetMemberId) return;
+      if (targetMemberIds?.length) {
+        if (!targetMemberIds.includes(doc.id)) return;
+      } else if (targetMemberId && doc.id !== targetMemberId) return;
       tokens.push(t.token);
     });
 
