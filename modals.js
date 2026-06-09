@@ -1,5 +1,5 @@
 // ─── 공지 작성/수정 모달 ─────────────────────────────────────────────────────
-function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSaveAnnouncement, activeMembers, monthlyStatuses, monthlyReasons, targetMonth, registrationList }) {
+function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSaveAnnouncement, activeMembers, monthlyStatuses, monthlyReasons, targetMonth, meetingParticipants }) {
     const { useState, useEffect } = React;
     const [form, setForm] = useState({ title: '', body: '' });
     const [isSaving, setIsSaving] = useState(false);
@@ -26,9 +26,8 @@ function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSave
         );
         setSelectedMemberIds(eligible.map(m => m.id));
     };
-    const confirmedIds = (registrationList || []).filter(r => r.status === 'confirmed').map(r => r.memberId);
+    const participantIds = (meetingParticipants || []).map(p => p.memberId).filter(id => sortedMembers.some(m => m.id === id));
     const autoSelectParticipants = () => {
-        const participantIds = confirmedIds.filter(id => sortedMembers.some(m => m.id === id));
         setSelectedMemberIds(participantIds);
     };
 
@@ -85,9 +84,9 @@ function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSave
                                             className="text-xs font-black text-indigo-500">
                                             회비 자격자
                                         </button>
-                                        <button onClick={autoSelectParticipants} disabled={confirmedIds.length === 0}
-                                            className={`text-xs font-black ${confirmedIds.length === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-orange-500'}`}>
-                                            {confirmedIds.length === 0 ? '참여자 없음' : '모임 참여자'}
+                                        <button onClick={autoSelectParticipants} disabled={participantIds.length === 0}
+                                            className={`text-xs font-black ${participantIds.length === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-orange-500'}`}>
+                                            {participantIds.length === 0 ? '참여자 없음' : '모임 참여자'}
                                         </button>
                                         <button onClick={()=>{ if(allSelected) setSelectedMemberIds([]); else setSelectedMemberIds(sortedMembers.map(m=>m.id)); }}
                                             className="text-xs font-black text-teal-500">
@@ -166,7 +165,7 @@ const AppModals = ({
     specialRestReason, setSpecialRestReason,
     targetMonth,
     monthlyStatuses, monthlyReasons,
-    registrationList,
+    meetingParticipants,
     // 회원 추가 모달
     isAddModalOpen, setIsAddModalOpen,
     newMemberForm, setNewMemberForm,
@@ -688,7 +687,7 @@ const AppModals = ({
             monthlyStatuses={monthlyStatuses}
             monthlyReasons={monthlyReasons}
             targetMonth={targetMonth}
-            registrationList={registrationList}
+            meetingParticipants={meetingParticipants}
         />
     </>
 );
