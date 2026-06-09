@@ -67,6 +67,14 @@ exports.sendPushNotification = onDocumentCreated(
         },
       });
 
+      // 진단 로그
+      console.log(`[FCM] 대상 토큰 수: ${chunk.length}, 성공: ${res.successCount}, 실패: ${res.failureCount}`);
+      res.responses.forEach((r, idx) => {
+        if (!r.success) {
+          console.log(`[FCM] 실패[${idx}] code=${r.error?.code} message=${r.error?.message}`);
+        }
+      });
+
       // 유효하지 않은 토큰 삭제
       const invalidTokenDocs = [];
       res.responses.forEach((r, idx) => {
