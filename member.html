@@ -213,10 +213,12 @@ function App() {
     }, [urlParams.token, appView]);
 
     const handleLogout = () => { localStorage.removeItem('moida_member_data'); location.href = 'index.html'; };
-    const handleSaveAnnouncement = async ({ title, body, id, mode }) => {
+    const handleSaveAnnouncement = async ({ title, body, id, mode, targetMode, selectedMemberIds }) => {
         const senderName = memberInfo?.name || memberData?.name || '관리자';
         if (mode === 'add') {
-            await getCol('notifications').add({ title, body, sentAt: new Date().toISOString(), sentBy: senderName });
+            const notifDoc = { title, body, sentAt: new Date().toISOString(), sentBy: senderName };
+            if (targetMode === 'select') notifDoc.targetMemberIds = selectedMemberIds;
+            await getCol('notifications').add(notifDoc);
         } else {
             await getCol('notifications').doc(id).update({ title, body, updatedAt: new Date().toISOString() });
         }

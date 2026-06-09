@@ -1,24 +1,31 @@
 // ─── 공지 작성/수정 모달 ─────────────────────────────────────────────────────
-function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSaveAnnouncement }) {
+function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSaveAnnouncement, activeMembers }) {
     const { useState, useEffect } = React;
     const [form, setForm] = useState({ title: '', body: '' });
     const [isSaving, setIsSaving] = useState(false);
+    const [targetMode, setTargetMode] = useState('all');
+    const [selectedMemberIds, setSelectedMemberIds] = useState([]);
 
     useEffect(() => {
         if (announcementModal?.open) {
             setForm({ title: announcementModal.data?.title || '', body: announcementModal.data?.body || '' });
+            setTargetMode('all');
+            setSelectedMemberIds([]);
         }
     }, [announcementModal?.open]);
 
     if (!announcementModal?.open) return null;
     const close = () => setAnnouncementModal({ open: false, mode: 'add', data: null });
     const isAdd = announcementModal.mode === 'add';
+    const sortedMembers = (activeMembers || []).slice().sort((a,b) => a.name.localeCompare(b.name));
+    const allSelected = sortedMembers.length > 0 && selectedMemberIds.length === sortedMembers.length;
+    const canSend = form.title.trim() && (targetMode === 'all' || selectedMemberIds.length > 0);
 
     const handleSave = async () => {
-        if (!form.title.trim()) return;
+        if (!canSend) return;
         setIsSaving(true);
         try {
-            await handleSaveAnnouncement({ ...form, id: announcementModal.data?.id, mode: announcementModal.mode });
+            await handleSaveAnnouncement({ ...form, id: announcementModal.data?.id, mode: announcementModal.mode, targetMode, selectedMemberIds });
             close();
         } finally {
             setIsSaving(false);
@@ -27,9 +34,9 @@ function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSave
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" style={{zIndex:60}} onClick={close}>
-            <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={e=>e.stopPropagation()}>
+            <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col" style={{maxHeight:'90vh'}} onClick={e=>e.stopPropagation()}>
                 <h2 className="text-xl font-black text-slate-800 mb-4">{isAdd ? '공지 작성' : '공지 수정'}</h2>
-                <div className="space-y-3">
+                <div className="space-y-3 mb-3">
                     <div>
                         <p className="text-xs font-black text-slate-500 mb-1">제목</p>
                         <input type="text" style={{userSelect:'text'}} placeholder="제목 입력"
@@ -40,18 +47,52 @@ function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSave
                         <p className="text-xs font-black text-slate-500 mb-1">내용</p>
                         <textarea style={{userSelect:'text'}} placeholder="내용 입력"
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 leading-relaxed resize-none"
-                            rows={6} value={form.body} onChange={e=>setForm(p=>({...p,body:e.target.value}))}/>
+                            rows={4} value={form.body} onChange={e=>setForm(p=>({...p,body:e.target.value}))}/>
                     </div>
-                    {isAdd && (
-                        <div className="bg-teal-50 border border-teal-100 rounded-xl p-3">
-                            <p className="text-xs text-teal-600 font-black">저장 시 전체 회원에게 푸시 알림이 발송됩니다</p>
-                        </div>
-                    )}
                 </div>
-                <div className="flex gap-2 mt-5">
+                {isAdd && (
+                    <div className="mb-3">
+                        <p className="text-xs font-black text-slate-500 mb-2">발송 대상</p>
+                        <div className="flex gap-2 mb-2">
+                            <button onClick={()=>setTargetMode('all')}
+                                className={`flex-1 py-2 rounded-xl font-black text-sm transition-all ${targetMode==='all'?'bg-teal-500 text-white':'bg-slate-100 text-slate-500'}`}>
+                                전체
+                            </button>
+                            <button onClick={()=>setTargetMode('select')}
+                                className={`flex-1 py-2 rounded-xl font-black text-sm transition-all ${targetMode==='select'?'bg-teal-500 text-white':'bg-slate-100 text-slate-500'}`}>
+                                직접 선택
+                            </button>
+                        </div>
+                        {targetMode === 'all' ? (
+                            <p className="text-xs text-teal-600 font-black bg-teal-50 border border-teal-100 rounded-xl px-3 py-2">알림을 허용한 모든 회원에게 발송됩니다</p>
+                        ) : (
+                            <div className="border border-slate-200 rounded-2xl overflow-hidden">
+                                <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100">
+                                    <span className="text-xs font-black text-slate-500">{selectedMemberIds.length}명 선택</span>
+                                    <button onClick={()=>{ if(allSelected) setSelectedMemberIds([]); else setSelectedMemberIds(sortedMembers.map(m=>m.id)); }}
+                                        className="text-xs font-black text-teal-500">
+                                        {allSelected ? '전체 해제' : '전체 선택'}
+                                    </button>
+                                </div>
+                                <div className="overflow-y-auto" style={{maxHeight:'160px'}}>
+                                    {sortedMembers.map(m => (
+                                        <label key={m.id} className="flex items-center gap-3 px-3 py-2.5 border-b border-slate-50 last:border-0 cursor-pointer active:bg-slate-50">
+                                            <input type="checkbox" className="w-4 h-4 accent-teal-500"
+                                                checked={selectedMemberIds.includes(m.id)}
+                                                onChange={e=>{ if(e.target.checked) setSelectedMemberIds(p=>[...p,m.id]); else setSelectedMemberIds(p=>p.filter(id=>id!==m.id)); }}/>
+                                            <span className="text-sm font-black text-slate-700 flex-1">{m.name}</span>
+                                            {m.gender==='여성'&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg">W</span>}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+                <div className="flex gap-2 mt-2">
                     <button onClick={close} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
-                    <button onClick={handleSave} disabled={isSaving || !form.title.trim()}
-                        className={`flex-1 py-3 rounded-2xl font-black text-sm transition-all ${(isSaving||!form.title.trim())?'bg-teal-200 text-white':'bg-teal-500 text-white'}`}>
+                    <button onClick={handleSave} disabled={isSaving || !canSend}
+                        className={`flex-1 py-3 rounded-2xl font-black text-sm transition-all ${(isSaving||!canSend)?'bg-teal-200 text-white':'bg-teal-500 text-white'}`}>
                         {isSaving ? '저장 중...' : isAdd ? '발송' : '저장'}
                     </button>
                 </div>
@@ -620,6 +661,7 @@ const AppModals = ({
             announcementModal={announcementModal}
             setAnnouncementModal={setAnnouncementModal}
             handleSaveAnnouncement={handleSaveAnnouncement}
+            activeMembers={activeMembers}
         />
     </>
 );
