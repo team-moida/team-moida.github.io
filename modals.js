@@ -1,5 +1,5 @@
 // ─── 공지 작성/수정 모달 ─────────────────────────────────────────────────────
-function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSaveAnnouncement, activeMembers }) {
+function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSaveAnnouncement, activeMembers, monthlyStatuses, monthlyReasons, targetMonth }) {
     const { useState, useEffect } = React;
     const [form, setForm] = useState({ title: '', body: '' });
     const [isSaving, setIsSaving] = useState(false);
@@ -20,6 +20,12 @@ function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSave
     const sortedMembers = (activeMembers || []).slice().sort((a,b) => a.name.localeCompare(b.name));
     const allSelected = sortedMembers.length > 0 && selectedMemberIds.length === sortedMembers.length;
     const canSend = form.title.trim() && (targetMode === 'all' || selectedMemberIds.length > 0);
+    const autoSelectEligible = () => {
+        const eligible = sortedMembers.filter(m =>
+            ['staff','monthly','half','full'].includes(getMemberStatusType(m, monthlyStatuses || {}, monthlyReasons || {}, targetMonth))
+        );
+        setSelectedMemberIds(eligible.map(m => m.id));
+    };
 
     const handleSave = async () => {
         if (!canSend) return;
@@ -69,10 +75,16 @@ function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSave
                             <div className="border border-slate-200 rounded-2xl overflow-hidden">
                                 <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100">
                                     <span className="text-xs font-black text-slate-500">{selectedMemberIds.length}명 선택</span>
-                                    <button onClick={()=>{ if(allSelected) setSelectedMemberIds([]); else setSelectedMemberIds(sortedMembers.map(m=>m.id)); }}
-                                        className="text-xs font-black text-teal-500">
-                                        {allSelected ? '전체 해제' : '전체 선택'}
-                                    </button>
+                                    <div className="flex items-center gap-3">
+                                        <button onClick={autoSelectEligible}
+                                            className="text-xs font-black text-indigo-500">
+                                            회비 자격자 자동 선택
+                                        </button>
+                                        <button onClick={()=>{ if(allSelected) setSelectedMemberIds([]); else setSelectedMemberIds(sortedMembers.map(m=>m.id)); }}
+                                            className="text-xs font-black text-teal-500">
+                                            {allSelected ? '전체 해제' : '전체 선택'}
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="overflow-y-auto" style={{maxHeight:'160px'}}>
                                     {sortedMembers.map(m => (
@@ -144,6 +156,7 @@ const AppModals = ({
     processAction,
     specialRestReason, setSpecialRestReason,
     targetMonth,
+    monthlyStatuses, monthlyReasons,
     // 회원 추가 모달
     isAddModalOpen, setIsAddModalOpen,
     newMemberForm, setNewMemberForm,
@@ -662,6 +675,9 @@ const AppModals = ({
             setAnnouncementModal={setAnnouncementModal}
             handleSaveAnnouncement={handleSaveAnnouncement}
             activeMembers={activeMembers}
+            monthlyStatuses={monthlyStatuses}
+            monthlyReasons={monthlyReasons}
+            targetMonth={targetMonth}
         />
     </>
 );
