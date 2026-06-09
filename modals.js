@@ -28,16 +28,6 @@ function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSave
     };
     const confirmedIds = (registrationList || []).filter(r => r.status === 'confirmed').map(r => r.memberId);
     const autoSelectParticipants = () => {
-        console.log('=== 모임참여자 디버그 ===', {
-            전체개수: registrationList?.length,
-            confirmed개수: registrationList?.filter(r => r.status === 'confirmed').length,
-            목록: registrationList?.map(r => ({ name: r.name, memberId: r.memberId, status: r.status, meetingDate: r.meetingDate }))
-        });
-        console.log('=== 모임참여자 디버그2 (날짜별) ===', (() => {
-          const g = {};
-          (registrationList || []).forEach(r => { const k = (r.meetingDate || '?') + ' | ' + (r.status || '?'); g[k] = (g[k] || 0) + 1; });
-          return g;
-        })());
         const participantIds = confirmedIds.filter(id => sortedMembers.some(m => m.id === id));
         setSelectedMemberIds(participantIds);
     };
