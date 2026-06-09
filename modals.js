@@ -28,6 +28,11 @@ function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSave
     };
     const confirmedIds = (registrationList || []).filter(r => r.status === 'confirmed').map(r => r.memberId);
     const autoSelectParticipants = () => {
+        console.log('=== 모임참여자 디버그 ===', {
+            전체개수: registrationList?.length,
+            confirmed개수: registrationList?.filter(r => r.status === 'confirmed').length,
+            목록: registrationList?.map(r => ({ name: r.name, memberId: r.memberId, status: r.status, meetingDate: r.meetingDate }))
+        });
         const participantIds = confirmedIds.filter(id => sortedMembers.some(m => m.id === id));
         setSelectedMemberIds(participantIds);
     };
