@@ -1,6 +1,6 @@
 CLAUDE.md — OTP FC 모이다 프로젝트
-Version: 3.4
-Last Updated: 2026-06-06
+Version: 3.5
+Last Updated: 2026-06-09
 
 프로젝트 개요
 아마추어 혼성 풋살팀 OTP FC 운영 관리 웹앱 "모이다"
@@ -65,6 +65,7 @@ Firestore: settings/club_rules { content, updatedAt, updatedBy }
 로그인 / 회원가입 / 홈 / 라우팅 → handlers-kakao.js, tab-home.js
 상단 헤더 → member-header.js
 알림(FCM) 토큰/공지 → use-fcm.js
+공지 작성·발송(대상 지정: 전체/직접/회비자격자/이번모임참여자) → modals.js(AnnouncementModal) + member.html(handleSaveAnnouncement). '이번 모임 참여자'는 weekly_session(선정명단) 기준.
 회원 화면 모달 전체 → modals.js
 회원용 출석 / 체크인 → tab-attend.js, handlers-attend.js, use-attend.js
 
@@ -83,7 +84,7 @@ QR 코드 생성 → handlers-attend-qr.js
 
 백그라운드 알림 수신 + 캐시 → sw.js
 푸시 알림 발송 (Cloud Function) → functions/index.js
-데이터 관리 도구 → admin-data-tool.html
+데이터 관리 도구(백업/초기화/롤백/특정 모임 신청 초기화) → admin-data-tool.html
 테스트 회원 추가 → add-test-member.html
 데이터 마이그레이션 → migrate.html
 
