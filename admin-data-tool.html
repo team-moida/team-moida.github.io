@@ -108,6 +108,21 @@
         </div>
     </div>
 
+    <!-- 6. 특정 모임 신청 초기화 -->
+    <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 mt-3">
+        <p class="font-black text-slate-800 mb-1">⑥ 특정 모임 신청 초기화</p>
+        <p class="text-slate-500 text-xs mb-4">입력한 날짜 모임의 신청 기록과 출석 세션을 삭제하고 인원을 0으로 되돌립니다. 모임 자체는 유지됩니다.</p>
+        <div class="flex gap-2">
+            <input id="reset-meeting-date" type="text" placeholder="예: 2026-06-14"
+                class="flex-1 border border-amber-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-amber-500"
+                style="user-select:text">
+            <button onclick="resetMeetingRegistrations()"
+                class="bg-amber-500 text-white font-black px-4 py-2 rounded-xl text-sm active:opacity-70">
+                이 모임 신청 초기화
+            </button>
+        </div>
+    </div>
+
     <!-- 로그 -->
     <div class="mt-6">
         <p class="text-xs font-bold text-slate-400 mb-2">작업 로그</p>
@@ -367,6 +382,58 @@
             if (val) log('다음 로그인 시 권한이 반영됩니다. 재로그인(index.html) 해주세요.', 'text-slate-500');
         } catch(e) {
             log('변경 오류: ' + e.message, 'text-red-500');
+        }
+    }
+
+    async function resetMeetingRegistrations() {
+        const date = (document.getElementById('reset-meeting-date').value || '').trim();
+        if (!date) { alert('날짜를 입력해주세요. (예: 2026-06-14)'); return; }
+
+        log(`[${date}] 신청 조회 중...`);
+        try {
+            const regSnap = await BASE().collection('registrations').where('meetingDate', '==', date).get();
+            const sessSnap = await BASE().collection('weekly_session').where('date', '==', date).get();
+            const regCount = regSnap.size;
+            const sessCount = sessSnap.size;
+
+            if (!confirm(`[${date}] 모임의 신청 기록 ${regCount}개, 출석 세션 ${sessCount}개를 삭제하고 인원을 0으로 초기화합니다. 계속하시겠습니까?`)) {
+                log('취소됨', 'text-slate-400');
+                return;
+            }
+
+            if (regCount > 0) {
+                await batchWrite(() => BASE().collection('registrations'), regSnap.docs, (batch, col, d) => batch.delete(col().doc(d.id)));
+                log(`신청 기록 ${regCount}건 삭제 완료`, 'text-amber-600');
+            } else {
+                log('삭제할 신청 기록 없음', 'text-slate-400');
+            }
+
+            if (sessCount > 0) {
+                await batchWrite(() => BASE().collection('weekly_session'), sessSnap.docs, (batch, col, d) => batch.delete(col().doc(d.id)));
+                log(`출석 세션 ${sessCount}건 삭제 완료`, 'text-amber-600');
+            } else {
+                log('삭제할 출석 세션 없음', 'text-slate-400');
+            }
+
+            const meetingRef = BASE().collection('meetings').doc(date);
+            const meetingDoc = await meetingRef.get();
+            if (meetingDoc.exists) {
+                await meetingRef.update({ confirmedCount: 0, waitingCount: 0 });
+                log(`meetings/${date} 카운트 0으로 업데이트`, 'text-amber-600');
+            } else {
+                log(`meetings/${date} 문서 없음 (건너뜀)`, 'text-slate-400');
+            }
+
+            const mirrorRef = BASE().collection('settings').doc('meeting_schedule_v2');
+            const mirrorDoc = await mirrorRef.get();
+            if (mirrorDoc.exists && mirrorDoc.data().date === date) {
+                await mirrorRef.update({ confirmedCount: 0, waitingCount: 0 });
+                log('미러(meeting_schedule_v2) 카운트 0으로 업데이트', 'text-amber-600');
+            }
+
+            log(`[${date}] 신청 초기화 완료`, 'text-amber-600');
+        } catch(e) {
+            log('오류: ' + e.message, 'text-red-500');
         }
     }
 
