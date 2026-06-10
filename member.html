@@ -94,6 +94,23 @@ function App() {
 
     // 기능별 훅
     const { notifPermission, registerFcmToken, announcements } = useFCM({ memberData, showToast });
+
+    // ── 전체 공지 모달 + 안읽음 배지 ───────────────────────────────────────────
+    // 안읽음 판정: localStorage에 '마지막으로 본 최신 공지 sentAt'을 저장하고
+    // 그보다 새 공지 수를 배지로. 한계: 기기/브라우저별로 따로 관리되고 캐시 삭제 시 초기화됨.
+    const [announceModalOpen, setAnnounceModalOpen] = useState(false);
+    const [lastSeenAnnounce, setLastSeenAnnounce] = useState(() => {
+        try { return localStorage.getItem('moida_lastSeenAnnounce') || ''; } catch { return ''; }
+    });
+    const unreadCount = announcements.filter(a => a.sentAt && a.sentAt > lastSeenAnnounce).length;
+    const openAnnouncements = () => {
+        setAnnounceModalOpen(true);
+        const newest = announcements[0]?.sentAt; // 최신순이라 [0]이 가장 새 공지
+        if (newest && newest > lastSeenAnnounce) {
+            try { localStorage.setItem('moida_lastSeenAnnounce', newest); } catch {}
+            setLastSeenAnnounce(newest);
+        }
+    };
     const roster = useRoster({ isAdminMode });
     const team = useTeam({ isAdminMode, meetingSettings, allMembers: roster.allMembers });
     const match = useMatch({ isAdminMode, meetingSettings, confirmedDrafts: team.confirmedDrafts });
@@ -336,6 +353,7 @@ function App() {
                 isMeetingOver={attend.isMeetingOver}
                 onEndMeeting={attendHandleEndMeeting}
                 isMeetingEndSaved={attend.attendHistory?.some(h => h.date === meetingSettings?.date) || false}
+                unreadCount={unreadCount} onOpenAnnouncements={openAnnouncements}
             />
             <div className="px-4 pt-4">
                 {tab === 'home' && (
@@ -345,6 +363,7 @@ function App() {
                         allowFromDisplay={allowFromDisplay} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                         memberData={memberData} mySession={mySession} meetingSettings={meetingSettings}
                         darkMode={darkMode} memberName={memberName} announcements={announcements}
+                        onOpenAnnouncements={openAnnouncements}
                         isAdminMode={isAdminMode}
                         onAddAnnouncement={()=>setAnnouncementModal({open:true,mode:'add',data:null})}
                         onEditAnnouncement={(a)=>setAnnouncementModal({open:true,mode:'edit',data:a})}
@@ -559,6 +578,8 @@ function App() {
                 updateMeetingSettingsAdmin={updateMeetingSettingsAdmin}
                 announcementModal={announcementModal} setAnnouncementModal={setAnnouncementModal}
                 handleSaveAnnouncement={handleSaveAnnouncement}
+                announceModalOpen={announceModalOpen} setAnnounceModalOpen={setAnnounceModalOpen}
+                announcements={announcements}
             />
         </div>
     );

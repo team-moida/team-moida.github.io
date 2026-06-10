@@ -116,16 +116,56 @@ const NotifSetupGuide = ({ notifPermission, memberData }) => {
     );
 };
 
+// 공지 날짜 포맷 "26.09.10" (YY.MM.DD, 0패딩)
+const fmtAnnDate = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const yy = String(d.getFullYear() % 100).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yy}.${mm}.${dd}`;
+};
+
+// ─── 공지 순환 띠 ──────────────────────────────────────────────────────────────
+// 홈 맨 위에서 최신 공지부터 5초마다 위로 슬라이드업하며 교체. 1개면 고정, 0개면 숨김.
+// announcements는 use-fcm.js 기준 최신순 + type:'test' 제외됨. 클릭 시 전체 공지 모달.
+const AnnounceTicker = ({ announcements, onOpen }) => {
+    const [idx, setIdx] = React.useState(0);
+    React.useEffect(() => {
+        if (!announcements || announcements.length <= 1) return;
+        const t = setInterval(() => setIdx(i => (i + 1) % announcements.length), 5000);
+        return () => clearInterval(t);
+    }, [announcements?.length]);
+    if (!announcements || announcements.length === 0) return null;
+    const safeIdx = idx % announcements.length;
+    const a = announcements[safeIdx];
+    return (
+        <button onClick={onOpen} className="w-full card rounded-2xl px-4 py-3 text-left active:scale-98 transition-all overflow-hidden">
+            <div className="flex items-center gap-2.5">
+                <Icon.Bell size={15} className="text-teal-500 flex-shrink-0"/>
+                {/* key 변경 → moida-ticker-up 애니메이션 재생 (아래에서 위로 등장) */}
+                <div key={safeIdx} className="flex-1 min-w-0 flex items-center justify-between gap-2 moida-ticker-up">
+                    <span className="font-black text-sm text-slate-700 truncate">{a.title}</span>
+                    <span className="text-[10px] text-slate-400 whitespace-nowrap flex-shrink-0">{fmtAnnDate(a.sentAt)}</span>
+                </div>
+            </div>
+        </button>
+    );
+};
+
 // ─── 홈 탭 ────────────────────────────────────────────────────────────────────
 const TabHome = ({
     notifPermission, registerFcmToken, onTabChange,
     meetingDayInfo, teamReady, allowFromDisplay,
     myTeamInfo, myTeamIdx, memberData,
     mySession, meetingSettings, darkMode,
-    memberName, announcements,
+    memberName, announcements, onOpenAnnouncements,
     isAdminMode, onAddAnnouncement, onEditAnnouncement, onDeleteAnnouncement,
 }) => (
     <div className="animate-in space-y-3">
+        {/* 공지 순환 띠 (맨 위) */}
+        <AnnounceTicker announcements={announcements} onOpen={onOpenAnnouncements} />
         {/* iOS PWA 설치 안내 */}
         {/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone && (
             <div className="card rounded-2xl p-4 border-orange-100">
