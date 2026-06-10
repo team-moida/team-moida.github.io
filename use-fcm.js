@@ -44,7 +44,7 @@ function useFCM({ memberData, showToast }) {
                 if (memberData.kakaoId) {
                     const existing = await getCol('fcm_tokens').where('kakaoId', '==', memberData.kakaoId).get();
                     const batch = db.batch();
-                    existing.forEach(d => batch.delete(d.ref));
+                    existing.forEach(d => { if (d.id !== memberData.memberId) batch.delete(d.ref); });
                     await batch.commit();
                 }
                 await getCol('fcm_tokens').doc(memberData.memberId).set({
@@ -69,7 +69,7 @@ function useFCM({ memberData, showToast }) {
                     if (memberData?.kakaoId) {
                         const existing = await getCol('fcm_tokens').where('kakaoId', '==', memberData.kakaoId).get();
                         const batch = db.batch();
-                        existing.forEach(d => batch.delete(d.ref));
+                        existing.forEach(d => { if (d.id !== memberData.memberId) batch.delete(d.ref); });
                         await batch.commit();
                     }
                     await getCol('fcm_tokens').doc(memberData.memberId).set({
