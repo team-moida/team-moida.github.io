@@ -12,17 +12,11 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// 앱이 백그라운드일 때 푸시 수신 → 직접 알림 표시
-messaging.onBackgroundMessage((payload) => {
-    const title = payload.data?.title || payload.notification?.title || '모이다';
-    const body  = payload.data?.body  || payload.notification?.body  || '';
-    self.registration.showNotification(title, {
-        body,
-        icon:  '/moida/icon.png',
-        badge: '/moida/icon.png',
-        data:  { url: 'https://nakdo0415-crypto.github.io/moida/member.html' },
-    });
-});
+// 백그라운드 푸시 수신.
+// FCM webpush.notification 페이로드가 있으면 크롬이 알림을 자동 표시하므로,
+// 여기서 showNotification을 추가로 호출하면 알림이 2개씩 중복으로 뜬다.
+// → 수동 표시를 제거하고 빈 핸들러로 둔다 (자동 표시에 위임).
+messaging.onBackgroundMessage(() => {});
 
 // 알림 클릭 시 앱으로 이동
 self.addEventListener('notificationclick', (event) => {
