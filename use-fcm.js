@@ -41,12 +41,6 @@ function useFCM({ memberData, showToast }) {
             const messaging = firebase.messaging();
             const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
             if (token && memberData?.memberId) {
-                if (memberData.kakaoId) {
-                    const existing = await getCol('fcm_tokens').where('kakaoId', '==', memberData.kakaoId).get();
-                    const batch = db.batch();
-                    existing.forEach(d => { if (d.id !== memberData.memberId) batch.delete(d.ref); });
-                    await batch.commit();
-                }
                 await getCol('fcm_tokens').doc(memberData.memberId).set({
                     token,
                     name: memberData.name || '',
@@ -66,12 +60,6 @@ function useFCM({ memberData, showToast }) {
                 const messaging = firebase.messaging();
                 const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
                 if (token) {
-                    if (memberData?.kakaoId) {
-                        const existing = await getCol('fcm_tokens').where('kakaoId', '==', memberData.kakaoId).get();
-                        const batch = db.batch();
-                        existing.forEach(d => { if (d.id !== memberData.memberId) batch.delete(d.ref); });
-                        await batch.commit();
-                    }
                     await getCol('fcm_tokens').doc(memberData.memberId).set({
                         token, name: memberData.name || '', kakaoId: memberData.kakaoId || '', updatedAt: new Date().toISOString(),
                     }, { merge: true });
