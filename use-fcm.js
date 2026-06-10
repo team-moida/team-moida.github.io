@@ -11,6 +11,20 @@ function useFCM({ memberData, showToast }) {
         }, () => {});
         return () => unsub();
     }, []);
+
+    // TWA 앱이 nativeToken URL 파라미터로 전달한 네이티브 FCM 토큰을 localStorage에 보관
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const nt = params.get('nativeToken');
+        if (nt) {
+            localStorage.setItem('pendingNativeToken', nt);
+            params.delete('nativeToken');
+            const newSearch = params.toString();
+            const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash;
+            window.history.replaceState(null, '', newUrl);
+        }
+    }, []);
+
     const VAPID_KEY = 'BMuOxkIP0Xm912P0lVDUP8KUFR2y2FD-Acxgal5lNYemqWaldDon6kr9c_KrLEqKRFuumPCenIYnwEn0z_1WuXU';
 
     const [notifPermission, setNotifPermission] = useState(() =>
@@ -86,6 +100,22 @@ function useFCM({ memberData, showToast }) {
         });
         return () => { if (unsub) unsub(); };
     }, [notifPermission]);
+
+    // 로그인 완료 후 localStorage의 pendingNativeToken을 Firestore에 저장
+    useEffect(() => {
+        if (!memberData?.memberId) return;
+        const pendingNativeToken = localStorage.getItem('pendingNativeToken');
+        if (!pendingNativeToken) return;
+        (async () => {
+            try {
+                await getCol('fcm_tokens').doc(memberData.memberId).set(
+                    { nativeToken: pendingNativeToken, nativeTokenUpdatedAt: new Date().toISOString() },
+                    { merge: true }
+                );
+                localStorage.removeItem('pendingNativeToken');
+            } catch(e) { console.warn('네이티브 FCM 토큰 저장 실패:', e); }
+        })();
+    }, [memberData?.memberId]);
 
     return { notifPermission, registerFcmToken, announcements };
 }
