@@ -32,6 +32,7 @@
     <script type="text/babel" src="location-picker.js"></script>
     <script type="text/babel" src="qr-scanner.js"></script>
     <script type="text/babel" src="tab-home.js"></script>
+    <script type="text/babel" src="tab-notice.js"></script>
     <script type="text/babel" src="tab-team.js"></script>
     <script type="text/babel" src="tab-match.js"></script>
     <script type="text/babel" src="handlers-meetings.js"></script>
@@ -95,16 +96,16 @@ function App() {
     // 기능별 훅
     const { notifPermission, registerFcmToken, announcements } = useFCM({ memberData, showToast });
 
-    // ── 전체 공지 모달 + 안읽음 배지 ───────────────────────────────────────────
+    // ── 공지 게시판 진입 + 안읽음 배지 ─────────────────────────────────────────
     // 안읽음 판정: localStorage에 '마지막으로 본 최신 공지 sentAt'을 저장하고
     // 그보다 새 공지 수를 배지로. 한계: 기기/브라우저별로 따로 관리되고 캐시 삭제 시 초기화됨.
-    const [announceModalOpen, setAnnounceModalOpen] = useState(false);
     const [lastSeenAnnounce, setLastSeenAnnounce] = useState(() => {
         try { return localStorage.getItem('moida_lastSeenAnnounce') || ''; } catch { return ''; }
     });
     const unreadCount = announcements.filter(a => a.sentAt && a.sentAt > lastSeenAnnounce).length;
+    // 종/순환 띠 → 공지 게시판 화면으로 이동(모달 대신 탭 전환). 진입 시 안읽음 갱신.
     const openAnnouncements = () => {
-        setAnnounceModalOpen(true);
+        setTab('notice');
         const newest = announcements[0]?.sentAt; // 최신순이라 [0]이 가장 새 공지
         if (newest && newest > lastSeenAnnounce) {
             try { localStorage.setItem('moida_lastSeenAnnounce', newest); } catch {}
@@ -243,6 +244,15 @@ function App() {
     const handleDeleteAnnouncement = (id) => showConfirm('공지 삭제', '이 공지를 삭제하시겠습니까?', async () => {
         await getCol('notifications').doc(id).delete();
     });
+    // 선택 일괄 삭제 — notifications 문서만 batch.delete (다른 컬렉션 안 건드림)
+    const handleDeleteAnnouncements = (ids) => {
+        if (!ids || ids.length === 0) return; // 빈 배열 가드
+        showConfirm('공지 삭제', `선택한 ${ids.length}개의 공지를 삭제할까요? 되돌릴 수 없습니다.`, async () => {
+            const batch = db.batch();
+            ids.forEach(id => batch.delete(getCol('notifications').doc(id)));
+            await batch.commit();
+        });
+    };
     const toggleTheme = () => { const isDark = !darkMode; setDarkMode(isDark); document.documentElement.classList.toggle('dark', isDark); localStorage.setItem('moida_theme', isDark ? 'dark' : 'light'); };
 
     const { updateMeetingSettingsAdmin, attendHandleCheckIn, attendHandleUncheckIn,
@@ -364,10 +374,16 @@ function App() {
                         memberData={memberData} mySession={mySession} meetingSettings={meetingSettings}
                         darkMode={darkMode} memberName={memberName} announcements={announcements}
                         onOpenAnnouncements={openAnnouncements}
-                        isAdminMode={isAdminMode}
-                        onAddAnnouncement={()=>setAnnouncementModal({open:true,mode:'add',data:null})}
-                        onEditAnnouncement={(a)=>setAnnouncementModal({open:true,mode:'edit',data:a})}
-                        onDeleteAnnouncement={handleDeleteAnnouncement}
+                    />
+                )}
+                {tab === 'notice' && (
+                    <TabNotice
+                        announcements={announcements} isAdminMode={isAdminMode}
+                        onBack={()=>setTab('home')}
+                        onAdd={()=>setAnnouncementModal({open:true,mode:'add',data:null})}
+                        onEdit={(a)=>setAnnouncementModal({open:true,mode:'edit',data:a})}
+                        onDeleteOne={handleDeleteAnnouncement}
+                        onDeleteMany={handleDeleteAnnouncements}
                     />
                 )}
                 {tab === 'team' && (
@@ -578,8 +594,6 @@ function App() {
                 updateMeetingSettingsAdmin={updateMeetingSettingsAdmin}
                 announcementModal={announcementModal} setAnnouncementModal={setAnnouncementModal}
                 handleSaveAnnouncement={handleSaveAnnouncement}
-                announceModalOpen={announceModalOpen} setAnnounceModalOpen={setAnnounceModalOpen}
-                announcements={announcements}
             />
         </div>
     );

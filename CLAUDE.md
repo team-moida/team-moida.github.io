@@ -66,6 +66,7 @@ Firestore: settings/club_rules { content, updatedAt, updatedBy }
 상단 헤더 → member-header.js
 알림(FCM) 토큰/공지 → use-fcm.js
 공지 작성·발송(대상 지정: 전체/직접/회비자격자/이번모임참여자) → modals.js(AnnouncementModal) + member.html(handleSaveAnnouncement). '이번 모임 참여자'는 weekly_session(선정명단) 기준.
+공지 게시판(전체화면 목록/상세/선택삭제, 종·순환 띠로 진입, tab==='notice') → tab-notice.js + member.html(handleDeleteAnnouncements). 순환 띠·종 배지는 tab-home.js(AnnounceTicker)·member-header.js.
 회원 화면 모달 전체 → modals.js
 회원용 출석 / 체크인 → tab-attend.js, handlers-attend.js, use-attend.js
 

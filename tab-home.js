@@ -161,7 +161,6 @@ const TabHome = ({
     myTeamInfo, myTeamIdx, memberData,
     mySession, meetingSettings, darkMode,
     memberName, announcements, onOpenAnnouncements,
-    isAdminMode, onAddAnnouncement, onEditAnnouncement, onDeleteAnnouncement,
 }) => (
     <div className="animate-in space-y-3">
         {/* 공지 순환 띠 (맨 위) */}
@@ -283,43 +282,6 @@ const TabHome = ({
                     )}
                 </div>
             )
-        )}
-        {/* 공지사항 */}
-        {(announcements.length > 0 || isAdminMode) && (
-            <div className="card rounded-3xl p-5">
-                <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs font-black text-teal-500 uppercase tracking-widest">공지사항</p>
-                    {isAdminMode && (
-                        <button onClick={onAddAnnouncement} className="p-1.5 rounded-xl bg-teal-50 text-teal-500">
-                            <Icon.Plus size={14}/>
-                        </button>
-                    )}
-                </div>
-                {announcements.length === 0 ? (
-                    <p className="text-xs text-slate-400 text-center py-2">등록된 공지가 없습니다</p>
-                ) : (
-                    <div className="space-y-3">
-                        {announcements.map(a => (
-                            <div key={a.id} className="pb-3 border-b border-slate-100 last:pb-0 last:border-0">
-                                <div className="flex items-start justify-between gap-2">
-                                    <p className="font-black text-sm text-slate-800 flex-1">{a.title}</p>
-                                    <div className="flex items-center gap-1 flex-shrink-0">
-                                        <span className="text-[10px] text-slate-400 whitespace-nowrap">
-                                            {a.sentAt ? new Date(a.sentAt).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}) : ''}
-                                        </span>
-                                        {isAdminMode && <>
-                                            <button onClick={()=>onEditAnnouncement(a)} className="p-1 rounded-lg text-blue-400"><Icon.Edit size={11}/></button>
-                                            <button onClick={()=>onDeleteAnnouncement(a.id)} className="p-1 rounded-lg text-red-400"><Icon.Trash size={11}/></button>
-                                        </>}
-                                    </div>
-                                </div>
-                                <p className="text-xs text-slate-500 mt-1 leading-relaxed">{a.body}</p>
-                                {a.sentBy && <p className="text-[10px] text-slate-400 mt-1.5">{a.sentBy}</p>}
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
         )}
     </div>
 );

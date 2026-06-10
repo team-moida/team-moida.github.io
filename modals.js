@@ -154,52 +154,7 @@ function DeleteMemberModal({ deletingMember, setDeletingMember, handleDeleteMemb
 }
 
 // ─── 모달 모음 ────────────────────────────────────────────────────────────────
-// ─── 전체 공지 목록 모달 (보기 전용) ──────────────────────────────────────────
-// 종 아이콘/순환 띠 클릭 시 열림. announcements는 최신순 + type:'test' 제외됨.
-function AnnouncementsListModal({ open, onClose, announcements }) {
-    if (!open) return null;
-    const fmtDate = (iso) => {
-        if (!iso) return '';
-        const d = new Date(iso);
-        if (isNaN(d.getTime())) return '';
-        const yy = String(d.getFullYear() % 100).padStart(2, '0');
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        return `${yy}.${mm}.${dd}`;
-    };
-    return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" style={{zIndex:60}} onClick={onClose}>
-            <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col" style={{maxHeight:'90vh'}} onClick={e=>e.stopPropagation()}>
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-black text-slate-800">공지사항</h2>
-                    <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-black flex items-center justify-center transition-all">✕</button>
-                </div>
-                <div className="overflow-y-auto -mx-1 px-1">
-                    {(!announcements || announcements.length === 0) ? (
-                        <p className="text-sm text-slate-400 text-center py-8">등록된 공지가 없습니다</p>
-                    ) : (
-                        <div className="space-y-3">
-                            {announcements.map(a => (
-                                <div key={a.id} className="pb-3 border-b border-slate-100 last:pb-0 last:border-0">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <p className="font-black text-sm text-slate-800 flex-1">{a.title}</p>
-                                        <span className="text-[10px] text-slate-400 whitespace-nowrap flex-shrink-0 mt-0.5">{fmtDate(a.sentAt)}</span>
-                                    </div>
-                                    <p className="text-xs text-slate-500 mt-1 leading-relaxed whitespace-pre-wrap">{a.body}</p>
-                                    {a.sentBy && <p className="text-[10px] text-slate-400 mt-1.5">{a.sentBy}</p>}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-}
-
 const AppModals = ({
-    // 전체 공지 목록 모달
-    announceModalOpen, setAnnounceModalOpen, announcements,
     // 회비 액션 모달
     billingMember, setBillingMember,
     actionStep, setActionStep,
@@ -721,13 +676,6 @@ const AppModals = ({
                 updateMeetingSettingsAdmin({...meetingSettings, location:name, locationLat:lat, locationLng:lng});
                 setIsLocationPickerOpen(false);
             }}
-        />
-
-        {/* ===== 전체 공지 목록 모달 (보기 전용) ===== */}
-        <AnnouncementsListModal
-            open={announceModalOpen}
-            onClose={()=>setAnnounceModalOpen(false)}
-            announcements={announcements}
         />
 
         {/* ===== 공지 작성/수정 모달 ===== */}
