@@ -128,18 +128,32 @@ const fmtAnnDate = (iso) => {
 };
 
 // ─── 공지 순환 띠 ──────────────────────────────────────────────────────────────
-// 홈 맨 위에서 최신 공지부터 5초마다 위로 슬라이드업하며 교체. 1개면 고정, 0개면 숨김.
-// announcements는 use-fcm.js 기준 최신순 + type:'test' 제외됨. 클릭 시 전체 공지 모달.
+// 홈 콘텐츠 맨 위(헤더 아래 첫 카드)에서 최신 공지부터 5초마다 위로 슬라이드업하며 교체.
+// 1개면 고정, 0개면 빈 띠 유지(숨기지 않음) — 눌러서 게시판 진입(관리자는 거기서 작성).
+// announcements는 use-fcm.js 기준 최신순 + type:'test' 제외됨. 클릭 시 공지 게시판으로 이동.
 const AnnounceTicker = ({ announcements, onOpen }) => {
     const [idx, setIdx] = React.useState(0);
+    const list = announcements || [];
     React.useEffect(() => {
-        if (!announcements || announcements.length <= 1) return;
-        const t = setInterval(() => setIdx(i => (i + 1) % announcements.length), 5000);
+        if (list.length <= 1) return;
+        const t = setInterval(() => setIdx(i => (i + 1) % list.length), 5000);
         return () => clearInterval(t);
-    }, [announcements?.length]);
-    if (!announcements || announcements.length === 0) return null;
-    const safeIdx = idx % announcements.length;
-    const a = announcements[safeIdx];
+    }, [list.length]);
+
+    // 공지 0개 — 빈 띠 유지. 눌러도 게시판으로 이동.
+    if (list.length === 0) {
+        return (
+            <button onClick={onOpen} className="w-full card rounded-2xl px-4 py-3 text-left active:scale-98 transition-all overflow-hidden">
+                <div className="flex items-center gap-2.5">
+                    <Icon.Bell size={15} className="text-slate-300 flex-shrink-0"/>
+                    <span className="font-black text-sm text-slate-400">등록된 공지가 없습니다</span>
+                </div>
+            </button>
+        );
+    }
+
+    const safeIdx = idx % list.length;
+    const a = list[safeIdx];
     return (
         <button onClick={onOpen} className="w-full card rounded-2xl px-4 py-3 text-left active:scale-98 transition-all overflow-hidden">
             <div className="flex items-center gap-2.5">
