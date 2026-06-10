@@ -168,120 +168,6 @@ const AnnounceTicker = ({ announcements, onOpen }) => {
     );
 };
 
-// === DEBUG PANEL START ===
-// 임시 알림 진단 패널 (관리자 전용, 빨간 테두리). 제거 시 이 블록과 아래
-// TabHome 안의 <NotifDebugPanel .../> 호출 1줄만 지우면 됨.
-const NotifDebugPanel = ({ isAdminMode }) => {
-    const { useState, useEffect } = React;
-    // use-fcm.js에서 토큰 발급에 쓰는 것과 동일한 공개 VAPID 키
-    const VAPID_KEY = 'BMuOxkIP0Xm912P0lVDUP8KUFR2y2FD-Acxgal5lNYemqWaldDon6kr9c_KrLEqKRFuumPCenIYnwEn0z_1WuXU';
-
-    const [perm, setPerm] = useState(() => {
-        try { return ('Notification' in window) ? Notification.permission : 'unsupported'; } catch { return 'err'; }
-    });
-    const [swScope, setSwScope] = useState('확인 중…');
-    const [swReady, setSwReady] = useState('확인 중…');
-    const [token, setToken] = useState('(시도 전)');
-    const [tokenErr, setTokenErr] = useState('');
-    const [reqResult, setReqResult] = useState('');
-
-    // display-mode (동기 — try/catch)
-    let displayMode = 'unknown';
-    try {
-        const m = (q) => window.matchMedia(q).matches;
-        if (m('(display-mode: standalone)')) displayMode = 'standalone';
-        else if (m('(display-mode: fullscreen)')) displayMode = 'fullscreen';
-        else if (m('(display-mode: minimal-ui)')) displayMode = 'minimal-ui';
-        else if (m('(display-mode: browser)')) displayMode = 'browser';
-        if (window.navigator.standalone === true) displayMode += ' (+iOS standalone)';
-    } catch (e) { displayMode = 'err: ' + (e?.message || e); }
-
-    let ua = '';
-    try { ua = navigator.userAgent; } catch (e) { ua = 'err'; }
-    const isWebView = /\bwv\b/.test(ua) || /; wv\)/.test(ua);
-
-    // SW 등록 + ready 여부(5초 타임아웃)
-    useEffect(() => {
-        let alive = true;
-        (async () => {
-            try {
-                if (!('serviceWorker' in navigator)) { if (alive) { setSwScope('serviceWorker 미지원'); setSwReady('미지원'); } return; }
-                const reg = await navigator.serviceWorker.getRegistration();
-                if (alive) setSwScope(reg ? reg.scope : '없음');
-            } catch (e) { if (alive) setSwScope('err: ' + (e?.message || e)); }
-        })();
-        (async () => {
-            try {
-                if (!('serviceWorker' in navigator)) return;
-                const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000));
-                const r = await Promise.race([navigator.serviceWorker.ready, timeout]);
-                if (alive) setSwReady('ready ✓ (active scope: ' + (r?.scope || '?') + ')');
-            } catch (e) {
-                if (alive) setSwReady(e?.message === 'timeout' ? 'ready 안 됨(5초 타임아웃)' : 'err: ' + (e?.message || e));
-            }
-        })();
-        return () => { alive = false; };
-    }, []);
-
-    // FCM 토큰: SW ready await 후, registration을 명시적으로 넘겨 getToken (use-fcm.js와 동일)
-    const tryGetToken = async () => {
-        setToken('발급 시도 중…'); setTokenErr('');
-        try {
-            const swReg = await navigator.serviceWorker.ready;          // 활성 SW 대기
-            const messaging = firebase.messaging();
-            const t = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
-            if (t) setToken(t.slice(0, 20) + '…(' + t.length + '자)');
-            else setToken('(빈 토큰 반환)');
-        } catch (e) {
-            setToken('실패 ✗');
-            setTokenErr('code=' + (e?.code || '(없음)') + ' / message=' + (e?.message || String(e)));
-        }
-    };
-
-    const reRequest = async () => {
-        setReqResult('요청 중…');
-        try {
-            const r = await Notification.requestPermission();
-            setPerm(r); setReqResult('결과: ' + r);
-        } catch (e) { setReqResult('err: ' + (e?.message || String(e))); }
-    };
-
-    // 마운트 시 토큰 자동 1회 시도
-    useEffect(() => { tryGetToken(); }, []);
-
-    if (isAdminMode === false) return null; // 관리자에게만 표시
-
-    const Row = ({ label, children }) => (
-        <div className="flex flex-col gap-0.5 py-1.5 border-b border-red-100 last:border-0">
-            <span className="text-[9px] font-black text-red-400 uppercase tracking-wide">{label}</span>
-            <span className="text-xs text-slate-700 break-all leading-snug">{children}</span>
-        </div>
-    );
-
-    return (
-        <div className="rounded-2xl p-4 border-2 border-red-400 bg-red-50">
-            <p className="font-black text-sm text-red-500 mb-1">🔧 알림 진단 (임시 디버그)</p>
-            <Row label="Notification.permission">{perm}</Row>
-            <Row label="ServiceWorker scope">{swScope}</Row>
-            <Row label="SW ready 여부">{swReady}</Row>
-            <Row label="display-mode">{displayMode}</Row>
-            <Row label="FCM 토큰">
-                {token}
-                {tokenErr && <span className="block mt-0.5 text-red-500 font-black">{tokenErr}</span>}
-            </Row>
-            <Row label="userAgent (wv 포함 = 웹뷰)">
-                {ua}{isWebView && <b className="text-red-500"> ← wv 감지(웹뷰/TWA)</b>}
-            </Row>
-            {reqResult && <Row label="권한 요청 결과">{reqResult}</Row>}
-            <div className="flex gap-2 mt-3">
-                <button onClick={reRequest} className="flex-1 py-2 rounded-xl bg-red-500 text-white font-black text-xs active:scale-95 transition-all">권한 다시 요청</button>
-                <button onClick={tryGetToken} className="flex-1 py-2 rounded-xl bg-slate-700 text-white font-black text-xs active:scale-95 transition-all">FCM 토큰 다시 발급</button>
-            </div>
-        </div>
-    );
-};
-// === DEBUG PANEL END ===
-
 // ─── 홈 탭 ────────────────────────────────────────────────────────────────────
 const TabHome = ({
     notifPermission, registerFcmToken, onTabChange,
@@ -289,12 +175,8 @@ const TabHome = ({
     myTeamInfo, myTeamIdx, memberData,
     mySession, meetingSettings, darkMode,
     memberName, announcements, onOpenAnnouncements,
-    isAdminMode,
 }) => (
     <div className="animate-in space-y-3">
-        {/* === DEBUG PANEL START === (임시) 알림 진단 패널 — 제거 시 이 줄과 위 컴포넌트 블록 삭제 */}
-        <NotifDebugPanel isAdminMode={isAdminMode} />
-        {/* === DEBUG PANEL END === */}
         {/* 공지 순환 띠 (맨 위) */}
         <AnnounceTicker announcements={announcements} onOpen={onOpenAnnouncements} />
         {/* iOS PWA 설치 안내 */}
