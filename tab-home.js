@@ -1,62 +1,117 @@
-// ─── 안드로이드 알림 팝업 안내 카드 ──────────────────────────────────────────────
-// 안드로이드 PWA는 알림 채널이 기본 "팝업 표시 꺼짐"으로 생성돼, 회원이 직접
-// 켜야 배너가 뜬다. 표시 조건: 안드로이드 + standalone + 권한 granted + 미닫음.
+// ─── 알림 설정 안내 카드 (안드로이드/iPhone 탭) ──────────────────────────────────
+// 안드로이드 PWA는 알림 채널이 기본 "팝업 표시 꺼짐"으로 생성돼 직접 켜야 배너가
+// 뜬다. iOS는 보통 추가 설정이 없지만 설치/허용 여부 확인이 필요하다.
+// 표시 조건: PWA standalone + 권한 granted + 미닫음 (안드로이드/iOS 둘 다).
+// 일반 브라우저·미허용(default)에선 기존 "푸시 알림 받기" 배너가 안내하므로 숨김.
 // 닫음 여부는 localStorage에 기억 (Cache API와 별개라 PWA 재실행 후에도 유지).
-const ANDROID_NOTIF_GUIDE_KEY = 'moida_androidNotifGuideDismissed';
-const AndroidNotifGuide = ({ notifPermission }) => {
-    const isAndroid = /android/i.test(navigator.userAgent);
-    const isStandalone = window.matchMedia?.('(display-mode: standalone)').matches;
+// ※ 웹/PWA에서 OS 알림 설정 화면으로 직접 보내는 표준 API는 없어(chrome://·
+//   android-app:// intent는 JS로 이동 불가) 수동 안내 단계를 보여준다.
+const NOTIF_GUIDE_DISMISS_KEY = 'moida_androidNotifGuideDismissed';
+const NotifSetupGuide = ({ notifPermission, memberData }) => {
+    const isStandalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
     const [dismissed, setDismissed] = React.useState(() => {
-        try { return localStorage.getItem(ANDROID_NOTIF_GUIDE_KEY) === '1'; } catch { return false; }
+        try { return localStorage.getItem(NOTIF_GUIDE_DISMISS_KEY) === '1'; } catch { return false; }
     });
-    const [expanded, setExpanded] = React.useState(false);
+    const [tab, setTab] = React.useState(() => /android/i.test(navigator.userAgent) ? 'android' : 'iphone');
+    const [testState, setTestState] = React.useState('idle'); // idle | sending | sent
 
-    // 알림을 이미 허용(granted)한 뒤에만 의미 있음. 미허용 땐 기존 "푸시 알림 받기" 배너가 안내.
-    if (!isAndroid || !isStandalone || notifPermission !== 'granted' || dismissed) return null;
+    if (!isStandalone || notifPermission !== 'granted' || dismissed) return null;
 
     const dismiss = () => {
-        try { localStorage.setItem(ANDROID_NOTIF_GUIDE_KEY, '1'); } catch {}
+        try { localStorage.setItem(NOTIF_GUIDE_DISMISS_KEY, '1'); } catch {}
         setDismissed(true);
     };
 
-    // 버튼 동작: 웹/PWA에서 안드로이드 OS의 앱 알림 채널 설정 화면으로 직접 보내는
-    // 표준 API는 없다 (chrome://·android-app:// intent는 보안상 JS로 이동 불가).
-    // 권한이 granted인 이 카드에서는 시스템 설정을 열 수 없으므로, 버튼을 누르면
-    // 카드를 펼쳐 수동 안내 단계를 보여주는 것이 가장 안정적이다.
+    // 본인에게만 가는 테스트 푸시. 기존 공지 발송 흐름 재활용(notifications 문서 생성
+    // → Cloud Function sendPushNotification). type:'test'로 공지 목록에서 숨김.
+    const sendTest = async () => {
+        if (testState === 'sending' || !memberData?.memberId) return;
+        setTestState('sending');
+        try {
+            await getCol('notifications').add({
+                title: '🔔 알림 테스트',
+                body: '이 알림이 배너로 떴다면 설정 완료예요!',
+                targetMemberIds: [memberData.memberId],
+                type: 'test',
+                sentAt: new Date().toISOString(),
+            });
+            setTestState('sent');
+            setTimeout(() => setTestState('idle'), 5000); // 5초 쿨다운
+        } catch (e) {
+            console.warn('알림 테스트 발송 실패:', e);
+            setTestState('idle');
+        }
+    };
+
+    const Step = ({ n, children }) => (
+        <li className="flex gap-2.5 text-xs text-slate-600">
+            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-teal-500 text-white font-black flex items-center justify-center">{n}</span>
+            <span className="leading-relaxed pt-0.5">{children}</span>
+        </li>
+    );
+
     return (
         <div className="card rounded-2xl p-4 border-teal-100">
-            <div className="flex items-center gap-3">
+            <div className="flex items-start gap-3">
                 <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center flex-shrink-0">
                     <Icon.Bell size={18} className="text-teal-500"/>
                 </div>
                 <div className="flex-1 min-w-0">
-                    <p className="font-black text-sm text-teal-600">알림이 조용히 올 수 있어요</p>
-                    <p className="text-xs text-slate-400 mt-0.5">안드로이드 폰은 한 번만 설정하면 배너로 떠요</p>
+                    <p className="font-black text-sm text-teal-600">알림이 조용히 오나요?</p>
+                    <p className="text-xs text-slate-400 mt-0.5">아래에서 내 폰에 맞게 한 번만 설정하면 배너로 떠요</p>
                 </div>
-                <button onClick={()=>setExpanded(v=>!v)} className="flex-shrink-0 flex items-center gap-0.5 text-xs font-black text-teal-500 bg-teal-50 px-3 py-1.5 rounded-xl active:scale-95">
-                    설정 안내<Icon.ChevronRight size={13} className={`transition-transform ${expanded?'rotate-90':''}`}/>
+            </div>
+
+            {/* 기기 탭 */}
+            <div className="flex gap-1.5 mt-3 p-1 bg-slate-100 rounded-xl">
+                {[['android','안드로이드'],['iphone','iPhone']].map(([key,label]) => (
+                    <button key={key} onClick={()=>setTab(key)}
+                        className={`flex-1 text-xs font-black py-1.5 rounded-lg transition-all ${tab===key?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>
+                        {label}
+                    </button>
+                ))}
+            </div>
+
+            {/* 선택 탭 안내 */}
+            <div className="mt-3">
+                {tab === 'android' ? (
+                    <>
+                        <p className="text-[11px] font-black text-teal-500 mb-1.5">쉬운 방법</p>
+                        <ol className="space-y-2">
+                            <Step n="1"><b className="text-slate-800">모이다 알림</b>을 길게 누르기</Step>
+                            <Step n="2"><b className="text-slate-800">톱니바퀴(설정)</b> 누르기</Step>
+                            <Step n="3"><b className="text-slate-800">"팝업으로 표시"</b>와 <b className="text-slate-800">"진동"</b> 켜기</Step>
+                        </ol>
+                        <p className="text-[11px] font-black text-slate-400 mt-3 mb-1.5">정식 방법</p>
+                        <ol className="space-y-2">
+                            <Step n="1">휴대폰 <b className="text-slate-800">설정 → 앱 → 모이다 → 알림</b></Step>
+                            <Step n="2"><b className="text-slate-800">"알림 카테고리" → "일반"</b></Step>
+                            <Step n="3"><b className="text-slate-800">"팝업으로 표시"</b> 켜기 + <b className="text-slate-800">"진동"</b> 켜기</Step>
+                        </ol>
+                        <p className="text-[11px] text-slate-400 mt-3 leading-relaxed">소리는 보통 이미 켜져 있어요. 기종에 따라 메뉴 이름이 조금 다를 수 있어요.</p>
+                    </>
+                ) : (
+                    <>
+                        <ol className="space-y-2">
+                            <Step n="1">Safari로 접속해 <b className="text-slate-800">"홈 화면에 추가"</b>로 설치했는지 확인</Step>
+                            <Step n="2">앱을 열고 <b className="text-slate-800">"알림 허용"</b>을 눌렀는지 확인</Step>
+                        </ol>
+                        <p className="text-[11px] text-slate-400 mt-3 leading-relaxed">보통 추가 설정 없이 배너로 와요. 혹시 안 오면: <b className="text-slate-600">설정 → 알림 → 모이다</b>에서 <b className="text-slate-600">"알림 허용"</b>이 켜져 있는지 확인하세요.</p>
+                    </>
+                )}
+            </div>
+
+            {/* 알림 테스트 + 닫기 */}
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
+                <button onClick={dismiss} className="text-[11px] font-black text-slate-400 active:scale-95">다음에 안 보기</button>
+                <button onClick={sendTest} disabled={testState!=='idle'}
+                    className={`text-xs font-black px-3 py-1.5 rounded-xl active:scale-95 transition-all ${testState==='idle'?'bg-teal-500 text-white':'bg-slate-100 text-slate-400'}`}>
+                    {testState==='sending' ? '보내는 중…' : testState==='sent' ? '보냈어요 ✓' : '알림 테스트'}
                 </button>
             </div>
-            {expanded && (
-                <div className="mt-3 pt-3 border-t border-slate-100">
-                    <ol className="space-y-2">
-                        <li className="flex gap-2.5 text-xs text-slate-600">
-                            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-teal-500 text-white font-black flex items-center justify-center">1</span>
-                            <span className="leading-relaxed pt-0.5">홈 화면 <b className="text-slate-800">'모이다' 아이콘</b>을 길게 누르기</span>
-                        </li>
-                        <li className="flex gap-2.5 text-xs text-slate-600">
-                            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-teal-500 text-white font-black flex items-center justify-center">2</span>
-                            <span className="leading-relaxed pt-0.5"><b className="text-slate-800">앱 정보(ⓘ)</b> 누르기</span>
-                        </li>
-                        <li className="flex gap-2.5 text-xs text-slate-600">
-                            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-teal-500 text-white font-black flex items-center justify-center">3</span>
-                            <span className="leading-relaxed pt-0.5"><b className="text-slate-800">알림</b> → <b className="text-slate-800">"팝업으로 표시"</b> 켜기</span>
-                        </li>
-                    </ol>
-                    <p className="text-[11px] text-slate-400 mt-3 leading-relaxed">기종마다 메뉴 이름이 조금 다를 수 있어요. 설정하면 다음 알림부터 배너로 떠요.</p>
-                </div>
+            {testState==='sent' && (
+                <p className="text-[11px] font-black text-teal-500 mt-2 text-right">테스트 알림을 보냈어요. 잠시 후 배너를 확인하세요!</p>
             )}
-            <button onClick={dismiss} className="block mt-2 ml-auto text-[11px] font-black text-slate-400 active:scale-95">다음에 안 보기</button>
         </div>
     );
 };
@@ -83,8 +138,8 @@ const TabHome = ({
                 </div>
             </div>
         )}
-        {/* 안드로이드 알림 팝업 안내 (PWA standalone + 권한 허용 시) */}
-        <AndroidNotifGuide notifPermission={notifPermission} />
+        {/* 알림 설정 안내 (PWA standalone + 권한 허용 시, 안드로이드/iPhone 탭) */}
+        <NotifSetupGuide notifPermission={notifPermission} memberData={memberData} />
         {/* 알림 허용 배너 */}
         {notifPermission === 'default' && (
             <button onClick={registerFcmToken} className="w-full card rounded-2xl p-4 text-left border-teal-100 active:scale-98 transition-all">

@@ -6,7 +6,8 @@ function useFCM({ memberData, showToast }) {
         const unsub = getCol('notifications').orderBy('sentAt', 'desc').limit(20).onSnapshot(snap => {
             const list = [];
             snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-            setAnnouncements(list);
+            // 알림 테스트용 문서(type:'test')는 공지 목록에 표시하지 않음
+            setAnnouncements(list.filter(a => a.type !== 'test'));
         }, () => {});
         return () => unsub();
     }, []);
