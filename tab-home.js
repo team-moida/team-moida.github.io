@@ -1,3 +1,66 @@
+// ─── 안드로이드 알림 팝업 안내 카드 ──────────────────────────────────────────────
+// 안드로이드 PWA는 알림 채널이 기본 "팝업 표시 꺼짐"으로 생성돼, 회원이 직접
+// 켜야 배너가 뜬다. 표시 조건: 안드로이드 + standalone + 권한 granted + 미닫음.
+// 닫음 여부는 localStorage에 기억 (Cache API와 별개라 PWA 재실행 후에도 유지).
+const ANDROID_NOTIF_GUIDE_KEY = 'moida_androidNotifGuideDismissed';
+const AndroidNotifGuide = ({ notifPermission }) => {
+    const isAndroid = /android/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia?.('(display-mode: standalone)').matches;
+    const [dismissed, setDismissed] = React.useState(() => {
+        try { return localStorage.getItem(ANDROID_NOTIF_GUIDE_KEY) === '1'; } catch { return false; }
+    });
+    const [expanded, setExpanded] = React.useState(false);
+
+    // 알림을 이미 허용(granted)한 뒤에만 의미 있음. 미허용 땐 기존 "푸시 알림 받기" 배너가 안내.
+    if (!isAndroid || !isStandalone || notifPermission !== 'granted' || dismissed) return null;
+
+    const dismiss = () => {
+        try { localStorage.setItem(ANDROID_NOTIF_GUIDE_KEY, '1'); } catch {}
+        setDismissed(true);
+    };
+
+    // 버튼 동작: 웹/PWA에서 안드로이드 OS의 앱 알림 채널 설정 화면으로 직접 보내는
+    // 표준 API는 없다 (chrome://·android-app:// intent는 보안상 JS로 이동 불가).
+    // 권한이 granted인 이 카드에서는 시스템 설정을 열 수 없으므로, 버튼을 누르면
+    // 카드를 펼쳐 수동 안내 단계를 보여주는 것이 가장 안정적이다.
+    return (
+        <div className="card rounded-2xl p-4 border-teal-100">
+            <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Icon.Bell size={18} className="text-teal-500"/>
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="font-black text-sm text-teal-600">알림이 조용히 올 수 있어요</p>
+                    <p className="text-xs text-slate-400 mt-0.5">안드로이드 폰은 한 번만 설정하면 배너로 떠요</p>
+                </div>
+                <button onClick={()=>setExpanded(v=>!v)} className="flex-shrink-0 flex items-center gap-0.5 text-xs font-black text-teal-500 bg-teal-50 px-3 py-1.5 rounded-xl active:scale-95">
+                    설정 안내<Icon.ChevronRight size={13} className={`transition-transform ${expanded?'rotate-90':''}`}/>
+                </button>
+            </div>
+            {expanded && (
+                <div className="mt-3 pt-3 border-t border-slate-100">
+                    <ol className="space-y-2">
+                        <li className="flex gap-2.5 text-xs text-slate-600">
+                            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-teal-500 text-white font-black flex items-center justify-center">1</span>
+                            <span className="leading-relaxed pt-0.5">홈 화면 <b className="text-slate-800">'모이다' 아이콘</b>을 길게 누르기</span>
+                        </li>
+                        <li className="flex gap-2.5 text-xs text-slate-600">
+                            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-teal-500 text-white font-black flex items-center justify-center">2</span>
+                            <span className="leading-relaxed pt-0.5"><b className="text-slate-800">앱 정보(ⓘ)</b> 누르기</span>
+                        </li>
+                        <li className="flex gap-2.5 text-xs text-slate-600">
+                            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-teal-500 text-white font-black flex items-center justify-center">3</span>
+                            <span className="leading-relaxed pt-0.5"><b className="text-slate-800">알림</b> → <b className="text-slate-800">"팝업으로 표시"</b> 켜기</span>
+                        </li>
+                    </ol>
+                    <p className="text-[11px] text-slate-400 mt-3 leading-relaxed">기종마다 메뉴 이름이 조금 다를 수 있어요. 설정하면 다음 알림부터 배너로 떠요.</p>
+                </div>
+            )}
+            <button onClick={dismiss} className="block mt-2 ml-auto text-[11px] font-black text-slate-400 active:scale-95">다음에 안 보기</button>
+        </div>
+    );
+};
+
 // ─── 홈 탭 ────────────────────────────────────────────────────────────────────
 const TabHome = ({
     notifPermission, registerFcmToken, onTabChange,
@@ -20,6 +83,8 @@ const TabHome = ({
                 </div>
             </div>
         )}
+        {/* 안드로이드 알림 팝업 안내 (PWA standalone + 권한 허용 시) */}
+        <AndroidNotifGuide notifPermission={notifPermission} />
         {/* 알림 허용 배너 */}
         {notifPermission === 'default' && (
             <button onClick={registerFcmToken} className="w-full card rounded-2xl p-4 text-left border-teal-100 active:scale-98 transition-all">
