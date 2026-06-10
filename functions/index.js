@@ -25,75 +25,108 @@ exports.sendPushNotification = onDocumentCreated(
 
     // 특정 회원에게만 보내는 경우 필터링
     // targetMemberIds(배열) 우선, 없으면 targetMemberId(단일, 대기승급용)
-    const tokens = [];
+    // nativeToken(Android)이 있으면 네이티브 우선, 없으면 웹 토큰 사용
+    const nativeEntries = []; // { token, docId }
+    const webEntries = [];    // { token }
+
     tokensSnap.forEach(doc => {
       const t = doc.data();
-      if (!t.token) return;
       if (targetMemberIds?.length) {
         if (!targetMemberIds.includes(doc.id)) return;
       } else if (targetMemberId && doc.id !== targetMemberId) return;
-      tokens.push(t.token);
+
+      if (t.nativeToken) {
+        nativeEntries.push({ token: t.nativeToken, docId: doc.id });
+      } else if (t.token) {
+        webEntries.push({ token: t.token });
+      }
     });
 
-    if (tokens.length === 0) return;
+    if (nativeEntries.length === 0 && webEntries.length === 0) return;
 
-    // 500개씩 나눠서 전송 (FCM 제한)
-    const chunks = [];
-    for (let i = 0; i < tokens.length; i += 500) {
-      chunks.push(tokens.slice(i, i + 500));
-    }
+    // 네이티브 토큰 발송 (data-only → onMessageReceived 항상 호출 → IMPORTANCE_HIGH 채널 보장)
+    if (nativeEntries.length > 0) {
+      for (let i = 0; i < nativeEntries.length; i += 500) {
+        const chunkEntries = nativeEntries.slice(i, i + 500);
+        const chunkTokens = chunkEntries.map(e => e.token);
+        const res = await admin.messaging().sendEachForMulticast({
+          tokens: chunkTokens,
+          data: { title, body },
+          android: { priority: 'high' },
+        });
+        console.log(`[FCM native] 대상: ${chunkTokens.length}, 성공: ${res.successCount}, 실패: ${res.failureCount}`);
 
-    for (const chunk of chunks) {
-      const res = await admin.messaging().sendEachForMulticast({
-        tokens: chunk,
-        data: { title, body },
-        android: { priority: 'high' },
-        apns: {
-          headers: { 'apns-priority': '10' },
-          payload: { aps: { sound: 'default' } },
-        },
-        webpush: {
-          headers: { 'Urgency': 'high' },
-          notification: {
-            title,
-            body,
-            icon: 'https://nakdo0415-crypto.github.io/moida/icon.png',
-            badge: 'https://nakdo0415-crypto.github.io/moida/icon.png',
-            data: { url: 'https://nakdo0415-crypto.github.io/moida/member.html' },
-            tag: 'moida',
-            renotify: true,
-          },
-          fcmOptions: { link: "https://nakdo0415-crypto.github.io/moida/member.html" },
-        },
-      });
-
-      // 진단 로그
-      console.log(`[FCM] 대상 토큰 수: ${chunk.length}, 성공: ${res.successCount}, 실패: ${res.failureCount}`);
-      res.responses.forEach((r, idx) => {
-        if (!r.success) {
-          console.log(`[FCM] 실패[${idx}] code=${r.error?.code} message=${r.error?.message}`);
-        }
-      });
-
-      // 유효하지 않은 토큰 삭제
-      const invalidTokenDocs = [];
-      res.responses.forEach((r, idx) => {
-        if (!r.success && (
-          r.error?.code === "messaging/invalid-registration-token" ||
-          r.error?.code === "messaging/registration-token-not-registered"
-        )) {
-          invalidTokenDocs.push(chunk[idx]);
-        }
-      });
-
-      if (invalidTokenDocs.length > 0) {
+        // 유효하지 않은 네이티브 토큰 필드 삭제
         const batch = admin.firestore().batch();
-        tokensSnap.forEach(doc => {
-          if (invalidTokenDocs.includes(doc.data().token)) {
-            batch.delete(doc.ref);
+        let needsBatch = false;
+        res.responses.forEach((r, idx) => {
+          if (!r.success) {
+            console.log(`[FCM native] 실패[${idx}] code=${r.error?.code} message=${r.error?.message}`);
+            if (
+              r.error?.code === "messaging/invalid-registration-token" ||
+              r.error?.code === "messaging/registration-token-not-registered"
+            ) {
+              const docRef = admin.firestore().doc(`${DB_PATH}/fcm_tokens/${chunkEntries[idx].docId}`);
+              batch.update(docRef, { nativeToken: admin.firestore.FieldValue.delete() });
+              needsBatch = true;
+            }
           }
         });
-        await batch.commit();
+        if (needsBatch) await batch.commit();
+      }
+    }
+
+    // 웹 토큰 발송 (기존 webpush 방식 유지 — iOS/웹 대상)
+    if (webEntries.length > 0) {
+      const webTokens = webEntries.map(e => e.token);
+      for (let i = 0; i < webTokens.length; i += 500) {
+        const chunk = webTokens.slice(i, i + 500);
+        const res = await admin.messaging().sendEachForMulticast({
+          tokens: chunk,
+          data: { title, body },
+          android: { priority: 'high' },
+          apns: {
+            headers: { 'apns-priority': '10' },
+            payload: { aps: { sound: 'default' } },
+          },
+          webpush: {
+            headers: { 'Urgency': 'high' },
+            notification: {
+              title,
+              body,
+              icon: 'https://nakdo0415-crypto.github.io/moida/icon.png',
+              badge: 'https://nakdo0415-crypto.github.io/moida/icon.png',
+              data: { url: 'https://nakdo0415-crypto.github.io/moida/member.html' },
+              tag: 'moida',
+              renotify: true,
+            },
+            fcmOptions: { link: "https://nakdo0415-crypto.github.io/moida/member.html" },
+          },
+        });
+        console.log(`[FCM web] 대상: ${chunk.length}, 성공: ${res.successCount}, 실패: ${res.failureCount}`);
+
+        // 유효하지 않은 웹 토큰 문서 삭제
+        const invalidWebTokens = [];
+        res.responses.forEach((r, idx) => {
+          if (!r.success) {
+            console.log(`[FCM web] 실패[${idx}] code=${r.error?.code} message=${r.error?.message}`);
+            if (
+              r.error?.code === "messaging/invalid-registration-token" ||
+              r.error?.code === "messaging/registration-token-not-registered"
+            ) {
+              invalidWebTokens.push(chunk[idx]);
+            }
+          }
+        });
+        if (invalidWebTokens.length > 0) {
+          const batch = admin.firestore().batch();
+          tokensSnap.forEach(doc => {
+            if (invalidWebTokens.includes(doc.data().token)) {
+              batch.delete(doc.ref);
+            }
+          });
+          await batch.commit();
+        }
       }
     }
   }
