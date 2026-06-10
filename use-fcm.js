@@ -52,7 +52,7 @@ function useFCM({ memberData, showToast }) {
                     name: memberData.name || '',
                     kakaoId: memberData.kakaoId || '',
                     updatedAt: new Date().toISOString(),
-                });
+                }, { merge: true });
                 showToast('알림이 등록됐어요!', 'success');
             }
         } catch(e) { console.warn('FCM 토큰 등록 실패:', e); }
@@ -74,7 +74,7 @@ function useFCM({ memberData, showToast }) {
                     }
                     await getCol('fcm_tokens').doc(memberData.memberId).set({
                         token, name: memberData.name || '', kakaoId: memberData.kakaoId || '', updatedAt: new Date().toISOString(),
-                    });
+                    }, { merge: true });
                 }
             } catch(e) { console.warn('FCM 토큰 갱신 실패:', e); }
         })();
