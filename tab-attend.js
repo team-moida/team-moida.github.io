@@ -351,7 +351,7 @@ const TabAttend = ({
     darkMode, meetingSettings, updateMeetingSettingsAdmin,
     attendActiveParticipants, snapMin, attendHourOptions, attendMinuteOptions,
     setIsLocationPickerOpen, localMaxLimit, setLocalMaxLimit,
-    memberData, attendNormalMembers, tmSessionData,
+    memberData, attendNormalMembers, tmSessionData, activeMembers,
     attendToggleParticipant, setIsAttendGuestModalOpen,
     attendHandleTestSelect, attendHandleResetSelection,
     attendGuestEligibleMembers, attendToggleParticipantAsGuest,
@@ -373,6 +373,44 @@ const TabAttend = ({
 }) => {
     const [selectedMeeting, setSelectedMeeting] = React.useState(null);
     const [pendingEditMeeting, setPendingEditMeeting] = React.useState(null);
+    const [isSelecting, setIsSelecting] = React.useState(false);
+    const [selMonthlyStatuses, setSelMonthlyStatuses] = React.useState({});
+
+    // 선택한 모임의 '그 달' 회비 상태(monthly_checks) 로드
+    React.useEffect(() => {
+        const d = selectedMeeting?.date;
+        if (!d) { setSelMonthlyStatuses({}); return; }
+        const [y, m] = d.split('-');
+        const unsub = getCol('monthly_checks').doc(`${y}-${m}`).onSnapshot(doc => {
+            setSelMonthlyStatuses(doc.exists ? (doc.data().statuses || {}) : {});
+        }, () => {});
+        return () => unsub();
+    }, [selectedMeeting?.date]);
+    // 다른 모임으로 바꾸면 선정 편집 모드 해제
+    React.useEffect(() => { setIsSelecting(false); }, [selectedMeeting?.id]);
+
+    // 선택한 모임 '그 달' 기준 회비 회원 / 특별휴식·휴식 회원 분류
+    const { selEligibleNormal, selEligibleRest } = React.useMemo(() => {
+        const monthStr = selectedMeeting?.date?.substring(0,7) || '';
+        const normal = [], rest = [];
+        (activeMembers || []).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).forEach(member => {
+            if (ADMIN_ROLES.includes(member.role)) { normal.push(member); return; }
+            if (member.isSpecialRest) { rest.push(member); return; }
+            const isResting = selMonthlyStatuses[member.id] === 'rest';
+            if (isResting) { const info = getMembershipStatus(member, monthStr); if (info?.active) rest.push(member); return; }
+            const isPaid = selMonthlyStatuses[member.id] === 'paid';
+            const info = getMembershipStatus(member, monthStr);
+            if (isPaid || info?.active) normal.push(member);
+        });
+        return { selEligibleNormal: normal, selEligibleRest: rest };
+    }, [activeMembers, selMonthlyStatuses, selectedMeeting?.date]);
+
+    // 선택한 모임에 선정된 회원 명단(weekly_session)
+    const selSessionList = React.useMemo(() =>
+        (tmSessionData || []).filter(p => p.date === selectedMeeting?.date)
+            .sort((a,b)=>(a.name||'').localeCompare(b.name||'')),
+    [tmSessionData, selectedMeeting?.date]);
+
     return (
     <div className="animate-in space-y-4">
 
@@ -477,10 +515,10 @@ const TabAttend = ({
                                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                                         <span style={{fontSize:10,fontWeight:900,color:'#94a3b8',textTransform:'uppercase',letterSpacing:'0.1em'}}>선정 인원</span>
                                         <div style={{display:'flex',alignItems:'center',gap:8}}>
-                                            <span style={{fontSize:15,fontWeight:900,color:attendActiveParticipants.length>=(meetingSettings?.maxLimit||18)?'#14b8a6':darkMode?'#f1f5f9':'#1e293b'}}>
-                                                {attendActiveParticipants.length} / {meetingSettings?.maxLimit||18}명
+                                            <span style={{fontSize:15,fontWeight:900,color:selSessionList.length>=(selectedMeeting?.maxLimit||18)?'#14b8a6':darkMode?'#f1f5f9':'#1e293b'}}>
+                                                {selSessionList.length} / {selectedMeeting?.maxLimit||18}명
                                             </span>
-                                            {attendActiveParticipants.length>=(meetingSettings?.maxLimit||18)&&<span style={{fontSize:9,fontWeight:900,padding:'2px 8px',background:'#ccfbf1',color:'#0d9488',borderRadius:6}}>마감</span>}
+                                            {selSessionList.length>=(selectedMeeting?.maxLimit||18)&&<span style={{fontSize:9,fontWeight:900,padding:'2px 8px',background:'#ccfbf1',color:'#0d9488',borderRadius:6}}>마감</span>}
                                         </div>
                                     </div>
                                 </div>
@@ -541,59 +579,108 @@ const TabAttend = ({
                                     </div>
                                 </div>
 
-                                {/* 회원 선정 */}
-                                {meetingSettings?.isRegistrationEnabled && (
-                                    <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-2xl mb-3 text-xs font-black text-amber-600">
-                                        ⚠️ 선착순 신청 진행 중 — 수동 편집 시 신청 카운터와 어긋날 수 있습니다
-                                    </div>
-                                )}
-                                <div className="flex items-center justify-between mb-3 px-1">
-                                    <p className="text-xs font-black text-slate-700 uppercase tracking-widest">회원 선정</p>
-                                    <div className="flex gap-1.5">
-                                        <button onClick={()=>setIsAttendGuestModalOpen(true)} className="px-2.5 py-1.5 bg-slate-100 text-slate-600 text-xs font-black rounded-xl flex items-center gap-1"><Icon.UserPlus size={12}/> 게스트</button>
-                                        <button onClick={attendHandleTestSelect} className="px-2.5 py-1.5 bg-amber-50 text-amber-600 text-xs font-black rounded-xl flex items-center gap-1"><Icon.Beaker size={12}/> 테스트</button>
-                                        <button onClick={attendHandleResetSelection} className="px-2.5 py-1.5 bg-red-50 text-red-500 text-xs font-black rounded-xl flex items-center gap-1"><Icon.RotateCcw size={12}/> 초기화</button>
-                                    </div>
-                                </div>
-                                <div className="space-y-1.5">
-                                    {attendNormalMembers.map(member => {
-                                        const isSelected = tmSessionData.some(p=>p.memberId===member.id&&p.date===meetingSettings?.date);
-                                        return (
-                                            <button key={member.id} onClick={()=>attendToggleParticipant(member)}
-                                                className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-teal-50 border-teal-300':'card border-slate-100 hover:border-slate-200'}`}>
-                                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${isSelected?'bg-teal-500 border-teal-500':'border-slate-300'}`}>
-                                                    {isSelected&&<Icon.Check size={10} className="text-white"/>}
+                                {/* 선정된 회원 명단(보기) ↔ 회원 선정(편집) */}
+                                {!isSelecting ? (
+                                    <div>
+                                        <div className="flex items-center justify-between mb-3 px-1">
+                                            <p className="text-xs font-black text-slate-700 uppercase tracking-widest">선정된 회원 {selSessionList.length > 0 && <span className="text-teal-500">{selSessionList.length}명</span>}</p>
+                                            <button onClick={()=>setIsSelecting(true)} className="shrink-0 px-3 py-1.5 bg-teal-50 text-teal-600 text-xs font-black rounded-xl flex items-center gap-1 active:scale-95 transition-all"><Icon.UserPlus size={12}/> 회원 선정</button>
+                                        </div>
+                                        {selSessionList.length === 0 ? (
+                                            <div className="card border-slate-100 rounded-2xl p-5 text-center text-slate-400">
+                                                <p className="text-xs font-black">아직 선정된 회원이 없습니다</p>
+                                                <p className="text-[11px] mt-1">[회원 선정] 버튼으로 추가하세요</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {selSessionList.filter(p=>!p.isGuest).map(p => (
+                                                        <span key={p.id} className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-teal-50 border border-teal-200 rounded-xl text-xs font-black text-slate-700">
+                                                            {p.name}
+                                                            {p.gender==='여성'&&<span className="text-[8px] px-1 py-0.5 bg-pink-100 text-pink-600 rounded">W</span>}
+                                                        </span>
+                                                    ))}
                                                 </div>
-                                                <span className="font-black text-sm text-slate-800 flex-1">{member.name}</span>
-                                                {member.gender==='여성'&&<span className="text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
-                                                {ADMIN_ROLES.includes(member.role)&&<span className={`text-[9px] px-1.5 py-0.5 rounded-lg font-black ${getRoleBadgeClass(member.role)}`}>{member.role}</span>}
-                                                <span className="text-[9px] font-black text-slate-400">Lv.{member.level}</span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                {attendGuestEligibleMembers.length > 0 && (
-                                    <div className="mt-4">
-                                        <p className="text-xs font-black text-orange-500 uppercase tracking-widest mb-2 px-1">게스트 참여 가능</p>
+                                                {selSessionList.some(p=>p.isGuest) && (
+                                                    <div>
+                                                        <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1.5 px-1">특별휴식 · 게스트</p>
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {selSessionList.filter(p=>p.isGuest).map(p => (
+                                                                <span key={p.id} className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-orange-50 border border-orange-200 rounded-xl text-xs font-black text-slate-700">
+                                                                    {p.name}
+                                                                    {p.gender==='여성'&&<span className="text-[8px] px-1 py-0.5 bg-pink-100 text-pink-600 rounded">W</span>}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div>
+                                        {selectedMeeting.isRegistrationEnabled && (
+                                            <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-2xl mb-3 text-xs font-black text-amber-600">
+                                                ⚠️ 선착순 신청 진행 중 — 수동 편집 시 신청 카운터와 어긋날 수 있습니다
+                                            </div>
+                                        )}
+                                        <div className="flex items-center justify-between mb-3 px-1 gap-2">
+                                            <p className="text-xs font-black text-slate-700 uppercase tracking-widest shrink-0">회원 선정</p>
+                                            <div className="flex gap-1.5 flex-wrap justify-end min-w-0">
+                                                {selectedMeeting.id === activeMeeting?.id && (
+                                                    <>
+                                                        <button onClick={()=>setIsAttendGuestModalOpen(true)} className="shrink-0 px-2.5 py-1.5 bg-slate-100 text-slate-600 text-xs font-black rounded-xl flex items-center gap-1"><Icon.UserPlus size={12}/> 게스트</button>
+                                                        <button onClick={attendHandleTestSelect} className="shrink-0 px-2.5 py-1.5 bg-amber-50 text-amber-600 text-xs font-black rounded-xl flex items-center gap-1"><Icon.Beaker size={12}/> 테스트</button>
+                                                    </>
+                                                )}
+                                                <button onClick={()=>attendHandleResetSelection(selectedMeeting.date)} className="shrink-0 px-2.5 py-1.5 bg-red-50 text-red-500 text-xs font-black rounded-xl flex items-center gap-1"><Icon.RotateCcw size={12}/> 초기화</button>
+                                                <button onClick={()=>setIsSelecting(false)} className="shrink-0 px-3 py-1.5 bg-teal-500 text-white text-xs font-black rounded-xl flex items-center gap-1 active:scale-95"><Icon.Check size={12}/> 완료</button>
+                                            </div>
+                                        </div>
                                         <div className="space-y-1.5">
-                                            {attendGuestEligibleMembers.map(member => {
-                                                const isSelected = tmSessionData.some(p=>p.memberId===member.id&&p.date===meetingSettings?.date);
-                                                const msType = getMembershipStatus(member, meetingSettings?.date?.substring(0,7)||'')?.type;
-                                                const badge = member.isSpecialRest ? '특별휴식' : (msType==='반년'?'반년납 휴식':'1년납 휴식');
+                                            {selEligibleNormal.map(member => {
+                                                const isSelected = selSessionList.some(p=>p.memberId===member.id);
                                                 return (
-                                                    <button key={member.id} onClick={()=>attendToggleParticipantAsGuest(member)}
-                                                        className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-orange-50 border-orange-300':'card border-slate-100 hover:border-slate-200'}`}>
-                                                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${isSelected?'bg-orange-400 border-orange-400':'border-slate-300'}`}>
+                                                    <button key={member.id} onClick={()=>attendToggleParticipant(member, selectedMeeting.date)}
+                                                        className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-teal-50 border-teal-300':'card border-slate-100 hover:border-slate-200'}`}>
+                                                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${isSelected?'bg-teal-500 border-teal-500':'border-slate-300'}`}>
                                                             {isSelected&&<Icon.Check size={10} className="text-white"/>}
                                                         </div>
-                                                        <span className="font-black text-sm text-slate-800 flex-1">{member.name}</span>
-                                                        {member.gender==='여성'&&<span className="text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
-                                                        <span className="text-[9px] px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-lg font-black">{badge}</span>
-                                                        <span className="text-[9px] font-black text-slate-400">Lv.{member.level}</span>
+                                                        <span className="font-black text-sm text-slate-800 flex-1 min-w-0 truncate">{member.name}</span>
+                                                        {member.gender==='여성'&&<span className="shrink-0 text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
+                                                        {ADMIN_ROLES.includes(member.role)&&<span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded-lg font-black ${getRoleBadgeClass(member.role)}`}>{member.role}</span>}
+                                                        <span className="shrink-0 text-[9px] font-black text-slate-400">Lv.{member.level}</span>
                                                     </button>
                                                 );
                                             })}
+                                            {selEligibleNormal.length === 0 && (
+                                                <div className="card border-slate-100 rounded-2xl p-4 text-center text-slate-400 text-xs font-black">이 달 회비 납부 회원이 없습니다</div>
+                                            )}
                                         </div>
+                                        {selEligibleRest.length > 0 && (
+                                            <div className="mt-4">
+                                                <p className="text-xs font-black text-orange-500 uppercase tracking-widest mb-2 px-1">특별휴식 · 휴식 회원 (게스트 참여)</p>
+                                                <div className="space-y-1.5">
+                                                    {selEligibleRest.map(member => {
+                                                        const isSelected = selSessionList.some(p=>p.memberId===member.id);
+                                                        const msType = getMembershipStatus(member, selectedMeeting?.date?.substring(0,7)||'')?.type;
+                                                        const badge = member.isSpecialRest ? '특별휴식' : (msType==='반년'?'반년납 휴식':'1년납 휴식');
+                                                        return (
+                                                            <button key={member.id} onClick={()=>attendToggleParticipantAsGuest(member, selectedMeeting.date)}
+                                                                className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-orange-50 border-orange-300':'card border-slate-100 hover:border-slate-200'}`}>
+                                                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${isSelected?'bg-orange-400 border-orange-400':'border-slate-300'}`}>
+                                                                    {isSelected&&<Icon.Check size={10} className="text-white"/>}
+                                                                </div>
+                                                                <span className="font-black text-sm text-slate-800 flex-1 min-w-0 truncate">{member.name}</span>
+                                                                {member.gender==='여성'&&<span className="shrink-0 text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
+                                                                <span className="shrink-0 text-[9px] px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-lg font-black">{badge}</span>
+                                                                <span className="shrink-0 text-[9px] font-black text-slate-400">Lv.{member.level}</span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 

@@ -165,20 +165,23 @@ function makeAttendHandlers(ctx) {
         });
     };
 
-    const attendToggleParticipant = async (member) => {
-        const existing = tmSessionData.find(p => p.memberId === member.id && p.date === meetingSettings?.date);
+    const attendToggleParticipant = async (member, dateOverride) => {
+        const _date = dateOverride || meetingSettings?.date;
+        const existing = tmSessionData.find(p => p.memberId === member.id && p.date === _date);
         if (existing) { await getSessionCol().doc(existing.id).delete(); }
-        else { await getSessionCol().add({memberId: member.id, name: member.name, gender: member.gender, level: member.level, date: meetingSettings?.date, checkedIn: false, checkInTime: null, status: '미출석', isGuest: false, team: '', createdAt: new Date().toISOString()}); }
+        else { await getSessionCol().add({memberId: member.id, name: member.name, gender: member.gender, level: member.level, date: _date, checkedIn: false, checkInTime: null, status: '미출석', isGuest: false, team: '', createdAt: new Date().toISOString()}); }
     };
 
-    const attendToggleParticipantAsGuest = async (member) => {
-        const existing = tmSessionData.find(p => p.memberId === member.id && p.date === meetingSettings?.date);
+    const attendToggleParticipantAsGuest = async (member, dateOverride) => {
+        const _date = dateOverride || meetingSettings?.date;
+        const existing = tmSessionData.find(p => p.memberId === member.id && p.date === _date);
         if (existing) { await getSessionCol().doc(existing.id).delete(); }
-        else { await getSessionCol().add({memberId: member.id, name: member.name, gender: member.gender, level: member.level, date: meetingSettings?.date, checkedIn: false, checkInTime: null, status: '미출석', isGuest: true, team: '', createdAt: new Date().toISOString()}); }
+        else { await getSessionCol().add({memberId: member.id, name: member.name, gender: member.gender, level: member.level, date: _date, checkedIn: false, checkInTime: null, status: '미출석', isGuest: true, team: '', createdAt: new Date().toISOString()}); }
     };
 
-    const attendHandleResetSelection = () => {
-        const targets = tmSessionData.filter(p => p.date === meetingSettings?.date);
+    const attendHandleResetSelection = (dateOverride) => {
+        const _date = dateOverride || meetingSettings?.date;
+        const targets = tmSessionData.filter(p => p.date === _date);
         if (targets.length === 0) return showAlert('알림', '초기화할 명단이 없습니다.');
         showConfirm('명단 초기화', '이번 모임 선정 인원을 전체 해제하시겠습니까?', async () => {
             setAttendIsPending(true);
