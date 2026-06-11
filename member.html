@@ -382,6 +382,13 @@ function App() {
         };
     }, []);
 
+    // 다른 탭으로 이동하면 그 탭의 관리모드(관리 패널) 자동 해제
+    React.useEffect(() => {
+        attend.setIsAttendPanelOpen(false);
+        team.setIsTeamPanelOpen(false);
+        match.setIsMatchPanelOpen(false);
+    }, [tab]);
+
     if (appView === 'loading') return (
         <div className="min-h-screen flex flex-col items-center justify-center">
             <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -391,6 +398,12 @@ function App() {
 
     const memberName = memberInfo?.name || memberData?.name || '회원';
     const myTeamIdx = myTeamInfo?.teamIdx ?? -1;
+    // 현재 탭의 관리모드 라벨 (관리자이며 해당 탭의 관리 패널이 열려 있을 때만)
+    const adminModeLabel = !isAdminMode ? null
+        : (tab === 'attend' && attend.isAttendPanelOpen) ? '출석 관리 모드'
+        : (tab === 'team' && team.isTeamPanelOpen) ? '편성 모드'
+        : (tab === 'match' && match.isMatchPanelOpen) ? '매치 관리 모드'
+        : null;
 
     return (
         <div className="min-h-screen content-pb text-slate-800">
@@ -407,6 +420,11 @@ function App() {
             {testMode && (
                 <div style={{background:'#fbbf24',position:'sticky',top:0,zIndex:50}} className="text-amber-900 text-xs font-black text-center py-2 px-4">
                     🧪 테스트 모드 — GPS·QR 시간·거리 제한이 해제된 상태입니다.
+                </div>
+            )}
+            {adminModeLabel && (
+                <div style={{position:'sticky',top:0,zIndex:55}} className="bg-indigo-600 text-white text-[11px] font-black text-center py-2 px-4">
+                    ⚙️ {adminModeLabel}에 들어와 있습니다 · 다른 탭으로 이동하면 해제됩니다
                 </div>
             )}
             <MemberHeader
