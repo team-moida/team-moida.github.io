@@ -61,7 +61,11 @@ const { useState, useEffect, useMemo } = React;
 
 function App() {
     const [appView, setAppView] = useState('loading');
-    const [tab, setTab] = useState('home');
+    const [tab, setTab] = useState(() => {
+        try { return sessionStorage.getItem('moida_tab') || 'home'; } catch(e) { return 'home'; }
+    });
+    // 현재 탭 기억 → 새로고침(당겨서/F5) 후 같은 탭으로 복원. 앱을 완전히 닫으면 초기화(홈).
+    React.useEffect(() => { try { sessionStorage.setItem('moida_tab', tab); } catch(e) {} }, [tab]);
     const [memberData, setMemberData] = useState(() => {
         try {
             const s = JSON.parse(localStorage.getItem('moida_member_data'));
