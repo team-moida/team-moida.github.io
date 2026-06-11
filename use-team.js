@@ -39,11 +39,12 @@ function useTeam({ isAdminMode, meetingSettings, allMembers }) {
     useEffect(() => {
         const date = meetingSettings?.date;
         if (!date || !confirmedDrafts.length) { setTeamDraftData(null); return; }
+        const mid = getMeetingId(meetingSettings);
         const filtered = confirmedDrafts
-            .filter(d => d.meetingDate === date)
+            .filter(d => d.meetingId ? d.meetingId === mid : d.meetingDate === date)
             .sort((a, b) => ms(b.createdAt) - ms(a.createdAt));
         setTeamDraftData(filtered[0] || null);
-    }, [confirmedDrafts, meetingSettings?.date]);
+    }, [confirmedDrafts, meetingSettings?.date, meetingSettings?.meetingType]);
 
     useEffect(() => {
         if (!isAdminMode) return;
@@ -99,8 +100,15 @@ function useTeam({ isAdminMode, meetingSettings, allMembers }) {
         if (!tmMeetingDate) return [];
         const [y, m] = tmMeetingDate.split('-');
         const targetMonthStr = `${y}-${m}`;
+        const tmMeetingType = meetingSettings?.meetingType || 'self';
+        const tmMid = meetingSettings ? getMeetingId(meetingSettings) : tmMeetingDate;
         return tmSessionData.filter(s => {
             if (!s.date || s.date.trim() !== tmMeetingDate.trim() || s.status === '노쇼') return false;
+            if (tmMeetingType === 'match') {
+                if (!s.meetingId || !s.meetingId.endsWith('__match')) return false;
+            } else {
+                if (s.meetingId && s.meetingId.endsWith('__match')) return false;
+            }
             if (s.isGuest) return true;
             const mi = allMembers.find(mm => mm.id === s.memberId);
             if (!mi) return true;
@@ -109,7 +117,7 @@ function useTeam({ isAdminMode, meetingSettings, allMembers }) {
             if (tmMonthlyStatuses[s.memberId] === 'rest') return false;
             return true;
         }).sort((a, b) => ms(a.createdAt) - ms(b.createdAt) || a.name.localeCompare(b.name));
-    }, [tmSessionData, tmMeetingDate, allMembers, tmMonthlyStatuses]);
+    }, [tmSessionData, tmMeetingDate, allMembers, tmMonthlyStatuses, meetingSettings?.meetingType]);
 
     const tmEntryList = useMemo(() => tmAllAttendees.slice(0, tmMaxLimit), [tmAllAttendees, tmMaxLimit]);
     const tmActiveList = useMemo(() => tmEntryList.filter(p => !excludedIds.includes(p.memberId || p.id)), [tmEntryList, excludedIds]);

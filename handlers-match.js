@@ -77,6 +77,7 @@ function makeMatchHandlers(ctx) {
                 completedMatches: Array.from(localCompletedMatches),
                 currentMatchIndex: localMatchIndex,
                 createdAt: new Date().toISOString(), meetingDate: matchConfig.meetingDate,
+                meetingId: matchConfig.meetingDate,
                 label: `${matchConfig.meetingDate} 매치 (${localSchedule.list.length}라운드)`
             });
             setActiveMatchScheduleId(docRef.id);

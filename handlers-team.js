@@ -12,8 +12,10 @@ function makeTeamHandlers(ctx) {
     const tmSaveDraft = async () => {
         try {
             const now = new Date();
+            const _draftMid = getMeetingId(meetingSettings || {date: editMeetingDate || tmMeetingDate, meetingType: 'self'});
             await getCol('team_drafts').add({
                 meetingDate: editMeetingDate || tmMeetingDate,
+                meetingId: _draftMid,
                 meetingTimeRange: `${meetingSettings?.start || ''} ~ ${meetingSettings?.end || ''}`,
                 createdAt: now.toISOString(),
                 timeLabel: now.toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit', second: '2-digit'}),
@@ -35,6 +37,7 @@ function makeTeamHandlers(ctx) {
         setEditIsConfirmed(true);
         try {
             const now = new Date();
+            const _confirmMid = getMeetingId(meetingSettings || {date: tmMeetingDate, meetingType: 'self'});
             const draftsRef = getCol('team_drafts');
             const snap = await draftsRef.where('meetingDate', '==', tmMeetingDate).where('isConfirmed', '==', true).get();
             if (!snap.empty) {
@@ -43,6 +46,7 @@ function makeTeamHandlers(ctx) {
             } else {
                 await draftsRef.add({
                     meetingDate: tmMeetingDate,
+                    meetingId: _confirmMid,
                     meetingTimeRange: `${meetingSettings?.start || ''} ~ ${meetingSettings?.end || ''}`,
                     createdAt: now.toISOString(),
                     timeLabel: now.toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit', second: '2-digit'}),

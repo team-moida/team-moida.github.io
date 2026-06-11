@@ -42,15 +42,19 @@ function useAttend({ isAdminMode, memberData, meetingSettings, tmSessionData, ac
     }, [isAdminMode]);
 
     useEffect(() => {
-        const meetingDate = meetingSettings?.date;
-        if (!meetingDate) { setRegistrationList([]); return; }
-        const unsub = getRegistrationsCol()
-            .where('meetingDate', '==', meetingDate)
-            .onSnapshot(snap => {
-                setRegistrationList(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-            }, () => {});
+        const mDate = meetingSettings?.date;
+        if (!mDate) { setRegistrationList([]); return; }
+        const mType = meetingSettings?.meetingType || 'self';
+        const mid = getMeetingId(meetingSettings);
+        const query = mType === 'match'
+            ? getRegistrationsCol().where('meetingId', '==', mid)
+            : getRegistrationsCol().where('meetingDate', '==', mDate);
+        const unsub = query.onSnapshot(snap => {
+            const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            setRegistrationList(mType === 'match' ? list : list.filter(r => r.meetingType !== 'match'));
+        }, () => {});
         return () => unsub();
-    }, [meetingSettings?.date]);
+    }, [meetingSettings?.date, meetingSettings?.meetingType]);
 
     useEffect(() => {
         if (!isQRGenModalOpen || !currentQRToken || !meetingSettings?.date) return;
@@ -63,10 +67,17 @@ function useAttend({ isAdminMode, memberData, meetingSettings, tmSessionData, ac
         }, 100);
     }, [isQRGenModalOpen, currentQRToken, meetingSettings?.date]);
 
-    const attendActiveParticipants = useMemo(() =>
-        tmSessionData.filter(p => p.date === (meetingSettings?.date || ''))
-            .sort((a,b) => ms(a.createdAt) - ms(b.createdAt) || a.name.localeCompare(b.name)),
-    [tmSessionData, meetingSettings?.date]);
+    const attendActiveParticipants = useMemo(() => {
+        const mDate = meetingSettings?.date || '';
+        const mid = meetingSettings ? getMeetingId(meetingSettings) : '';
+        return tmSessionData
+            .filter(p => {
+                if (p.date !== mDate) return false;
+                if (p.meetingId) return p.meetingId === mid;
+                return !mid.endsWith('__match');
+            })
+            .sort((a,b) => ms(a.createdAt) - ms(b.createdAt) || a.name.localeCompare(b.name));
+    }, [tmSessionData, meetingSettings?.date, meetingSettings?.meetingType]);
 
     const { attendNormalMembers, attendGuestEligibleMembers } = useMemo(() => {
         const monthStr = meetingSettings?.date?.substring(0,7) || '';
@@ -158,10 +169,17 @@ function useAttend({ isAdminMode, memberData, meetingSettings, tmSessionData, ac
         hasAutoNoShowRef.current = true;
         const lim = meetingSettings?.maxLimit || 18;
         const date = meetingSettings.date;
+        const _mType = meetingSettings.meetingType || 'self';
+        const _mid = getMeetingId(meetingSettings);
         (async () => {
             try {
-                const snap = await getSessionCol().where('date','==',date).get();
-                const sorted = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>ms(a.createdAt)-ms(b.createdAt)||a.name.localeCompare(b.name));
+                const _query = _mType === 'match'
+                    ? getSessionCol().where('meetingId', '==', _mid)
+                    : getSessionCol().where('date', '==', date);
+                const snap = await _query.get();
+                const all = snap.docs.map(d=>({id:d.id,...d.data()}));
+                const forMeeting = _mType === 'match' ? all : all.filter(s => !s.meetingId || !s.meetingId.endsWith('__match'));
+                const sorted = forMeeting.sort((a,b)=>ms(a.createdAt)-ms(b.createdAt)||a.name.localeCompare(b.name));
                 const toNoShow = sorted.slice(0,lim).filter(p=>!p.checkedIn&&p.status!=='노쇼');
                 if (toNoShow.length===0) return;
                 const batch = db.batch();

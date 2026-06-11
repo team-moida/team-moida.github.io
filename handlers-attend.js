@@ -167,21 +167,33 @@ function makeAttendHandlers(ctx) {
 
     const attendToggleParticipant = async (member, dateOverride) => {
         const _date = dateOverride || meetingSettings?.date;
-        const existing = tmSessionData.find(p => p.memberId === member.id && p.date === _date);
+        const _mid = dateOverride ? dateOverride : getMeetingId(meetingSettings);
+        const existing = tmSessionData.find(p => {
+            if (p.memberId !== member.id || p.date !== _date) return false;
+            return p.meetingId ? p.meetingId === _mid : !_mid.endsWith('__match');
+        });
         if (existing) { await getSessionCol().doc(existing.id).delete(); }
-        else { await getSessionCol().add({memberId: member.id, name: member.name, gender: member.gender, level: member.level, date: _date, checkedIn: false, checkInTime: null, status: '미출석', isGuest: false, team: '', createdAt: new Date().toISOString()}); }
+        else { await getSessionCol().add({memberId: member.id, name: member.name, gender: member.gender, level: member.level, date: _date, meetingId: _mid, checkedIn: false, checkInTime: null, status: '미출석', isGuest: false, team: '', createdAt: new Date().toISOString()}); }
     };
 
     const attendToggleParticipantAsGuest = async (member, dateOverride) => {
         const _date = dateOverride || meetingSettings?.date;
-        const existing = tmSessionData.find(p => p.memberId === member.id && p.date === _date);
+        const _mid = dateOverride ? dateOverride : getMeetingId(meetingSettings);
+        const existing = tmSessionData.find(p => {
+            if (p.memberId !== member.id || p.date !== _date) return false;
+            return p.meetingId ? p.meetingId === _mid : !_mid.endsWith('__match');
+        });
         if (existing) { await getSessionCol().doc(existing.id).delete(); }
-        else { await getSessionCol().add({memberId: member.id, name: member.name, gender: member.gender, level: member.level, date: _date, checkedIn: false, checkInTime: null, status: '미출석', isGuest: true, team: '', createdAt: new Date().toISOString()}); }
+        else { await getSessionCol().add({memberId: member.id, name: member.name, gender: member.gender, level: member.level, date: _date, meetingId: _mid, checkedIn: false, checkInTime: null, status: '미출석', isGuest: true, team: '', createdAt: new Date().toISOString()}); }
     };
 
     const attendHandleResetSelection = (dateOverride) => {
         const _date = dateOverride || meetingSettings?.date;
-        const targets = tmSessionData.filter(p => p.date === _date);
+        const _mid = dateOverride ? dateOverride : getMeetingId(meetingSettings);
+        const targets = tmSessionData.filter(p => {
+            if (p.date !== _date) return false;
+            return p.meetingId ? p.meetingId === _mid : !_mid.endsWith('__match');
+        });
         if (targets.length === 0) return showAlert('알림', '초기화할 명단이 없습니다.');
         showConfirm('명단 초기화', '이번 모임 선정 인원을 전체 해제하시겠습니까?', async () => {
             setAttendIsPending(true);
@@ -195,8 +207,9 @@ function makeAttendHandlers(ctx) {
         if (attendIsPending) return;
         setAttendIsPending(true);
         const inviter = activeMembers.find(m => m.id === attendNewGuest.inviterId);
+        const _guestMid = getMeetingId(meetingSettings);
         try {
-            await getSessionCol().add({memberId: 'guest_' + Date.now(), name: attendNewGuest.name, inviterName: inviter?.name || '없음', inviterId: attendNewGuest.inviterId || '', gender: attendNewGuest.gender, level: attendNewGuest.level, date: meetingSettings?.date, checkedIn: false, checkInTime: null, status: '미출석', isGuest: true, createdAt: new Date().toISOString()});
+            await getSessionCol().add({memberId: 'guest_' + Date.now(), name: attendNewGuest.name, inviterName: inviter?.name || '없음', inviterId: attendNewGuest.inviterId || '', gender: attendNewGuest.gender, level: attendNewGuest.level, date: meetingSettings?.date, meetingId: _guestMid, checkedIn: false, checkInTime: null, status: '미출석', isGuest: true, createdAt: new Date().toISOString()});
             setIsAttendGuestModalOpen(false);
             setAttendNewGuest({name: '', gender: '남성', inviterId: '', level: '1'});
         } catch(e) { showAlert('오류', '게스트 등록 실패'); } finally { setAttendIsPending(false); }
@@ -317,7 +330,12 @@ function makeAttendHandlers(ctx) {
     };
 
     const attendHandleEndMeeting = async () => {
-        const current = tmSessionData.filter(p => p.date === meetingSettings?.date);
+        const _endMid = getMeetingId(meetingSettings);
+        const _endMType = meetingSettings?.meetingType || 'self';
+        const current = tmSessionData.filter(p => {
+            if (p.date !== meetingSettings?.date) return false;
+            return p.meetingId ? p.meetingId === _endMid : !_endMid.endsWith('__match');
+        });
         if (current.length === 0) return showAlert('확인', '현재 출석부에 인원이 없습니다.');
         showConfirm('모임 종료', `${meetingSettings.date} 모임 기록을 저장하시겠습니까?`, async () => {
             setAttendIsPending(true);
@@ -334,8 +352,8 @@ function makeAttendHandlers(ctx) {
                 const presentCount = records.filter(r => r.status === '정상' || r.status === '지각').length;
                 await getHistoryCol().add({date: meetingSettings.date, meetingTime: `${meetingSettings.start}~${meetingSettings.end}`, location: meetingSettings.location || '장소 미지정', locationLat: meetingSettings.locationLat || null, locationLng: meetingSettings.locationLng || null, managerName: meetingSettings.managerName || '미지정', total: records.length, present: presentCount, records, createdAt: new Date().toISOString()});
 
-                // 현재 모임 done 처리
-                try { await getMeetingsCol().doc(meetingSettings.date).update({ status: 'done' }); } catch(_) {}
+                // 현재 모임 done 처리 (meetingId 기준)
+                try { await getMeetingsCol().doc(_endMid).update({ status: 'done' }); } catch(_) {}
 
                 // 종료된 모임 참가자 명단 삭제
                 try {
@@ -344,14 +362,16 @@ function makeAttendHandlers(ctx) {
                     await delBatch.commit();
                 } catch(_) {}
 
-                // 다음 모임 탐색 (status !== 'done', 현재 날짜 이후, 가장 가까운 것)
+                // 다음 모임 탐색 (같은 종류, status !== 'done', 현재 날짜 이후, 가장 가까운 것)
                 const nextMeeting = [...(meetings || [])]
-                    .filter(m => m.status !== 'done' && m.date > meetingSettings.date)
+                    .filter(m => m.status !== 'done' && m.date > meetingSettings.date && (m.meetingType || 'self') === _endMType)
                     .sort((a, b) => a.date.localeCompare(b.date))[0] || null;
+
+                const _endMirrorId = _endMType === 'match' ? 'meeting_schedule_match' : 'meeting_schedule_v2';
 
                 if (nextMeeting) {
                     try {
-                        await getSettingsCol().doc('meeting_schedule_v2').set({
+                        await getSettingsCol().doc(_endMirrorId).set({
                             date: nextMeeting.date,
                             start: nextMeeting.start || '08:00',
                             end: nextMeeting.end || '10:00',
@@ -362,6 +382,7 @@ function makeAttendHandlers(ctx) {
                             maxLimit: nextMeeting.maxLimit || 18,
                             managerId: nextMeeting.managerId || '',
                             managerName: nextMeeting.managerName || '',
+                            meetingType: _endMType,
                             testMode: false
                         });
                         setMeetingSettings({ ...nextMeeting, testMode: false });

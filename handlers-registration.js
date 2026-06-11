@@ -3,15 +3,18 @@ const getRegistrationsCol = () => getCol('registrations');
 const FieldValue = firebase.firestore.FieldValue;
 
 function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, showToast, showAlert }) {
+    const meetingId = meetingSettings ? getMeetingId(meetingSettings) : meetingDate;
+    const mType = meetingSettings?.meetingType || 'self';
+    const mirrorDocId = mType === 'match' ? 'meeting_schedule_match' : 'meeting_schedule_v2';
 
     const handleRegister = async () => {
         if (!meetingDate || !memberData?.memberId) return;
 
         const maxLimit = meetingSettings?.maxLimit || 18;
-        const meetingRef = getMeetingsCol().doc(meetingDate);
-        const regRef = getRegistrationsCol().doc(`${meetingDate}_${memberData.memberId}`);
-        const sessionRef = getCol('weekly_session').doc(`${meetingDate}_${memberData.memberId}`);
-        const mirrorRef = getCol('settings').doc('meeting_schedule_v2');
+        const meetingRef = getMeetingsCol().doc(meetingId);
+        const regRef = getRegistrationsCol().doc(`${meetingId}_${memberData.memberId}`);
+        const sessionRef = getCol('weekly_session').doc(`${meetingId}_${memberData.memberId}`);
+        const mirrorRef = getCol('settings').doc(mirrorDocId);
 
         try {
             await db.runTransaction(async (tx) => {
@@ -30,6 +33,7 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
                 const isFirstComeFirstServed = meetingData.isFirstComeFirstServed ?? true;
                 const regData = {
                     meetingDate,
+                    meetingId,
                     meetingType: isMatch ? 'match' : 'self',
                     memberId: memberData.memberId,
                     name: memberData.name || '',
@@ -44,6 +48,7 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
                     gender: memberData.gender || '',
                     level: memberData.level || '',
                     date: meetingDate,
+                    meetingId,
                     checkedIn: false,
                     checkInTime: null,
                     status: 'active',
@@ -100,10 +105,10 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
     const handleCancel = async () => {
         if (!meetingDate || !memberData?.memberId) return;
 
-        const meetingRef = getMeetingsCol().doc(meetingDate);
-        const regRef = getRegistrationsCol().doc(`${meetingDate}_${memberData.memberId}`);
-        const sessionRef = getCol('weekly_session').doc(`${meetingDate}_${memberData.memberId}`);
-        const mirrorRef = getCol('settings').doc('meeting_schedule_v2');
+        const meetingRef = getMeetingsCol().doc(meetingId);
+        const regRef = getRegistrationsCol().doc(`${meetingId}_${memberData.memberId}`);
+        const sessionRef = getCol('weekly_session').doc(`${meetingId}_${memberData.memberId}`);
+        const mirrorRef = getCol('settings').doc(mirrorDocId);
 
         try {
             await db.runTransaction(async (tx) => {
