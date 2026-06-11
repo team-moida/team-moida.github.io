@@ -317,95 +317,167 @@ const MeetingWeather = ({ lat, lng, date, isAdminMode }) => {
         </div>
     );
 };
-const TabHome = ({
-    notifPermission, registerFcmToken, onTabChange,
-    meetingDayInfo, teamReady, allowFromDisplay,
-    myTeamInfo, myTeamIdx, memberData,
-    mySession, meetingSettings, darkMode,
-    memberName, announcements, onOpenAnnouncements,
-    isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
-}) => (
-    <div className="animate-in space-y-3">
-        {/* 공지 순환 띠 (맨 위, 항상 표시) */}
-        <AnnounceTicker announcements={announcements} onOpen={onOpenAnnouncements} />
 
-        {/* 다음 모임 카드 (항상 표시 · 탭하면 모임 탭으로 이동) — 출석체크·팀편성은 시점이 되면 카드 안에 표시 / 관리자: 종료시간 후 모임 종료 오버레이 */}
+// ─── 다음 모임 카드 (정기/매칭 종류별 색상 구분) ───────────────────────────────
+// 종류별 색상·라벨. 정기=teal, 매칭=indigo. (회원이 두 모임 다 참여할 때 한눈에 구분)
+const MEETING_KIND = {
+    self:  { label: '정기모임', accent: '#14b8a6', text: 'text-teal-500',   tint: '#f0fdfa' },
+    match: { label: '매칭모임', accent: '#6366f1', text: 'text-indigo-500', tint: '#eef2ff' },
+};
+// 미러가 아닌(더 나중) 모임의 D-day 라벨 — member.html meetingDayInfo와 동일 규칙.
+const computeMeetingDay = (date, start) => {
+    if (!date || !start) return null;
+    const [my,mm,md] = date.split('-').map(Number);
+    const [sh,sm] = start.split(':').map(Number);
+    const now = new Date();
+    const meetingStart = new Date(my,mm-1,md,sh,sm,0);
+    const today0 = new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0);
+    const meetDay0 = new Date(my,mm-1,md,0,0,0);
+    const dDays = Math.round((meetDay0-today0)/(1000*60*60*24));
+    if (dDays < 0) return { type:'past' };
+    if (dDays > 0) return { type:'future', label:`D-${dDays}` };
+    const minsUntil = Math.round((meetingStart-now)/60000);
+    if (minsUntil > 60) return { type:'today', label:`${Math.floor(minsUntil/60)}시간 ${minsUntil%60}분 후` };
+    if (minsUntil > 0) return { type:'today', label:`${minsUntil}분 후 시작`, urgent: minsUntil <= 30 };
+    return { type:'started', label:'모임 중' };
+};
+const NextMeetingCard = ({
+    meeting, kind, isActive, dayInfo, darkMode, isAdminMode, onTabChange,
+    mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay,
+    isMeetingOver, isMeetingEndSaved, onEndMeeting,
+}) => {
+    const cfg = MEETING_KIND[kind] || MEETING_KIND.self;
+    const showOverlay = isActive && isAdminMode && isMeetingOver && !isMeetingEndSaved;
+    return (
         <div className="relative">
-        <button onClick={()=>onTabChange('attend')} className={`w-full card rounded-3xl p-5 text-left active:scale-98 transition-all${isAdminMode && isMeetingOver && !isMeetingEndSaved ? ' blur-sm' : ''}`}>
-            {meetingSettings?.date && meetingDayInfo ? (
-                <>
-                    <div className="flex items-center justify-between gap-2 mb-2.5">
-                        <p className="text-xs font-black text-teal-500 uppercase tracking-widest">다음 모임</p>
-                        {meetingDayInfo.type !== 'past' && meetingDayInfo.label && (
-                            <span className={`flex-shrink-0 text-xs font-black px-3 py-1 rounded-xl ${
-                                meetingDayInfo.type==='started'?'bg-emerald-50 text-emerald-500':
-                                meetingDayInfo.urgent?'bg-red-50 text-red-500':
-                                meetingDayInfo.type==='today'?'bg-teal-50 text-teal-500':
-                                'bg-slate-100 text-slate-500'}`}>{meetingDayInfo.label}</span>
-                        )}
-                    </div>
-                    <p className="font-black text-lg leading-tight">{fmtMeetingDate(meetingSettings.date)} · {meetingSettings.start}~{meetingSettings.end}</p>
-                    {meetingSettings.location && (
-                        <p className="text-sm text-slate-400 mt-1 flex items-center gap-1 min-w-0">
-                            <Icon.MapPin size={13} className="flex-shrink-0"/><span className="truncate">{meetingSettings.location}</span>
-                        </p>
+        <button onClick={()=>onTabChange('attend')}
+            className={`w-full card rounded-3xl p-5 text-left active:scale-98 transition-all${showOverlay ? ' blur-sm' : ''}`}
+            style={{ borderLeft:`4px solid ${cfg.accent}`, ...(darkMode ? {} : { background: cfg.tint }) }}>
+            <div className="flex items-center justify-between gap-2 mb-2.5">
+                <p className={`text-xs font-black uppercase tracking-widest ${cfg.text}`}>{cfg.label}</p>
+                {dayInfo && dayInfo.type !== 'past' && dayInfo.label && (
+                    <span className={`flex-shrink-0 text-xs font-black px-3 py-1 rounded-xl ${
+                        dayInfo.type==='started'?'bg-emerald-50 text-emerald-500':
+                        dayInfo.urgent?'bg-red-50 text-red-500':
+                        dayInfo.type==='today'?'bg-teal-50 text-teal-500':
+                        'bg-slate-100 text-slate-500'}`}>{dayInfo.label}</span>
+                )}
+            </div>
+            <p className="font-black text-lg leading-tight">{fmtMeetingDate(meeting.date)} · {meeting.start}~{meeting.end}</p>
+            {kind==='match' && meeting.opponentName && (
+                <p className="text-sm font-black text-indigo-500 mt-1 truncate">vs {meeting.opponentName}</p>
+            )}
+            {meeting.location && (
+                <p className="text-sm text-slate-400 mt-1 flex items-center gap-1 min-w-0">
+                    <Icon.MapPin size={13} className="flex-shrink-0"/><span className="truncate">{meeting.location}</span>
+                </p>
+            )}
+            {/* 실시간 날씨 (모임 좌표 기준) — 지난 모임에는 표시 안 함 */}
+            {dayInfo && dayInfo.type !== 'past' && (
+                <MeetingWeather lat={meeting.locationLat} lng={meeting.locationLng} date={meeting.date} isAdminMode={isAdminMode} />
+            )}
+            {isActive ? (
+                <div className="mt-4 pt-4 border-t space-y-2.5" style={{borderColor: darkMode?'rgba(255,255,255,0.08)':'#f1f5f9'}}>
+                    {/* 출석 상태 — 출석체크 시점(당일/모임중)이 되면 체크 버튼, 완료 시 완료 표시 */}
+                    {mySession?.checkedIn ? (
+                        <div className="flex items-center justify-between gap-2">
+                            <span className="flex items-center gap-1.5 text-sm font-black text-emerald-500 min-w-0">
+                                <Icon.Check size={16} className="flex-shrink-0"/><span className="truncate">출석 완료</span>
+                            </span>
+                            <span className="text-xs font-black text-slate-400 flex-shrink-0">{mySession.checkInTime}</span>
+                        </div>
+                    ) : (dayInfo.type==='today' || dayInfo.type==='started') ? (
+                        <div className="flex items-center justify-between gap-2 -mx-1.5 px-3 py-2.5 rounded-xl" style={{background: darkMode?'rgba(20,184,166,0.14)':'#f0fdfa'}}>
+                            <span className="flex items-center gap-1.5 text-sm font-black text-teal-600 min-w-0">
+                                <Icon.CheckSq size={16} className="flex-shrink-0"/><span className="truncate">지금 출석 체크하기</span>
+                            </span>
+                            <Icon.ChevronRight size={16} className="text-teal-400 flex-shrink-0"/>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                            <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">모임 당일에 출석 체크가 열립니다</span>
+                        </div>
                     )}
-                    {/* 실시간 날씨 (모임 좌표 기준) — 지난 모임에는 표시 안 함 */}
-                    {meetingDayInfo.type !== 'past' && (
-                        <MeetingWeather lat={meetingSettings.locationLat} lng={meetingSettings.locationLng} date={meetingSettings.date} isAdminMode={isAdminMode} />
+                    {/* 팀 상태 — 팀편성 공개 시점이 되면 내 팀 표시 */}
+                    {teamReady && myTeamInfo ? (
+                        <div className="flex items-center justify-between gap-2">
+                            <span className="flex items-center gap-1.5 text-sm font-black text-slate-700 min-w-0">
+                                <span className={`w-5 h-5 rounded-md flex items-center justify-center text-white text-[11px] font-black flex-shrink-0 ${getTeamBadge(myTeamIdx)}`}>{myTeamInfo.jerseyNumber}</span>
+                                <span className="truncate">내 팀 · {myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</span>
+                            </span>
+                            <span className="text-xs text-slate-400 flex-shrink-0">{getTeamColorName(myTeamIdx)} 조끼</span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                            <Icon.Users size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">팀 편성 비공개 중{allowFromDisplay?` · ${allowFromDisplay}부터 공개`:''}</span>
+                        </div>
                     )}
-                    <div className="mt-4 pt-4 border-t space-y-2.5" style={{borderColor: darkMode?'rgba(255,255,255,0.08)':'#f1f5f9'}}>
-                        {/* 출석 상태 — 출석체크 시점(당일/모임중)이 되면 체크 버튼, 완료 시 완료 표시 */}
-                        {mySession?.checkedIn ? (
-                            <div className="flex items-center justify-between gap-2">
-                                <span className="flex items-center gap-1.5 text-sm font-black text-emerald-500 min-w-0">
-                                    <Icon.Check size={16} className="flex-shrink-0"/><span className="truncate">출석 완료</span>
-                                </span>
-                                <span className="text-xs font-black text-slate-400 flex-shrink-0">{mySession.checkInTime}</span>
-                            </div>
-                        ) : (meetingDayInfo.type==='today' || meetingDayInfo.type==='started') ? (
-                            <div className="flex items-center justify-between gap-2 -mx-1.5 px-3 py-2.5 rounded-xl" style={{background: darkMode?'rgba(20,184,166,0.14)':'#f0fdfa'}}>
-                                <span className="flex items-center gap-1.5 text-sm font-black text-teal-600 min-w-0">
-                                    <Icon.CheckSq size={16} className="flex-shrink-0"/><span className="truncate">지금 출석 체크하기</span>
-                                </span>
-                                <Icon.ChevronRight size={16} className="text-teal-400 flex-shrink-0"/>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                                <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">모임 당일에 출석 체크가 열립니다</span>
-                            </div>
-                        )}
-                        {/* 팀 상태 — 팀편성 공개 시점이 되면 내 팀 표시 */}
-                        {teamReady && myTeamInfo ? (
-                            <div className="flex items-center justify-between gap-2">
-                                <span className="flex items-center gap-1.5 text-sm font-black text-slate-700 min-w-0">
-                                    <span className={`w-5 h-5 rounded-md flex items-center justify-center text-white text-[11px] font-black flex-shrink-0 ${getTeamBadge(myTeamIdx)}`}>{myTeamInfo.jerseyNumber}</span>
-                                    <span className="truncate">내 팀 · {myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</span>
-                                </span>
-                                <span className="text-xs text-slate-400 flex-shrink-0">{getTeamColorName(myTeamIdx)} 조끼</span>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                                <Icon.Users size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">팀 편성 비공개 중{allowFromDisplay?` · ${allowFromDisplay}부터 공개`:''}</span>
-                            </div>
-                        )}
-                    </div>
-                </>
+                </div>
             ) : (
-                <div className="text-center text-slate-400 py-3">
-                    <div className="flex justify-center mb-2 opacity-30"><Icon.Calendar size={32}/></div>
-                    <p className="font-black text-sm">예정된 모임이 없습니다</p>
-                    <p className="text-xs mt-0.5 opacity-80">모임 탭에서 등록할 수 있어요</p>
+                <div className="mt-4 pt-4 border-t" style={{borderColor: darkMode?'rgba(255,255,255,0.08)':'#f1f5f9'}}>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                        <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">모임이 가까워지면 출석·팀 정보가 표시됩니다</span>
+                    </div>
                 </div>
             )}
         </button>
         {/* 관리자: 모임 종료 시간이 지나면 카드 위에 '모임 종료' 버튼 (누르면 그날 출석 기록 저장) */}
-        {isAdminMode && isMeetingOver && !isMeetingEndSaved && (
+        {showOverlay && (
             <div className="absolute inset-0 flex items-center justify-center bg-white/40 rounded-3xl">
                 <button onClick={onEndMeeting} className="bg-rose-500 text-white px-6 py-3 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg">모임 종료</button>
             </div>
         )}
         </div>
+    );
+};
+const TabHome = ({
+    notifPermission, registerFcmToken, onTabChange,
+    meetingDayInfo, teamReady, allowFromDisplay,
+    myTeamInfo, myTeamIdx, memberData, meetings,
+    mySession, meetingSettings, darkMode,
+    memberName, announcements, onOpenAnnouncements,
+    isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
+}) => {
+    // 정기/매칭 다음 모임 분리 (회원이 둘 다 참여할 수 있어 종류별 카드로 표시)
+    const upcoming = (meetings || []).filter(m => m && m.status !== 'done' && m.date);
+    const byDate = (a, b) => a.date.localeCompare(b.date);
+    const nextSelf  = upcoming.filter(m => (m.meetingType || 'self') !== 'match').sort(byDate)[0] || null;
+    const nextMatch = upcoming.filter(m => (m.meetingType || 'self') === 'match').sort(byDate)[0] || null;
+    const activeDate = meetingSettings?.date || null;
+    let meetingCards = [];
+    if (nextSelf)  meetingCards.push({ kind: 'self',  meeting: nextSelf });
+    if (nextMatch) meetingCards.push({ kind: 'match', meeting: nextMatch });
+    // 미러(현재 모임)만 로드되고 meetings 목록이 아직 비어 있으면 기존처럼 1장 표시(폴백)
+    if (meetingCards.length === 0 && meetingSettings?.date && meetingDayInfo) {
+        meetingCards.push({ kind: (meetingSettings.meetingType === 'match' ? 'match' : 'self'), meeting: meetingSettings });
+    }
+    meetingCards = meetingCards
+        .sort((a, b) => a.meeting.date.localeCompare(b.meeting.date))
+        .map(c => {
+            const isActive = !!activeDate && c.meeting.date === activeDate;
+            return { ...c, isActive, dayInfo: isActive ? meetingDayInfo : computeMeetingDay(c.meeting.date, c.meeting.start) };
+        });
+    return (
+    <div className="animate-in space-y-3">
+        {/* 공지 순환 띠 (맨 위, 항상 표시) */}
+        <AnnounceTicker announcements={announcements} onOpen={onOpenAnnouncements} />
+
+        {/* 다음 모임 — 정기/매칭 종류별로 분리해 색상으로 구분 (탭하면 모임 탭으로 이동) */}
+        {meetingCards.length > 0 ? meetingCards.map(c => (
+            <NextMeetingCard key={c.kind} meeting={c.meeting} kind={c.kind} isActive={c.isActive}
+                dayInfo={c.dayInfo} darkMode={darkMode} isAdminMode={isAdminMode} onTabChange={onTabChange}
+                mySession={mySession} teamReady={teamReady} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
+                allowFromDisplay={allowFromDisplay}
+                isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting} />
+        )) : (
+            <button onClick={()=>onTabChange('attend')} className="w-full card rounded-3xl p-5 text-center active:scale-98 transition-all">
+                <div className="text-slate-400 py-3">
+                    <div className="flex justify-center mb-2 opacity-30"><Icon.Calendar size={32}/></div>
+                    <p className="font-black text-sm">예정된 모임이 없습니다</p>
+                    <p className="text-xs mt-0.5 opacity-80">모임 탭에서 등록할 수 있어요</p>
+                </div>
+            </button>
+        )}
 
         {/* iOS PWA 설치 안내 */}
         {/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone && (
@@ -437,5 +509,6 @@ const TabHome = ({
             </button>
         )}
     </div>
-);
+    );
+};
 // ─────────────────────────────────────────────────────────────────────────────
