@@ -197,7 +197,7 @@ const WMO_WEATHER = {
 };
 const _wxCache = new Map();   // 날씨: `${lat},${lng},${date}` → {at, data} (30분)
 const _addrCache = new Map(); // 주소: `${lat},${lng}` → {at, text} (24시간)
-const MeetingWeather = ({ lat, lng, date }) => {
+const MeetingWeather = ({ lat, lng, date, isAdminMode }) => {
     const [wx, setWx] = React.useState(null);
     const [wState, setWState] = React.useState('idle'); // idle|loading|done|error
     const [addr, setAddr] = React.useState('');
@@ -257,7 +257,21 @@ const MeetingWeather = ({ lat, lng, date }) => {
         return () => { alive = false; };
     }, [lat, lng]);
 
-    if (lat == null || lng == null || wState === 'error') return null; // 좌표 없음/실패 → 숨김
+    // 좌표 없음 → 회원에겐 깔끔히 숨김, 관리자에겐 "지도로 위치 지정" 안내 (날씨엔 좌표 필요)
+    if (lat == null || lng == null) {
+        return isAdminMode ? (
+            <div className="mt-3 flex items-center gap-1.5 text-[11px] font-black text-slate-400">
+                <Icon.MapPin size={13} className="flex-shrink-0 opacity-60"/>
+                <span className="truncate">지도에서 위치를 지정하면 날씨가 표시돼요</span>
+            </div>
+        ) : null;
+    }
+    // 조회 실패 → 회원엔 숨김, 관리자엔 안내
+    if (wState === 'error') {
+        return isAdminMode ? (
+            <div className="mt-3 text-[11px] font-black text-slate-400">날씨를 불러오지 못했어요</div>
+        ) : null;
+    }
     if (wState !== 'done' || !wx) {
         return (
             <div className="mt-3 flex items-center gap-2 text-xs font-black text-slate-400">
@@ -328,7 +342,7 @@ const TabHome = ({
                     )}
                     {/* 실시간 날씨 (모임 좌표 기준) — 지난 모임에는 표시 안 함 */}
                     {meetingDayInfo.type !== 'past' && (
-                        <MeetingWeather lat={meetingSettings.locationLat} lng={meetingSettings.locationLng} date={meetingSettings.date} darkMode={darkMode} />
+                        <MeetingWeather lat={meetingSettings.locationLat} lng={meetingSettings.locationLng} date={meetingSettings.date} isAdminMode={isAdminMode} />
                     )}
                     <div className="mt-4 pt-4 border-t space-y-2.5" style={{borderColor: darkMode?'rgba(255,255,255,0.08)':'#f1f5f9'}}>
                         {/* 출석 상태 — 출석체크 시점(당일/모임중)이 되면 체크 버튼, 완료 시 완료 표시 */}
