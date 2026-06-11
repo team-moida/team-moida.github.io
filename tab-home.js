@@ -203,14 +203,23 @@ const MeetingWeather = ({ lat, lng, date, isAdminMode }) => {
     const [wErr, setWErr] = React.useState('');
     const [addr, setAddr] = React.useState('');
 
-    // ① 날씨 (Open-Meteo) — 주소와 독립. 느린 주소 프록시에 막히지 않음.
+    // ① 날씨 (Open-Meteo) — 주소와 독립. 캐시 즉시 표시 후 백그라운드 갱신(stale-while-revalidate).
     React.useEffect(() => {
         if (lat == null || lng == null) { setWState('idle'); setWx(null); return; }
         const key = `${lat},${lng},${date||''}`;
-        const c = _wxCache.get(key);
-        if (c && Date.now() - c.at < 30*60*1000) { setWx(c.data); setWState('done'); return; }
+        // 즉시 표시: 메모리 → localStorage 순으로 최근 값 있으면 바로 렌더 (오래됐어도 우선 표시)
+        let shown = _wxCache.get(key) || null;
+        if (!shown) {
+            try {
+                const s = JSON.parse(localStorage.getItem('moida_wx_' + key) || 'null');
+                if (s && s.data) { shown = s; _wxCache.set(key, s); }
+            } catch (_) {}
+        }
+        if (shown) { setWx(shown.data); setWState('done'); }
+        // 충분히 최신(30분 이내)이면 네트워크 생략
+        if (shown && Date.now() - shown.at < 30*60*1000) return;
         let alive = true;
-        setWState('loading');
+        if (!shown) setWState('loading'); // 캐시 있으면 '불러오는 중' 깜빡임 없이 조용히 갱신
         const p = new URLSearchParams({
             latitude: lat, longitude: lng,
             current: 'temperature_2m,relative_humidity_2m,weather_code',
@@ -230,10 +239,12 @@ const MeetingWeather = ({ lat, lng, date, isAdminMode }) => {
                     max: d.temperature_2m_max && d.temperature_2m_max[0],
                     pop: d.precipitation_probability_max && d.precipitation_probability_max[0],
                 };
-                _wxCache.set(key, { at: Date.now(), data });
+                const entry = { at: Date.now(), data };
+                _wxCache.set(key, entry);
+                try { localStorage.setItem('moida_wx_' + key, JSON.stringify(entry)); } catch (_) {}
                 setWx(data); setWState('done');
             })
-            .catch((e) => { if (alive) { setWErr(String((e && e.message) || e)); setWState('error'); } });
+            .catch((e) => { if (alive && !shown) { setWErr(String((e && e.message) || e)); setWState('error'); } }); // 캐시 있으면 에러로 안 바꿈
         return () => { alive = false; };
     }, [lat, lng, date]);
 
@@ -258,27 +269,25 @@ const MeetingWeather = ({ lat, lng, date, isAdminMode }) => {
         return () => { alive = false; };
     }, [lat, lng]);
 
-    // ── 관리자 진단 줄 (회원에겐 안 보임) — 좌표/상태/사유를 그대로 노출해 원인 파악 ──
+    // 문제 상태는 회원에겐 깔끔히 숨기고, 관리자에게만 이유를 짧게 안내 (평상시엔 안 보임)
     const adminNote = (txt) => isAdminMode ? (
-        <div className="mt-3 flex items-center gap-1.5 text-[11px] font-black text-amber-500 min-w-0">
-            <Icon.MapPin size={12} className="flex-shrink-0 opacity-70"/><span className="truncate">{txt}</span>
+        <div className="mt-3 flex items-center gap-1.5 text-[11px] font-black text-slate-400 min-w-0">
+            <Icon.MapPin size={12} className="flex-shrink-0 opacity-60"/><span className="truncate">{txt}</span>
         </div>
     ) : null;
-    const coordStr = (lat != null && lng != null) ? `${(+lat).toFixed(4)}, ${(+lng).toFixed(4)}` : '없음';
 
-    // 좌표 없음 → 회원엔 숨김, 관리자엔 "지도로 위치 지정" 안내
+    // 좌표 없음 → 관리자에겐 "지도로 위치 지정" 안내
     if (lat == null || lng == null) {
-        return adminNote('지도에서 위치를 지정하면 날씨가 표시돼요 (좌표 없음)');
+        return adminNote('지도에서 위치를 지정하면 날씨가 표시돼요');
     }
-    // 조회 실패 → 회원엔 숨김, 관리자엔 좌표+사유
+    // 조회 실패(캐시도 없음) → 관리자에겐 사유 안내
     if (wState === 'error') {
-        return adminNote(`날씨 조회 실패 · 좌표 ${coordStr} · 사유 ${wErr || '?'}`);
+        return adminNote(`날씨를 불러오지 못했어요 (${wErr || '네트워크'})`);
     }
     if (wState !== 'done' || !wx) {
         return (
-            <div className="mt-3 flex items-center gap-2 text-xs font-black text-slate-400 min-w-0">
-                <span className="animate-pulse flex-shrink-0">날씨 불러오는 중…</span>
-                {isAdminMode && <span className="text-[10px] opacity-70 truncate">({coordStr})</span>}
+            <div className="mt-3 flex items-center gap-2 text-xs font-black text-slate-400">
+                <span className="animate-pulse">날씨 불러오는 중…</span>
             </div>
         );
     }
