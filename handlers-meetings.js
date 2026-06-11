@@ -189,3 +189,52 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
 
     return { activeMeeting, handleSaveMeeting, handleDeleteMeeting };
 }
+
+// ── 정기 모임 자동 생성 설정 (전역 헬퍼: member.html · attendance.html 공유) ──
+// 설정 1개: settings/recurring_meeting / 날짜별 지정: recurring_overrides/{날짜}
+async function loadRecurringConfig() {
+    try {
+        const snap = await getCol('settings').doc('recurring_meeting').get();
+        return snap.exists ? snap.data() : null;
+    } catch(e) { console.error('정기 설정 로드 실패:', e); return null; }
+}
+
+async function saveRecurringConfig(data) {
+    await getCol('settings').doc('recurring_meeting').set(
+        { ...data, updatedAt: new Date().toISOString() }, { merge: true });
+}
+
+// 모임 요일(weekday: 0=일) 기준 다가오는 날짜 count개 (YYYY-MM-DD). 오늘이 모임요일이면 오늘부터.
+function computeUpcomingMeetingDates(weekday, count = 6, fromDate = new Date()) {
+    const out = [];
+    const base = new Date(fromDate);
+    base.setHours(0, 0, 0, 0);
+    const d0 = (Number(weekday) - base.getDay() + 7) % 7;
+    for (let i = 0; i < count; i++) {
+        const t = new Date(base);
+        t.setDate(base.getDate() + d0 + i * 7);
+        const y = t.getFullYear(), mo = String(t.getMonth() + 1).padStart(2, '0'), da = String(t.getDate()).padStart(2, '0');
+        out.push(`${y}-${mo}-${da}`);
+    }
+    return out;
+}
+
+async function loadRecurringOverrides(dates) {
+    const result = {};
+    await Promise.all((dates || []).map(async (dt) => {
+        try {
+            const s = await getCol('recurring_overrides').doc(dt).get();
+            if (s.exists) result[dt] = s.data();
+        } catch(e) {}
+    }));
+    return result;
+}
+
+async function saveRecurringOverride(date, data) {
+    await getCol('recurring_overrides').doc(date).set(
+        { ...data, updatedAt: new Date().toISOString() }, { merge: true });
+}
+
+async function deleteRecurringOverride(date) {
+    await getCol('recurring_overrides').doc(date).delete();
+}
