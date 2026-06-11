@@ -36,10 +36,13 @@ function composeMeetingAnnouncement(data) {
 
 function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
     const activeMeeting = getActiveMeeting(meetings);
+    const activeSelf = getActiveMeeting((meetings || []).filter(m => (m.meetingType||'self') !== 'match'));
+    const activeMatch = getActiveMeeting((meetings || []).filter(m => (m.meetingType||'self') === 'match'));
 
     const syncMirror = async (data) => {
+        const mirrorId = (data.meetingType || 'self') === 'match' ? 'meeting_schedule_match' : 'meeting_schedule_v2';
         try {
-            await getSettingsCol().doc('meeting_schedule_v2').set({
+            await getSettingsCol().doc(mirrorId).set({
                 date: data.date,
                 start: data.start || '08:00',
                 end: data.end || '10:00',
@@ -68,7 +71,7 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
                 waitingCount: data.waitingCount || 0,
             });
         } catch(e) {
-            console.error('meeting_schedule_v2 미러 동기화 실패:', e);
+            console.error(`${mirrorId} 미러 동기화 실패:`, e);
         }
     };
 
@@ -128,19 +131,18 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
             }
             await batch.commit();
 
-            // 미러(현재 모임) 동기화 — 홈 '다음 모임'·출석은 meeting_schedule_v2를 본다.
-            //  (1) 활성(가장 가까운 예정) 모임을 수정했거나
-            //  (2) 새 모임 추가/날짜 변경으로 '가장 가까운 예정 모임'이 바뀐 경우
-            // 더 늦은 모임만 추가했을 땐 미러를 건드리지 않는다(진행 중 모임 상태 보존).
-            const prevActiveId = activeMeeting?.id || null;
             const updatedList = [
                 ...meetings.filter(m => m.id !== docId && m.id !== editingId),
                 { ...data, id: docId },
             ];
-            const newActive = getActiveMeeting(updatedList);
-            const activeChanged = (newActive?.id || null) !== prevActiveId;
-            if (newActive && (activeChanged || (editingId && editingId === prevActiveId))) {
-                await syncMirror(newActive.id === docId ? data : newActive);
+            const isMatchType = (data.meetingType || 'self') === 'match';
+            const prevTypeActive = isMatchType ? activeMatch : activeSelf;
+            const newTypeActive = getActiveMeeting(updatedList.filter(m =>
+                isMatchType ? (m.meetingType||'self') === 'match' : (m.meetingType||'self') !== 'match'
+            ));
+            const activeChanged = (newTypeActive?.id || null) !== (prevTypeActive?.id || null);
+            if (newTypeActive && (activeChanged || (editingId && editingId === prevTypeActive?.id))) {
+                await syncMirror(newTypeActive.id === docId ? data : newTypeActive);
             }
 
             // 등록 시 전체 푸시 알림 (토글 ON일 때만) — 실패해도 모임 저장은 유지
@@ -165,7 +167,9 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
     };
 
     const handleDeleteMeeting = (meeting) => {
-        const isCurrentMeeting = activeMeeting?.id === meeting.id;
+        const mType = meeting.meetingType || 'self';
+        const typeActive = mType === 'match' ? activeMatch : activeSelf;
+        const isCurrentMeeting = typeActive?.id === meeting.id;
         const confirmMsg = isCurrentMeeting
             ? `현재 진행 예정 모임입니다. 삭제 시 신청 및 참가자 정보도 모두 사라집니다. 정말 삭제하시겠습니까?`
             : `${meeting.date} 모임을 삭제하시겠습니까?`;
@@ -181,15 +185,18 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
                 sessionSnap.docs.forEach(d => batch.delete(d.ref));
                 await batch.commit();
                 if (isCurrentMeeting) {
+                    const mirrorId = mType === 'match' ? 'meeting_schedule_match' : 'meeting_schedule_v2';
                     const remaining = meetings.filter(m => m.id !== meeting.id);
-                    const nextMeeting = getActiveMeeting(remaining);
+                    const nextMeeting = getActiveMeeting(remaining.filter(m =>
+                        mType === 'match' ? (m.meetingType||'self') === 'match' : (m.meetingType||'self') !== 'match'
+                    ));
                     if (nextMeeting) {
                         await syncMirror(nextMeeting);
                     } else {
-                        await getSettingsCol().doc('meeting_schedule_v2').set({
+                        await getSettingsCol().doc(mirrorId).set({
                             date: '', start: '', end: '', location: '',
                             locationLat: null, locationLng: null, locationRadius: 100,
-                            meetingType: 'self', opponentName: '', maxMale: 0, maxFemale: 0,
+                            meetingType: mType, opponentName: '', maxMale: 0, maxFemale: 0,
                             confirmedMaleCount: 0, confirmedFemaleCount: 0, waitingMaleCount: 0, waitingFemaleCount: 0,
                             maxLimit: 18, managerId: '', managerName: '', testMode: false,
                             isRegistrationEnabled: false, registrationOpenAt: '', registrationCloseAt: '',
@@ -203,7 +210,7 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
         });
     };
 
-    return { activeMeeting, handleSaveMeeting, handleDeleteMeeting };
+    return { activeMeeting, activeSelf, activeMatch, handleSaveMeeting, handleDeleteMeeting };
 }
 
 // ── 정기 모임 자동 생성 설정 (전역 헬퍼: member.html · attendance.html 공유) ──

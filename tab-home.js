@@ -347,7 +347,7 @@ const NextMeetingCard = ({
     isMeetingOver, isMeetingEndSaved, onEndMeeting,
 }) => {
     const cfg = MEETING_KIND[kind] || MEETING_KIND.self;
-    const showOverlay = isActive && isAdminMode && isMeetingOver && !isMeetingEndSaved;
+    const showOverlay = kind !== 'match' && isActive && isAdminMode && isMeetingOver && !isMeetingEndSaved;
     return (
         <div className="relative">
         <button onClick={()=>onTabChange('attend')}
@@ -438,7 +438,7 @@ const TabHome = ({
     notifPermission, registerFcmToken, onTabChange,
     meetingDayInfo, teamReady, allowFromDisplay,
     myTeamInfo, myTeamIdx, memberData, meetings, participantCount,
-    mySession, meetingSettings, darkMode,
+    mySession, meetingSettings, meetingSettingsMatch, darkMode,
     memberName, announcements, onOpenAnnouncements,
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
 }) => {
@@ -447,19 +447,32 @@ const TabHome = ({
     const byDate = (a, b) => a.date.localeCompare(b.date);
     const nextSelf  = upcoming.filter(m => (m.meetingType || 'self') !== 'match').sort(byDate)[0] || null;
     const nextMatch = upcoming.filter(m => (m.meetingType || 'self') === 'match').sort(byDate)[0] || null;
-    const activeDate = meetingSettings?.date || null;
+    const activeSelfDate = meetingSettings?.date || null;
+    const activeMatchDate = meetingSettingsMatch?.date || null;
     let meetingCards = [];
     if (nextSelf)  meetingCards.push({ kind: 'self',  meeting: nextSelf });
     if (nextMatch) meetingCards.push({ kind: 'match', meeting: nextMatch });
-    // 미러(현재 모임)만 로드되고 meetings 목록이 아직 비어 있으면 기존처럼 1장 표시(폴백)
-    if (meetingCards.length === 0 && meetingSettings?.date && meetingDayInfo) {
-        meetingCards.push({ kind: (meetingSettings.meetingType === 'match' ? 'match' : 'self'), meeting: meetingSettings });
+    // 미러가 로드됐지만 meetings 목록이 아직 비어 있으면 미러로 폴백
+    if (meetingCards.length === 0) {
+        if (meetingSettings?.date && meetingDayInfo) {
+            meetingCards.push({ kind: (meetingSettings.meetingType === 'match' ? 'match' : 'self'), meeting: meetingSettings });
+        }
+        if (meetingSettingsMatch?.date) {
+            meetingCards.push({ kind: 'match', meeting: meetingSettingsMatch });
+        }
     }
     meetingCards = meetingCards
         .sort((a, b) => a.meeting.date.localeCompare(b.meeting.date))
         .map(c => {
-            const isActive = !!activeDate && c.meeting.date === activeDate;
-            return { ...c, isActive, dayInfo: isActive ? meetingDayInfo : computeMeetingDay(c.meeting.date, c.meeting.start) };
+            const isActive = c.kind === 'match'
+                ? !!activeMatchDate && c.meeting.date === activeMatchDate
+                : !!activeSelfDate && c.meeting.date === activeSelfDate;
+            const dayInfo = isActive
+                ? (c.kind === 'match'
+                    ? computeMeetingDay(meetingSettingsMatch.date, meetingSettingsMatch.start)
+                    : meetingDayInfo)
+                : computeMeetingDay(c.meeting.date, c.meeting.start);
+            return { ...c, isActive, dayInfo };
         });
     return (
     <div className="animate-in space-y-3">

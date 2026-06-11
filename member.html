@@ -100,6 +100,7 @@ function App() {
     const isAdmin = ADMIN_ROLES.includes(memberData?.role);
     const isAdminMode = ADMIN_ROLES.includes(memberData?.role);
     const [meetingSettings, setMeetingSettings] = useState(null);
+    const [meetingSettingsMatch, setMeetingSettingsMatch] = useState(null);
     const [meetings, setMeetings] = useState([]);
     const testMode = !!meetingSettings?.testMode;
     const [mySession, setMySession] = useState(null);
@@ -165,6 +166,14 @@ function App() {
     useEffect(() => {
         const unsub = getCol('settings').doc('meeting_schedule_v2').onSnapshot(doc => {
             if (doc.exists) setMeetingSettings(doc.data());
+        });
+        return () => unsub();
+    }, []);
+
+    useEffect(() => {
+        const unsub = getCol('settings').doc('meeting_schedule_match').onSnapshot(doc => {
+            if (doc.exists && doc.data()?.date) setMeetingSettingsMatch(doc.data());
+            else setMeetingSettingsMatch(null);
         });
         return () => unsub();
     }, []);
@@ -486,6 +495,7 @@ function App() {
                         participantCount={meetingParticipants.length}
                         allowFromDisplay={allowFromDisplay} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                         memberData={memberData} mySession={mySession} meetingSettings={meetingSettings}
+                        meetingSettingsMatch={meetingSettingsMatch}
                         darkMode={darkMode} memberName={memberName} announcements={announcements}
                         onOpenAnnouncements={openAnnouncements}
                         isAdminMode={isAdminMode}
