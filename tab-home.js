@@ -213,17 +213,28 @@ const MeetingWeather = ({ lat, lng, date, darkMode }) => {
             timezone: 'Asia/Seoul',
         });
         if (date) { params.set('start_date', date); params.set('end_date', date); }
-        fetch(`https://api.open-meteo.com/v1/forecast?${params}`)
-            .then(r => r.ok ? r.json() : Promise.reject(r.status))
-            .then(j => {
+        const wReq = fetch(`https://api.open-meteo.com/v1/forecast?${params}`).then(r => r.ok ? r.json() : Promise.reject(r.status));
+        // 주소(시/구/동) — 카카오 역지오코딩. 기존 location-picker.js와 동일한 키/프록시 재사용.
+        // 실패해도 날씨엔 영향 없도록 .catch(null) 처리.
+        const aUrl = `https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${lng}&y=${lat}`;
+        const aReq = fetch(KAKAO_PROXY + encodeURIComponent(aUrl), { headers: { Authorization: `KakaoAK ${KAKAO_REST_KEY}` } })
+            .then(r => r.json()).catch(() => null);
+        Promise.all([wReq, aReq])
+            .then(([j, ja]) => {
                 if (!alive) return;
                 const cur = j.current || {}, d = j.daily || {};
+                let addr = '';
+                try {
+                    const a = ja && ja.documents && ja.documents[0] && ja.documents[0].address;
+                    if (a) addr = [a.region_2depth_name, a.region_3depth_name].filter(Boolean).join(' ');
+                } catch (_) {}
                 const out = {
                     code: (d.weather_code && d.weather_code[0] != null) ? d.weather_code[0] : cur.weather_code,
                     cur: cur.temperature_2m, humidity: cur.relative_humidity_2m,
                     min: d.temperature_2m_min && d.temperature_2m_min[0],
                     max: d.temperature_2m_max && d.temperature_2m_max[0],
                     pop: d.precipitation_probability_max && d.precipitation_probability_max[0],
+                    addr,
                 };
                 _weatherCache.set(key, { at: Date.now(), data: out });
                 setData(out); setState('done');
@@ -243,7 +254,13 @@ const MeetingWeather = ({ lat, lng, date, darkMode }) => {
     const [icon, label] = WMO_WEATHER[data.code] || ['🌡️','날씨'];
     const r = (v) => (v == null || isNaN(v)) ? '–' : Math.round(v);
     return (
-        <div className="mt-3 flex items-center gap-3">
+        <div className="mt-3">
+            {data.addr && (
+                <p className="text-xs font-black text-slate-500 mb-1.5 flex items-center gap-1 min-w-0">
+                    <Icon.MapPin size={12} className="flex-shrink-0 text-slate-400"/><span className="truncate">{data.addr}</span>
+                </p>
+            )}
+            <div className="flex items-center gap-3">
             <span className="text-3xl leading-none flex-shrink-0">{icon}</span>
             <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-1.5 min-w-0">
@@ -257,6 +274,7 @@ const MeetingWeather = ({ lat, lng, date, darkMode }) => {
                     <span className="text-slate-400">습도 {r(data.humidity)}%</span>
                     {data.pop != null && <span className="text-teal-400">강수 {r(data.pop)}%</span>}
                 </div>
+            </div>
             </div>
         </div>
     );
