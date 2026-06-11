@@ -122,9 +122,19 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
             }
             await batch.commit();
 
-            // 현재 활성 모임을 수정한 경우 meeting_schedule_v2 미러 동기화
-            if (editingId && activeMeeting && editingId === activeMeeting.id) {
-                await syncMirror(data);
+            // 미러(현재 모임) 동기화 — 홈 '다음 모임'·출석은 meeting_schedule_v2를 본다.
+            //  (1) 활성(가장 가까운 예정) 모임을 수정했거나
+            //  (2) 새 모임 추가/날짜 변경으로 '가장 가까운 예정 모임'이 바뀐 경우
+            // 더 늦은 모임만 추가했을 땐 미러를 건드리지 않는다(진행 중 모임 상태 보존).
+            const prevActiveId = activeMeeting?.id || null;
+            const updatedList = [
+                ...meetings.filter(m => m.id !== docId && m.id !== editingId),
+                { ...data, id: docId },
+            ];
+            const newActive = getActiveMeeting(updatedList);
+            const activeChanged = (newActive?.id || null) !== prevActiveId;
+            if (newActive && (activeChanged || (editingId && editingId === prevActiveId))) {
+                await syncMirror(newActive.id === docId ? data : newActive);
             }
 
             // 등록 시 전체 푸시 알림 (토글 ON일 때만) — 실패해도 모임 저장은 유지
