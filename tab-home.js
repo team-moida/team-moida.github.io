@@ -183,13 +183,15 @@ const TabHome = ({
     myTeamInfo, myTeamIdx, memberData,
     mySession, meetingSettings, darkMode,
     memberName, announcements, onOpenAnnouncements,
+    isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
 }) => (
     <div className="animate-in space-y-3">
         {/* 공지 순환 띠 (맨 위, 항상 표시) */}
         <AnnounceTicker announcements={announcements} onOpen={onOpenAnnouncements} />
 
-        {/* 다음 모임 카드 (항상 표시 · 탭하면 모임 탭으로 이동) — 출석체크·팀편성은 시점이 되면 카드 안에 표시 */}
-        <button onClick={()=>onTabChange('attend')} className="w-full card rounded-3xl p-5 text-left active:scale-98 transition-all">
+        {/* 다음 모임 카드 (항상 표시 · 탭하면 모임 탭으로 이동) — 출석체크·팀편성은 시점이 되면 카드 안에 표시 / 관리자: 종료시간 후 모임 종료 오버레이 */}
+        <div className="relative">
+        <button onClick={()=>onTabChange('attend')} className={`w-full card rounded-3xl p-5 text-left active:scale-98 transition-all${isAdminMode && isMeetingOver && !isMeetingEndSaved ? ' blur-sm' : ''}`}>
             {meetingSettings?.date && meetingDayInfo ? (
                 <>
                     <div className="flex items-center justify-between gap-2 mb-2.5">
@@ -253,6 +255,13 @@ const TabHome = ({
                 </div>
             )}
         </button>
+        {/* 관리자: 모임 종료 시간이 지나면 카드 위에 '모임 종료' 버튼 (누르면 그날 출석 기록 저장) */}
+        {isAdminMode && isMeetingOver && !isMeetingEndSaved && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/40 rounded-3xl">
+                <button onClick={onEndMeeting} className="bg-rose-500 text-white px-6 py-3 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg">모임 종료</button>
+            </div>
+        )}
+        </div>
 
         {/* iOS PWA 설치 안내 */}
         {/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone && (

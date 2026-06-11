@@ -465,6 +465,10 @@ function App() {
                         memberData={memberData} mySession={mySession} meetingSettings={meetingSettings}
                         darkMode={darkMode} memberName={memberName} announcements={announcements}
                         onOpenAnnouncements={openAnnouncements}
+                        isAdminMode={isAdminMode}
+                        isMeetingOver={attend.isMeetingOver}
+                        onEndMeeting={attendHandleEndMeeting}
+                        isMeetingEndSaved={attend.attendHistory?.some(h => h.date === meetingSettings?.date) || false}
                     />
                 )}
                 {tab === 'notice' && (
