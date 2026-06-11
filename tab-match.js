@@ -34,6 +34,8 @@ const TabMatch = ({
                         <button key={v} onClick={() => setMatchAdminView(v)}
                             className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${matchAdminView===v?'bg-teal-500 text-white shadow':'text-slate-400 bg-slate-100'}`}>{l}</button>
                     ))}
+                    <button onClick={() => setIsLoadMatchModalOpen(true)}
+                        className="px-3 py-2 rounded-xl font-black text-xs transition-all text-slate-400 bg-slate-100 shrink-0">기록</button>
                     <div className="flex-1"/>
                     {localSchedule.list.length > 0 && !matchIsCapturing && (
                         <button onClick={matchSaveSchedule} disabled={matchIsSaving}
@@ -43,8 +45,6 @@ const TabMatch = ({
                         <button onClick={matchHandleCapture}
                             className="p-2 rounded-xl bg-slate-100 text-slate-400 flex items-center"><Icon.Camera size={14}/></button>
                     )}
-                    <button onClick={() => setIsLoadMatchModalOpen(true)}
-                        className="p-2 rounded-xl bg-slate-100 text-slate-400 text-sm flex items-center">📂</button>
                 </div>
 
                 {/* 설정 탭 */}
