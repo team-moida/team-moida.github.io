@@ -3,14 +3,15 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
     const { useState } = React;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true });
+    const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null });
     const [isSaving, setIsSaving] = useState(false);
+    const [isLocPickerOpen, setIsLocPickerOpen] = useState(false);
 
     const sortedMeetings = [...meetings].sort((a, b) => a.date.localeCompare(b.date));
 
     const openAdd = () => {
         setEditingId(null);
-        setForm({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true });
+        setForm({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null });
         setIsModalOpen(true);
     };
 
@@ -33,6 +34,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
             regOpenDate: openDT.date, regOpenHour: openDT.hour, regOpenMinute: openDT.minute,
             regCloseDate: closeDT.date, regCloseHour: closeDT.hour, regCloseMinute: closeDT.minute,
             sendPush: false,
+            locationLat: m.locationLat || null, locationLng: m.locationLng || null,
         });
         setIsModalOpen(true);
     };
@@ -134,10 +136,19 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                             </div>
                             <div>
                                 <label className="text-xs font-black text-slate-500 mb-1 block">장소명</label>
-                                <input type="text" value={form.location}
-                                    onChange={e => setForm(f => ({...f, location: e.target.value}))}
-                                    placeholder="예: 잠실 풋살파크"
-                                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+                                <div className="flex gap-2">
+                                    <input type="text" value={form.location}
+                                        onChange={e => setForm(f => ({...f, location: e.target.value}))}
+                                        placeholder="예: 잠실 풋살파크"
+                                        className="flex-1 min-w-0 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+                                    <button type="button" onClick={() => setIsLocPickerOpen(true)}
+                                        className="flex-shrink-0 px-3 py-2.5 rounded-xl bg-teal-50 text-teal-600 font-black text-sm active:scale-95 transition-all flex items-center gap-1">
+                                        <Icon.MapPin size={14}/> 지도
+                                    </button>
+                                </div>
+                                {form.locationLat != null && (
+                                    <p className="text-[11px] text-teal-500 font-black mt-1">📍 GPS 지정됨 ({form.locationLat.toFixed(4)}, {form.locationLng.toFixed(4)})</p>
+                                )}
                             </div>
                             <div>
                                 <label className="text-xs font-black text-slate-500 mb-1 block">최대 인원</label>
@@ -233,6 +244,16 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                     </div>
                 </div>
             )}
+
+            <LocationPickerModal
+                isOpen={isLocPickerOpen}
+                onClose={() => setIsLocPickerOpen(false)}
+                onConfirm={({name, lat, lng}) => {
+                    setForm(f => ({...f, location: name, locationLat: lat, locationLng: lng}));
+                    setIsLocPickerOpen(false);
+                }}
+                initialLat={form.locationLat} initialLng={form.locationLng} initialName={form.location}
+            />
         </div>
     );
 }
