@@ -169,6 +169,14 @@ const AnnounceTicker = ({ announcements, onOpen }) => {
 };
 
 // ─── 홈 탭 ────────────────────────────────────────────────────────────────────
+// 모임 날짜 포맷 "6/14(일)" (M/D(요일))
+const fmtMeetingDate = (ds) => {
+    if (!ds) return '';
+    const d = new Date(ds + 'T00:00:00');
+    if (isNaN(d.getTime())) return ds;
+    const dow = ['일','월','화','수','목','금','토'][d.getDay()];
+    return `${d.getMonth()+1}/${d.getDate()}(${dow})`;
+};
 const TabHome = ({
     notifPermission, registerFcmToken, onTabChange,
     meetingDayInfo, teamReady, allowFromDisplay,
@@ -177,8 +185,75 @@ const TabHome = ({
     memberName, announcements, onOpenAnnouncements,
 }) => (
     <div className="animate-in space-y-3">
-        {/* 공지 순환 띠 (맨 위) */}
+        {/* 공지 순환 띠 (맨 위, 항상 표시) */}
         <AnnounceTicker announcements={announcements} onOpen={onOpenAnnouncements} />
+
+        {/* 다음 모임 카드 (항상 표시 · 탭하면 모임 탭으로 이동) — 출석체크·팀편성은 시점이 되면 카드 안에 표시 */}
+        <button onClick={()=>onTabChange('attend')} className="w-full card rounded-3xl p-5 text-left active:scale-98 transition-all">
+            {meetingSettings?.date && meetingDayInfo ? (
+                <>
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                        <p className="text-xs font-black text-teal-500 uppercase tracking-widest">다음 모임</p>
+                        {meetingDayInfo.type !== 'past' && meetingDayInfo.label && (
+                            <span className={`flex-shrink-0 text-xs font-black px-3 py-1 rounded-xl ${
+                                meetingDayInfo.type==='started'?'bg-emerald-50 text-emerald-500':
+                                meetingDayInfo.urgent?'bg-red-50 text-red-500':
+                                meetingDayInfo.type==='today'?'bg-teal-50 text-teal-500':
+                                'bg-slate-100 text-slate-500'}`}>{meetingDayInfo.label}</span>
+                        )}
+                    </div>
+                    <p className="font-black text-lg leading-tight">{fmtMeetingDate(meetingSettings.date)} · {meetingSettings.start}~{meetingSettings.end}</p>
+                    {meetingSettings.location && (
+                        <p className="text-sm text-slate-400 mt-1 flex items-center gap-1 min-w-0">
+                            <Icon.MapPin size={13} className="flex-shrink-0"/><span className="truncate">{meetingSettings.location}</span>
+                        </p>
+                    )}
+                    <div className="mt-4 pt-4 border-t space-y-2.5" style={{borderColor: darkMode?'rgba(255,255,255,0.08)':'#f1f5f9'}}>
+                        {/* 출석 상태 — 출석체크 시점(당일/모임중)이 되면 체크 버튼, 완료 시 완료 표시 */}
+                        {mySession?.checkedIn ? (
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="flex items-center gap-1.5 text-sm font-black text-emerald-500 min-w-0">
+                                    <Icon.Check size={16} className="flex-shrink-0"/><span className="truncate">출석 완료</span>
+                                </span>
+                                <span className="text-xs font-black text-slate-400 flex-shrink-0">{mySession.checkInTime}</span>
+                            </div>
+                        ) : (meetingDayInfo.type==='today' || meetingDayInfo.type==='started') ? (
+                            <div className="flex items-center justify-between gap-2 -mx-1.5 px-3 py-2.5 rounded-xl" style={{background: darkMode?'rgba(20,184,166,0.14)':'#f0fdfa'}}>
+                                <span className="flex items-center gap-1.5 text-sm font-black text-teal-600 min-w-0">
+                                    <Icon.CheckSq size={16} className="flex-shrink-0"/><span className="truncate">지금 출석 체크하기</span>
+                                </span>
+                                <Icon.ChevronRight size={16} className="text-teal-400 flex-shrink-0"/>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                                <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">모임 당일에 출석 체크가 열립니다</span>
+                            </div>
+                        )}
+                        {/* 팀 상태 — 팀편성 공개 시점이 되면 내 팀 표시 */}
+                        {teamReady && myTeamInfo ? (
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="flex items-center gap-1.5 text-sm font-black text-slate-700 min-w-0">
+                                    <span className={`w-5 h-5 rounded-md flex items-center justify-center text-white text-[11px] font-black flex-shrink-0 ${getTeamBadge(myTeamIdx)}`}>{myTeamInfo.jerseyNumber}</span>
+                                    <span className="truncate">내 팀 · {myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</span>
+                                </span>
+                                <span className="text-xs text-slate-400 flex-shrink-0">{getTeamColorName(myTeamIdx)} 조끼</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                                <Icon.Users size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">팀 편성 비공개 중{allowFromDisplay?` · ${allowFromDisplay}부터 공개`:''}</span>
+                            </div>
+                        )}
+                    </div>
+                </>
+            ) : (
+                <div className="text-center text-slate-400 py-3">
+                    <div className="flex justify-center mb-2 opacity-30"><Icon.Calendar size={32}/></div>
+                    <p className="font-black text-sm">예정된 모임이 없습니다</p>
+                    <p className="text-xs mt-0.5 opacity-80">모임 탭에서 등록할 수 있어요</p>
+                </div>
+            )}
+        </button>
+
         {/* iOS PWA 설치 안내 */}
         {/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone && (
             <div className="card rounded-2xl p-4 border-orange-100">
@@ -207,79 +282,6 @@ const TabHome = ({
                     <span className="text-xs font-black text-teal-500 bg-teal-50 px-3 py-1 rounded-xl">허용</span>
                 </div>
             </button>
-        )}
-        {/* 빠른 출석 (체크인 전까지만 표시 — 출석 후엔 아래 '출석 완료' 카드로 대체) */}
-        {!mySession?.checkedIn && (
-        <button onClick={()=>onTabChange('attend')} className="w-full card rounded-3xl p-5 text-left active:scale-98 transition-all">
-            <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-teal-500 rounded-2xl flex items-center justify-center flex-shrink-0"><Icon.CheckSq size={26} className="text-white"/></div>
-                <div className="flex-1 min-w-0">
-                    <p className="font-black text-lg">출석 체크</p>
-                    <p className="text-slate-400 text-xs mt-0.5">GPS 또는 QR로 출석</p>
-                </div>
-                {meetingDayInfo && meetingDayInfo.type !== 'past' && (
-                    <div className={`flex-shrink-0 text-center px-3 py-1.5 rounded-xl text-xs font-black ${
-                        meetingDayInfo.type==='started'?'bg-emerald-50 text-emerald-500':
-                        meetingDayInfo.urgent?'bg-red-50 text-red-500':
-                        meetingDayInfo.type==='today'?'bg-teal-50 text-teal-500':
-                        'bg-slate-100 text-slate-500'}`}>
-                        {meetingDayInfo.label}
-                    </div>
-                )}
-            </div>
-        </button>
-        )}
-
-        {/* 내 팀 */}
-        {!teamReady ? (
-            <div className="card rounded-3xl p-5 text-center text-slate-400">
-                <div className="flex justify-center mb-2 opacity-25"><Icon.Users size={36}/></div>
-                <p className="font-black text-sm">팀 편성 비공개 중</p>
-                {allowFromDisplay && <p className="text-xs mt-1">{allowFromDisplay}부터 공개됩니다</p>}
-            </div>
-        ) : myTeamInfo ? (
-            <div className="card rounded-3xl p-5">
-                <p className="text-xs font-black text-teal-500 uppercase tracking-widest mb-3">내 팀</p>
-                <div className="flex items-center gap-3 mb-3">
-                    <span className={`w-10 h-10 rounded-xl font-black text-lg flex items-center justify-center ${getTeamBadge(myTeamIdx)} text-white flex-shrink-0`}>{myTeamInfo.jerseyNumber}</span>
-                    <div>
-                        <p className="font-black text-lg leading-tight">{myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</p>
-                        <p className="text-xs text-slate-400">{getTeamColorName(myTeamIdx)} 조끼 · {myTeamInfo.members.length}명</p>
-                    </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    {myTeamInfo.members.map((m,i)=>(
-                        <span key={i} className={`px-3 py-1.5 rounded-xl text-xs font-black ${m.memberId===memberData?.memberId?'bg-teal-500 text-white':'bg-slate-100 text-slate-600'}`}>
-                            <span className="opacity-60 mr-0.5">{i+1}.</span>{m.name}{m.gender==='여성'&&<span className="ml-1 opacity-60">W</span>}
-                        </span>
-                    ))}
-                </div>
-            </div>
-        ) : (
-            <div className="card rounded-3xl p-5 text-center text-slate-500">
-                <div className="flex justify-center mb-2 opacity-30"><Icon.Users size={36}/></div>
-                <p className="font-black text-sm">아직 팀이 편성되지 않았습니다</p>
-            </div>
-        )}
-
-        {/* 출석 완료 (체크인 시에만 표시) */}
-        {mySession?.checkedIn && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-5">
-                <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center flex-shrink-0"><Icon.Check size={24} className="text-white"/></div>
-                    <div className="flex-1 min-w-0">
-                        <p className="font-black text-xl text-emerald-500">출석 완료</p>
-                        <p className="text-emerald-500 text-xs opacity-70">{meetingSettings?.date}</p>
-                    </div>
-                    <span className={`flex-shrink-0 text-xs font-black px-3 py-1.5 rounded-xl ${mySession.status==='정상'?'bg-emerald-500 text-white':'bg-yellow-400 text-slate-800'}`}>
-                        {mySession.status}
-                    </span>
-                </div>
-                <div style={{background: darkMode ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.6)'}} className="rounded-2xl p-3 flex items-center justify-between">
-                    <span className="text-slate-500 text-xs font-black">{memberName}</span>
-                    <span className="text-slate-700 font-black text-sm">{mySession.checkInTime}</span>
-                </div>
-            </div>
         )}
     </div>
 );

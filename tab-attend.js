@@ -996,7 +996,7 @@ const TabAttend = ({
                 {gpsStatus==='idle' && (
                     <div className="text-center">
                         <p className="text-slate-400 text-sm mb-4">모임 장소 근처에 있다면<br/>아래 버튼으로 위치를 확인하세요.</p>
-                        <button onClick={handleGPSCheckIn} className="w-full py-4 bg-teal-500 text-white rounded-2xl font-black text-base shadow-lg shadow-teal-100 flex items-center justify-center gap-2">
+                        <button onClick={handleGPSCheckIn} className="w-full py-4 bg-teal-500 text-white rounded-2xl font-black text-base flex items-center justify-center gap-2">
                             <Icon.MapPin size={18} className="text-white"/> 위치 확인하기
                         </button>
                     </div>
