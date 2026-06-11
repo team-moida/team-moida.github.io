@@ -233,10 +233,9 @@ const MeetingWeather = ({ lat, lng, date, darkMode }) => {
     }, [lat, lng, date]);
 
     if (lat == null || lng == null || state === 'error') return null; // 좌표 없음/실패 → 숨김
-    const box = { background: darkMode ? 'rgba(255,255,255,0.04)' : '#f8fafc' };
     if (state !== 'done' || !data) {
         return (
-            <div className="mt-3 rounded-2xl px-3 py-2.5 flex items-center gap-2 text-xs font-black text-slate-400" style={box}>
+            <div className="mt-3 flex items-center gap-2 text-xs font-black text-slate-400">
                 <span className="animate-pulse">날씨 불러오는 중…</span>
             </div>
         );
@@ -244,7 +243,7 @@ const MeetingWeather = ({ lat, lng, date, darkMode }) => {
     const [icon, label] = WMO_WEATHER[data.code] || ['🌡️','날씨'];
     const r = (v) => (v == null || isNaN(v)) ? '–' : Math.round(v);
     return (
-        <div className="mt-3 rounded-2xl px-3 py-2.5 flex items-center gap-3" style={box}>
+        <div className="mt-3 flex items-center gap-3">
             <span className="text-3xl leading-none flex-shrink-0">{icon}</span>
             <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-1.5 min-w-0">
