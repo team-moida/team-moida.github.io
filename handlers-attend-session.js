@@ -28,34 +28,37 @@ function makeAttendSessionHandlers(ctx) {
         const d = new Date();
         const todayStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
         await updateMeetingTimeSettings({...meetingTimes, date: todayStr});
+        const _mid = getMeetingId({...meetingTimes, date: todayStr});
         const toAdd = activeMembers.filter(m => !m.isResigned && !sessionData.some(p => p.memberId === m.id && p.date === todayStr));
         await Promise.all(toAdd.map(m => getSessionCol().add({
             memberId:m.id, name:m.name, gender:m.gender, level:m.level,
-            date:todayStr, checkedIn:false, checkInTime:null, status:'미출석',
+            date:todayStr, meetingId:_mid, checkedIn:false, checkInTime:null, status:'미출석',
             isGuest:false, team:'', createdAt:new Date().toISOString()
         })));
         showAlert('테스트 선정 완료', `오늘(${todayStr}) 기준 ${toAdd.length}명 선정됨`);
     };
 
     const toggleParticipant = async (member) => {
-        const existing = sessionData.find(p => p.memberId === member.id && p.date === meetingTimes.date);
+        const _mid = getMeetingId(meetingTimes);
+        const existing = sessionData.find(p => p.memberId === member.id && p.date === meetingTimes.date && (p.meetingId ? p.meetingId === _mid : !_mid.endsWith('__match')));
         if (existing) { await getSessionCol().doc(existing.id).delete(); }
         else {
             await getSessionCol().add({
                 memberId:member.id, name:member.name, gender:member.gender, level:member.level,
-                date:meetingTimes.date, checkedIn:false, checkInTime:null, status:'미출석',
+                date:meetingTimes.date, meetingId:_mid, checkedIn:false, checkInTime:null, status:'미출석',
                 isGuest:false, team:'', createdAt:new Date().toISOString()
             });
         }
     };
 
     const toggleParticipantAsGuest = async (member) => {
-        const existing = sessionData.find(p => p.memberId === member.id && p.date === meetingTimes.date);
+        const _mid = getMeetingId(meetingTimes);
+        const existing = sessionData.find(p => p.memberId === member.id && p.date === meetingTimes.date && (p.meetingId ? p.meetingId === _mid : !_mid.endsWith('__match')));
         if (existing) { await getSessionCol().doc(existing.id).delete(); }
         else {
             await getSessionCol().add({
                 memberId:member.id, name:member.name, gender:member.gender, level:member.level,
-                date:meetingTimes.date, checkedIn:false, checkInTime:null, status:'미출석',
+                date:meetingTimes.date, meetingId:_mid, checkedIn:false, checkInTime:null, status:'미출석',
                 isGuest:true, team:'', createdAt:new Date().toISOString()
             });
         }
@@ -131,9 +134,10 @@ function makeAttendSessionHandlers(ctx) {
                     const existingIds = new Set(sessionSnap.docs.map(d => d.data().memberId));
                     const toAdd = activeMemberList.filter(m => !existingIds.has(m.id));
                     if (toAdd.length > 0) {
+                        const _tmid = getMeetingId({...meetingTimes, date: todayStr});
                         await Promise.all(toAdd.map(m => getSessionCol().add({
                             memberId:m.id, name:m.name, gender:m.gender, level:m.level,
-                            date:todayStr, checkedIn:false, checkInTime:null, status:'미출석',
+                            date:todayStr, meetingId:_tmid, checkedIn:false, checkInTime:null, status:'미출석',
                             isGuest:false, team:'', createdAt:new Date().toISOString()
                         })));
                     }
@@ -163,7 +167,8 @@ function makeAttendSessionHandlers(ctx) {
 
                     const sessionSnap = await getSessionCol().where('date', '==', testDate).get();
                     const batch = db.batch();
-                    sessionSnap.docs.forEach(d => batch.delete(getSessionCol().doc(d.id)));
+                    sessionSnap.docs.filter(d => { const mid = d.data().meetingId; return !mid || !mid.endsWith('__match'); })
+                        .forEach(d => batch.delete(getSessionCol().doc(d.id)));
                     batch.delete(getQRCol().doc(testDate));
                     batch.delete(getSettingsCol().doc('test_backup'));
                     const restoredSettings = originalSettings
@@ -207,7 +212,8 @@ function makeAttendSessionHandlers(ctx) {
     };
 
     const handleResetSelection = () => {
-        const targets = sessionData.filter(p => p.date === meetingTimes.date);
+        const _mid = getMeetingId(meetingTimes);
+        const targets = sessionData.filter(p => p.date === meetingTimes.date && (p.meetingId ? p.meetingId === _mid : !_mid.endsWith('__match')));
         if (targets.length === 0) return showAlert('알림','초기화할 명단이 없습니다.');
         showConfirm('명단 초기화','이번 모임 선정 인원을 전체 해제하시겠습니까?', async () => {
             setIsPending(true);
@@ -229,7 +235,8 @@ function makeAttendSessionHandlers(ctx) {
             await getSessionCol().add({
                 memberId:'guest_'+Date.now(), name:newGuest.name, inviterName:inviter?.name||'없음',
                 inviterId:newGuest.inviterId||'', gender:newGuest.gender, level:newGuest.level,
-                date:meetingTimes.date, checkedIn:false, checkInTime:null, status:'미출석',
+                date:meetingTimes.date, meetingId:getMeetingId(meetingTimes),
+                checkedIn:false, checkInTime:null, status:'미출석',
                 isGuest:true, createdAt:new Date().toISOString()
             });
             setIsGuestModalOpen(false);
@@ -240,7 +247,8 @@ function makeAttendSessionHandlers(ctx) {
     };
 
     const saveAndResetCurrent = async () => {
-        const current = sessionData.filter(p => p.date === meetingTimes.date);
+        const _scmid = getMeetingId(meetingTimes);
+        const current = sessionData.filter(p => p.date === meetingTimes.date && (p.meetingId ? p.meetingId === _scmid : !_scmid.endsWith('__match')));
         if (current.length === 0) return showAlert('확인','현재 출석부에 인원이 없습니다.');
         showConfirm('기록 확정','기록을 저장하고 다음 주로 날짜를 넘기시겠습니까?', async () => {
             setIsPending(true);
