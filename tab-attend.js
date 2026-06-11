@@ -98,37 +98,11 @@ const KioskModal = ({
                         </div>
                     ))
                 ) : attendActiveList.length > 0 ? (
-                    <div className="space-y-2">
-                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 px-1">미출석</p>
-                        {attendActiveList.filter(p=>!p.checkedIn&&p.status!=='노쇼').map(p => (
-                            <button key={p.id} onClick={() => setConfirmTarget(p)}
-                                style={{minHeight:'64px',width:'100%',borderRadius:'16px',background:'#14b8a6',color:'white',fontWeight:900,fontSize:'1.2rem',display:'flex',alignItems:'center',gap:'12px',padding:'0 20px',border:'none',cursor:'pointer',transition:'transform 0.1s'}}
-                                className="active:scale-95">
-                                <span style={{fontSize:'1.5rem',fontWeight:900,opacity:0.9,minWidth:'2.5rem',textAlign:'center'}}>{p.jerseyNumber || ''}</span>
-                                <span style={{flex:1,textAlign:'left'}}>{p.name}</span>
-                                {p.gender==='여성'&&<span style={{fontSize:'11px',background:'#ec4899',padding:'3px 8px',borderRadius:'6px',fontWeight:900}}>W</span>}
-                                {p.isGuest&&<span style={{fontSize:'11px',background:'#1e293b',padding:'3px 8px',borderRadius:'6px',fontWeight:900}}>G</span>}
-                            </button>
-                        ))}
-                        {attendActiveList.some(p=>p.checkedIn) && (
-                            <p className="text-xs font-black text-slate-500 uppercase tracking-widest mt-5 mb-3 px-1">출석 완료</p>
-                        )}
-                        {attendActiveList.filter(p=>p.checkedIn).map(p => (
-                            <button key={p.id} onClick={() => setAttendModal({type:'checkin', data:p})}
-                                style={{minHeight:'56px',width:'100%',borderRadius:'16px',background:'rgba(6,78,59,0.4)',border:'1px solid rgba(16,185,129,0.2)',color:'#34d399',fontWeight:900,display:'flex',alignItems:'center',gap:'12px',padding:'0 20px',cursor:'pointer',opacity:0.6,transition:'transform 0.1s'}}
-                                className="active:scale-95">
-                                <Icon.Check size={18}/>
-                                <span style={{flex:1,textAlign:'left'}}>{p.name}</span>
-                                <span style={{fontSize:'0.875rem',color:'#64748b'}}>{p.checkInTime}</span>
-                            </button>
-                        ))}
-                        {attendActiveList.filter(p=>p.status==='노쇼').map(p => (
-                            <button key={p.id} onClick={() => setAttendModal({type:'checkin', data:p})}
-                                style={{minHeight:'52px',width:'100%',borderRadius:'16px',background:'rgba(127,29,29,0.3)',color:'#f87171',fontWeight:900,display:'flex',alignItems:'center',gap:'12px',padding:'0 20px',cursor:'pointer',opacity:0.4,border:'none'}}>
-                                <span style={{flex:1,textAlign:'left'}}>{p.name}</span>
-                                <span style={{fontSize:'0.875rem'}}>노쇼</span>
-                            </button>
-                        ))}
+                    /* 인원은 선정됐지만 팀편성 전 → 안내만 띄우고 출석 체크는 막음 */
+                    <div className="text-center" style={{paddingTop:'80px',color:'#475569'}}>
+                        <p style={{fontSize:'3rem',marginBottom:'16px'}}>👥</p>
+                        <p style={{fontWeight:900,fontSize:'1.1rem',color:'#64748b'}}>팀편성 후 이용할 수 있습니다</p>
+                        <p style={{fontSize:'0.875rem',color:'#94a3b8',marginTop:'8px'}}>팀을 먼저 편성한 뒤 키오스크 출석을 진행하세요</p>
                     </div>
                 ) : (
                     <div className="text-center" style={{paddingTop:'80px',color:'#475569'}}>
