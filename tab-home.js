@@ -208,7 +208,8 @@ const TabHome = ({
                 </div>
             </button>
         )}
-        {/* 빠른 출석 */}
+        {/* 빠른 출석 (체크인 전까지만 표시 — 출석 후엔 아래 '출석 완료' 카드로 대체) */}
+        {!mySession?.checkedIn && (
         <button onClick={()=>onTabChange('attend')} className="w-full card rounded-3xl p-5 text-left active:scale-98 transition-all">
             <div className="flex items-center gap-4">
                 <div className="w-14 h-14 bg-teal-500 rounded-2xl flex items-center justify-center flex-shrink-0"><Icon.CheckSq size={26} className="text-white"/></div>
@@ -227,6 +228,7 @@ const TabHome = ({
                 )}
             </div>
         </button>
+        )}
 
         {/* 내 팀 */}
         {!teamReady ? (
@@ -260,42 +262,24 @@ const TabHome = ({
             </div>
         )}
 
-        {/* 출석 현황 */}
-        {mySession && (
-            mySession.checkedIn ? (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-5">
-                    <div className="flex items-center gap-3 mb-3">
-                        <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center flex-shrink-0"><Icon.Check size={24} className="text-white"/></div>
-                        <div className="flex-1 min-w-0">
-                            <p className="font-black text-xl text-emerald-500">출석 완료</p>
-                            <p className="text-emerald-500 text-xs opacity-70">{meetingSettings?.date}</p>
-                        </div>
-                        <span className={`flex-shrink-0 text-xs font-black px-3 py-1.5 rounded-xl ${mySession.status==='정상'?'bg-emerald-500 text-white':'bg-yellow-400 text-slate-800'}`}>
-                            {mySession.status}
-                        </span>
+        {/* 출석 완료 (체크인 시에만 표시) */}
+        {mySession?.checkedIn && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-5">
+                <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center flex-shrink-0"><Icon.Check size={24} className="text-white"/></div>
+                    <div className="flex-1 min-w-0">
+                        <p className="font-black text-xl text-emerald-500">출석 완료</p>
+                        <p className="text-emerald-500 text-xs opacity-70">{meetingSettings?.date}</p>
                     </div>
-                    <div style={{background: darkMode ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.6)'}} className="rounded-2xl p-3 flex items-center justify-between">
-                        <span className="text-slate-500 text-xs font-black">{memberName}</span>
-                        <span className="text-slate-700 font-black text-sm">{mySession.checkInTime}</span>
-                    </div>
+                    <span className={`flex-shrink-0 text-xs font-black px-3 py-1.5 rounded-xl ${mySession.status==='정상'?'bg-emerald-500 text-white':'bg-yellow-400 text-slate-800'}`}>
+                        {mySession.status}
+                    </span>
                 </div>
-            ) : (
-                <div className="card rounded-3xl p-5">
-                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">오늘 출석 현황</p>
-                    <div className="flex items-center justify-between">
-                        <p className="text-slate-500 font-black text-sm">미출석</p>
-                        <button onClick={()=>onTabChange('attend')} className="text-xs font-black px-3 py-2 bg-teal-50 text-teal-500 rounded-xl active:scale-95">
-                            출석하기 →
-                        </button>
-                    </div>
-                    {meetingDayInfo?.type === 'today' && (
-                        <p className={`text-xs font-black mt-2 ${meetingDayInfo.urgent?'text-red-500':'text-teal-500'}`}>⏰ {meetingDayInfo.label}</p>
-                    )}
-                    {meetingDayInfo?.type === 'started' && (
-                        <p className="text-xs font-black mt-2 text-emerald-500 flex items-center gap-1"><Icon.Activity size={11}/>모임이 진행 중입니다</p>
-                    )}
+                <div style={{background: darkMode ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.6)'}} className="rounded-2xl p-3 flex items-center justify-between">
+                    <span className="text-slate-500 text-xs font-black">{memberName}</span>
+                    <span className="text-slate-700 font-black text-sm">{mySession.checkInTime}</span>
                 </div>
-            )
+            </div>
         )}
     </div>
 );
