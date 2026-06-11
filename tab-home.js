@@ -195,69 +195,83 @@ const WMO_WEATHER = {
     85:['🌨️','소낙눈'], 86:['🌨️','소낙눈'],
     95:['⛈️','뇌우'], 96:['⛈️','뇌우(우박)'], 99:['⛈️','강한 뇌우(우박)'],
 };
-const _weatherCache = new Map(); // key `${lat},${lng},${date}` → {at, data} (30분 캐시)
-const MeetingWeather = ({ lat, lng, date, darkMode }) => {
-    const [data, setData] = React.useState(null);
-    const [state, setState] = React.useState('idle'); // idle|loading|done|error
+const _wxCache = new Map();   // 날씨: `${lat},${lng},${date}` → {at, data} (30분)
+const _addrCache = new Map(); // 주소: `${lat},${lng}` → {at, text} (24시간)
+const MeetingWeather = ({ lat, lng, date }) => {
+    const [wx, setWx] = React.useState(null);
+    const [wState, setWState] = React.useState('idle'); // idle|loading|done|error
+    const [addr, setAddr] = React.useState('');
+
+    // ① 날씨 (Open-Meteo) — 주소와 독립. 느린 주소 프록시에 막히지 않음.
     React.useEffect(() => {
-        if (lat == null || lng == null) { setState('idle'); setData(null); return; }
+        if (lat == null || lng == null) { setWState('idle'); setWx(null); return; }
         const key = `${lat},${lng},${date||''}`;
-        const cached = _weatherCache.get(key);
-        if (cached && Date.now() - cached.at < 30*60*1000) { setData(cached.data); setState('done'); return; }
+        const c = _wxCache.get(key);
+        if (c && Date.now() - c.at < 30*60*1000) { setWx(c.data); setWState('done'); return; }
         let alive = true;
-        setState('loading');
-        const params = new URLSearchParams({
+        setWState('loading');
+        const p = new URLSearchParams({
             latitude: lat, longitude: lng,
             current: 'temperature_2m,relative_humidity_2m,weather_code',
             daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
             timezone: 'Asia/Seoul',
         });
-        if (date) { params.set('start_date', date); params.set('end_date', date); }
-        const wReq = fetch(`https://api.open-meteo.com/v1/forecast?${params}`).then(r => r.ok ? r.json() : Promise.reject(r.status));
-        // 주소(시/구/동) — 카카오 역지오코딩. 기존 location-picker.js와 동일한 키/프록시 재사용.
-        // 실패해도 날씨엔 영향 없도록 .catch(null) 처리.
-        const aUrl = `https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${lng}&y=${lat}`;
-        const aReq = fetch(KAKAO_PROXY + encodeURIComponent(aUrl), { headers: { Authorization: `KakaoAK ${KAKAO_REST_KEY}` } })
-            .then(r => r.json()).catch(() => null);
-        Promise.all([wReq, aReq])
-            .then(([j, ja]) => {
+        if (date) { p.set('start_date', date); p.set('end_date', date); }
+        fetch(`https://api.open-meteo.com/v1/forecast?${p}`)
+            .then(r => r.ok ? r.json() : Promise.reject(r.status))
+            .then(j => {
                 if (!alive) return;
                 const cur = j.current || {}, d = j.daily || {};
-                let addr = '';
-                try {
-                    const a = ja && ja.documents && ja.documents[0] && ja.documents[0].address;
-                    if (a) addr = [a.region_2depth_name, a.region_3depth_name].filter(Boolean).join(' ');
-                } catch (_) {}
-                const out = {
+                const data = {
                     code: (d.weather_code && d.weather_code[0] != null) ? d.weather_code[0] : cur.weather_code,
                     cur: cur.temperature_2m, humidity: cur.relative_humidity_2m,
                     min: d.temperature_2m_min && d.temperature_2m_min[0],
                     max: d.temperature_2m_max && d.temperature_2m_max[0],
                     pop: d.precipitation_probability_max && d.precipitation_probability_max[0],
-                    addr,
                 };
-                _weatherCache.set(key, { at: Date.now(), data: out });
-                setData(out); setState('done');
+                _wxCache.set(key, { at: Date.now(), data });
+                setWx(data); setWState('done');
             })
-            .catch(() => { if (alive) setState('error'); });
+            .catch(() => { if (alive) setWState('error'); });
         return () => { alive = false; };
     }, [lat, lng, date]);
 
-    if (lat == null || lng == null || state === 'error') return null; // 좌표 없음/실패 → 숨김
-    if (state !== 'done' || !data) {
+    // ② 주소 (카카오 역지오코딩) — 베스트에포트. 실패/지연돼도 날씨엔 영향 없음.
+    React.useEffect(() => {
+        if (lat == null || lng == null) { setAddr(''); return; }
+        if (typeof KAKAO_REST_KEY === 'undefined' || typeof KAKAO_PROXY === 'undefined') return;
+        const key = `${lat},${lng}`;
+        const c = _addrCache.get(key);
+        if (c && Date.now() - c.at < 24*60*60*1000) { setAddr(c.text); return; }
+        let alive = true;
+        const aUrl = `https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${lng}&y=${lat}`;
+        fetch(KAKAO_PROXY + encodeURIComponent(aUrl), { headers: { Authorization: `KakaoAK ${KAKAO_REST_KEY}` } })
+            .then(r => r.json())
+            .then(ja => {
+                if (!alive) return;
+                const a = ja && ja.documents && ja.documents[0] && ja.documents[0].address;
+                const text = a ? [a.region_2depth_name, a.region_3depth_name].filter(Boolean).join(' ') : '';
+                if (text) { _addrCache.set(key, { at: Date.now(), text }); setAddr(text); }
+            })
+            .catch(() => {});
+        return () => { alive = false; };
+    }, [lat, lng]);
+
+    if (lat == null || lng == null || wState === 'error') return null; // 좌표 없음/실패 → 숨김
+    if (wState !== 'done' || !wx) {
         return (
             <div className="mt-3 flex items-center gap-2 text-xs font-black text-slate-400">
                 <span className="animate-pulse">날씨 불러오는 중…</span>
             </div>
         );
     }
-    const [icon, label] = WMO_WEATHER[data.code] || ['🌡️','날씨'];
+    const [icon, label] = WMO_WEATHER[wx.code] || ['🌡️','날씨'];
     const r = (v) => (v == null || isNaN(v)) ? '–' : Math.round(v);
     return (
         <div className="mt-3">
-            {data.addr && (
+            {addr && (
                 <p className="text-xs font-black text-slate-500 mb-1.5 flex items-center gap-1 min-w-0">
-                    <Icon.MapPin size={12} className="flex-shrink-0 text-slate-400"/><span className="truncate">{data.addr}</span>
+                    <Icon.MapPin size={12} className="flex-shrink-0 text-slate-400"/><span className="truncate">{addr}</span>
                 </p>
             )}
             <div className="flex items-center gap-3">
@@ -265,14 +279,14 @@ const MeetingWeather = ({ lat, lng, date, darkMode }) => {
             <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-1.5 min-w-0">
                     <span className="text-[10px] font-black text-slate-400 flex-shrink-0">지금</span>
-                    <span className="text-lg font-black text-slate-700 flex-shrink-0">{r(data.cur)}°</span>
+                    <span className="text-lg font-black text-slate-700 flex-shrink-0">{r(wx.cur)}°</span>
                     <span className="text-xs font-black text-slate-400 truncate">{label}</span>
                 </div>
                 <div className="flex items-center gap-x-2.5 gap-y-0.5 mt-0.5 text-[11px] font-black flex-wrap">
-                    <span className="text-blue-400">최저 {r(data.min)}°</span>
-                    <span className="text-red-400">최고 {r(data.max)}°</span>
-                    <span className="text-slate-400">습도 {r(data.humidity)}%</span>
-                    {data.pop != null && <span className="text-teal-400">강수 {r(data.pop)}%</span>}
+                    <span className="text-blue-400">최저 {r(wx.min)}°</span>
+                    <span className="text-red-400">최고 {r(wx.max)}°</span>
+                    <span className="text-slate-400">습도 {r(wx.humidity)}%</span>
+                    {wx.pop != null && <span className="text-teal-400">강수 {r(wx.pop)}%</span>}
                 </div>
             </div>
             </div>
