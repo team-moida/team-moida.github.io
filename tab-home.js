@@ -350,7 +350,7 @@ const NextMeetingCard = ({
     const showOverlay = kind !== 'match' && isActive && isAdminMode && isMeetingOver && !isMeetingEndSaved;
     return (
         <div className="relative">
-        <button onClick={()=>onTabChange('attend')}
+        <button onClick={()=>onTabChange('attend', kind)}
             className={`w-full card rounded-3xl p-5 text-left active:scale-98 transition-all${showOverlay ? ' blur-sm' : ''}`}
             style={{ borderLeft:`4px solid ${cfg.accent}`, ...(darkMode ? {} : { background: cfg.tint }) }}>
             <div className="flex items-center justify-between gap-2 mb-2.5">

@@ -79,13 +79,15 @@ function App() {
     // 현재 탭/하위 탭 기억 → 새로고침(당겨서/F5) 후 같은 위치로 복원. 앱을 완전히 닫으면 초기화(홈).
     React.useEffect(() => { try { sessionStorage.setItem('moida_tab', tab); } catch(e) {} }, [tab]);
     React.useEffect(() => { try { sessionStorage.setItem('moida_meeting_sub', meetingSubTab); } catch(e) {} }, [meetingSubTab]);
-    // 매칭모임은 팀편성·매치테이블이 없음 → 'team'(명단)/'attend'만. 'match' 서브탭이면 명단으로 보냄.
+    // 매칭모임은 팀편성·매치테이블이 없음 → 'attend'/'team'(명단)만. 'match' 서브탭이면 출석으로 보냄.
     React.useEffect(() => {
-        if (meetingSettings?.meetingType === 'match' && meetingSubTab === 'match') setMeetingSubTab('team');
-    }, [meetingSettings?.meetingType, meetingSubTab]);
-    // 출석/팀/매치로의 이동을 '모임' 탭 + 하위 탭으로 변환하는 네비게이션 헬퍼
-    const navTab = (t) => {
-        if (t === 'attend' || t === 'team' || t === 'match') { setMeetingSubTab(t); setTab('meeting'); }
+        if (activeMeetingKind === 'match' && meetingSubTab === 'match') setMeetingSubTab('attend');
+    }, [activeMeetingKind, meetingSubTab]);
+    // 홈 탭으로 돌아오면 항상 정기 모임 컨텍스트로 리셋 (헤더/홈카드 오버레이가 정기 모임 기준으로 동작하도록)
+    React.useEffect(() => { if (tab === 'home') setActiveMeetingKind('self'); }, [tab]);
+    // 출석/팀/매치로의 이동을 '모임' 탭 + 하위 탭으로 변환하는 네비게이션 헬퍼. kind='match'면 매칭모임 컨텍스트로 진입.
+    const navTab = (t, kind) => {
+        if (t === 'attend' || t === 'team' || t === 'match') { if (kind) setActiveMeetingKind(kind); setMeetingSubTab(t); setTab('meeting'); }
         else setTab(t);
     };
     const [memberData, setMemberData] = useState(() => {
@@ -101,8 +103,10 @@ function App() {
     const isAdminMode = ADMIN_ROLES.includes(memberData?.role);
     const [meetingSettings, setMeetingSettings] = useState(null);
     const [meetingSettingsMatch, setMeetingSettingsMatch] = useState(null);
+    const [activeMeetingKind, setActiveMeetingKind] = useState('self');
     const [meetings, setMeetings] = useState([]);
-    const testMode = !!meetingSettings?.testMode;
+    const displayMeetingSettings = activeMeetingKind === 'match' ? meetingSettingsMatch : meetingSettings;
+    const testMode = !!displayMeetingSettings?.testMode;
     const [mySession, setMySession] = useState(null);
     const [alertModal, setAlertModal] = useState({show:false,title:'',content:'',type:'info',onConfirm:null});
     const [announcementModal, setAnnouncementModal] = useState({ open: false, mode: 'add', data: null });
@@ -140,20 +144,20 @@ function App() {
         }
     };
     const roster = useRoster({ isAdminMode });
-    const team = useTeam({ isAdminMode, meetingSettings, allMembers: roster.allMembers });
+    const team = useTeam({ isAdminMode, meetingSettings: displayMeetingSettings, allMembers: roster.allMembers });
     const match = useMatch({ isAdminMode, meetingSettings, confirmedDrafts: team.confirmedDrafts });
     const { scheduleData, matchViewMode, setMatchViewMode } = match;
     const attend = useAttend({
-        isAdminMode, memberData, meetingSettings,
+        isAdminMode, memberData, meetingSettings: displayMeetingSettings,
         tmSessionData: team.tmSessionData,
         activeMembers: roster.activeMembers,
         tmMonthlyStatuses: team.tmMonthlyStatuses,
         teamDraftData: team.teamDraftData,
     });
     const { handleRegister, handleCancel } = makeRegistrationHandlers({
-        meetingDate: meetingSettings?.date,
+        meetingDate: displayMeetingSettings?.date,
         memberData,
-        meetingSettings,
+        meetingSettings: displayMeetingSettings,
         showToast,
         showAlert,
     });
@@ -186,34 +190,37 @@ function App() {
     }, []);
 
     useEffect(() => {
-        if (!memberData?.memberId || !meetingSettings?.date) return;
+        if (!memberData?.memberId || !displayMeetingSettings?.date) return;
         setMySession(null);
+        const _mid = getMeetingId(displayMeetingSettings);
         const unsub = getCol('weekly_session')
             .where('memberId', '==', memberData.memberId)
-            .where('date', '==', meetingSettings.date)
+            .where('date', '==', displayMeetingSettings.date)
             .onSnapshot(snap => {
-                setMySession(snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() });
+                const docs = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                const found = docs.find(d => d.meetingId ? d.meetingId === _mid : !_mid.endsWith('__match'));
+                setMySession(found || null);
             });
         return () => unsub();
-    }, [memberData?.memberId, meetingSettings?.date]);
+    }, [memberData?.memberId, displayMeetingSettings?.date, displayMeetingSettings?.meetingType]);
 
-    // 참여 명단(팀 미편성 매칭) — 회원도 자동으로 볼 수 있게 활성 모임 날짜로 직접 로드.
-    // 매칭(meetingType==='match')일 때만 구독(평상시 불필요한 리스너 방지).
+    // 참여 명단(매칭모임) — 홈 카드 참여인원 표시용. meetingSettingsMatch(매칭 미러)가 활성일 때만 구독.
     const [meetingParticipants, setMeetingParticipants] = useState([]);
     useEffect(() => {
-        const date = meetingSettings?.date;
-        if (!date || meetingSettings?.meetingType !== 'match') { setMeetingParticipants([]); return; }
-        const lim = parseInt(meetingSettings?.maxLimit || 18);
+        const ms = meetingSettingsMatch;
+        if (!ms?.date) { setMeetingParticipants([]); return; }
+        const lim = parseInt(ms?.maxLimit || 18);
+        const _mid = getMeetingId(ms);
         const unsub = getCol('weekly_session')
-            .where('date', '==', date)
+            .where('date', '==', ms.date)
             .onSnapshot(snap => {
                 const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-                    .filter(p => p.status !== '노쇼')
+                    .filter(p => p.status !== '노쇼' && (p.meetingId ? p.meetingId === _mid : !_mid.endsWith('__match')))
                     .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0) || (a.name || '').localeCompare(b.name || ''));
                 setMeetingParticipants(list.slice(0, lim));
             }, () => setMeetingParticipants([]));
         return () => unsub();
-    }, [meetingSettings?.date, meetingSettings?.meetingType, meetingSettings?.maxLimit]);
+    }, [meetingSettingsMatch?.date, meetingSettingsMatch?.maxLimit]);
 
     useEffect(() => {
         if (!memberData?.memberId) return;
@@ -274,7 +281,7 @@ function App() {
     }, [team.teamDraftData, memberData]);
 
     const { processQRToken, handleQRAttendance, handleInAppQRScan, handleGPSCheckIn, handleGPSAttend } = makeQRGPSHandlers({
-        memberData, testMode, meetingSettings, mySession, urlParams,
+        memberData, testMode, meetingSettings: displayMeetingSettings, mySession, urlParams,
         setQrMessage, setQrStatus, setTab: navTab, setIsQRScannerOpen,
         setGpsStatus, setDistance, setIsCheckingIn, showToast
     });
@@ -314,7 +321,7 @@ function App() {
             attendHandleDeleteHistory, handleHistoryStatusUpdate, handleUpdateHistoryLocation,
             generateAttendQRCode, attendToggleTestMode,
             attendHandleEndMeeting } = makeAttendHandlers({
-        meetingSettings, testMode, showAlert, showConfirm, setAttendModal: attend.setAttendModal,
+        meetingSettings: displayMeetingSettings, testMode, showAlert, showConfirm, setAttendModal: attend.setAttendModal,
         tmSessionData: team.tmSessionData, activeMembers: roster.activeMembers,
         selectedHistoryDetail: attend.selectedHistoryDetail, setSelectedHistoryDetail: attend.setSelectedHistoryDetail,
         setMeetingSettings, historyEditTarget: attend.historyEditTarget, setHistoryEditTarget: attend.setHistoryEditTarget,
@@ -357,7 +364,7 @@ function App() {
             tmDragStart, tmDragEnd, tmMemberDragOver, tmTeamDragOver, tmTeamDragLeave,
             tmDrop, tmMemberClick, tmMoveToTeam, tmTeamBadgeClick, tmCapture,
             tmDeleteConfirmed, tmDeleteSelectedDrafts } = makeTeamHandlers({
-        meetingSettings, editTeams: team.editTeams, setEditTeams: team.setEditTeams,
+        meetingSettings: displayMeetingSettings, editTeams: team.editTeams, setEditTeams: team.setEditTeams,
         editIsConfirmed: team.editIsConfirmed, setEditIsConfirmed: team.setEditIsConfirmed,
         editMeetingDate: team.editMeetingDate, setEditMeetingDate: team.setEditMeetingDate,
         setTeamMakerTab: team.setTeamMakerTab, teamingSettings: team.teamingSettings,
@@ -484,7 +491,7 @@ function App() {
                 isAdminMode={isAdminMode}
                 isMeetingOver={attend.isMeetingOver}
                 onEndMeeting={attendHandleEndMeeting}
-                isMeetingEndSaved={attend.attendHistory?.some(h => h.date === meetingSettings?.date) || false}
+                isMeetingEndSaved={attend.attendHistory?.some(h => h.date === displayMeetingSettings?.date) || false}
                 unreadCount={unreadCount} onOpenAnnouncements={openAnnouncements}
             />
             <div className="px-4 pt-4">
@@ -516,7 +523,7 @@ function App() {
                 )}
                 {tab === 'meeting' && (
                     <div className="flex gap-1.5 mb-3 p-1 bg-slate-100 rounded-2xl">
-                        {(meetingSettings?.meetingType === 'match'
+                        {(activeMeetingKind === 'match'
                             ? [['attend','출석'],['team','명단']]
                             : [['attend','출석'],['team','팀'],['match','매치']]
                         ).map(([k,l]) => (
@@ -541,7 +548,7 @@ function App() {
                         isCapturing={team.isCapturing} teamDraftData={team.teamDraftData}
                         teamReady={teamReady} allowFromDisplay={allowFromDisplay}
                         myTeamIdx={myTeamIdx} memberData={memberData} allMembers={roster.allMembers}
-                        teamsDisabled={meetingSettings?.meetingType === 'match'} participants={meetingParticipants}
+                        teamsDisabled={activeMeetingKind === 'match'} participants={meetingParticipants}
                         tmMeetingDate={team.tmMeetingDate} tmActiveList={team.tmActiveList}
                         tmEntryList={team.tmEntryList} tmLevelStats={team.tmLevelStats} tmUnassigned={team.tmUnassigned}
                         generateTeams={generateTeams} tmCapture={tmCapture} tmSaveDraft={tmSaveDraft}
@@ -554,7 +561,7 @@ function App() {
                         tmDeleteConfirmed={tmDeleteConfirmed} tmDeleteSelectedDrafts={tmDeleteSelectedDrafts}
                     />
                 )}
-                {tab === 'meeting' && meetingSubTab === 'match' && meetingSettings?.meetingType !== 'match' && (
+                {tab === 'meeting' && meetingSubTab === 'match' && activeMeetingKind !== 'match' && (
                     <TabMatch
                         isAdminMode={isAdminMode} isMatchPanelOpen={match.isMatchPanelOpen} setIsMatchPanelOpen={match.setIsMatchPanelOpen}
                         matchAdminView={match.matchAdminView} setMatchAdminView={match.setMatchAdminView}
@@ -584,7 +591,7 @@ function App() {
                         setSelectedHistoryDetail={attend.setSelectedHistoryDetail}
                         attendActiveList={attend.attendActiveList} attendIsPending={attend.attendIsPending}
                         darkMode={darkMode}
-                        meetingSettings={meetingSettings} updateMeetingSettingsAdmin={updateMeetingSettingsAdmin}
+                        meetingSettings={displayMeetingSettings} updateMeetingSettingsAdmin={updateMeetingSettingsAdmin}
                         attendActiveParticipants={attend.attendActiveParticipants}
                         snapMin={attend.snapMin} attendHourOptions={attend.attendHourOptions}
                         attendMinuteOptions={attend.attendMinuteOptions}
