@@ -3,14 +3,14 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
     const { useState } = React;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59' });
+    const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true });
     const [isSaving, setIsSaving] = useState(false);
 
     const sortedMeetings = [...meetings].sort((a, b) => a.date.localeCompare(b.date));
 
     const openAdd = () => {
         setEditingId(null);
-        setForm({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59' });
+        setForm({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true });
         setIsModalOpen(true);
     };
 
@@ -32,6 +32,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
             isFirstComeFirstServed: m.isFirstComeFirstServed ?? true,
             regOpenDate: openDT.date, regOpenHour: openDT.hour, regOpenMinute: openDT.minute,
             regCloseDate: closeDT.date, regCloseHour: closeDT.hour, regCloseMinute: closeDT.minute,
+            sendPush: false,
         });
         setIsModalOpen(true);
     };
@@ -213,6 +214,17 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                     </div>
                                 )}
                             </div>
+                        </div>
+                        {/* 등록 시 전체 푸시 알림 (새 모임 기본 ON, 수정 기본 OFF) */}
+                        <div className="flex items-center justify-between px-1 py-2 border-t border-slate-100">
+                            <div className="min-w-0 pr-2">
+                                <label className="text-xs font-black text-slate-600">📢 등록 시 전체 알림 보내기</label>
+                                <p className="text-[11px] text-slate-400 mt-0.5">모임 정보·신청기간이 푸시로 전체 발송됩니다</p>
+                            </div>
+                            <button onClick={() => setForm(f => ({...f, sendPush: !f.sendPush}))}
+                                className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${form.sendPush ? 'bg-teal-500' : 'bg-slate-200'}`}>
+                                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${form.sendPush ? 'left-6' : 'left-0.5'}`}/>
+                            </button>
                         </div>
                         <button onClick={handleSave} disabled={isSaving}
                             className="w-full py-3 bg-teal-500 text-white rounded-2xl font-black text-sm active:scale-95 transition-all disabled:opacity-50">

@@ -7,6 +7,29 @@ function getActiveMeeting(meetings) {
         .sort((a, b) => a.date.localeCompare(b.date))[0] || null;
 }
 
+// 모임 정보로 푸시 알림 문구 자동 생성 (날짜·시간·장소·신청기간)
+function composeMeetingAnnouncement(data) {
+    const days = ['일','월','화','수','목','금','토'];
+    const fmtD = (ds) => {
+        if (!ds) return '';
+        const d = new Date(ds + 'T00:00:00');
+        return isNaN(d.getTime()) ? ds : `${d.getMonth()+1}/${d.getDate()}(${days[d.getDay()]})`;
+    };
+    const fmtDT = (iso) => {
+        if (!iso) return '';
+        const [dp, tp] = iso.split('T');
+        return `${fmtD(dp)} ${tp || ''}`.trim();
+    };
+    const title = `📅 ${fmtD(data.date)} 모임 안내`;
+    const lines = [`${data.start} ~ ${data.end}`];
+    if (data.location) lines.push(`📍 ${data.location}`);
+    lines.push(`👥 최대 ${data.maxLimit}명`);
+    if (data.isRegistrationEnabled && data.registrationOpenAt && data.registrationCloseAt) {
+        lines.push(`📝 신청: ${fmtDT(data.registrationOpenAt)} ~ ${fmtDT(data.registrationCloseAt)}`);
+    }
+    return { title, body: lines.join('\n') };
+}
+
 function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
     const activeMeeting = getActiveMeeting(meetings);
 
@@ -81,6 +104,21 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
             // 현재 활성 모임을 수정한 경우 meeting_schedule_v2 미러 동기화
             if (editingId && activeMeeting && editingId === activeMeeting.id) {
                 await syncMirror(data);
+            }
+
+            // 등록 시 전체 푸시 알림 (토글 ON일 때만) — 실패해도 모임 저장은 유지
+            if (formData.sendPush) {
+                try {
+                    const ann = composeMeetingAnnouncement(data);
+                    await getCol('notifications').add({
+                        title: ann.title,
+                        body: ann.body,
+                        sentAt: new Date().toISOString(),
+                        sentBy: data.managerName || '모임 안내',
+                    });
+                } catch(e) {
+                    console.warn('모임 알림 발송 실패:', e);
+                }
             }
 
             if (onSuccess) onSuccess();
