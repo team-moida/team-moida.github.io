@@ -397,7 +397,7 @@ const TabAttend = ({
             if (ADMIN_ROLES.includes(member.role)) { normal.push(member); return; }
             if (member.isSpecialRest) { rest.push(member); return; }
             const isResting = selMonthlyStatuses[member.id] === 'rest';
-            if (isResting) { const info = getMembershipStatus(member, monthStr); if (info?.active) rest.push(member); return; }
+            if (isResting) { const info = getMembershipStatus(member, monthStr); if (!info || info.active) rest.push(member); return; }
             const isPaid = selMonthlyStatuses[member.id] === 'paid';
             const info = getMembershipStatus(member, monthStr);
             if (isPaid || info?.active) normal.push(member);
@@ -663,8 +663,10 @@ const TabAttend = ({
                                                 <div className="space-y-1.5">
                                                     {selEligibleRest.map(member => {
                                                         const isSelected = selSessionList.some(p=>p.memberId===member.id);
-                                                        const msType = getMembershipStatus(member, selectedMeeting?.date?.substring(0,7)||'')?.type;
-                                                        const badge = member.isSpecialRest ? '특별휴식' : (msType==='반년'?'반년납 휴식':'1년납 휴식');
+                                                        const _monthStr = selectedMeeting?.date?.substring(0,7)||'';
+                                                        const msType = getMembershipStatus(member, _monthStr)?.type;
+                                                        const badge = member.isSpecialRest ? '특별휴식' : (msType==='반년'?'반년납 휴식':(msType==='1년'?'1년납 휴식':'월납 휴식'));
+                                                        const guestUsed = !member.isSpecialRest && tmSessionData.some(p=>p.memberId===member.id&&p.isGuest&&p.date&&p.date.substring(0,7)===_monthStr&&p.date!==selectedMeeting.date);
                                                         return (
                                                             <button key={member.id} onClick={()=>attendToggleParticipantAsGuest(member, selectedMeeting.date)}
                                                                 className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-orange-50 border-orange-300':'card border-slate-100 hover:border-slate-200'}`}>
@@ -673,6 +675,7 @@ const TabAttend = ({
                                                                 </div>
                                                                 <span className="font-black text-sm text-slate-800 flex-1 min-w-0 truncate">{member.name}</span>
                                                                 {member.gender==='여성'&&<span className="shrink-0 text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
+                                                                {guestUsed && <span className="shrink-0 text-[9px] px-1.5 py-0.5 bg-rose-100 text-rose-600 rounded-lg font-black">게스트 소진</span>}
                                                                 <span className="shrink-0 text-[9px] px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-lg font-black">{badge}</span>
                                                                 <span className="shrink-0 text-[9px] font-black text-slate-400">Lv.{member.level}</span>
                                                             </button>
