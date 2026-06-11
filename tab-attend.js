@@ -98,7 +98,7 @@ const KioskModal = ({
                         </div>
                     ))
                 ) : attendActiveList.length > 0 ? (
-                    meetingSettings?.enableTeams === false ? (
+                    meetingSettings?.meetingType === 'match' ? (
                         /* 팀 미편성 매칭 → 참여자 평면 그리드로 바로 체크인 */
                         <div className="grid grid-cols-3 gap-2.5">
                             {attendActiveList.map((p, idx) => (

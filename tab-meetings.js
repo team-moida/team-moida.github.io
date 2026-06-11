@@ -3,7 +3,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
     const { useState } = React;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', meetingType:'self', opponentName:'', maxMale:12, maxFemale:6, maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false, enableTeams:true });
+    const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', meetingType:'self', opponentName:'', maxMale:12, maxFemale:6, maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false });
     const [isSaving, setIsSaving] = useState(false);
     const [isLocPickerOpen, setIsLocPickerOpen] = useState(false);
 
@@ -112,7 +112,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
 
     const openAdd = () => {
         setEditingId(null);
-        setForm({ date:'', start:'08:00', end:'10:00', location:'', meetingType:'self', opponentName:'', maxMale:12, maxFemale:6, maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false, enableTeams:true });
+        setForm({ date:'', start:'08:00', end:'10:00', location:'', meetingType:'self', opponentName:'', maxMale:12, maxFemale:6, maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false });
         setIsModalOpen(true);
     };
 
@@ -139,7 +139,6 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
             sendPush: false,
             locationLat: m.locationLat || null, locationLng: m.locationLng || null,
             locationRadius: m.locationRadius || 100, enableQR: m.enableQR || false,
-            enableTeams: m.enableTeams !== false,
         });
         setIsModalOpen(true);
     };
@@ -252,18 +251,6 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                         onChange={e => setForm(f => ({...f, opponentName: e.target.value}))}
                                         placeholder="예: FC 상대팀"
                                         className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
-                                </div>
-                            )}
-                            {form.meetingType === 'match' && (
-                                <div className="flex items-center justify-between">
-                                    <div className="min-w-0 pr-2">
-                                        <label className="text-xs font-black text-slate-500">팀 편성 사용</label>
-                                        <p className="text-[11px] text-slate-400 mt-0.5">끄면 팀 없이 참여 명단만 표시돼요</p>
-                                    </div>
-                                    <button type="button" onClick={() => setForm(f => ({...f, enableTeams: f.enableTeams === false}))}
-                                        className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${form.enableTeams !== false ? 'bg-teal-500' : 'bg-slate-200'}`}>
-                                        <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${form.enableTeams !== false ? 'left-6' : 'left-0.5'}`}/>
-                                    </button>
                                 </div>
                             )}
                             <div>

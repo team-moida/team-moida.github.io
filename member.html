@@ -79,6 +79,10 @@ function App() {
     // 현재 탭/하위 탭 기억 → 새로고침(당겨서/F5) 후 같은 위치로 복원. 앱을 완전히 닫으면 초기화(홈).
     React.useEffect(() => { try { sessionStorage.setItem('moida_tab', tab); } catch(e) {} }, [tab]);
     React.useEffect(() => { try { sessionStorage.setItem('moida_meeting_sub', meetingSubTab); } catch(e) {} }, [meetingSubTab]);
+    // 매칭모임은 팀편성·매치테이블이 없음 → 'team'(명단)/'attend'만. 'match' 서브탭이면 명단으로 보냄.
+    React.useEffect(() => {
+        if (meetingSettings?.meetingType === 'match' && meetingSubTab === 'match') setMeetingSubTab('team');
+    }, [meetingSettings?.meetingType, meetingSubTab]);
     // 출석/팀/매치로의 이동을 '모임' 탭 + 하위 탭으로 변환하는 네비게이션 헬퍼
     const navTab = (t) => {
         if (t === 'attend' || t === 'team' || t === 'match') { setMeetingSubTab(t); setTab('meeting'); }
@@ -185,11 +189,11 @@ function App() {
     }, [memberData?.memberId, meetingSettings?.date]);
 
     // 참여 명단(팀 미편성 매칭) — 회원도 자동으로 볼 수 있게 활성 모임 날짜로 직접 로드.
-    // enableTeams가 명시적으로 false인 매칭일 때만 구독(평상시 불필요한 리스너 방지).
+    // 매칭(meetingType==='match')일 때만 구독(평상시 불필요한 리스너 방지).
     const [meetingParticipants, setMeetingParticipants] = useState([]);
     useEffect(() => {
         const date = meetingSettings?.date;
-        if (!date || meetingSettings?.enableTeams !== false) { setMeetingParticipants([]); return; }
+        if (!date || meetingSettings?.meetingType !== 'match') { setMeetingParticipants([]); return; }
         const lim = parseInt(meetingSettings?.maxLimit || 18);
         const unsub = getCol('weekly_session')
             .where('date', '==', date)
@@ -200,7 +204,7 @@ function App() {
                 setMeetingParticipants(list.slice(0, lim));
             }, () => setMeetingParticipants([]));
         return () => unsub();
-    }, [meetingSettings?.date, meetingSettings?.enableTeams, meetingSettings?.maxLimit]);
+    }, [meetingSettings?.date, meetingSettings?.meetingType, meetingSettings?.maxLimit]);
 
     useEffect(() => {
         if (!memberData?.memberId) return;
@@ -502,7 +506,10 @@ function App() {
                 )}
                 {tab === 'meeting' && (
                     <div className="flex gap-1.5 mb-3 p-1 bg-slate-100 rounded-2xl">
-                        {[['attend','출석'],['team','팀'],['match','매치']].map(([k,l]) => (
+                        {(meetingSettings?.meetingType === 'match'
+                            ? [['attend','출석'],['team','명단']]
+                            : [['attend','출석'],['team','팀'],['match','매치']]
+                        ).map(([k,l]) => (
                             <button key={k} onClick={()=>setMeetingSubTab(k)}
                                 className={`flex-1 min-w-0 py-2 rounded-xl text-sm font-black truncate transition-all ${meetingSubTab===k?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>{l}</button>
                         ))}
@@ -524,7 +531,7 @@ function App() {
                         isCapturing={team.isCapturing} teamDraftData={team.teamDraftData}
                         teamReady={teamReady} allowFromDisplay={allowFromDisplay}
                         myTeamIdx={myTeamIdx} memberData={memberData} allMembers={roster.allMembers}
-                        teamsDisabled={meetingSettings?.enableTeams === false} participants={meetingParticipants}
+                        teamsDisabled={meetingSettings?.meetingType === 'match'} participants={meetingParticipants}
                         tmMeetingDate={team.tmMeetingDate} tmActiveList={team.tmActiveList}
                         tmEntryList={team.tmEntryList} tmLevelStats={team.tmLevelStats} tmUnassigned={team.tmUnassigned}
                         generateTeams={generateTeams} tmCapture={tmCapture} tmSaveDraft={tmSaveDraft}
@@ -537,7 +544,7 @@ function App() {
                         tmDeleteConfirmed={tmDeleteConfirmed} tmDeleteSelectedDrafts={tmDeleteSelectedDrafts}
                     />
                 )}
-                {tab === 'meeting' && meetingSubTab === 'match' && (
+                {tab === 'meeting' && meetingSubTab === 'match' && meetingSettings?.meetingType !== 'match' && (
                     <TabMatch
                         isAdminMode={isAdminMode} isMatchPanelOpen={match.isMatchPanelOpen} setIsMatchPanelOpen={match.setIsMatchPanelOpen}
                         matchAdminView={match.matchAdminView} setMatchAdminView={match.setMatchAdminView}

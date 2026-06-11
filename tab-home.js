@@ -399,7 +399,7 @@ const NextMeetingCard = ({
                         </div>
                     )}
                     {/* 팀 상태 — 팀편성 OFF면 참여 명단, 아니면 공개 시점에 내 팀 표시 */}
-                    {meeting.enableTeams === false ? (
+                    {meeting.meetingType === 'match' ? (
                         <div className="flex items-center gap-1.5 text-sm font-black text-slate-700 min-w-0">
                             <Icon.Users size={16} className="flex-shrink-0 text-teal-500"/><span className="truncate">참여 명단 {participantCount || 0}명</span>
                         </div>
