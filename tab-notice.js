@@ -95,7 +95,10 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                                 <Icon.Plus size={15}/> 새 공지 작성
                             </button>
                             {list.length > 0 && (
-                                <button onClick={() => setSelectMode(true)} className="px-4 py-2 rounded-xl bg-slate-100 text-slate-500 font-black text-sm active:scale-95 transition-all">선택 삭제</button>
+                                <>
+                                    <button onClick={() => setSelectMode(true)} className="px-3 py-2 rounded-xl bg-slate-100 text-slate-500 font-black text-sm active:scale-95 transition-all">선택삭제</button>
+                                    <button onClick={() => onDeleteMany(list.map(a => a.id))} className="px-3 py-2 rounded-xl bg-red-50 text-red-500 font-black text-sm active:scale-95 transition-all">전체삭제</button>
+                                </>
                             )}
                         </>
                     )}
