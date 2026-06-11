@@ -276,6 +276,11 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
     const isOpen = !isBeforeOpen && !isAfterClose;
     const maxLimit = meetingSettings?.maxLimit || 18;
     const isFirstComeFirstServed = meetingSettings?.isFirstComeFirstServed ?? true;
+    const isMatch = meetingSettings?.meetingType === 'match';
+    const maxMale = meetingSettings?.maxMale || 0;
+    const maxFemale = meetingSettings?.maxFemale || 0;
+    const confMale = meetingSettings?.confirmedMaleCount || 0;
+    const confFemale = meetingSettings?.confirmedFemaleCount || 0;
 
     const fmtDT = (isoStr) => {
         if (!isoStr) return '';
@@ -286,9 +291,14 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
     return (
         <div className="card rounded-3xl p-5">
             <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-black text-orange-500 uppercase tracking-widest">{isFirstComeFirstServed ? '선착순 신청' : '모임 신청'}</p>
-                {isFirstComeFirstServed && <span className="text-xs font-black text-slate-400">{regConfirmedCount} / {maxLimit}명</span>}
+                <p className="text-xs font-black text-orange-500 uppercase tracking-widest">{isMatch ? '매칭 신청' : (isFirstComeFirstServed ? '선착순 신청' : '모임 신청')}</p>
+                {isMatch
+                    ? <span className="text-xs font-black text-slate-400">남 {confMale}/{maxMale} · 여 {confFemale}/{maxFemale}</span>
+                    : (isFirstComeFirstServed && <span className="text-xs font-black text-slate-400">{regConfirmedCount} / {maxLimit}명</span>)}
             </div>
+            {isMatch && meetingSettings?.opponentName && (
+                <p className="text-[11px] font-black text-indigo-500 mb-3">vs {meetingSettings.opponentName}</p>
+            )}
 
             {isBeforeOpen && (
                 <div className="text-center py-3">
@@ -316,7 +326,7 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
                 </div>
             )}
 
-            {isOpen && myRegistration?.status === 'waiting' && isFirstComeFirstServed && (
+            {isOpen && myRegistration?.status === 'waiting' && (isFirstComeFirstServed || isMatch) && (
                 <div>
                     <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-3 text-center">
                         <p className="font-black text-amber-500">대기 중 {myWaitingPosition}번</p>
@@ -332,7 +342,7 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
                 <div className="text-center py-2">
                     <p className="text-sm font-black text-slate-400">신청 마감</p>
                     {myRegistration?.status === 'confirmed' && <p className="text-xs text-teal-500 font-black mt-1">참가 확정 ✓</p>}
-                    {isFirstComeFirstServed && myRegistration?.status === 'waiting' && <p className="text-xs text-amber-500 font-black mt-1">대기 {myWaitingPosition}번</p>}
+                    {(isFirstComeFirstServed || isMatch) && myRegistration?.status === 'waiting' && <p className="text-xs text-amber-500 font-black mt-1">대기 {myWaitingPosition}번</p>}
                     {!myRegistration && <p className="text-xs text-slate-300 mt-1">미신청</p>}
                 </div>
             )}
@@ -538,6 +548,14 @@ const TabAttend = ({
                                             <span className="text-sm font-black text-slate-800 min-w-0 truncate">{selectedMeeting.date}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
+                                            <span className="text-[11px] font-black text-slate-400 w-16 shrink-0">유형</span>
+                                            <span className="text-sm font-black text-slate-700 min-w-0 truncate">
+                                                {selectedMeeting.meetingType === 'match'
+                                                    ? <span>매칭{selectedMeeting.opponentName ? <span className="text-indigo-600"> vs {selectedMeeting.opponentName}</span> : ''}</span>
+                                                    : '자체전'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
                                             <span className="text-[11px] font-black text-slate-400 w-16 shrink-0">시간</span>
                                             <span className="text-sm font-black text-slate-700 min-w-0 truncate">{selectedMeeting.start} ~ {selectedMeeting.end}</span>
                                         </div>
@@ -559,10 +577,17 @@ const TabAttend = ({
                                             <span className="text-[11px] font-black text-slate-400 w-16 shrink-0">출석 방식</span>
                                             <span className="text-sm font-black text-slate-700 min-w-0 truncate">GPS{selectedMeeting.enableQR ? ' + QR' : ''}</span>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[11px] font-black text-slate-400 w-16 shrink-0">{(selectedMeeting.isFirstComeFirstServed ?? true) ? '선착순 인원' : '최대 인원'}</span>
-                                            <span className="text-sm font-black text-slate-700 min-w-0 truncate">{selectedMeeting.maxLimit || 18}명</span>
-                                        </div>
+                                        {selectedMeeting.meetingType === 'match' ? (
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[11px] font-black text-slate-400 w-16 shrink-0">정원</span>
+                                                <span className="text-sm font-black text-slate-700 min-w-0 truncate">남 {selectedMeeting.maxMale||0} · 여 {selectedMeeting.maxFemale||0} <span className="text-slate-400 font-medium">(총 {selectedMeeting.maxLimit||0}명)</span></span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[11px] font-black text-slate-400 w-16 shrink-0">{(selectedMeeting.isFirstComeFirstServed ?? true) ? '선착순 인원' : '최대 인원'}</span>
+                                                <span className="text-sm font-black text-slate-700 min-w-0 truncate">{selectedMeeting.maxLimit || 18}명</span>
+                                            </div>
+                                        )}
                                         <div className="flex items-center gap-2">
                                             <span className="text-[11px] font-black text-slate-400 w-16 shrink-0">담당</span>
                                             <span className="text-sm font-black text-slate-700 min-w-0 truncate">{selectedMeeting.managerName || '미지정'}</span>

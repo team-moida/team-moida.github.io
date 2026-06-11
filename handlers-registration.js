@@ -25,9 +25,12 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
                 const confirmedCount = meetingData.confirmedCount || 0;
                 const waitingCount = meetingData.waitingCount || 0;
 
+                const isMatch = meetingData.meetingType === 'match';
+                const isFemale = (memberData.gender || '') === '여성';
                 const isFirstComeFirstServed = meetingData.isFirstComeFirstServed ?? true;
                 const regData = {
                     meetingDate,
+                    meetingType: isMatch ? 'match' : 'self',
                     memberId: memberData.memberId,
                     name: memberData.name || '',
                     gender: memberData.gender || '',
@@ -49,7 +52,24 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
                     createdAt: FieldValue.serverTimestamp(),
                 };
 
-                if (!isFirstComeFirstServed) {
+                if (isMatch) {
+                    // 매칭: 신청자 성별 정원과 비교 → 차면 그 성별만 대기
+                    const maxG = isFemale ? (meetingData.maxFemale || 0) : (meetingData.maxMale || 0);
+                    const confirmedG = isFemale ? (meetingData.confirmedFemaleCount || 0) : (meetingData.confirmedMaleCount || 0);
+                    const waitingG = isFemale ? (meetingData.waitingFemaleCount || 0) : (meetingData.waitingMaleCount || 0);
+                    const confField = isFemale ? 'confirmedFemaleCount' : 'confirmedMaleCount';
+                    const waitField = isFemale ? 'waitingFemaleCount' : 'waitingMaleCount';
+                    if (confirmedG < maxG) {
+                        tx.set(regRef, { ...regData, status: 'confirmed', waitingNumber: null });
+                        tx.update(meetingRef, { confirmedCount: FieldValue.increment(1), [confField]: FieldValue.increment(1) });
+                        tx.update(mirrorRef, { confirmedCount: FieldValue.increment(1), [confField]: FieldValue.increment(1) });
+                        tx.set(sessionRef, sessionData);
+                    } else {
+                        tx.set(regRef, { ...regData, status: 'waiting', waitingNumber: waitingG + 1 });
+                        tx.update(meetingRef, { waitingCount: FieldValue.increment(1), [waitField]: FieldValue.increment(1) });
+                        tx.update(mirrorRef, { waitingCount: FieldValue.increment(1), [waitField]: FieldValue.increment(1) });
+                    }
+                } else if (!isFirstComeFirstServed) {
                     tx.set(regRef, { ...regData, status: 'confirmed', waitingNumber: null });
                     tx.update(meetingRef, { confirmedCount: FieldValue.increment(1) });
                     tx.update(mirrorRef, { confirmedCount: FieldValue.increment(1) });
@@ -92,16 +112,22 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
                 if (!regDoc.exists) throw new Error('신청 기록이 없습니다');
 
                 const reg = regDoc.data();
+                const isMatch = reg.meetingType === 'match';
+                const isFemale = (reg.gender || '') === '여성';
 
                 tx.delete(regRef);
 
                 if (reg.status === 'confirmed') {
-                    tx.update(meetingRef, { confirmedCount: FieldValue.increment(-1) });
-                    tx.update(mirrorRef, { confirmedCount: FieldValue.increment(-1) });
+                    const upd = { confirmedCount: FieldValue.increment(-1) };
+                    if (isMatch) upd[isFemale ? 'confirmedFemaleCount' : 'confirmedMaleCount'] = FieldValue.increment(-1);
+                    tx.update(meetingRef, upd);
+                    tx.update(mirrorRef, upd);
                     tx.delete(sessionRef);
                 } else {
-                    tx.update(meetingRef, { waitingCount: FieldValue.increment(-1) });
-                    tx.update(mirrorRef, { waitingCount: FieldValue.increment(-1) });
+                    const upd = { waitingCount: FieldValue.increment(-1) };
+                    if (isMatch) upd[isFemale ? 'waitingFemaleCount' : 'waitingMaleCount'] = FieldValue.increment(-1);
+                    tx.update(meetingRef, upd);
+                    tx.update(mirrorRef, upd);
                 }
             });
 

@@ -44,6 +44,14 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
                 locationLng: data.locationLng || null,
                 locationRadius: data.locationRadius || 100,
                 enableQR: data.enableQR || false,
+                meetingType: data.meetingType || 'self',
+                opponentName: data.opponentName || '',
+                maxMale: data.maxMale || 0,
+                maxFemale: data.maxFemale || 0,
+                confirmedMaleCount: data.confirmedMaleCount || 0,
+                confirmedFemaleCount: data.confirmedFemaleCount || 0,
+                waitingMaleCount: data.waitingMaleCount || 0,
+                waitingFemaleCount: data.waitingFemaleCount || 0,
                 maxLimit: data.maxLimit || 18,
                 managerId: data.managerId || '',
                 managerName: data.managerName || '',
@@ -73,6 +81,9 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
             }
 
             const originalMeeting = editingId ? meetings.find(m => m.id === editingId) : null;
+            const meetingType = formData.meetingType === 'match' ? 'match' : 'self';
+            const maxMale = meetingType === 'match' ? (parseInt(formData.maxMale) || 0) : 0;
+            const maxFemale = meetingType === 'match' ? (parseInt(formData.maxFemale) || 0) : 0;
             const data = {
                 date: formData.date,
                 start: formData.start || '08:00',
@@ -82,7 +93,15 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
                 locationLng: formData.locationLng ?? originalMeeting?.locationLng ?? null,
                 locationRadius: parseInt(formData.locationRadius) || originalMeeting?.locationRadius || 100,
                 enableQR: formData.enableQR ?? originalMeeting?.enableQR ?? false,
-                maxLimit: parseInt(formData.maxLimit) || 18,
+                meetingType,
+                opponentName: meetingType === 'match' ? (formData.opponentName || '') : '',
+                maxMale,
+                maxFemale,
+                confirmedMaleCount: originalMeeting?.confirmedMaleCount || 0,
+                confirmedFemaleCount: originalMeeting?.confirmedFemaleCount || 0,
+                waitingMaleCount: originalMeeting?.waitingMaleCount || 0,
+                waitingFemaleCount: originalMeeting?.waitingFemaleCount || 0,
+                maxLimit: meetingType === 'match' ? (maxMale + maxFemale) : (parseInt(formData.maxLimit) || 18),
                 managerId: formData.managerId || '',
                 managerName: formData.managerName || '',
                 status: originalMeeting?.status || 'upcoming',
@@ -154,6 +173,8 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
                         await getSettingsCol().doc('meeting_schedule_v2').set({
                             date: '', start: '', end: '', location: '',
                             locationLat: null, locationLng: null, locationRadius: 100,
+                            meetingType: 'self', opponentName: '', maxMale: 0, maxFemale: 0,
+                            confirmedMaleCount: 0, confirmedFemaleCount: 0, waitingMaleCount: 0, waitingFemaleCount: 0,
                             maxLimit: 18, managerId: '', managerName: '', testMode: false,
                             isRegistrationEnabled: false, registrationOpenAt: '', registrationCloseAt: '',
                             confirmedCount: 0, waitingCount: 0,

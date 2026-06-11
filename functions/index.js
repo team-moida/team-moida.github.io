@@ -157,6 +157,67 @@ exports.onRegistrationDeleted = onDocumentDeleted(
           if (!meetingDoc.exists) return;
 
           const meetingData = meetingDoc.data();
+
+          // ── 매칭: 빈 자리와 같은 성별 대기자만 승급 ─────────────────────
+          if (meetingData.meetingType === "match") {
+            const isFemale = (deletedData.gender || "") === "여성";
+            const maxG = isFemale ? (meetingData.maxFemale || 0) : (meetingData.maxMale || 0);
+            const confG = isFemale ? (meetingData.confirmedFemaleCount || 0) : (meetingData.confirmedMaleCount || 0);
+            if (confG >= maxG) return; // 이미 다른 신청이 자리를 채움
+            const confField = isFemale ? "confirmedFemaleCount" : "confirmedMaleCount";
+            const waitField = isFemale ? "waitingFemaleCount" : "waitingMaleCount";
+
+            // 같은 모임의 대기자 전체 조회 후 같은 성별만 추려 가장 오래된 1명 승급
+            const allWaitingSnap = await tx.get(
+              registrationsRef
+                .where("meetingDate", "==", meetingDate)
+                .where("status", "==", "waiting")
+            );
+            const sameGender = allWaitingSnap.docs.filter(
+              d => (((d.data().gender || "") === "여성") === isFemale)
+            );
+            if (sameGender.length === 0) return;
+            sameGender.sort((a, b) => {
+              const ta = a.data().registeredAt, tb = b.data().registeredAt;
+              return (ta && ta.toMillis ? ta.toMillis() : 0) - (tb && tb.toMillis ? tb.toMillis() : 0);
+            });
+            const promoteDoc = sameGender[0];
+            const promoteData = promoteDoc.data();
+            upgradedMemberId = promoteData.memberId;
+
+            tx.update(promoteDoc.ref, { status: "confirmed", waitingNumber: null });
+            tx.set(
+              db.doc(`${DB_PATH}/weekly_session/${meetingDate}_${promoteData.memberId}`),
+              {
+                memberId: promoteData.memberId,
+                name: promoteData.name || "",
+                gender: promoteData.gender || "",
+                level: promoteData.level || "",
+                date: meetingDate,
+                checkedIn: false,
+                checkInTime: null,
+                status: "active",
+                isGuest: false,
+                team: null,
+                createdAt: FV.serverTimestamp(),
+              }
+            );
+            const matchUpd = {
+              confirmedCount: FV.increment(1),
+              waitingCount: FV.increment(-1),
+              [confField]: FV.increment(1),
+              [waitField]: FV.increment(-1),
+            };
+            tx.update(meetingRef, matchUpd);
+            tx.update(mirrorRef, matchUpd);
+
+            // 같은 성별 나머지 대기자 순번 -1 (승급자 제외, waitingNumber > 1)
+            sameGender
+              .filter(d => d.id !== promoteDoc.id && (d.data().waitingNumber || 0) > 1)
+              .forEach(d => tx.update(d.ref, { waitingNumber: FV.increment(-1) }));
+            return;
+          }
+
           const confirmedCount = meetingData.confirmedCount || 0;
           const maxLimit = meetingData.maxLimit || 18;
           // 취소 자리를 다른 신청이 이미 채운 경우 승급 안 함
@@ -244,8 +305,12 @@ exports.onRegistrationDeleted = onDocumentDeleted(
               .where("meetingDate", "==", meetingDate)
               .where("status", "==", "waiting")
           );
+          // 매칭은 같은 성별 대기 줄만 순번 재정렬 (성별별 대기번호이므로)
+          const isMatch = deletedData.meetingType === "match";
+          const cancelledFemale = (deletedData.gender || "") === "여성";
           remainingSnap.docs
             .filter(d => (d.data().waitingNumber || 0) > cancelledWaitingNumber)
+            .filter(d => !isMatch || (((d.data().gender || "") === "여성") === cancelledFemale))
             .forEach(d => tx.update(d.ref, { waitingNumber: FV.increment(-1) }));
         });
       } catch (e) {

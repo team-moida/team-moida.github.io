@@ -3,7 +3,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
     const { useState } = React;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false });
+    const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', meetingType:'self', opponentName:'', maxMale:12, maxFemale:6, maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false });
     const [isSaving, setIsSaving] = useState(false);
     const [isLocPickerOpen, setIsLocPickerOpen] = useState(false);
 
@@ -11,7 +11,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
 
     const openAdd = () => {
         setEditingId(null);
-        setForm({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false });
+        setForm({ date:'', start:'08:00', end:'10:00', location:'', meetingType:'self', opponentName:'', maxMale:12, maxFemale:6, maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false });
         setIsModalOpen(true);
     };
 
@@ -28,6 +28,8 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
         setForm({
             date: m.date, start: m.start||'08:00', end: m.end||'10:00',
             location: m.location||'', maxLimit: m.maxLimit||18,
+            meetingType: m.meetingType || 'self', opponentName: m.opponentName || '',
+            maxMale: m.maxMale ?? 12, maxFemale: m.maxFemale ?? 6,
             managerId: m.managerId||'', managerName: m.managerName||'',
             isRegistrationEnabled: m.isRegistrationEnabled || false,
             isFirstComeFirstServed: m.isFirstComeFirstServed ?? true,
@@ -89,8 +91,9 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                             <p className="font-black text-base">{m.date}</p>
                                             {isActive && <span className="text-[10px] font-black bg-teal-500 text-white px-2 py-0.5 rounded-full">현재 모임</span>}
                                             {isDone && <span className="text-[10px] font-black bg-slate-300 text-slate-600 px-2 py-0.5 rounded-full">종료됨</span>}
+                                            {m.meetingType === 'match' && <span className="text-[10px] font-black bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full">매칭{m.opponentName ? ` vs ${m.opponentName}` : ''}</span>}
                                         </div>
-                                        <p className="text-xs text-slate-400">{m.start} ~ {m.end} · 최대 {m.maxLimit||18}명</p>
+                                        <p className="text-xs text-slate-400">{m.start} ~ {m.end} · {m.meetingType === 'match' ? `남 ${m.maxMale||0} · 여 ${m.maxFemale||0}` : `최대 ${m.maxLimit||18}명`}</p>
                                         {m.isRegistrationEnabled && <span className="text-[9px] font-black px-1.5 py-0.5 bg-orange-100 text-orange-500 rounded-lg mt-0.5 inline-block">선착순</span>}
                                         {m.location ? <p className="text-xs text-slate-400 mt-0.5 truncate"><Icon.MapPin size={10} className="inline mr-0.5"/>{m.location}</p> : null}
                                         {m.managerName ? <p className="text-xs text-slate-400 mt-0.5">담당: {m.managerName}</p> : null}
@@ -122,6 +125,26 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                 className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-500 text-sm font-black">✕ 닫기</button>
                         </div>
                         <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                            <div>
+                                <label className="text-xs font-black text-slate-500 mb-1 block">모임 유형</label>
+                                <div className="flex gap-2">
+                                    {[['self','자체전'],['match','매칭']].map(([v,l]) => (
+                                        <button key={v} type="button" onClick={() => setForm(f => ({...f, meetingType:v}))}
+                                            className={`flex-1 min-w-0 py-2.5 rounded-xl text-sm font-black border transition-all active:scale-95 ${form.meetingType===v ? 'bg-teal-500 text-white border-teal-500' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
+                                            {l}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            {form.meetingType === 'match' && (
+                                <div>
+                                    <label className="text-xs font-black text-slate-500 mb-1 block">상대팀명</label>
+                                    <input type="text" value={form.opponentName}
+                                        onChange={e => setForm(f => ({...f, opponentName: e.target.value}))}
+                                        placeholder="예: FC 상대팀"
+                                        className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+                                </div>
+                            )}
                             <div>
                                 <label className="text-xs font-black text-slate-500 mb-1 block">날짜</label>
                                 <input type="date" value={form.date}
@@ -179,12 +202,33 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                     <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${form.enableQR ? 'left-6' : 'left-0.5'}`}/>
                                 </button>
                             </div>
-                            <div>
-                                <label className="text-xs font-black text-slate-500 mb-1 block">최대 인원</label>
-                                <input type="number" value={form.maxLimit} min={1} max={40}
-                                    onChange={e => setForm(f => ({...f, maxLimit: parseInt(e.target.value)||18}))}
-                                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400"/>
-                            </div>
+                            {form.meetingType === 'match' ? (
+                                <div>
+                                    <label className="text-xs font-black text-slate-500 mb-1 block">정원 (남 / 여)</label>
+                                    <div className="flex gap-3">
+                                        <div className="flex-1 min-w-0">
+                                            <input type="number" value={form.maxMale} min={0} max={40}
+                                                onChange={e => setForm(f => ({...f, maxMale: parseInt(e.target.value)||0}))}
+                                                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium text-center focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+                                            <p className="text-[10px] text-slate-400 mt-1 text-center font-black">남자</p>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <input type="number" value={form.maxFemale} min={0} max={40}
+                                                onChange={e => setForm(f => ({...f, maxFemale: parseInt(e.target.value)||0}))}
+                                                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium text-center focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+                                            <p className="text-[10px] text-slate-400 mt-1 text-center font-black">여자</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-[11px] text-teal-600 font-black mt-1.5 text-center">총 정원 {(parseInt(form.maxMale)||0)+(parseInt(form.maxFemale)||0)}명</p>
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className="text-xs font-black text-slate-500 mb-1 block">최대 인원</label>
+                                    <input type="number" value={form.maxLimit} min={1} max={40}
+                                        onChange={e => setForm(f => ({...f, maxLimit: parseInt(e.target.value)||18}))}
+                                        className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+                                </div>
+                            )}
                             <div>
                                 <label className="text-xs font-black text-slate-500 mb-1 block">담당자</label>
                                 <select value={form.managerId}
@@ -207,14 +251,20 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                 </div>
                                 {form.isRegistrationEnabled && (
                                     <div className="mt-3 space-y-3">
-                                        <div className="flex items-center justify-between py-1">
-                                            <label className="text-xs font-black text-slate-500">선착순 제한</label>
-                                            <button onClick={() => setForm(f => ({...f, isFirstComeFirstServed: !f.isFirstComeFirstServed}))}
-                                                className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${form.isFirstComeFirstServed ? 'bg-orange-400' : 'bg-slate-200'}`}>
-                                                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${form.isFirstComeFirstServed ? 'left-6' : 'left-0.5'}`}/>
-                                            </button>
-                                        </div>
-                                        {!form.isFirstComeFirstServed && <p className="text-xs text-slate-400">OFF: 정원 초과해도 모두 확정</p>}
+                                        {form.meetingType === 'match' ? (
+                                            <p className="text-xs text-orange-600 font-black bg-orange-50 rounded-xl px-3 py-2 leading-relaxed">매칭은 남/여 정원 기준 선착순이 적용됩니다. 정원이 차면 같은 성별만 대기로 넘어갑니다.</p>
+                                        ) : (
+                                            <>
+                                                <div className="flex items-center justify-between py-1">
+                                                    <label className="text-xs font-black text-slate-500">선착순 제한</label>
+                                                    <button onClick={() => setForm(f => ({...f, isFirstComeFirstServed: !f.isFirstComeFirstServed}))}
+                                                        className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${form.isFirstComeFirstServed ? 'bg-orange-400' : 'bg-slate-200'}`}>
+                                                        <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${form.isFirstComeFirstServed ? 'left-6' : 'left-0.5'}`}/>
+                                                    </button>
+                                                </div>
+                                                {!form.isFirstComeFirstServed && <p className="text-xs text-slate-400">OFF: 정원 초과해도 모두 확정</p>}
+                                            </>
+                                        )}
                                         <div>
                                             <label className="text-xs font-black text-slate-500 mb-1 block">신청 시작</label>
                                             <div className="flex gap-2">
