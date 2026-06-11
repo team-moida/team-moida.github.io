@@ -397,7 +397,7 @@ const TabAttend = ({
             if (ADMIN_ROLES.includes(member.role)) { normal.push(member); return; }
             if (member.isSpecialRest) { rest.push(member); return; }
             const isResting = selMonthlyStatuses[member.id] === 'rest';
-            if (isResting) { const info = getMembershipStatus(member, monthStr); if (!info || info.active) rest.push(member); return; }
+            if (isResting) { const info = getMembershipStatus(member, monthStr); if (info?.active) rest.push(member); return; }
             const isPaid = selMonthlyStatuses[member.id] === 'paid';
             const info = getMembershipStatus(member, monthStr);
             if (isPaid || info?.active) normal.push(member);
@@ -665,7 +665,7 @@ const TabAttend = ({
                                                         const isSelected = selSessionList.some(p=>p.memberId===member.id);
                                                         const _monthStr = selectedMeeting?.date?.substring(0,7)||'';
                                                         const msType = getMembershipStatus(member, _monthStr)?.type;
-                                                        const badge = member.isSpecialRest ? '특별휴식' : (msType==='반년'?'반년납 휴식':(msType==='1년'?'1년납 휴식':'월납 휴식'));
+                                                        const badge = member.isSpecialRest ? '특별휴식' : (msType==='반년'?'반년납 휴식':'1년납 휴식');
                                                         const guestUsed = !member.isSpecialRest && tmSessionData.some(p=>p.memberId===member.id&&p.isGuest&&p.date&&p.date.substring(0,7)===_monthStr&&p.date!==selectedMeeting.date);
                                                         return (
                                                             <button key={member.id} onClick={()=>attendToggleParticipantAsGuest(member, selectedMeeting.date)}
