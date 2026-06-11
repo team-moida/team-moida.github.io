@@ -4,7 +4,11 @@ const getMeetingsCol = () => getCol('meetings');
 function getActiveMeeting(meetings) {
     return [...meetings]
         .filter(m => m.status !== 'done')
-        .sort((a, b) => a.date.localeCompare(b.date))[0] || null;
+        .sort((a, b) => {
+            const dc = a.date.localeCompare(b.date);
+            if (dc !== 0) return dc;
+            return (a.meetingType || 'self').localeCompare(b.meetingType || 'self');
+        })[0] || null;
 }
 
 // 모임 정보로 푸시 알림 문구 자동 생성 (날짜·시간·장소·신청기간)
@@ -70,14 +74,15 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
 
     const handleSaveMeeting = async (formData, editingId, onSuccess) => {
         if (!formData.date) { showAlert('입력 오류', '날짜를 입력해주세요.'); return; }
-        const docId = formData.date;
+        const docId = getMeetingId(formData);
+        const typeLabel = formData.meetingType === 'match' ? '매칭' : '정기';
         try {
             if (!editingId) {
                 const existing = await getMeetingsCol().doc(docId).get();
-                if (existing.exists) { showAlert('중복 날짜', `${formData.date}에 이미 등록된 모임이 있습니다.`); return; }
+                if (existing.exists) { showAlert('중복 모임', `${formData.date}에 이미 등록된 ${typeLabel} 모임이 있습니다.`); return; }
             } else if (editingId !== docId) {
                 const existing = await getMeetingsCol().doc(docId).get();
-                if (existing.exists) { showAlert('중복 날짜', `${formData.date}에 이미 등록된 모임이 있습니다.`); return; }
+                if (existing.exists) { showAlert('중복 모임', `${formData.date}에 이미 등록된 ${typeLabel} 모임이 있습니다.`); return; }
             }
 
             const originalMeeting = editingId ? meetings.find(m => m.id === editingId) : null;
@@ -86,6 +91,7 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
             const maxFemale = meetingType === 'match' ? (parseInt(formData.maxFemale) || 0) : 0;
             const data = {
                 date: formData.date,
+                meetingId: docId,
                 start: formData.start || '08:00',
                 end: formData.end || '10:00',
                 location: formData.location || '',

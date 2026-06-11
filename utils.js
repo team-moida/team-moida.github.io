@@ -65,3 +65,6 @@ const extendEndDate = (currentEndDateStr,monthsToAdd=1) => {
     const end=new Date(y,m+monthsToAdd,0);
     return `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
 };
+
+/* ── 모임 식별자 ── */
+const getMeetingId = (m) => m.meetingType === 'match' ? m.date + '__match' : m.date;
