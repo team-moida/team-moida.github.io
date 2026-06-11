@@ -524,7 +524,7 @@ const TabAttend = ({
                                         <div>
                                             <label className="text-[10px] font-black text-slate-400 uppercase">장소</label>
                                             <div className="flex gap-2 mt-1">
-                                                <input type="text" placeholder="장소명 직접 입력" style={{userSelect:'text'}} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                                                <input type="text" placeholder="장소명 직접 입력" style={{userSelect:'text'}} className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
                                                     value={meetingSettings?.location||''} onChange={e=>updateMeetingSettingsAdmin({...meetingSettings, location:e.target.value})} />
                                                 <button onClick={() => setIsLocationPickerOpen(true)}
                                                     className={`shrink-0 px-3 py-2.5 rounded-xl text-sm font-black border transition-all ${meetingSettings?.locationLat ? 'bg-teal-500 text-white border-teal-500' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
@@ -573,10 +573,10 @@ const TabAttend = ({
                                         <div>
                                             <label className="text-[10px] font-black text-slate-400 uppercase">담당 관리자</label>
                                             <div className="flex gap-2 mt-1">
-                                                <input type="text" readOnly className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                                                <input type="text" readOnly className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
                                                     value={meetingSettings?.managerName||''} placeholder="미지정" />
                                                 <button onClick={()=>updateMeetingSettingsAdmin({...meetingSettings, managerId:memberData?.memberId||'', managerName:memberData?.name||''})}
-                                                    className="px-4 py-2.5 bg-teal-500 text-white rounded-xl text-xs font-black">내가 담당</button>
+                                                    className="shrink-0 px-4 py-2.5 bg-teal-500 text-white rounded-xl text-xs font-black">내가 담당</button>
                                             </div>
                                         </div>
                                         <RegSettingsSection meetingSettings={meetingSettings} updateMeetingSettingsAdmin={updateMeetingSettingsAdmin} />
