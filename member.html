@@ -62,10 +62,28 @@ const { useState, useEffect, useMemo } = React;
 function App() {
     const [appView, setAppView] = useState('loading');
     const [tab, setTab] = useState(() => {
-        try { return sessionStorage.getItem('moida_tab') || 'home'; } catch(e) { return 'home'; }
+        try {
+            const t = sessionStorage.getItem('moida_tab') || 'home';
+            // 기존 출석/팀/매치 탭은 '모임' 탭으로 통합 → 복원 시 모임으로 매핑
+            return (t === 'attend' || t === 'team' || t === 'match') ? 'meeting' : t;
+        } catch(e) { return 'home'; }
     });
-    // 현재 탭 기억 → 새로고침(당겨서/F5) 후 같은 탭으로 복원. 앱을 완전히 닫으면 초기화(홈).
+    // 모임 탭 안의 하위 탭(출석/팀/매치)
+    const [meetingSubTab, setMeetingSubTab] = useState(() => {
+        try {
+            const t = sessionStorage.getItem('moida_tab');
+            if (t === 'attend' || t === 'team' || t === 'match') return t;
+            return sessionStorage.getItem('moida_meeting_sub') || 'attend';
+        } catch(e) { return 'attend'; }
+    });
+    // 현재 탭/하위 탭 기억 → 새로고침(당겨서/F5) 후 같은 위치로 복원. 앱을 완전히 닫으면 초기화(홈).
     React.useEffect(() => { try { sessionStorage.setItem('moida_tab', tab); } catch(e) {} }, [tab]);
+    React.useEffect(() => { try { sessionStorage.setItem('moida_meeting_sub', meetingSubTab); } catch(e) {} }, [meetingSubTab]);
+    // 출석/팀/매치로의 이동을 '모임' 탭 + 하위 탭으로 변환하는 네비게이션 헬퍼
+    const navTab = (t) => {
+        if (t === 'attend' || t === 'team' || t === 'match') { setMeetingSubTab(t); setTab('meeting'); }
+        else setTab(t);
+    };
     const [memberData, setMemberData] = useState(() => {
         try {
             const s = JSON.parse(localStorage.getItem('moida_member_data'));
@@ -226,7 +244,7 @@ function App() {
 
     const { processQRToken, handleQRAttendance, handleInAppQRScan, handleGPSCheckIn, handleGPSAttend } = makeQRGPSHandlers({
         memberData, testMode, meetingSettings, mySession, urlParams,
-        setQrMessage, setQrStatus, setTab, setIsQRScannerOpen,
+        setQrMessage, setQrStatus, setTab: navTab, setIsQRScannerOpen,
         setGpsStatus, setDistance, setIsCheckingIn, showToast
     });
 
@@ -382,12 +400,12 @@ function App() {
         };
     }, []);
 
-    // 다른 탭으로 이동하면 그 탭의 관리모드(관리 패널) 자동 해제
+    // 다른 탭(또는 모임 하위 탭)으로 이동하면 그 탭의 관리모드(관리 패널) 자동 해제
     React.useEffect(() => {
         attend.setIsAttendPanelOpen(false);
         team.setIsTeamPanelOpen(false);
         match.setIsMatchPanelOpen(false);
-    }, [tab]);
+    }, [tab, meetingSubTab]);
 
     if (appView === 'loading') return (
         <div className="min-h-screen flex flex-col items-center justify-center">
@@ -400,9 +418,9 @@ function App() {
     const myTeamIdx = myTeamInfo?.teamIdx ?? -1;
     // 현재 탭의 관리모드 라벨 (관리자이며 해당 탭의 관리 패널이 열려 있을 때만)
     const adminModeLabel = !isAdminMode ? null
-        : (tab === 'attend' && attend.isAttendPanelOpen) ? '출석 관리 모드'
-        : (tab === 'team' && team.isTeamPanelOpen) ? '편성 모드'
-        : (tab === 'match' && match.isMatchPanelOpen) ? '매치 관리 모드'
+        : (tab === 'meeting' && meetingSubTab === 'attend' && attend.isAttendPanelOpen) ? '출석 관리 모드'
+        : (tab === 'meeting' && meetingSubTab === 'team' && team.isTeamPanelOpen) ? '편성 모드'
+        : (tab === 'meeting' && meetingSubTab === 'match' && match.isMatchPanelOpen) ? '매치 관리 모드'
         : null;
 
     return (
@@ -442,7 +460,7 @@ function App() {
                 {tab === 'home' && (
                     <TabHome
                         notifPermission={notifPermission} registerFcmToken={registerFcmToken}
-                        onTabChange={setTab} meetingDayInfo={meetingDayInfo} teamReady={teamReady}
+                        onTabChange={navTab} meetingDayInfo={meetingDayInfo} teamReady={teamReady}
                         allowFromDisplay={allowFromDisplay} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                         memberData={memberData} mySession={mySession} meetingSettings={meetingSettings}
                         darkMode={darkMode} memberName={memberName} announcements={announcements}
@@ -459,7 +477,15 @@ function App() {
                         onDeleteMany={handleDeleteAnnouncements}
                     />
                 )}
-                {tab === 'team' && (
+                {tab === 'meeting' && (
+                    <div className="flex gap-1.5 mb-3 p-1 bg-slate-100 rounded-2xl">
+                        {[['attend','출석'],['team','팀'],['match','매치']].map(([k,l]) => (
+                            <button key={k} onClick={()=>setMeetingSubTab(k)}
+                                className={`flex-1 min-w-0 py-2 rounded-xl text-sm font-black truncate transition-all ${meetingSubTab===k?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>{l}</button>
+                        ))}
+                    </div>
+                )}
+                {tab === 'meeting' && meetingSubTab === 'team' && (
                     <TabTeam
                         isAdminMode={isAdminMode} isTeamPanelOpen={team.isTeamPanelOpen} setIsTeamPanelOpen={team.setIsTeamPanelOpen}
                         teamMakerTab={team.teamMakerTab} setTeamMakerTab={team.setTeamMakerTab}
@@ -487,7 +513,7 @@ function App() {
                         tmDeleteConfirmed={tmDeleteConfirmed} tmDeleteSelectedDrafts={tmDeleteSelectedDrafts}
                     />
                 )}
-                {tab === 'match' && (
+                {tab === 'meeting' && meetingSubTab === 'match' && (
                     <TabMatch
                         isAdminMode={isAdminMode} isMatchPanelOpen={match.isMatchPanelOpen} setIsMatchPanelOpen={match.setIsMatchPanelOpen}
                         matchAdminView={match.matchAdminView} setMatchAdminView={match.setMatchAdminView}
@@ -507,7 +533,7 @@ function App() {
                         setIsPresetModalOpen={match.setIsPresetModalOpen}
                     />
                 )}
-                {tab === 'attend' && (
+                {tab === 'meeting' && meetingSubTab === 'attend' && (
                     <TabAttend
                         isAdminMode={isAdminMode} isAttendPanelOpen={attend.isAttendPanelOpen}
                         setIsAttendPanelOpen={attend.setIsAttendPanelOpen}
@@ -596,11 +622,9 @@ function App() {
             {!attend.isKioskOpen && <div className="tab-bar fixed bottom-0 left-0 right-0 z-50 pb-safe">
                 <div className="flex items-center h-16 max-w-sm mx-auto px-2">
                     {[
-                        {key:'home',   label:'홈',   icon:<Icon.Home size={20}/>},
-                        {key:'attend', label:'출석', icon:<Icon.CheckSq size={20}/>},
-                        {key:'team',   label:'팀',   icon:<Icon.Users size={20}/>},
-                        {key:'match',  label:'매치', icon:<Icon.Calendar size={20}/>},
-                        {key:'rules',  label:'회칙', icon:<Icon.ShieldCheck size={20}/>},
+                        {key:'home',    label:'홈',   icon:<Icon.Home size={20}/>},
+                        {key:'meeting', label:'모임', icon:<Icon.Calendar size={20}/>},
+                        {key:'rules',   label:'회칙', icon:<Icon.ShieldCheck size={20}/>},
                         ...(isAdminMode ? [{key:'roster', label:'명단', icon:<Icon.List size={20}/>}] : []),
                     ].map(({key,label,icon})=>(
                         <button key={key} onClick={()=>setTab(key)}
