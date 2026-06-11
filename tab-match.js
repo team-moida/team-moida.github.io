@@ -118,9 +118,9 @@ const TabMatch = ({
                                     </div>
                                     {matchConfig.fieldNames.map((name,i) => (
                                         <div key={i} className="flex gap-2 items-center">
-                                            <input type="text" className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-black" style={{userSelect:'text'}} value={name}
+                                            <input type="text" className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-black" style={{userSelect:'text'}} value={name}
                                                 onChange={e => { const fn=[...matchConfig.fieldNames];fn[i]=e.target.value;setMatchConfig(p=>({...p,fieldNames:fn})); }}/>
-                                            <select className="bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-black" value={matchConfig.fieldTypes[i]}
+                                            <select className="shrink-0 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-black" value={matchConfig.fieldTypes[i]}
                                                 onChange={e => { const ft=[...matchConfig.fieldTypes];ft[i]=e.target.value;setMatchConfig(p=>({...p,fieldTypes:ft})); }}>
                                                 <option value="6vs6">6vs6</option><option value="5vs5">5vs5</option>
                                             </select>

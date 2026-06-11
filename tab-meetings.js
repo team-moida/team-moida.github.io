@@ -191,7 +191,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                             <div className="flex gap-2">
                                                 <input type="date" value={form.regOpenDate}
                                                     onChange={e => setForm(f => ({...f, regOpenDate: e.target.value}))}
-                                                    className="flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+                                                    className="flex-1 min-w-0 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
                                                 <select value={form.regOpenHour}
                                                     onChange={e => setForm(f => ({...f, regOpenHour: e.target.value}))}
                                                     className="w-16 border border-slate-200 rounded-xl px-2 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400">
@@ -209,7 +209,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                             <div className="flex gap-2">
                                                 <input type="date" value={form.regCloseDate}
                                                     onChange={e => setForm(f => ({...f, regCloseDate: e.target.value}))}
-                                                    className="flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+                                                    className="flex-1 min-w-0 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
                                                 <select value={form.regCloseHour}
                                                     onChange={e => setForm(f => ({...f, regCloseHour: e.target.value}))}
                                                     className="w-16 border border-slate-200 rounded-xl px-2 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400">

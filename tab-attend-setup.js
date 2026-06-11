@@ -65,7 +65,7 @@ const AttendSetupTab = ({
                 <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase">장소</label>
                     <div className="flex gap-2 mt-1">
-                        <input type="text" placeholder="장소명 직접 입력" className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                        <input type="text" placeholder="장소명 직접 입력" className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
                             value={meetingTimes.location||''} onChange={e=>updateMeetingTimeSettings({...meetingTimes,location:e.target.value})} />
                         <button
                             onClick={() => setIsLocationPickerOpen(true)}
@@ -128,10 +128,10 @@ const AttendSetupTab = ({
                 <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase">담당 관리자</label>
                     <div className="flex gap-2 mt-1">
-                        <input type="text" className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black" readOnly
+                        <input type="text" className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black" readOnly
                             value={meetingTimes.managerName||''} placeholder="미지정" />
                         <button onClick={()=>updateMeetingTimeSettings({...meetingTimes,managerId:loggedInManager?.id||'',managerName:loggedInManager?.name||''})}
-                            className="px-4 py-2.5 bg-teal-500 text-white rounded-xl text-xs font-black">내가 담당</button>
+                            className="shrink-0 px-4 py-2.5 bg-teal-500 text-white rounded-xl text-xs font-black">내가 담당</button>
                     </div>
                 </div>
             </div>

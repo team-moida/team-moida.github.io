@@ -50,16 +50,16 @@ const AttendHistoryTab = ({
                 <div className="flex items-center gap-2 mb-2">
                     <Icon.MapPin size={12} className="text-slate-400" />
                     {isEditingLocation
-                        ? <><input className="flex-1 text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1" value={editLocationValue} onChange={e=>setEditLocationValue(e.target.value)} />
-                            <button onClick={handleUpdateLocation} className="text-xs px-2 py-1 bg-teal-500 text-white rounded-lg">저장</button>
-                            <button onClick={()=>setIsEditingLocation(false)} className="text-xs px-2 py-1 bg-slate-100 text-slate-500 rounded-lg">취소</button></>
-                        : <><span className="text-xs text-slate-600 flex-1">{selectedHistoryDetail.location}</span>
+                        ? <><input className="flex-1 min-w-0 text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1" value={editLocationValue} onChange={e=>setEditLocationValue(e.target.value)} />
+                            <button onClick={handleUpdateLocation} className="shrink-0 text-xs px-2 py-1 bg-teal-500 text-white rounded-lg">저장</button>
+                            <button onClick={()=>setIsEditingLocation(false)} className="shrink-0 text-xs px-2 py-1 bg-slate-100 text-slate-500 rounded-lg">취소</button></>
+                        : <><span className="text-xs text-slate-600 flex-1 min-w-0 truncate">{selectedHistoryDetail.location}</span>
                             {selectedHistoryDetail.locationLat && (
                                 <a href={`https://map.kakao.com/link/map/${encodeURIComponent(selectedHistoryDetail.location||'위치')},${selectedHistoryDetail.locationLat},${selectedHistoryDetail.locationLng}`}
                                    target="_blank" rel="noopener noreferrer"
                                    className="text-[10px] text-blue-500 font-black mr-1 underline">지도</a>
                             )}
-                            <button onClick={()=>{setEditLocationValue(selectedHistoryDetail.location||'');setIsEditingLocation(true);}} className="p-1 text-slate-300 hover:text-slate-500"><Icon.Edit2 size={12} /></button></>
+                            <button onClick={()=>{setEditLocationValue(selectedHistoryDetail.location||'');setIsEditingLocation(true);}} className="shrink-0 p-1 text-slate-300 hover:text-slate-500"><Icon.Edit2 size={12} /></button></>
                     }
                 </div>
             </div>

@@ -220,7 +220,7 @@ const RegSettingsSection = ({ meetingSettings, updateMeetingSettingsAdmin }) => 
             <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block">{label}</label>
             <div className="flex gap-1">
                 <input type="date" value={dt.date} onChange={e=>setDT(d=>({...d,date:e.target.value}))}
-                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+                    className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-teal-400"/>
                 <select value={dt.hour} onChange={e=>setDT(d=>({...d,hour:e.target.value}))}
                     className="w-14 bg-slate-50 border border-slate-200 rounded-xl px-1 py-2 text-xs font-medium focus:outline-none">
                     {hourOptions.map(h=><option key={h} value={h}>{h}시</option>)}
@@ -834,14 +834,14 @@ const TabAttend = ({
                             <div className="flex items-center gap-2 mb-2">
                                 <Icon.MapPin size={12} className="text-slate-400"/>
                                 {isEditingHistoryLocation
-                                    ? <><input style={{userSelect:'text'}} className="flex-1 text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1" value={editHistoryLocationValue} onChange={e=>setEditHistoryLocationValue(e.target.value)}/>
-                                        <button onClick={handleUpdateHistoryLocation} className="text-xs px-2 py-1 bg-teal-500 text-white rounded-lg">저장</button>
-                                        <button onClick={()=>setIsEditingHistoryLocation(false)} className="text-xs px-2 py-1 bg-slate-100 text-slate-500 rounded-lg">취소</button></>
-                                    : <><span className="text-xs text-slate-600 flex-1">{selectedHistoryDetail.location}</span>
+                                    ? <><input style={{userSelect:'text'}} className="flex-1 min-w-0 text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1" value={editHistoryLocationValue} onChange={e=>setEditHistoryLocationValue(e.target.value)}/>
+                                        <button onClick={handleUpdateHistoryLocation} className="shrink-0 text-xs px-2 py-1 bg-teal-500 text-white rounded-lg">저장</button>
+                                        <button onClick={()=>setIsEditingHistoryLocation(false)} className="shrink-0 text-xs px-2 py-1 bg-slate-100 text-slate-500 rounded-lg">취소</button></>
+                                    : <><span className="text-xs text-slate-600 flex-1 min-w-0 truncate">{selectedHistoryDetail.location}</span>
                                         {selectedHistoryDetail.locationLat && (
                                             <a href={`https://map.kakao.com/link/map/${encodeURIComponent(selectedHistoryDetail.location||'위치')},${selectedHistoryDetail.locationLat},${selectedHistoryDetail.locationLng}`} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 font-black mr-1 underline">지도</a>
                                         )}
-                                        <button onClick={()=>{setEditHistoryLocationValue(selectedHistoryDetail.location||'');setIsEditingHistoryLocation(true);}} className="p-1 text-slate-300 hover:text-slate-500"><Icon.Edit2 size={12}/></button></>
+                                        <button onClick={()=>{setEditHistoryLocationValue(selectedHistoryDetail.location||'');setIsEditingHistoryLocation(true);}} className="shrink-0 p-1 text-slate-300 hover:text-slate-500"><Icon.Edit2 size={12}/></button></>
                                 }
                             </div>
                         </div>
