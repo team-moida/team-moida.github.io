@@ -177,6 +177,91 @@ const fmtMeetingDate = (ds) => {
     const dow = ['일','월','화','수','목','금','토'][d.getDay()];
     return `${d.getMonth()+1}/${d.getDate()}(${dow})`;
 };
+
+// ─── 다음 모임 날씨 (Open-Meteo · API 키/서버 불필요) ──────────────────────────
+// 모임 좌표(locationLat/Lng)로 그날 날씨를 받아 카드에 직관적 아이콘 + 기온/습도 표시.
+//  · 지금 기온·습도 = 실시간(current)  · 최저/최고·강수확률 = 모임 날짜(daily) 기준.
+//  · 좌표가 없거나(관리자 GPS 미지정) 조회 실패 시 조용히 숨김 → 카드 깔끔 유지.
+// WMO 날씨코드 → [이모지, 한글]  (이모지는 PC·안드로이드·iOS 모두 기본 렌더되어 가장 직관적)
+const WMO_WEATHER = {
+    0:['☀️','맑음'], 1:['🌤️','대체로 맑음'], 2:['⛅','구름 조금'], 3:['☁️','흐림'],
+    45:['🌫️','안개'], 48:['🌫️','짙은 안개'],
+    51:['🌦️','약한 이슬비'], 53:['🌦️','이슬비'], 55:['🌦️','강한 이슬비'],
+    56:['🌧️','어는 이슬비'], 57:['🌧️','어는 이슬비'],
+    61:['🌧️','약한 비'], 63:['🌧️','비'], 65:['🌧️','강한 비'],
+    66:['🌧️','어는 비'], 67:['🌧️','어는 비'],
+    71:['🌨️','약한 눈'], 73:['🌨️','눈'], 75:['🌨️','많은 눈'], 77:['🌨️','싸락눈'],
+    80:['🌦️','소나기'], 81:['🌦️','소나기'], 82:['⛈️','강한 소나기'],
+    85:['🌨️','소낙눈'], 86:['🌨️','소낙눈'],
+    95:['⛈️','뇌우'], 96:['⛈️','뇌우(우박)'], 99:['⛈️','강한 뇌우(우박)'],
+};
+const _weatherCache = new Map(); // key `${lat},${lng},${date}` → {at, data} (30분 캐시)
+const MeetingWeather = ({ lat, lng, date, darkMode }) => {
+    const [data, setData] = React.useState(null);
+    const [state, setState] = React.useState('idle'); // idle|loading|done|error
+    React.useEffect(() => {
+        if (lat == null || lng == null) { setState('idle'); setData(null); return; }
+        const key = `${lat},${lng},${date||''}`;
+        const cached = _weatherCache.get(key);
+        if (cached && Date.now() - cached.at < 30*60*1000) { setData(cached.data); setState('done'); return; }
+        let alive = true;
+        setState('loading');
+        const params = new URLSearchParams({
+            latitude: lat, longitude: lng,
+            current: 'temperature_2m,relative_humidity_2m,weather_code',
+            daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
+            timezone: 'Asia/Seoul',
+        });
+        if (date) { params.set('start_date', date); params.set('end_date', date); }
+        fetch(`https://api.open-meteo.com/v1/forecast?${params}`)
+            .then(r => r.ok ? r.json() : Promise.reject(r.status))
+            .then(j => {
+                if (!alive) return;
+                const cur = j.current || {}, d = j.daily || {};
+                const out = {
+                    code: (d.weather_code && d.weather_code[0] != null) ? d.weather_code[0] : cur.weather_code,
+                    cur: cur.temperature_2m, humidity: cur.relative_humidity_2m,
+                    min: d.temperature_2m_min && d.temperature_2m_min[0],
+                    max: d.temperature_2m_max && d.temperature_2m_max[0],
+                    pop: d.precipitation_probability_max && d.precipitation_probability_max[0],
+                };
+                _weatherCache.set(key, { at: Date.now(), data: out });
+                setData(out); setState('done');
+            })
+            .catch(() => { if (alive) setState('error'); });
+        return () => { alive = false; };
+    }, [lat, lng, date]);
+
+    if (lat == null || lng == null || state === 'error') return null; // 좌표 없음/실패 → 숨김
+    const box = { background: darkMode ? 'rgba(255,255,255,0.04)' : '#f8fafc' };
+    if (state !== 'done' || !data) {
+        return (
+            <div className="mt-3 rounded-2xl px-3 py-2.5 flex items-center gap-2 text-xs font-black text-slate-400" style={box}>
+                <span className="animate-pulse">날씨 불러오는 중…</span>
+            </div>
+        );
+    }
+    const [icon, label] = WMO_WEATHER[data.code] || ['🌡️','날씨'];
+    const r = (v) => (v == null || isNaN(v)) ? '–' : Math.round(v);
+    return (
+        <div className="mt-3 rounded-2xl px-3 py-2.5 flex items-center gap-3" style={box}>
+            <span className="text-3xl leading-none flex-shrink-0">{icon}</span>
+            <div className="min-w-0 flex-1">
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                    <span className="text-[10px] font-black text-slate-400 flex-shrink-0">지금</span>
+                    <span className="text-lg font-black text-slate-700 flex-shrink-0">{r(data.cur)}°</span>
+                    <span className="text-xs font-black text-slate-400 truncate">{label}</span>
+                </div>
+                <div className="flex items-center gap-x-2.5 gap-y-0.5 mt-0.5 text-[11px] font-black flex-wrap">
+                    <span className="text-blue-400">최저 {r(data.min)}°</span>
+                    <span className="text-red-400">최고 {r(data.max)}°</span>
+                    <span className="text-slate-400">습도 {r(data.humidity)}%</span>
+                    {data.pop != null && <span className="text-teal-400">강수 {r(data.pop)}%</span>}
+                </div>
+            </div>
+        </div>
+    );
+};
 const TabHome = ({
     notifPermission, registerFcmToken, onTabChange,
     meetingDayInfo, teamReady, allowFromDisplay,
@@ -209,6 +294,10 @@ const TabHome = ({
                         <p className="text-sm text-slate-400 mt-1 flex items-center gap-1 min-w-0">
                             <Icon.MapPin size={13} className="flex-shrink-0"/><span className="truncate">{meetingSettings.location}</span>
                         </p>
+                    )}
+                    {/* 실시간 날씨 (모임 좌표 기준) — 지난 모임에는 표시 안 함 */}
+                    {meetingDayInfo.type !== 'past' && (
+                        <MeetingWeather lat={meetingSettings.locationLat} lng={meetingSettings.locationLng} date={meetingSettings.date} darkMode={darkMode} />
                     )}
                     <div className="mt-4 pt-4 border-t space-y-2.5" style={{borderColor: darkMode?'rgba(255,255,255,0.08)':'#f1f5f9'}}>
                         {/* 출석 상태 — 출석체크 시점(당일/모임중)이 되면 체크 버튼, 완료 시 완료 표시 */}
