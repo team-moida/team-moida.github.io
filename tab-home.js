@@ -296,9 +296,7 @@ const MeetingWeather = ({ lat, lng, date, isAdminMode }) => {
     return (
         <div className="mt-3">
             {addr && (
-                <p className="text-xs font-black text-slate-500 mb-1.5 flex items-center gap-1 min-w-0">
-                    <Icon.MapPin size={12} className="flex-shrink-0 text-slate-400"/><span className="truncate">{addr}</span>
-                </p>
+                <p className="text-xs font-black text-slate-500 mb-1.5 truncate">{addr}</p>
             )}
             <div className="flex items-center gap-3">
             <span className="text-3xl leading-none flex-shrink-0">{icon}</span>
