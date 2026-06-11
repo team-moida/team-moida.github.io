@@ -12,7 +12,7 @@ const TabTeam = ({
     teamStorageSubTab, setTeamStorageSubTab,
     previewDraft, setPreviewDraft,
     isCapturing, teamDraftData, teamReady, allowFromDisplay,
-    myTeamIdx, memberData, allMembers,
+    myTeamIdx, memberData, allMembers, teamsDisabled, participants,
     tmMeetingDate, tmActiveList, tmEntryList, tmLevelStats, tmUnassigned,
     generateTeams, tmCapture, tmSaveDraft, tmConfirm, tmReset, tmReGenerate,
     tmDragStart, tmDragEnd, tmMemberDragOver, tmTeamDragOver, tmTeamDragLeave,
@@ -23,6 +23,33 @@ const TabTeam = ({
     const [draftSelectMode, setDraftSelectMode] = useState(false);
     return (
     <div className="animate-in">
+        {teamsDisabled ? (
+            /* 팀 편성 OFF 매칭 → 팀 그리드 대신 참여 명단 (운영진·회원 공통) */
+            <div>
+                <div className="text-center mb-4">
+                    <p className="text-xs text-slate-500 uppercase tracking-widest font-black">{tmMeetingDate} 참여 명단</p>
+                    <p className="text-2xl font-black text-slate-800 mt-1">{(participants||[]).length}명</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">이 매칭은 팀 편성을 사용하지 않습니다</p>
+                </div>
+                {(participants||[]).length > 0 ? (
+                    <div className="space-y-1.5">
+                        {participants.map((p, i) => (
+                            <div key={p.id||i} className={`flex items-center gap-3 rounded-2xl p-3 border min-w-0 ${p.memberId===memberData?.memberId?'border-teal-500 bg-teal-50':'card border-slate-100'}`}>
+                                <span className="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 font-black text-xs flex items-center justify-center flex-shrink-0">{i+1}</span>
+                                <span className="font-black text-sm text-slate-700 truncate min-w-0">{p.name}{p.gender==='여성'?' W':''}{p.isGuest?' · 게스트':''}</span>
+                                {p.memberId===memberData?.memberId && <span className="ml-auto text-[10px] font-black text-teal-500 flex-shrink-0">나</span>}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-16 text-slate-400">
+                        <div className="flex justify-center mb-3 opacity-25"><Icon.Users size={48}/></div>
+                        <p className="font-black">아직 참여자가 없습니다</p>
+                        <p className="text-sm mt-1">운영진이 참여자를 선정하면 표시됩니다</p>
+                    </div>
+                )}
+            </div>
+        ) : (<>
         {/* 관리자 패널 토글 버튼 */}
         {isAdminMode && (
             <div className="flex items-center justify-between mb-3">
@@ -364,6 +391,7 @@ const TabTeam = ({
                     </div>
                 )
         )}
+        </>)}
     </div>
     );
 };

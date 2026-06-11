@@ -98,12 +98,45 @@ const KioskModal = ({
                         </div>
                     ))
                 ) : attendActiveList.length > 0 ? (
-                    /* 인원은 선정됐지만 팀편성 전 → 안내만 띄우고 출석 체크는 막음 */
-                    <div className="text-center" style={{paddingTop:'80px',color:'#475569'}}>
-                        <p style={{fontSize:'3rem',marginBottom:'16px'}}>👥</p>
-                        <p style={{fontWeight:900,fontSize:'1.1rem',color:'#64748b'}}>팀편성 후 이용할 수 있습니다</p>
-                        <p style={{fontSize:'0.875rem',color:'#94a3b8',marginTop:'8px'}}>팀을 먼저 편성한 뒤 키오스크 출석을 진행하세요</p>
-                    </div>
+                    meetingSettings?.enableTeams === false ? (
+                        /* 팀 미편성 매칭 → 참여자 평면 그리드로 바로 체크인 */
+                        <div className="grid grid-cols-3 gap-2.5">
+                            {attendActiveList.map((p, idx) => (
+                                <button key={p.id}
+                                    onClick={() => p.checkedIn
+                                        ? setAttendModal({type:'checkin', data:{...p, jerseyNumber:idx+1}})
+                                        : setConfirmTarget({...p, jerseyNumber:idx+1})
+                                    }
+                                    style={{minHeight:'100px'}}
+                                    className={`relative overflow-hidden rounded-2xl active:scale-95 transition-all text-white bg-teal-500 ${p.checkedIn?'opacity-40':''}`}>
+                                    {p.checkedIn && (
+                                        <div className="absolute inset-0 flex items-center justify-center" style={{background:'rgba(0,0,0,0.2)'}}>
+                                            <div style={{width:'40px',height:'40px',borderRadius:'50%',background:'rgba(255,255,255,0.3)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                                                <Icon.Check size={20} className="text-white"/>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div style={{position:'absolute',top:'8px',left:'10px',fontSize:'1.9rem',fontWeight:900,lineHeight:1,opacity:0.9,pointerEvents:'none',userSelect:'none'}}>
+                                        {idx+1}
+                                    </div>
+                                    <div style={{position:'absolute',bottom:'10px',left:0,right:0,display:'flex',flexDirection:'column',alignItems:'center',gap:'3px',pointerEvents:'none',userSelect:'none'}}>
+                                        <span style={{fontWeight:900,fontSize:'1rem',textAlign:'center',wordBreak:'keep-all',lineHeight:1.2,paddingLeft:'4px',paddingRight:'4px'}}>{p.name}</span>
+                                        <div style={{display:'flex',gap:'3px'}}>
+                                            {p.gender==='여성'&&<span style={{fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'#ec4899',color:'white'}}>W</span>}
+                                            {p.isGuest&&<span style={{fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'rgba(0,0,0,0.3)',color:'white'}}>G</span>}
+                                        </div>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        /* 인원은 선정됐지만 팀편성 전 → 안내만 띄우고 출석 체크는 막음 */
+                        <div className="text-center" style={{paddingTop:'80px',color:'#475569'}}>
+                            <p style={{fontSize:'3rem',marginBottom:'16px'}}>👥</p>
+                            <p style={{fontWeight:900,fontSize:'1.1rem',color:'#64748b'}}>팀편성 후 이용할 수 있습니다</p>
+                            <p style={{fontSize:'0.875rem',color:'#94a3b8',marginTop:'8px'}}>팀을 먼저 편성한 뒤 키오스크 출석을 진행하세요</p>
+                        </div>
+                    )
                 ) : (
                     <div className="text-center" style={{paddingTop:'80px',color:'#475569'}}>
                         <p style={{fontSize:'3rem',marginBottom:'16px'}}>📋</p>

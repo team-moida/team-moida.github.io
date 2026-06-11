@@ -343,7 +343,7 @@ const computeMeetingDay = (date, start) => {
 };
 const NextMeetingCard = ({
     meeting, kind, isActive, dayInfo, darkMode, isAdminMode, onTabChange,
-    mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay,
+    mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount,
     isMeetingOver, isMeetingEndSaved, onEndMeeting,
 }) => {
     const cfg = MEETING_KIND[kind] || MEETING_KIND.self;
@@ -398,8 +398,12 @@ const NextMeetingCard = ({
                             <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">모임 당일에 출석 체크가 열립니다</span>
                         </div>
                     )}
-                    {/* 팀 상태 — 팀편성 공개 시점이 되면 내 팀 표시 */}
-                    {teamReady && myTeamInfo ? (
+                    {/* 팀 상태 — 팀편성 OFF면 참여 명단, 아니면 공개 시점에 내 팀 표시 */}
+                    {meeting.enableTeams === false ? (
+                        <div className="flex items-center gap-1.5 text-sm font-black text-slate-700 min-w-0">
+                            <Icon.Users size={16} className="flex-shrink-0 text-teal-500"/><span className="truncate">참여 명단 {participantCount || 0}명</span>
+                        </div>
+                    ) : teamReady && myTeamInfo ? (
                         <div className="flex items-center justify-between gap-2">
                             <span className="flex items-center gap-1.5 text-sm font-black text-slate-700 min-w-0">
                                 <span className={`w-5 h-5 rounded-md flex items-center justify-center text-white text-[11px] font-black flex-shrink-0 ${getTeamBadge(myTeamIdx)}`}>{myTeamInfo.jerseyNumber}</span>
@@ -433,7 +437,7 @@ const NextMeetingCard = ({
 const TabHome = ({
     notifPermission, registerFcmToken, onTabChange,
     meetingDayInfo, teamReady, allowFromDisplay,
-    myTeamInfo, myTeamIdx, memberData, meetings,
+    myTeamInfo, myTeamIdx, memberData, meetings, participantCount,
     mySession, meetingSettings, darkMode,
     memberName, announcements, onOpenAnnouncements,
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
@@ -467,7 +471,7 @@ const TabHome = ({
             <NextMeetingCard key={c.kind} meeting={c.meeting} kind={c.kind} isActive={c.isActive}
                 dayInfo={c.dayInfo} darkMode={darkMode} isAdminMode={isAdminMode} onTabChange={onTabChange}
                 mySession={mySession} teamReady={teamReady} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
-                allowFromDisplay={allowFromDisplay}
+                allowFromDisplay={allowFromDisplay} participantCount={participantCount}
                 isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting} />
         )) : (
             <button onClick={()=>onTabChange('attend')} className="w-full card rounded-3xl p-5 text-center active:scale-98 transition-all">

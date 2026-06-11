@@ -184,6 +184,24 @@ function App() {
         return () => unsub();
     }, [memberData?.memberId, meetingSettings?.date]);
 
+    // 참여 명단(팀 미편성 매칭) — 회원도 자동으로 볼 수 있게 활성 모임 날짜로 직접 로드.
+    // enableTeams가 명시적으로 false인 매칭일 때만 구독(평상시 불필요한 리스너 방지).
+    const [meetingParticipants, setMeetingParticipants] = useState([]);
+    useEffect(() => {
+        const date = meetingSettings?.date;
+        if (!date || meetingSettings?.enableTeams !== false) { setMeetingParticipants([]); return; }
+        const lim = parseInt(meetingSettings?.maxLimit || 18);
+        const unsub = getCol('weekly_session')
+            .where('date', '==', date)
+            .onSnapshot(snap => {
+                const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                    .filter(p => p.status !== '노쇼')
+                    .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0) || (a.name || '').localeCompare(b.name || ''));
+                setMeetingParticipants(list.slice(0, lim));
+            }, () => setMeetingParticipants([]));
+        return () => unsub();
+    }, [meetingSettings?.date, meetingSettings?.enableTeams, meetingSettings?.maxLimit]);
+
     useEffect(() => {
         if (!memberData?.memberId) return;
         const unsub = getCol('members').doc(memberData.memberId).onSnapshot(doc => {
@@ -461,6 +479,7 @@ function App() {
                     <TabHome
                         notifPermission={notifPermission} registerFcmToken={registerFcmToken}
                         onTabChange={navTab} meetingDayInfo={meetingDayInfo} teamReady={teamReady} meetings={meetings}
+                        participantCount={meetingParticipants.length}
                         allowFromDisplay={allowFromDisplay} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                         memberData={memberData} mySession={mySession} meetingSettings={meetingSettings}
                         darkMode={darkMode} memberName={memberName} announcements={announcements}
@@ -505,6 +524,7 @@ function App() {
                         isCapturing={team.isCapturing} teamDraftData={team.teamDraftData}
                         teamReady={teamReady} allowFromDisplay={allowFromDisplay}
                         myTeamIdx={myTeamIdx} memberData={memberData} allMembers={roster.allMembers}
+                        teamsDisabled={meetingSettings?.enableTeams === false} participants={meetingParticipants}
                         tmMeetingDate={team.tmMeetingDate} tmActiveList={team.tmActiveList}
                         tmEntryList={team.tmEntryList} tmLevelStats={team.tmLevelStats} tmUnassigned={team.tmUnassigned}
                         generateTeams={generateTeams} tmCapture={tmCapture} tmSaveDraft={tmSaveDraft}
