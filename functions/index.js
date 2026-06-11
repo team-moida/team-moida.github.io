@@ -140,12 +140,16 @@ exports.onRegistrationDeleted = onDocumentDeleted(
     const db = admin.firestore();
     const FV = admin.firestore.FieldValue;
     const deletedData = event.data.data();
-    const { status, meetingDate, waitingNumber: cancelledWaitingNumber } = deletedData;
+    const { status, meetingDate, meetingId, waitingNumber: cancelledWaitingNumber } = deletedData;
 
     if (!meetingDate) return;
 
-    const meetingRef = db.doc(`${DB_PATH}/meetings/${meetingDate}`);
-    const mirrorRef = db.doc(`${DB_PATH}/settings/meeting_schedule_v2`);
+    const _mid = meetingId || meetingDate; // meetingId 없는 구 문서 대비 fallback
+    const _mType = (deletedData.meetingType || "self") === "match" ? "match" : "self";
+    const _mirrorKey = _mType === "match" ? "meeting_schedule_match" : "meeting_schedule_v2";
+
+    const meetingRef = db.doc(`${DB_PATH}/meetings/${_mid}`);
+    const mirrorRef = db.doc(`${DB_PATH}/settings/${_mirrorKey}`);
     const registrationsRef = db.collection(`${DB_PATH}/registrations`);
 
     if (status === "confirmed") {
@@ -188,13 +192,14 @@ exports.onRegistrationDeleted = onDocumentDeleted(
 
             tx.update(promoteDoc.ref, { status: "confirmed", waitingNumber: null });
             tx.set(
-              db.doc(`${DB_PATH}/weekly_session/${meetingDate}_${promoteData.memberId}`),
+              db.doc(`${DB_PATH}/weekly_session/${_mid}_${promoteData.memberId}`),
               {
                 memberId: promoteData.memberId,
                 name: promoteData.name || "",
                 gender: promoteData.gender || "",
                 level: promoteData.level || "",
                 date: meetingDate,
+                meetingId: _mid,
                 checkedIn: false,
                 checkInTime: null,
                 status: "active",
@@ -250,13 +255,14 @@ exports.onRegistrationDeleted = onDocumentDeleted(
           tx.update(waitingDoc.ref, { status: "confirmed", waitingNumber: null });
 
           tx.set(
-            db.doc(`${DB_PATH}/weekly_session/${meetingDate}_${waitingData.memberId}`),
+            db.doc(`${DB_PATH}/weekly_session/${_mid}_${waitingData.memberId}`),
             {
               memberId: waitingData.memberId,
               name: waitingData.name || "",
               gender: waitingData.gender || "",
               level: waitingData.level || "",
               date: meetingDate,
+              meetingId: _mid,
               checkedIn: false,
               checkInTime: null,
               status: "active",
@@ -366,10 +372,7 @@ exports.generateRecurringMeeting = onSchedule(
     const targetDate = `${target.getFullYear()}-${pad(target.getMonth() + 1)}-${pad(target.getDate())}`;
     const todayStr = `${kst.getFullYear()}-${pad(kst.getMonth() + 1)}-${pad(kst.getDate())}`;
 
-    const meetingRef = db.doc(`${DB_PATH}/meetings/${targetDate}`);
-    if ((await meetingRef.get()).exists) return; // 이미 생성됨 → 중복 방지
-
-    // 날짜별 미리 지정값 (있으면 우선)
+    // 날짜별 미리 지정값 (있으면 우선) — meetingId 결정 전에 필요
     const ovrSnap = await db.doc(`${DB_PATH}/recurring_overrides/${targetDate}`).get();
     const ovr = ovrSnap.exists ? ovrSnap.data() : null;
     const hasOverride = !!ovr;
@@ -377,6 +380,10 @@ exports.generateRecurringMeeting = onSchedule(
       (ovr && ovr[k] !== undefined && ovr[k] !== null && ovr[k] !== "") ? ovr[k] : dflt;
 
     const meetingType = (pick("meetingType", cfg.defaultMeetingType || "self") === "match") ? "match" : "self";
+    const meetingId = meetingType === "match" ? `${targetDate}__match` : targetDate;
+
+    const meetingRef = db.doc(`${DB_PATH}/meetings/${meetingId}`);
+    if ((await meetingRef.get()).exists) return; // 이미 생성됨 → 중복 방지
     const maxMale = meetingType === "match" ? Number(pick("maxMale", 0)) : 0;
     const maxFemale = meetingType === "match" ? Number(pick("maxFemale", 0)) : 0;
     const maxLimit = meetingType === "match" ? (maxMale + maxFemale) : Number(pick("maxLimit", cfg.defaultMaxLimit || 18));
@@ -385,7 +392,7 @@ exports.generateRecurringMeeting = onSchedule(
     const nowLocal = `${kst.getFullYear()}-${pad(kst.getMonth() + 1)}-${pad(kst.getDate())}T${pad(kst.getHours())}:${pad(kst.getMinutes())}`;
 
     const data = {
-      date: targetDate, start, end,
+      date: targetDate, meetingId, start, end,
       location: pick("location", cfg.defaultLocation || ""),
       locationLat: pick("locationLat", cfg.defaultLat != null ? cfg.defaultLat : null),
       locationLng: pick("locationLng", cfg.defaultLng != null ? cfg.defaultLng : null),
@@ -411,15 +418,18 @@ exports.generateRecurringMeeting = onSchedule(
 
     await meetingRef.set(data);
 
-    // 새 모임이 활성(오늘 이후 가장 가까운 미종료) 모임이면 mirror 동기화
+    // 새 모임이 활성(오늘 이후 같은 종류 중 가장 가까운 미종료) 모임이면 mirror 동기화
     try {
       const allSnap = await db.collection(`${DB_PATH}/meetings`).get();
-      const active = allSnap.docs.map(d => d.data())
-        .filter(m => m.status !== "done" && String(m.date) >= todayStr)
+      const allMeetings = allSnap.docs.map(d => d.data())
+        .filter(m => m.status !== "done" && String(m.date) >= todayStr);
+      const isSameType = (m) => (m.meetingType || "self") === meetingType;
+      const nearestSameType = allMeetings.filter(isSameType)
         .sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
-      if (active && active.date === targetDate) {
-        await db.doc(`${DB_PATH}/settings/meeting_schedule_v2`).set({
-          date: data.date, start: data.start, end: data.end,
+      if (nearestSameType && nearestSameType.date === targetDate) {
+        const mirrorKey = meetingType === "match" ? "meeting_schedule_match" : "meeting_schedule_v2";
+        const mirrorData = {
+          date: data.date, meetingId: data.meetingId, start: data.start, end: data.end,
           location: data.location, locationLat: data.locationLat, locationLng: data.locationLng,
           locationRadius: data.locationRadius, enableQR: data.enableQR,
           meetingType: data.meetingType, opponentName: data.opponentName,
@@ -431,7 +441,8 @@ exports.generateRecurringMeeting = onSchedule(
           isFirstComeFirstServed: data.isFirstComeFirstServed,
           registrationOpenAt: data.registrationOpenAt, registrationCloseAt: data.registrationCloseAt,
           confirmedCount: 0, waitingCount: 0,
-        });
+        };
+        await db.doc(`${DB_PATH}/settings/${mirrorKey}`).set(mirrorData);
       }
     } catch (e) { console.error("mirror 동기화 실패:", e); }
 
@@ -446,6 +457,6 @@ exports.generateRecurringMeeting = onSchedule(
       } catch (e) { console.error("정기 모임 공지 실패:", e); }
     }
 
-    console.log(`[정기모임] 생성: ${targetDate} (override=${hasOverride})`);
+    console.log(`[정기모임] 생성: ${meetingId} (type=${meetingType}, override=${hasOverride})`);
   }
 );
