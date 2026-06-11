@@ -1,9 +1,9 @@
 // ── 모임 목록 탭 ──────────────────────────────────────────────────────────────
-function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers = [], showAlert, onSelectMeeting = null }) {
+function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers = [], showAlert, onSelectMeeting = null, pendingEditMeeting = null, onPendingEditHandled = null }) {
     const { useState } = React;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null });
+    const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false });
     const [isSaving, setIsSaving] = useState(false);
     const [isLocPickerOpen, setIsLocPickerOpen] = useState(false);
 
@@ -11,7 +11,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
 
     const openAdd = () => {
         setEditingId(null);
-        setForm({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null });
+        setForm({ date:'', start:'08:00', end:'10:00', location:'', maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false });
         setIsModalOpen(true);
     };
 
@@ -35,6 +35,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
             regCloseDate: closeDT.date, regCloseHour: closeDT.hour, regCloseMinute: closeDT.minute,
             sendPush: false,
             locationLat: m.locationLat || null, locationLng: m.locationLng || null,
+            locationRadius: m.locationRadius || 100, enableQR: m.enableQR || false,
         });
         setIsModalOpen(true);
     };
@@ -51,6 +52,14 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
         await handleSaveMeeting(combinedForm, editingId, () => setIsModalOpen(false));
         setIsSaving(false);
     };
+
+    // 외부(모임 정보 보기 화면의 [수정] 버튼)에서 수정 폼 열기 요청
+    React.useEffect(() => {
+        if (pendingEditMeeting) {
+            openEdit(pendingEditMeeting);
+            onPendingEditHandled && onPendingEditHandled();
+        }
+    }, [pendingEditMeeting]);
 
     return (
         <div className="animate-in space-y-4">
@@ -85,7 +94,6 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                         {m.isRegistrationEnabled && <span className="text-[9px] font-black px-1.5 py-0.5 bg-orange-100 text-orange-500 rounded-lg mt-0.5 inline-block">선착순</span>}
                                         {m.location ? <p className="text-xs text-slate-400 mt-0.5 truncate"><Icon.MapPin size={10} className="inline mr-0.5"/>{m.location}</p> : null}
                                         {m.managerName ? <p className="text-xs text-slate-400 mt-0.5">담당: {m.managerName}</p> : null}
-                                        {onSelectMeeting && <p className="text-[9px] text-teal-400 font-black mt-1">탭하여 선정 관리 →</p>}
                                     </button>
                                     <div className="flex gap-1.5 flex-shrink-0">
                                         <button onClick={() => openEdit(m)} className="p-2 rounded-xl bg-blue-50 text-blue-500 active:scale-95 transition-all">
@@ -149,6 +157,27 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                 {form.locationLat != null && (
                                     <p className="text-[11px] text-teal-500 font-black mt-1">📍 GPS 지정됨 ({form.locationLat.toFixed(4)}, {form.locationLng.toFixed(4)})</p>
                                 )}
+                            </div>
+                            <div>
+                                <label className="text-xs font-black text-slate-500 mb-1 block">GPS 인정 반경</label>
+                                <div className="flex gap-1.5">
+                                    {[30,50,100,150,200].map(r => (
+                                        <button key={r} type="button" onClick={() => setForm(f => ({...f, locationRadius:r}))}
+                                            className={`flex-1 min-w-0 py-2 rounded-xl text-xs font-black border transition-all active:scale-95 ${(form.locationRadius||100)===r ? 'bg-teal-500 text-white border-teal-500' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
+                                            {r}m
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="min-w-0 pr-2">
+                                    <label className="text-xs font-black text-slate-500">출석 방식 · QR 허용</label>
+                                    <p className="text-[11px] text-slate-400 mt-0.5">GPS가 기본, QR을 추가로 허용</p>
+                                </div>
+                                <button type="button" onClick={() => setForm(f => ({...f, enableQR: !f.enableQR}))}
+                                    className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${form.enableQR ? 'bg-violet-500' : 'bg-slate-200'}`}>
+                                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${form.enableQR ? 'left-6' : 'left-0.5'}`}/>
+                                </button>
                             </div>
                             <div>
                                 <label className="text-xs font-black text-slate-500 mb-1 block">최대 인원</label>
