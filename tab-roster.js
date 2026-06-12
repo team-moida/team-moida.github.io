@@ -10,7 +10,7 @@ const TabRoster = ({
     filterCounts, filterCategory, setFilterCategory,
     filteredMembers,
     monthlyStatuses, monthlyReasons,
-    monthlyPaymentDates,
+    monthlyPaymentDates, duesReports = {},
     handleBillingMemberClick,
 }) => (
     <div className="animate-in">
@@ -96,6 +96,12 @@ const TabRoster = ({
         {/* ── 회비 서브탭 ── */}
         {rosterSubTab === 'monthly' && (
             <div>
+                {(() => { const n = Object.values(duesReports||{}).filter(r=>r&&r.status==='pending').length; return n>0 ? (
+                    <div className="mb-3 rounded-2xl px-4 py-3 bg-amber-50 border border-amber-200 flex items-center gap-2">
+                        <span className="text-lg shrink-0">🔔</span>
+                        <p className="text-sm font-black text-amber-700 min-w-0">회비 납부 신고 {n}건 · 확인하고 처리해 주세요</p>
+                    </div>
+                ) : null; })()}
                 <div className="flex items-center justify-between mb-4 card rounded-3xl p-4">
                     <button onClick={()=>moveMonth(-1)} className="p-2 rounded-xl bg-slate-100 text-slate-600"><Icon.ChevronLeft size={18}/></button>
                     <p className="font-black text-lg text-slate-800">{targetMonth.replace('-','년 ')}월</p>
@@ -135,6 +141,7 @@ const TabRoster = ({
                                               </>
                                             : <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg ${cfg.color}`}>{cfg.label}</span>
                                         }
+                                        {duesReports[m.id]?.status==='pending' && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-lg bg-amber-100 text-amber-700">📩 {DUES_LABELS[duesReports[m.id].payType]||'신고'} {wonFmt(duesReports[m.id].amount)}</span>}
                                     </div>
                                     {info?.active&&<p className="text-[10px] text-slate-400 mt-0.5">만료: {info.endDateFormatted} · 잔여휴식 {info.remainingRest}회</p>}
                                     {payDate&&<p className="text-[10px] text-slate-400 mt-0.5">납부일: {payDate}</p>}

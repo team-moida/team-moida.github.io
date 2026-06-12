@@ -11,6 +11,7 @@ function useRoster({ isAdminMode }) {
     const [monthlyStatuses, setMonthlyStatuses] = useState({});
     const [monthlyReasons, setMonthlyReasons] = useState({});
     const [monthlyPaymentDates, setMonthlyPaymentDates] = useState({});
+    const [duesReports, setDuesReports] = useState({});
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [newMemberForm, setNewMemberForm] = useState({name:'',birth:'',gender:'남성',position:'all',level:'4',role:'회원',coupleId:'',joinDate:'',address:'',phone:''});
     const [editingMember, setEditingMember] = useState(null);
@@ -50,6 +51,17 @@ function useRoster({ isAdminMode }) {
         return () => unsub();
     }, [isAdminMode, targetMonth]);
 
+    // 회원 납부 신고(대기/확정) — 이번 달 기준
+    useEffect(() => {
+        if (!isAdminMode || !targetMonth) return;
+        const unsub = getCol('dues_reports').where('month', '==', targetMonth).onSnapshot(snap => {
+            const map = {};
+            snap.forEach(d => { const r = d.data(); if (r && r.memberId) map[r.memberId] = r; });
+            setDuesReports(map);
+        });
+        return () => unsub();
+    }, [isAdminMode, targetMonth]);
+
     const activeMembers = useMemo(() => allMembers.filter(m => !m.isResigned), [allMembers]);
     const resignedMembers = useMemo(() => allMembers.filter(m => m.isResigned), [allMembers]);
     const filteredMembers = useMemo(() => {
@@ -73,7 +85,7 @@ function useRoster({ isAdminMode }) {
         rosterSubTab, setRosterSubTab,
         targetMonth, setTargetMonth,
         filterCategory, setFilterCategory,
-        monthlyStatuses, monthlyReasons, monthlyPaymentDates,
+        monthlyStatuses, monthlyReasons, monthlyPaymentDates, duesReports,
         isAddModalOpen, setIsAddModalOpen,
         newMemberForm, setNewMemberForm,
         editingMember, setEditingMember,

@@ -139,6 +139,10 @@ function makeRosterHandlers(ctx) {
                 batch.set(monthRef, {paymentDates: {[mid]: paymentDateInput}, updatedAt: new Date().toISOString()}, {merge: true});
             }
             await batch.commit();
+            // 회원이 올린 납부 신고가 있으면 '확정'으로 마감 (없으면 무시)
+            if (['monthly_paid','start_half','start_full','rest'].includes(actionType)) {
+                try { await getCol('dues_reports').doc(`${targetMonth}_${mid}`).update({ status:'confirmed', confirmedAt:new Date().toISOString() }); } catch(_) {}
+            }
             setBillingMember(null);
             showAlert('성공', '상태가 반영되었습니다.');
         } catch(e) { console.error(e); showAlert('오류', '처리 실패'); }
