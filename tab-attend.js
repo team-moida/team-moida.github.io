@@ -299,7 +299,7 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
     };
 
     // 불참/노쇼 시간 구간 (신청마감 후 + 참가확정 상태일 때만 계산)
-    const absentType = (isAfterClose && myRegistration?.status === 'confirmed') ? getAbsentType(meetingSettings.date, meetingSettings.end) : null;
+    const absentType = (isAfterClose && myRegistration?.status === 'confirmed' && typeof getAbsentType === 'function') ? getAbsentType(meetingSettings.date, meetingSettings.end) : null;
     const absentFine = absentType === 'noshow_1' ? 10000 : absentType === 'noshow_2' ? 20000 : 0;
     const absentBtnCls = absentFine === 20000 ? 'bg-red-500 text-white' : absentFine === 10000 ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-600';
     const absentBtnLabel = absentFine > 0 ? `불참 신청 (노쇼 · ${absentFine / 10000}만원 벌금)` : '불참 신청 (벌금 없음)';
