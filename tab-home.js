@@ -445,7 +445,7 @@ const normUrl = (u) => { const s = (u||'').trim(); return s ? (/^https?:\/\//i.t
 const DUES_FEE_DEFAULTS = { monthlyFee:30000, restFee:10000, halfYearFee:150000, fullYearFee:300000 };
 const DUES_LABELS = { monthly:'월납', rest:'휴식', half_year:'반년납', full_year:'1년납' };
 const wonFmt = (n) => (Number(n)||0).toLocaleString('ko-KR');
-const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
+const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', onGoDues }) => {
     const { useState, useEffect } = React;
     const [acc, setAcc] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
@@ -620,6 +620,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
 
     // ── 계좌 미등록 ── (회원에겐 숨김, 관리자에겐 등록 안내)
     if (!acc || (!acc.accountNo && !acc.tossUrl && !acc.kakaoUrl && !acc.kakaoMonthly && !acc.kakaoRest && !acc.kakaoHalf && !acc.kakaoFull)) {
+        if (mode === 'banner') return null;
         if (!isAdminMode) return null;
         return (
             <button onClick={openEdit} className="w-full card rounded-3xl p-4 text-left border-emerald-100 active:scale-98 transition-all">
@@ -675,6 +676,34 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
     try { dismissedToday = localStorage.getItem(popupKey) === todayKey; } catch(_) {}
     const showPopup = showPayPrompt && inPopupWindow && !popupOff && !dismissedToday;
     const dismissPopup = () => { try { localStorage.setItem(popupKey, todayKey); } catch(_) {} setPopupOff(true); };
+
+    // ── 홈(배너 모드): 납부 시기일 때만 슬림 배너 + 팝업. 평소엔 숨겨 홈을 깔끔하게. ──
+    if (mode === 'banner') {
+        if (!showPayPrompt) return null;
+        const isRenew = ms && ms.active && ms.remaining <= 1;
+        return (
+            <>
+            <button onClick={onGoDues} className="w-full rounded-2xl px-4 py-3 text-left text-white active:scale-98 transition-all flex items-center gap-3" style={{ background:'linear-gradient(135deg,#10b981,#059669)', boxShadow:'0 8px 22px -8px rgba(5,150,105,0.5)' }}>
+                <span className="text-2xl leading-none flex-shrink-0">💳</span>
+                <div className="flex-1 min-w-0">
+                    <p className="font-black text-sm leading-tight truncate">{isRenew ? `${ms.type}납 갱신 시기예요` : `${targetMonLabel} 회비 납부 시기예요`}</p>
+                    <p className="text-[11px] text-white/80 mt-0.5 truncate">눌러서 회비 탭에서 납부하기</p>
+                </div>
+                <span className="text-xs font-black bg-white/25 px-3 py-1.5 rounded-xl flex-shrink-0">납부하기</span>
+            </button>
+            {showPopup && (
+                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6" onClick={dismissPopup}>
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-xs text-center shadow-2xl" onClick={e=>e.stopPropagation()}>
+                        <div className="text-4xl mb-2">💳</div>
+                        <p className="font-black text-lg text-slate-800">{targetMonLabel} 회비 납부</p>
+                        <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">곧 {targetMonLabel}이 시작돼요.<br/>잊지 말고 회비를 납부해 주세요!</p>
+                        <button onClick={()=>{ dismissPopup(); onGoDues && onGoDues(); }} className="mt-4 w-full py-3 rounded-2xl bg-emerald-500 text-white font-black text-sm active:scale-95 transition-all">납부하러 가기</button>
+                    </div>
+                </div>
+            )}
+            </>
+        );
+    }
 
     // 카카오페이 송금 링크: 회원이 회비 유형을 고르는 중이면 그 유형의 '금액 고정 링크'를,
     // 없거나 그 외 상황이면 공통 링크를 사용. (면제(0원)일 땐 유형별 링크 대신 공통 사용)
@@ -734,16 +763,6 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
                 )}
             </div>
         </div>
-        {showPopup && (
-            <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6" onClick={dismissPopup}>
-                <div className="bg-white rounded-3xl p-6 w-full max-w-xs text-center shadow-2xl" onClick={e=>e.stopPropagation()}>
-                    <div className="text-4xl mb-2">💳</div>
-                    <p className="font-black text-lg text-slate-800">{targetMonLabel} 회비 납부</p>
-                    <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">곧 {targetMonLabel}이 시작돼요.<br/>잊지 말고 회비를 납부해 주세요!</p>
-                    <button onClick={dismissPopup} className="mt-4 w-full py-3 rounded-2xl bg-emerald-500 text-white font-black text-sm active:scale-95 transition-all">확인</button>
-                </div>
-            </div>
-        )}
         {confirmType && (!report || report.status !== 'confirmed') && (
             <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6" onClick={()=>setConfirmType(null)}>
                 <div className="bg-white rounded-3xl p-6 w-full max-w-xs text-center shadow-2xl" onClick={e=>e.stopPropagation()}>
@@ -840,6 +859,9 @@ const TabHome = ({
         {/* 회비 납부 신고 (관리자 전용 · 대기 신고가 있을 때만 — 홈에서 한눈에 확정/삭제) */}
         {isAdminMode && <DuesReportsHomeCard duesReports={duesReports} onConfirm={onConfirmDuesReport} onReject={onRejectDuesReport} onGoDuesTab={onGoDuesTab} />}
 
+        {/* 회비 납부 시기 배너 (납부 시기일 때만 표시 · 누르면 회비 탭으로 이동) */}
+        <DuesAccountCard mode="banner" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} onGoDues={() => onTabChange('dues')} />
+
         {/* 다음 모임 — 정기/매칭 종류별로 분리해 색상으로 구분 (탭하면 모임 탭으로 이동) */}
         {meetingCards.length > 0 ? meetingCards.map(c => (
             <NextMeetingCard key={c.kind} meeting={c.meeting} kind={c.kind} isActive={c.isActive}
@@ -857,8 +879,6 @@ const TabHome = ({
             </button>
         )}
 
-        {/* 회비 납부 (모임 계좌 + 송금 바로가기) */}
-        <DuesAccountCard isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} />
 
         {/* iOS PWA 설치 안내 */}
         {/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone && (

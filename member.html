@@ -767,6 +767,12 @@ function App() {
                         handleCancel={handleCancel}
                     />
                 )}
+                {tab === 'dues' && (
+                    <div className="animate-in space-y-3">
+                        <h2 className="font-black text-lg text-slate-800 px-1">회비 납부</h2>
+                        <DuesAccountCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} />
+                    </div>
+                )}
                 {tab === 'rules' && (
                     <TabRules isAdminMode={isAdminMode} showAlert={showAlert} memberName={memberName}/>
                 )}
@@ -796,6 +802,7 @@ function App() {
                     {[
                         {key:'home',    label:'홈',   icon:<Icon.Home size={20}/>},
                         {key:'meeting', label:'모임', icon:<Icon.Calendar size={20}/>},
+                        {key:'dues',    label:'회비', icon:<span className="text-lg leading-none">💳</span>},
                         {key:'rules',   label:'회칙', icon:<Icon.ShieldCheck size={20}/>},
                         ...(isAdminMode ? [{key:'roster', label:'명단', icon:<Icon.List size={20}/>}] : []),
                     ].map(({key,label,icon})=>(
