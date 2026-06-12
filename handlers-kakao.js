@@ -4,11 +4,11 @@ const SVG_MOON = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" st
 function toggleTheme() {
     const isDark = document.documentElement.classList.toggle('dark');
     localStorage.setItem('moida_theme', isDark ? 'dark' : 'light');
-    document.getElementById('theme-toggle').innerHTML = isDark ? SVG_SUN : SVG_MOON;
+    { const _tt = document.getElementById('theme-toggle'); if (_tt) _tt.innerHTML = isDark ? SVG_SUN : SVG_MOON; }
 }
 (function() {
     const isDark = document.documentElement.classList.contains('dark');
-    document.getElementById('theme-toggle').innerHTML = isDark ? SVG_SUN : SVG_MOON;
+    { const _tt = document.getElementById('theme-toggle'); if (_tt) _tt.innerHTML = isDark ? SVG_SUN : SVG_MOON; }
 })();
 
 const KAKAO_JS_KEY = 'ce0f70554512198de18a346beb970a91';
