@@ -449,7 +449,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
     const { useState, useEffect } = React;
     const [acc, setAcc] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [form, setForm] = useState({ bank:'', accountNo:'', holder:'', tossUrl:'', kakaoUrl:'', amountHint:'', monthlyFee:'', restFee:'', halfYearFee:'', fullYearFee:'', blockUnpaid:false });
+    const [form, setForm] = useState({ bank:'', accountNo:'', holder:'', tossUrl:'', kakaoUrl:'', kakaoMonthly:'', kakaoRest:'', kakaoHalf:'', kakaoFull:'', amountHint:'', monthlyFee:'', restFee:'', halfYearFee:'', fullYearFee:'', blockUnpaid:false });
     const [isSaving, setIsSaving] = useState(false);
     const [copied, setCopied] = useState('');
     const [sel, setSel] = useState('monthly');
@@ -494,17 +494,20 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
     const depositName = `${memberName || ''} ${DUES_LABELS[sel] || ''}`.trim();
 
     const openEdit = () => {
-        setForm({ bank:acc?.bank||'', accountNo:acc?.accountNo||'', holder:acc?.holder||'', tossUrl:acc?.tossUrl||'', kakaoUrl:acc?.kakaoUrl||'', amountHint:acc?.amountHint||'',
+        setForm({ bank:acc?.bank||'', accountNo:acc?.accountNo||'', holder:acc?.holder||'', tossUrl:acc?.tossUrl||'', kakaoUrl:acc?.kakaoUrl||'',
+            kakaoMonthly:acc?.kakaoMonthly||'', kakaoRest:acc?.kakaoRest||'', kakaoHalf:acc?.kakaoHalf||'', kakaoFull:acc?.kakaoFull||'', amountHint:acc?.amountHint||'',
             monthlyFee:acc?.monthlyFee||'', restFee:acc?.restFee||'', halfYearFee:acc?.halfYearFee||'', fullYearFee:acc?.fullYearFee||'', blockUnpaid:!!acc?.blockUnpaid });
         setIsEditing(true);
     };
     const handleSave = async () => {
-        if (!form.accountNo.trim() && !form.tossUrl.trim() && !form.kakaoUrl.trim()) return;
+        if (!form.accountNo.trim() && !form.tossUrl.trim() && !form.kakaoUrl.trim() && !form.kakaoMonthly.trim() && !form.kakaoRest.trim() && !form.kakaoHalf.trim() && !form.kakaoFull.trim()) return;
         setIsSaving(true);
         try {
             await getCol('settings').doc('club_account').set({
                 bank:form.bank.trim(), accountNo:form.accountNo.trim(), holder:form.holder.trim(),
-                tossUrl:normUrl(form.tossUrl), kakaoUrl:normUrl(form.kakaoUrl), amountHint:form.amountHint.trim(),
+                tossUrl:normUrl(form.tossUrl), kakaoUrl:normUrl(form.kakaoUrl),
+                kakaoMonthly:normUrl(form.kakaoMonthly), kakaoRest:normUrl(form.kakaoRest), kakaoHalf:normUrl(form.kakaoHalf), kakaoFull:normUrl(form.kakaoFull),
+                amountHint:form.amountHint.trim(),
                 monthlyFee:Number(form.monthlyFee)||0, restFee:Number(form.restFee)||0,
                 halfYearFee:Number(form.halfYearFee)||0, fullYearFee:Number(form.fullYearFee)||0,
                 blockUnpaid:!!form.blockUnpaid,
@@ -567,9 +570,16 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
                     {field('1년납','fullYearFee','300000', true, true)}
                 </div>
                 {field('토스 송금 링크','tossUrl','예) toss.me/otpfc', true)}
-                {field('카카오페이 송금 링크','kakaoUrl','예) qr.kakaopay.com/...', true)}
+                {field('카카오페이 송금 링크 (공통)','kakaoUrl','예) qr.kakaopay.com/...', true)}
+                <p className="text-[11px] font-black text-slate-500 mb-1 mt-1">카카오페이 유형별 링크 (금액 고정 · 선택)</p>
+                <div className="grid grid-cols-2 gap-x-2">
+                    {field('월납 링크','kakaoMonthly','금액 고정 링크', true)}
+                    {field('휴식 링크','kakaoRest','금액 고정 링크', true)}
+                    {field('반년납 링크','kakaoHalf','금액 고정 링크', true)}
+                    {field('1년납 링크','kakaoFull','금액 고정 링크', true)}
+                </div>
                 {field('추가 안내','amountHint','예) 신입 첫 달 반값', true)}
-                <p className="text-[11px] text-slate-400 leading-relaxed mb-3">금액을 비우면 기본값(월납 3만·휴식 1만·반년 15만·1년 30만)으로 안내됩니다. 토스·카카오 링크를 넣으면 회원이 누를 때 송금 화면이 바로 열려요.</p>
+                <p className="text-[11px] text-slate-400 leading-relaxed mb-3">금액을 비우면 기본값(월납 3만·휴식 1만·반년 15만·1년 30만)으로 안내됩니다. 카카오페이에서 <b>금액을 정해 만든 링크</b>를 유형별 칸에 넣으면, 회원이 그 유형을 고르고 누를 때 <b>금액이 이미 적힌 송금화면</b>이 열려요. 비운 유형은 공통 링크로 열립니다.</p>
                 <label className="flex items-center justify-between gap-3 mb-3 bg-slate-50 rounded-xl px-3 py-2.5">
                     <span className="min-w-0">
                         <span className="block text-[13px] font-black text-slate-700">미납자 모임 신청 차단</span>
@@ -586,7 +596,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
     }
 
     // ── 계좌 미등록 ── (회원에겐 숨김, 관리자에겐 등록 안내)
-    if (!acc || (!acc.accountNo && !acc.tossUrl && !acc.kakaoUrl)) {
+    if (!acc || (!acc.accountNo && !acc.tossUrl && !acc.kakaoUrl && !acc.kakaoMonthly && !acc.kakaoRest && !acc.kakaoHalf && !acc.kakaoFull)) {
         if (!isAdminMode) return null;
         return (
             <button onClick={openEdit} className="w-full card rounded-3xl p-4 text-left border-emerald-100 active:scale-98 transition-all">
@@ -643,6 +653,11 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
     const showPopup = showPayPrompt && inPopupWindow && !popupOff && !dismissedToday;
     const dismissPopup = () => { try { localStorage.setItem(popupKey, todayKey); } catch(_) {} setPopupOff(true); };
 
+    // 카카오페이 송금 링크: 회원이 회비 유형을 고르는 중이면 그 유형의 '금액 고정 링크'를,
+    // 없거나 그 외 상황이면 공통 링크를 사용. (면제(0원)일 땐 유형별 링크 대신 공통 사용)
+    const kakaoPerType = { monthly: acc.kakaoMonthly, rest: acc.kakaoRest, half_year: acc.kakaoHalf, full_year: acc.kakaoFull };
+    const kakaoHref = (showPayPrompt && feeFor(sel) > 0 && kakaoPerType[sel]) ? kakaoPerType[sel] : (acc.kakaoUrl || '');
+
     // ── 계좌 표시 + 회비 납부 (회원·관리자 공통) ──
     return (
         <>
@@ -668,10 +683,10 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
                 </div>
             )}
             <div className="space-y-2">
-                {(acc.tossUrl || acc.kakaoUrl) && (
+                {(acc.tossUrl || kakaoHref) && (
                     <div className="flex gap-2">
                         {acc.tossUrl && <button onClick={()=>window.open(acc.tossUrl,'_blank')} className="flex-1 py-2.5 rounded-xl bg-white text-[#3182f6] font-black text-sm active:scale-95 transition-all">토스로 보내기</button>}
-                        {acc.kakaoUrl && <button onClick={()=>window.open(acc.kakaoUrl,'_blank')} className="flex-1 py-2.5 rounded-xl font-black text-sm active:scale-95 transition-all" style={{background:'#FEE500',color:'#3c1e1e'}}>카카오페이로 보내기</button>}
+                        {kakaoHref && <button onClick={()=>window.open(kakaoHref,'_blank')} className="flex-1 py-2.5 rounded-xl font-black text-sm active:scale-95 transition-all" style={{background:'#FEE500',color:'#3c1e1e'}}>카카오페이로 보내기</button>}
                     </div>
                 )}
                 {showPayPrompt && (
