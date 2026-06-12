@@ -451,7 +451,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [form, setForm] = useState({ bank:'', accountNo:'', holder:'', tossUrl:'', kakaoUrl:'', amountHint:'', monthlyFee:'', restFee:'', halfYearFee:'', fullYearFee:'', blockUnpaid:false });
     const [isSaving, setIsSaving] = useState(false);
-    const [copied, setCopied] = useState(false);
+    const [copied, setCopied] = useState('');
     const [sel, setSel] = useState('monthly');
     const [report, setReport] = useState(null);
     const [submitting, setSubmitting] = useState(false);
@@ -514,12 +514,23 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
         } catch(e) { console.warn('계좌 저장 실패:', e); }
         finally { setIsSaving(false); }
     };
-    const copyText = async (t) => {
+    const copyText = async (t, key) => {
         if (!t) return;
         try { await navigator.clipboard.writeText(t); }
         catch { try { const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } catch(_){} }
-        setCopied(true); setTimeout(()=>setCopied(false), 1600);
+        setCopied(key || 'x'); setTimeout(()=>setCopied(''), 1600);
     };
+    const infoRow = (label, value, key, withBorder) => (
+        <div className={`flex items-center justify-between gap-2 ${withBorder?'border-t border-white/15 pt-2':''}`}>
+            <div className="min-w-0">
+                <p className="text-[10px] text-white/70 font-black">{label}</p>
+                <p className="text-base font-black text-white leading-tight break-all">{value}</p>
+            </div>
+            <button onClick={()=>copyText(value, key)} className="px-2.5 py-1.5 rounded-lg bg-white/25 text-white text-xs font-black shrink-0 active:scale-95 transition-all flex items-center gap-1">
+                {copied===key ? <><Icon.Check size={13}/>복사됨</> : '복사'}
+            </button>
+        </div>
+    );
     const submitReport = async (payType) => {
         if (!memberId) return;
         setSubmitting(true);
@@ -616,16 +627,11 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
             dues = (
                 <div className="bg-white/15 rounded-2xl px-3 py-3 mb-3">
                     <p className="text-sm font-black text-white mb-2">{isRenew ? `⚠️ ${ms.type}납 곧 만료 (${ms.endDateFormatted}) · 갱신해 주세요` : `${targetMonLabel} 회비를 납부해 주세요`}</p>
-                    <div className="grid grid-cols-2 gap-1.5 mb-2">
+                    <div className="grid grid-cols-2 gap-1.5">
                         {['monthly','rest','half_year','full_year'].map(k => (
                             <button key={k} onClick={()=>setSel(k)} className={`py-2 rounded-xl font-black text-xs transition-all ${sel===k?'bg-white text-emerald-700':'bg-white/20 text-white'}`}>{DUES_LABELS[k]} · {feeFor(k)===0?'면제':wonFmt(feeFor(k))+'원'}</button>
                         ))}
                     </div>
-                    <div className="flex items-center justify-between bg-white/15 rounded-xl px-3 py-2 mb-2 gap-2">
-                        <div className="min-w-0"><p className="text-[10px] text-white/70 font-black">입금자명은 이렇게</p><p className="text-sm font-black text-white truncate">{depositName}</p></div>
-                        <button onClick={()=>copyText(depositName)} className="px-2.5 py-1.5 rounded-lg bg-white/25 text-white text-xs font-black shrink-0 active:scale-95 transition-all">복사</button>
-                    </div>
-                    <button onClick={()=>submitReport(sel)} disabled={submitting} className="w-full py-2.5 rounded-xl bg-white text-emerald-700 font-black text-sm active:scale-95 transition-all">{submitting?'처리 중...':'송금했어요 (납부 신고)'}</button>
                 </div>
             );
         }
@@ -654,23 +660,22 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
                 )}
             </div>
             {dues}
-            {acc.accountNo && (
-                <div className="mb-3">
-                    <p className="font-black text-xl tracking-wide break-all">{acc.accountNo}</p>
-                    {acc.amountHint && <p className="text-xs font-black text-white/80 mt-1">{acc.amountHint}</p>}
+            {(acc.accountNo || showPayPrompt) && (
+                <div className="bg-white/10 rounded-2xl p-3 mb-3 space-y-2">
+                    {acc.accountNo && infoRow('계좌번호', acc.accountNo, 'acc', false)}
+                    {showPayPrompt && infoRow('입금자명은 이렇게', depositName, 'name', !!acc.accountNo)}
+                    {acc.amountHint && <p className="text-[11px] font-black text-white/75 pt-0.5">{acc.amountHint}</p>}
                 </div>
             )}
             <div className="space-y-2">
-                {acc.accountNo && (
-                    <button onClick={()=>copyText(acc.accountNo)} className="w-full py-2.5 rounded-xl bg-white/20 text-white font-black text-sm active:scale-95 transition-all flex items-center justify-center gap-1.5">
-                        {copied ? <><Icon.Check size={16}/> 복사됐어요</> : '계좌번호 복사'}
-                    </button>
-                )}
                 {(acc.tossUrl || acc.kakaoUrl) && (
                     <div className="flex gap-2">
                         {acc.tossUrl && <button onClick={()=>window.open(acc.tossUrl,'_blank')} className="flex-1 py-2.5 rounded-xl bg-white text-[#3182f6] font-black text-sm active:scale-95 transition-all">토스로 보내기</button>}
                         {acc.kakaoUrl && <button onClick={()=>window.open(acc.kakaoUrl,'_blank')} className="flex-1 py-2.5 rounded-xl font-black text-sm active:scale-95 transition-all" style={{background:'#FEE500',color:'#3c1e1e'}}>카카오페이</button>}
                     </div>
+                )}
+                {showPayPrompt && (
+                    <button onClick={()=>submitReport(sel)} disabled={submitting} className="w-full py-3 rounded-xl bg-white text-emerald-700 font-black text-sm active:scale-95 transition-all">{submitting?'처리 중...':'송금했어요 (납부 신고)'}</button>
                 )}
             </div>
         </div>
