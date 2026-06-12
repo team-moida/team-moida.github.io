@@ -423,10 +423,14 @@ const TabAttend = ({
     }, [activeMembers, selMonthlyStatuses, selectedMeeting?.date]);
 
     // 선택한 모임에 선정된 회원 명단(weekly_session)
-    const selSessionList = React.useMemo(() =>
-        (tmSessionData || []).filter(p => p.date === selectedMeeting?.date)
-            .sort((a,b)=>(a.name||'').localeCompare(b.name||'')),
-    [tmSessionData, selectedMeeting?.date]);
+    const selSessionList = React.useMemo(() => {
+        const _selMid = selectedMeeting ? getMeetingId(selectedMeeting) : null;
+        return (tmSessionData || []).filter(p => {
+            if (p.date !== selectedMeeting?.date) return false;
+            if (p.meetingId) return p.meetingId === _selMid;
+            return !_selMid || !_selMid.endsWith('__match');
+        }).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+    }, [tmSessionData, selectedMeeting?.date, selectedMeeting?.meetingType]);
 
     return (
     <div className="animate-in space-y-4">
@@ -665,7 +669,7 @@ const TabAttend = ({
                                                         <button onClick={attendHandleTestSelect} className="shrink-0 px-2.5 py-1.5 bg-amber-50 text-amber-600 text-xs font-black rounded-xl flex items-center gap-1"><Icon.Beaker size={12}/> 테스트</button>
                                                     </>
                                                 )}
-                                                <button onClick={()=>attendHandleResetSelection(selectedMeeting.date)} className="shrink-0 px-2.5 py-1.5 bg-red-50 text-red-500 text-xs font-black rounded-xl flex items-center gap-1"><Icon.RotateCcw size={12}/> 초기화</button>
+                                                <button onClick={()=>attendHandleResetSelection(selectedMeeting)} className="shrink-0 px-2.5 py-1.5 bg-red-50 text-red-500 text-xs font-black rounded-xl flex items-center gap-1"><Icon.RotateCcw size={12}/> 초기화</button>
                                                 <button onClick={()=>setIsSelecting(false)} className="shrink-0 px-3 py-1.5 bg-teal-500 text-white text-xs font-black rounded-xl flex items-center gap-1 active:scale-95"><Icon.Check size={12}/> 완료</button>
                                             </div>
                                         </div>
@@ -673,7 +677,7 @@ const TabAttend = ({
                                             {selEligibleNormal.map(member => {
                                                 const isSelected = selSessionList.some(p=>p.memberId===member.id);
                                                 return (
-                                                    <button key={member.id} onClick={()=>attendToggleParticipant(member, selectedMeeting.date)}
+                                                    <button key={member.id} onClick={()=>attendToggleParticipant(member, selectedMeeting)}
                                                         className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-teal-50 border-teal-300':'card border-slate-100 hover:border-slate-200'}`}>
                                                         <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${isSelected?'bg-teal-500 border-teal-500':'border-slate-300'}`}>
                                                             {isSelected&&<Icon.Check size={10} className="text-white"/>}
@@ -700,7 +704,7 @@ const TabAttend = ({
                                                         const badge = member.isSpecialRest ? '특별휴식' : (msType==='반년'?'반년납 휴식':'1년납 휴식');
                                                         const guestUsed = !member.isSpecialRest && tmSessionData.some(p=>p.memberId===member.id&&p.isGuest&&p.date&&p.date.substring(0,7)===_monthStr&&p.date!==selectedMeeting.date);
                                                         return (
-                                                            <button key={member.id} onClick={()=>attendToggleParticipantAsGuest(member, selectedMeeting.date)}
+                                                            <button key={member.id} onClick={()=>attendToggleParticipantAsGuest(member, selectedMeeting)}
                                                                 className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-orange-50 border-orange-300':'card border-slate-100 hover:border-slate-200'}`}>
                                                                 <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${isSelected?'bg-orange-400 border-orange-400':'border-slate-300'}`}>
                                                                     {isSelected&&<Icon.Check size={10} className="text-white"/>}

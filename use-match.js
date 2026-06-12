@@ -26,11 +26,15 @@ function useMatch({ isAdminMode, meetingSettings, confirmedDrafts }) {
     const [matchIsCapturing, setMatchIsCapturing] = useState(false);
 
     useEffect(() => {
-        const unsub = getCol('match_schedules').orderBy('createdAt', 'desc').limit(1).onSnapshot(snap => {
-            setScheduleData(snap.empty ? null : snap.docs[0].data());
+        if (!meetingSettings?.date) { setScheduleData(null); return; }
+        const mid = getMeetingId(meetingSettings);
+        const unsub = getCol('match_schedules').orderBy('createdAt', 'desc').onSnapshot(snap => {
+            const found = snap.docs.map(d => d.data())
+                .find(d => d.meetingId ? d.meetingId === mid : d.meetingDate === meetingSettings.date);
+            setScheduleData(found || null);
         });
         return () => unsub();
-    }, []);
+    }, [meetingSettings?.date, meetingSettings?.meetingType]);
 
     useEffect(() => {
         if (!isAdminMode) return;

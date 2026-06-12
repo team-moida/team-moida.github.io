@@ -165,9 +165,10 @@ function makeAttendHandlers(ctx) {
         });
     };
 
-    const attendToggleParticipant = async (member, dateOverride) => {
-        const _date = dateOverride || meetingSettings?.date;
-        const _mid = dateOverride ? dateOverride : getMeetingId(meetingSettings);
+    const attendToggleParticipant = async (member, meetingOverride) => {
+        const _m = meetingOverride || meetingSettings;
+        const _date = _m?.date;
+        const _mid = getMeetingId(_m);
         const existing = tmSessionData.find(p => {
             if (p.memberId !== member.id || p.date !== _date) return false;
             return p.meetingId ? p.meetingId === _mid : !_mid.endsWith('__match');
@@ -176,9 +177,10 @@ function makeAttendHandlers(ctx) {
         else { await getSessionCol().add({memberId: member.id, name: member.name, gender: member.gender, level: member.level, date: _date, meetingId: _mid, checkedIn: false, checkInTime: null, status: '미출석', isGuest: false, team: '', createdAt: new Date().toISOString()}); }
     };
 
-    const attendToggleParticipantAsGuest = async (member, dateOverride) => {
-        const _date = dateOverride || meetingSettings?.date;
-        const _mid = dateOverride ? dateOverride : getMeetingId(meetingSettings);
+    const attendToggleParticipantAsGuest = async (member, meetingOverride) => {
+        const _m = meetingOverride || meetingSettings;
+        const _date = _m?.date;
+        const _mid = getMeetingId(_m);
         const existing = tmSessionData.find(p => {
             if (p.memberId !== member.id || p.date !== _date) return false;
             return p.meetingId ? p.meetingId === _mid : !_mid.endsWith('__match');
@@ -187,9 +189,10 @@ function makeAttendHandlers(ctx) {
         else { await getSessionCol().add({memberId: member.id, name: member.name, gender: member.gender, level: member.level, date: _date, meetingId: _mid, checkedIn: false, checkInTime: null, status: '미출석', isGuest: true, team: '', createdAt: new Date().toISOString()}); }
     };
 
-    const attendHandleResetSelection = (dateOverride) => {
-        const _date = dateOverride || meetingSettings?.date;
-        const _mid = dateOverride ? dateOverride : getMeetingId(meetingSettings);
+    const attendHandleResetSelection = (meetingOverride) => {
+        const _m = meetingOverride || meetingSettings;
+        const _date = _m?.date;
+        const _mid = getMeetingId(_m);
         const targets = tmSessionData.filter(p => {
             if (p.date !== _date) return false;
             return p.meetingId ? p.meetingId === _mid : !_mid.endsWith('__match');
@@ -220,8 +223,9 @@ function makeAttendHandlers(ctx) {
         const d = new Date();
         const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         await updateMeetingSettingsAdmin({...meetingSettings, date: todayStr});
+        const _testMid = getMeetingId({...meetingSettings, date: todayStr});
         const toAdd = activeMembers.filter(m => !m.isResigned && !tmSessionData.some(p => p.memberId === m.id && p.date === todayStr));
-        await Promise.all(toAdd.map(m => getSessionCol().add({memberId: m.id, name: m.name, gender: m.gender, level: m.level, date: todayStr, checkedIn: false, checkInTime: null, status: '미출석', isGuest: false, team: '', createdAt: new Date().toISOString()})));
+        await Promise.all(toAdd.map(m => getSessionCol().add({memberId: m.id, name: m.name, gender: m.gender, level: m.level, date: todayStr, meetingId: _testMid, checkedIn: false, checkInTime: null, status: '미출석', isGuest: false, team: '', createdAt: new Date().toISOString()})));
         showAlert('테스트 선정 완료', `오늘(${todayStr}) 기준 ${toAdd.length}명 선정됨`);
     };
 
