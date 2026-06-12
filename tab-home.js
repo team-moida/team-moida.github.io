@@ -671,7 +671,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
                 {(acc.tossUrl || acc.kakaoUrl) && (
                     <div className="flex gap-2">
                         {acc.tossUrl && <button onClick={()=>window.open(acc.tossUrl,'_blank')} className="flex-1 py-2.5 rounded-xl bg-white text-[#3182f6] font-black text-sm active:scale-95 transition-all">토스로 보내기</button>}
-                        {acc.kakaoUrl && <button onClick={()=>window.open(acc.kakaoUrl,'_blank')} className="flex-1 py-2.5 rounded-xl font-black text-sm active:scale-95 transition-all" style={{background:'#FEE500',color:'#3c1e1e'}}>카카오페이</button>}
+                        {acc.kakaoUrl && <button onClick={()=>window.open(acc.kakaoUrl,'_blank')} className="flex-1 py-2.5 rounded-xl font-black text-sm active:scale-95 transition-all" style={{background:'#FEE500',color:'#3c1e1e'}}>카카오페이로 보내기</button>}
                     </div>
                 )}
                 {showPayPrompt && (
