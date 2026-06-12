@@ -33,9 +33,9 @@ const TabRoster = ({
                     <p className="text-[11px] font-black uppercase tracking-widest text-white/80">활동 회원</p>
                     <p className="font-black text-3xl leading-tight mt-1">{activeMembers.length}<span className="text-base font-black text-white/80 ml-1">명</span></p>
                     <div className="flex items-center gap-4 mt-2 text-xs font-black text-white/85">
+                        <span>남성 {activeMembers.length - activeMembers.filter(m=>m.gender==='여성').length}</span>
                         <span>여성 {activeMembers.filter(m=>m.gender==='여성').length}</span>
-                        <span>원년 {activeMembers.filter(m=>m.isFounder).length}</span>
-                        {resignedMembers.length>0 && <span className="text-white/60">탈퇴 {resignedMembers.length}</span>}
+                        <span className="text-white/60">탈퇴 {resignedMembers.length}</span>
                     </div>
                 </div>
                 <div className="space-y-2">
