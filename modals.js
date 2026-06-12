@@ -205,7 +205,7 @@ const AppModals = ({
     // 게스트 추가 모달
     isAttendGuestModalOpen, setIsAttendGuestModalOpen,
     attendNewGuest, setAttendNewGuest,
-    attendIsPending, attendHandleAddGuest,
+    attendIsPending, attendHandleAddGuest, attendEditingGuestId,
     // 기록 상태 편집 모달
     historyEditTarget, setHistoryEditTarget,
     handleHistoryStatusUpdate,
@@ -607,7 +607,7 @@ const AppModals = ({
         {isAttendGuestModalOpen && (
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={()=>setIsAttendGuestModalOpen(false)}>
                 <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={e=>e.stopPropagation()}>
-                    <h2 className="text-xl font-black text-slate-800 mb-4">게스트 추가</h2>
+                    <h2 className="text-xl font-black text-slate-800 mb-4">{attendEditingGuestId ? '게스트 수정' : '게스트 추가'}</h2>
                     <div className="space-y-3">
                         <input type="text" placeholder="이름" style={{userSelect:'text'}} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
                             value={attendNewGuest.name} onChange={e=>setAttendNewGuest(p=>({...p,name:e.target.value}))} />
@@ -627,7 +627,7 @@ const AppModals = ({
                     </div>
                     <div className="flex gap-2 mt-4">
                         <button onClick={()=>setIsAttendGuestModalOpen(false)} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
-                        <button onClick={attendHandleAddGuest} disabled={attendIsPending} className="flex-1 py-3 bg-teal-500 text-white rounded-2xl font-black text-sm disabled:opacity-50">추가</button>
+                        <button onClick={attendHandleAddGuest} disabled={attendIsPending} className="flex-1 py-3 bg-teal-500 text-white rounded-2xl font-black text-sm disabled:opacity-50">{attendEditingGuestId ? '저장' : '추가'}</button>
                     </div>
                 </div>
             </div>

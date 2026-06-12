@@ -128,6 +128,7 @@ function makeAttendHandlers(ctx) {
         setMeetingSettings, historyEditTarget, setHistoryEditTarget, editHistoryLocationValue,
         setIsEditingHistoryLocation, attendIsPending, setAttendIsPending,
         setIsAttendGuestModalOpen, setAttendNewGuest, attendNewGuest,
+        attendEditingGuestId, setAttendEditingGuestId, attendGuestTarget, setAttendGuestTarget,
         setCurrentQRToken, setIsQRGenModalOpen, testModeBackup, setTestModeBackup,
         meetings
     } = ctx;
@@ -210,12 +211,41 @@ function makeAttendHandlers(ctx) {
         if (attendIsPending) return;
         setAttendIsPending(true);
         const inviter = activeMembers.find(m => m.id === attendNewGuest.inviterId);
-        const _guestMid = getMeetingId(meetingSettings);
         try {
-            await getSessionCol().add({memberId: 'guest_' + Date.now(), name: attendNewGuest.name, inviterName: inviter?.name || '없음', inviterId: attendNewGuest.inviterId || '', gender: attendNewGuest.gender, level: attendNewGuest.level, date: meetingSettings?.date, meetingId: _guestMid, checkedIn: false, checkInTime: null, status: '미출석', isGuest: true, createdAt: new Date().toISOString()});
+            if (attendEditingGuestId) {
+                await getSessionCol().doc(attendEditingGuestId).update({
+                    name: attendNewGuest.name, gender: attendNewGuest.gender, level: attendNewGuest.level,
+                    inviterId: attendNewGuest.inviterId || '', inviterName: inviter?.name || '없음'
+                });
+            } else {
+                const _gm = attendGuestTarget || meetingSettings;
+                await getSessionCol().add({memberId: 'guest_' + Date.now(), name: attendNewGuest.name, inviterName: inviter?.name || '없음', inviterId: attendNewGuest.inviterId || '', gender: attendNewGuest.gender, level: attendNewGuest.level, date: _gm?.date, meetingId: getMeetingId(_gm), checkedIn: false, checkInTime: null, status: '미출석', isGuest: true, createdAt: new Date().toISOString()});
+            }
             setIsAttendGuestModalOpen(false);
+            setAttendEditingGuestId(null);
+            setAttendGuestTarget(null);
             setAttendNewGuest({name: '', gender: '남성', inviterId: '', level: '1'});
-        } catch(e) { showAlert('오류', '게스트 등록 실패'); } finally { setAttendIsPending(false); }
+        } catch(e) { showAlert('오류', attendEditingGuestId ? '게스트 수정 실패' : '게스트 등록 실패'); } finally { setAttendIsPending(false); }
+    };
+
+    const attendOpenAddGuest = (meeting) => {
+        setAttendGuestTarget(meeting || null);
+        setAttendEditingGuestId(null);
+        setAttendNewGuest({name: '', gender: '남성', inviterId: '', level: '1'});
+        setIsAttendGuestModalOpen(true);
+    };
+
+    const attendOpenEditGuest = (p) => {
+        setAttendGuestTarget(null);
+        setAttendEditingGuestId(p.id);
+        setAttendNewGuest({name: p.name || '', gender: p.gender || '남성', inviterId: p.inviterId || '', level: String(p.level || '1')});
+        setIsAttendGuestModalOpen(true);
+    };
+
+    const attendDeleteParticipant = (p) => {
+        showConfirm('명단에서 삭제', `${p.name}님을 명단에서 삭제할까요?`, async () => {
+            try { await getSessionCol().doc(p.id).delete(); } catch(e) { showAlert('오류', '삭제 실패'); }
+        });
     };
 
     const attendHandleTestSelect = async () => {
@@ -405,6 +435,7 @@ function makeAttendHandlers(ctx) {
         updateMeetingSettingsAdmin, attendHandleCheckIn, attendHandleUncheckIn,
         attendToggleParticipant, attendToggleParticipantAsGuest, attendHandleResetSelection,
         attendHandleAddGuest, attendHandleTestSelect,
+        attendOpenAddGuest, attendOpenEditGuest, attendDeleteParticipant,
         attendHandleDeleteHistory, handleHistoryStatusUpdate, handleUpdateHistoryLocation,
         generateAttendQRCode, attendToggleTestMode, attendHandleEndMeeting
     };

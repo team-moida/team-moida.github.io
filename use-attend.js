@@ -15,6 +15,8 @@ function useAttend({ isAdminMode, memberData, meetingSettings, tmSessionData, ac
     const [attendModal, setAttendModal] = useState({type:null, data:null});
     const [isAttendGuestModalOpen, setIsAttendGuestModalOpen] = useState(false);
     const [attendNewGuest, setAttendNewGuest] = useState({name:'', gender:'남성', inviterId:'', level:'1'});
+    const [attendEditingGuestId, setAttendEditingGuestId] = useState(null);
+    const [attendGuestTarget, setAttendGuestTarget] = useState(null);
     const [isQRGenModalOpen, setIsQRGenModalOpen] = useState(false);
     const [currentQRToken, setCurrentQRToken] = useState('');
     const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
@@ -203,6 +205,8 @@ function useAttend({ isAdminMode, memberData, meetingSettings, tmSessionData, ac
         attendModal, setAttendModal,
         isAttendGuestModalOpen, setIsAttendGuestModalOpen,
         attendNewGuest, setAttendNewGuest,
+        attendEditingGuestId, setAttendEditingGuestId,
+        attendGuestTarget, setAttendGuestTarget,
         isQRGenModalOpen, setIsQRGenModalOpen,
         currentQRToken, setCurrentQRToken,
         isLocationPickerOpen, setIsLocationPickerOpen,

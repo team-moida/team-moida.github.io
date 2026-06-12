@@ -372,6 +372,7 @@ const TabAttend = ({
     attendToggleParticipant, setIsAttendGuestModalOpen,
     attendHandleTestSelect, attendHandleResetSelection,
     attendGuestEligibleMembers, attendToggleParticipantAsGuest,
+    attendOpenAddGuest, attendOpenEditGuest, attendDeleteParticipant,
     attendCheckedInCount, attendWaitingList, attendGroupedTeams,
     setAttendModal, attendUnassignedActive, attendLimit, attendHistory,
     setHistorySortKey, setHistorySortOrder, historySortKey, historySortOrder,
@@ -665,7 +666,7 @@ const TabAttend = ({
                                             <div className="flex gap-1.5 flex-wrap justify-end min-w-0">
                                                 {selectedMeeting.id === activeMeeting?.id && (
                                                     <>
-                                                        <button onClick={()=>setIsAttendGuestModalOpen(true)} className="shrink-0 px-2.5 py-1.5 bg-slate-100 text-slate-600 text-xs font-black rounded-xl flex items-center gap-1"><Icon.UserPlus size={12}/> 게스트</button>
+                                                        <button onClick={()=>attendOpenAddGuest(selectedMeeting)} className="shrink-0 px-2.5 py-1.5 bg-slate-100 text-slate-600 text-xs font-black rounded-xl flex items-center gap-1"><Icon.UserPlus size={12}/> 게스트</button>
                                                         <button onClick={attendHandleTestSelect} className="shrink-0 px-2.5 py-1.5 bg-amber-50 text-amber-600 text-xs font-black rounded-xl flex items-center gap-1"><Icon.Beaker size={12}/> 테스트</button>
                                                     </>
                                                 )}
@@ -673,6 +674,23 @@ const TabAttend = ({
                                                 <button onClick={()=>setIsSelecting(false)} className="shrink-0 px-3 py-1.5 bg-teal-500 text-white text-xs font-black rounded-xl flex items-center gap-1 active:scale-95"><Icon.Check size={12}/> 완료</button>
                                             </div>
                                         </div>
+                                        {selSessionList.some(p=>p.isGuest) && (
+                                            <div className="card border-orange-100 rounded-2xl p-3 mb-3">
+                                                <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-2 px-1">추가된 게스트 ({selSessionList.filter(p=>p.isGuest).length})</p>
+                                                <div className="space-y-1.5">
+                                                    {selSessionList.filter(p=>p.isGuest).map(p => (
+                                                        <div key={p.id} className="flex items-center gap-2 p-2.5 rounded-xl bg-orange-50 border border-orange-200">
+                                                            <span className="font-black text-sm text-slate-800 flex-1 min-w-0 truncate">{p.name}{p.gender==='여성'&&<span className="ml-1 text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}</span>
+                                                            <span className="shrink-0 text-[9px] font-black text-slate-400">Lv.{p.level}</span>
+                                                            {String(p.memberId||'').startsWith('guest_') && (
+                                                                <button onClick={()=>attendOpenEditGuest(p)} className="shrink-0 px-2 py-1 bg-blue-50 text-blue-500 text-[11px] font-black rounded-lg flex items-center gap-1"><Icon.Edit size={11}/> 수정</button>
+                                                            )}
+                                                            <button onClick={()=>attendDeleteParticipant(p)} className="shrink-0 px-2 py-1 bg-red-50 text-red-500 text-[11px] font-black rounded-lg flex items-center gap-1"><Icon.Trash size={11}/> 삭제</button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                         <div className="space-y-1.5">
                                             {selEligibleNormal.map(member => {
                                                 const isSelected = selSessionList.some(p=>p.memberId===member.id);

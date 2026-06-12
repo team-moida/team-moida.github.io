@@ -318,6 +318,7 @@ function App() {
     const { updateMeetingSettingsAdmin, attendHandleCheckIn, attendHandleUncheckIn,
             attendToggleParticipant, attendToggleParticipantAsGuest, attendHandleResetSelection,
             attendHandleAddGuest, attendHandleTestSelect,
+            attendOpenAddGuest, attendOpenEditGuest, attendDeleteParticipant,
             attendHandleDeleteHistory, handleHistoryStatusUpdate, handleUpdateHistoryLocation,
             generateAttendQRCode, attendToggleTestMode,
             attendHandleEndMeeting } = makeAttendHandlers({
@@ -330,6 +331,8 @@ function App() {
         attendIsPending: attend.attendIsPending, setAttendIsPending: attend.setAttendIsPending,
         setIsAttendGuestModalOpen: attend.setIsAttendGuestModalOpen,
         setAttendNewGuest: attend.setAttendNewGuest, attendNewGuest: attend.attendNewGuest,
+        attendEditingGuestId: attend.attendEditingGuestId, setAttendEditingGuestId: attend.setAttendEditingGuestId,
+        attendGuestTarget: attend.attendGuestTarget, setAttendGuestTarget: attend.setAttendGuestTarget,
         setCurrentQRToken: attend.setCurrentQRToken, setIsQRGenModalOpen: attend.setIsQRGenModalOpen,
         testModeBackup: attend.testModeBackup, setTestModeBackup: attend.setTestModeBackup,
         meetings
@@ -606,6 +609,9 @@ function App() {
                         attendHandleResetSelection={attendHandleResetSelection}
                         attendGuestEligibleMembers={attend.attendGuestEligibleMembers}
                         attendToggleParticipantAsGuest={attendToggleParticipantAsGuest}
+                        attendOpenAddGuest={attendOpenAddGuest}
+                        attendOpenEditGuest={attendOpenEditGuest}
+                        attendDeleteParticipant={attendDeleteParticipant}
                         attendCheckedInCount={attend.attendCheckedInCount}
                         attendWaitingList={attend.attendWaitingList}
                         attendGroupedTeams={attend.attendGroupedTeams}
@@ -731,6 +737,7 @@ function App() {
                 setIsAttendGuestModalOpen={attend.setIsAttendGuestModalOpen}
                 attendNewGuest={attend.attendNewGuest} setAttendNewGuest={attend.setAttendNewGuest}
                 attendIsPending={attend.attendIsPending} attendHandleAddGuest={attendHandleAddGuest}
+                attendEditingGuestId={attend.attendEditingGuestId}
                 historyEditTarget={attend.historyEditTarget} setHistoryEditTarget={attend.setHistoryEditTarget}
                 handleHistoryStatusUpdate={handleHistoryStatusUpdate}
                 isQRGenModalOpen={attend.isQRGenModalOpen} setIsQRGenModalOpen={attend.setIsQRGenModalOpen}
