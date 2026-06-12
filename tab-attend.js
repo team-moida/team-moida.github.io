@@ -272,7 +272,10 @@ const RegSettingsSection = ({ meetingSettings, updateMeetingSettingsAdmin }) => 
 };
 
 // ─── 회원용 신청 카드 ─────────────────────────────────────────────────────────────
-const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel, duesUnpaid, duesBlock, isPreview }) => {
+const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel, handleAbsent, duesUnpaid, duesBlock, isPreview }) => {
+    const { useState } = React;
+    const [absentConfirm, setAbsentConfirm] = useState(false);
+
     if (!meetingSettings?.isRegistrationEnabled) return null;
 
     const now = new Date();
@@ -294,6 +297,12 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
         const d = new Date(isoStr);
         return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     };
+
+    // 불참/노쇼 시간 구간 (신청마감 후 + 참가확정 상태일 때만 계산)
+    const absentType = (isAfterClose && myRegistration?.status === 'confirmed') ? getAbsentType(meetingSettings.date) : null;
+    const absentFine = absentType === 'noshow_1' ? 10000 : absentType === 'noshow_2' ? 20000 : 0;
+    const absentBtnCls = absentFine === 20000 ? 'bg-red-500 text-white' : absentFine === 10000 ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-600';
+    const absentBtnLabel = absentFine > 0 ? `불참 신청 (노쇼 · ${absentFine / 10000}만원 벌금)` : '불참 신청 (벌금 없음)';
 
     return (
         <div className="card rounded-3xl p-5">
@@ -358,11 +367,41 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
             )}
 
             {isAfterClose && (
-                <div className="text-center py-2">
-                    <p className="text-sm font-black text-slate-400">신청 마감</p>
-                    {myRegistration?.status === 'confirmed' && <p className="text-xs text-teal-500 font-black mt-1">참가 확정 ✓</p>}
-                    {(isFirstComeFirstServed || isMatch) && myRegistration?.status === 'waiting' && <p className="text-xs text-amber-500 font-black mt-1">대기 {myWaitingPosition}번</p>}
-                    {!myRegistration && <p className="text-xs text-slate-300 mt-1">미신청</p>}
+                <div className="space-y-2">
+                    <div className="text-center py-1">
+                        <p className="text-sm font-black text-slate-400">신청 마감</p>
+                        {myRegistration?.status === 'absent' && <p className="text-xs text-slate-500 font-black mt-1">불참 처리됨</p>}
+                        {myRegistration?.status === 'noshow' && <p className="text-xs text-red-500 font-black mt-1">노쇼 처리됨 · 벌금 {((myRegistration.noShowFine||0)/10000).toLocaleString()}만원</p>}
+                        {(isFirstComeFirstServed || isMatch) && myRegistration?.status === 'waiting' && <p className="text-xs text-amber-500 font-black mt-1">대기 {myWaitingPosition}번</p>}
+                        {!myRegistration && <p className="text-xs text-slate-300 mt-1">미신청</p>}
+                        {myRegistration?.status === 'confirmed' && !absentType && <p className="text-xs text-teal-500 font-black mt-1">참가 확정 ✓</p>}
+                    </div>
+                    {myRegistration?.status === 'confirmed' && absentType && (
+                        absentConfirm ? (
+                            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3">
+                                <p className="text-sm font-black text-slate-700 text-center mb-3 whitespace-pre-line">
+                                    {absentFine > 0
+                                        ? `노쇼로 처리됩니다.\n벌금 ${absentFine / 10000}만원이 부과됩니다.`
+                                        : '불참 처리됩니다.\n출석 명단에서 제외됩니다.'}
+                                </p>
+                                <div className="flex gap-2">
+                                    <button onClick={() => setAbsentConfirm(false)} className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm active:scale-95">취소</button>
+                                    <button onClick={() => { if (!isPreview) handleAbsent && handleAbsent(); setAbsentConfirm(false); }}
+                                        className={`flex-1 py-2.5 rounded-2xl font-black text-sm active:scale-95 ${absentBtnCls}`}>확인</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div>
+                                <div className="bg-teal-50 border border-teal-200 rounded-2xl p-3 mb-2 text-center">
+                                    <p className="font-black text-teal-500">참가 확정 ✓</p>
+                                </div>
+                                <button onClick={() => isPreview ? alert('미리보기에서는 불참 신청이 되지 않아요.') : setAbsentConfirm(true)}
+                                    className={`w-full py-2.5 rounded-2xl font-black text-sm active:scale-95 ${absentBtnCls}`}>
+                                    {absentBtnLabel}
+                                </button>
+                            </div>
+                        )
+                    )}
                 </div>
             )}
         </div>
@@ -505,7 +544,7 @@ const TabAttend = ({
     isKioskOpen, setIsKioskOpen, attendHandleCheckIn,
     isMeetingOver, attendHandleEndMeeting,
     viewMeeting, isViewActive, onEditMeeting,
-    myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel,
+    myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel, handleAbsent,
 }) => {
     // 보고 있는 모임은 상위(member.html)에서 내려옴 — 모임 탭 카드에서 이미 선택된 모임
     const selectedMeeting = viewMeeting;
@@ -1107,6 +1146,7 @@ const TabAttend = ({
                 myWaitingPosition={myWaitingPosition}
                 handleRegister={handleRegister}
                 handleCancel={handleCancel}
+                handleAbsent={handleAbsent}
                 duesUnpaid={myDuesUnpaid}
                 duesBlock={duesBlock}
                 isPreview={inTestPreview}

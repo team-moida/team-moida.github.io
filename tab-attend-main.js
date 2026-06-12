@@ -167,7 +167,7 @@ const AttendMainTab = ({
                                             {p.isGuest&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-slate-800 text-white rounded-lg">G</span>}
                                         </div>
                                         {p.status === '노쇼' ? (
-                                            <p className="text-[10px] text-red-600 font-black mt-0.5">✗ 노쇼</p>
+                                            <p className="text-[10px] text-red-600 font-black mt-0.5">✗ 노쇼{p.noShowFine ? ` · ${p.noShowFine / 10000}만원` : ''}</p>
                                         ) : p.checkedIn ? (
                                             p.status === '정상' ? (
                                                 <p className="text-[10px] text-emerald-600 font-black mt-0.5">✓ 정상 · {p.checkInTime}</p>
@@ -202,7 +202,7 @@ const AttendMainTab = ({
                                 {p.isGuest&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-slate-800 text-white rounded-lg">G</span>}
                             </div>
                             {p.status === '노쇼' ? (
-                                <p className="text-[10px] text-red-600 font-black mt-0.5">✗ 노쇼</p>
+                                <p className="text-[10px] text-red-600 font-black mt-0.5">✗ 노쇼{p.noShowFine ? ` · ${p.noShowFine / 10000}만원` : ''}</p>
                             ) : p.checkedIn ? (
                                 p.status === '정상' ? (
                                     <p className="text-[10px] text-emerald-600 font-black mt-0.5">✓ 정상 · {p.checkInTime}</p>

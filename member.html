@@ -191,7 +191,7 @@ function App() {
         tmMonthlyStatuses: team.tmMonthlyStatuses,
         teamDraftData: team.teamDraftData,
     });
-    const { handleRegister, handleCancel } = makeRegistrationHandlers({
+    const { handleRegister, handleCancel, handleAbsent } = makeRegistrationHandlers({
         meetingDate: displayMeetingSettings?.date,
         memberData,
         meetingSettings: displayMeetingSettings,
@@ -780,6 +780,7 @@ function App() {
                         myWaitingPosition={attend.myWaitingPosition}
                         handleRegister={handleRegister}
                         handleCancel={handleCancel}
+                        handleAbsent={handleAbsent}
                     />
                 )}
                 {tab === 'dues' && (

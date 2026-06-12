@@ -2,6 +2,24 @@
 const getRegistrationsCol = () => getCol('registrations');
 const FieldValue = firebase.firestore.FieldValue;
 
+// 불참/노쇼 시간 구간 판별
+// absent   : 신청마감 직후 ~ 모임 1일 전 21:59:59
+// noshow_1 : 모임 1일 전 22:00:00 ~ 23:59:59  (1만원)
+// noshow_2 : 모임 당일 00:00:00 ~ 10:00:00    (2만원)
+const getAbsentType = (meetingDate) => {
+    const now = new Date();
+    const [y, m, d] = meetingDate.split('-').map(Number);
+    const absentEnd    = new Date(y, m-1, d-1, 21, 59, 59, 999);
+    const noshow1Start = new Date(y, m-1, d-1, 22,  0,  0,   0);
+    const noshow1End   = new Date(y, m-1, d-1, 23, 59, 59, 999);
+    const noshow2Start = new Date(y, m-1, d,    0,  0,  0,   0);
+    const noshow2End   = new Date(y, m-1, d,   10,  0,  0,   0);
+    if (now <= absentEnd)                          return 'absent';
+    if (now >= noshow1Start && now <= noshow1End)  return 'noshow_1';
+    if (now >= noshow2Start && now <= noshow2End)  return 'noshow_2';
+    return null;
+};
+
 function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, showToast, showAlert }) {
     const meetingId = meetingSettings ? getMeetingId(meetingSettings) : meetingDate;
     const mType = meetingSettings?.meetingType || 'self';
@@ -143,5 +161,63 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
         }
     };
 
-    return { handleRegister, handleCancel };
+    const handleAbsent = async () => {
+        if (!meetingDate || !memberData?.memberId) return;
+        const absentType = getAbsentType(meetingDate);
+        if (!absentType) {
+            showAlert && showAlert('불참 신청 불가', '지금은 불참 신청 가능 시간이 아닙니다.\n(모임 당일 오전 10시 이후 불가)');
+            return;
+        }
+        const fine = absentType === 'noshow_1' ? 10000 : absentType === 'noshow_2' ? 20000 : 0;
+
+        const meetingRef = getMeetingsCol().doc(meetingId);
+        const regRef = getRegistrationsCol().doc(`${meetingId}_${memberData.memberId}`);
+        const sessionRef = getCol('weekly_session').doc(`${meetingId}_${memberData.memberId}`);
+        const mirrorRef = getCol('settings').doc(mirrorDocId);
+
+        try {
+            await db.runTransaction(async (tx) => {
+                const regDoc = await tx.get(regRef);
+                if (!regDoc.exists) throw new Error('신청 기록이 없습니다');
+                const reg = regDoc.data();
+                if (reg.status !== 'confirmed') throw new Error('확정 상태가 아닙니다');
+
+                const isMatch = reg.meetingType === 'match';
+                const isFemale = (reg.gender || '') === '여성';
+                const countUpd = { confirmedCount: FieldValue.increment(-1) };
+                if (isMatch) countUpd[isFemale ? 'confirmedFemaleCount' : 'confirmedMaleCount'] = FieldValue.increment(-1);
+
+                const regUpdate = {
+                    status: absentType === 'absent' ? 'absent' : 'noshow',
+                    absentType,
+                    absentAt: FieldValue.serverTimestamp(),
+                };
+                if (fine > 0) regUpdate.noShowFine = fine;
+
+                tx.update(regRef, regUpdate);
+                tx.update(meetingRef, countUpd);
+                tx.update(mirrorRef, countUpd);
+
+                if (absentType === 'absent') {
+                    tx.delete(sessionRef);
+                } else {
+                    tx.update(sessionRef, { status: '노쇼', noShowFine: fine });
+                }
+            });
+
+            showToast && showToast(
+                fine > 0 ? `노쇼 처리됨 · 벌금 ${fine / 10000}만원` : '불참 처리됨',
+                fine > 0 ? 'warning' : 'info'
+            );
+        } catch (e) {
+            console.error('불참 처리 오류:', e);
+            if (e.message === '확정 상태가 아닙니다') {
+                showAlert && showAlert('불참 불가', '참가 확정 상태가 아닙니다.');
+            } else {
+                showAlert && showAlert('오류', '처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+            }
+        }
+    };
+
+    return { handleRegister, handleCancel, handleAbsent };
 }
