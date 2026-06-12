@@ -1,0 +1,128 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 모이다 멀티팀(여러 팀) 보안 규칙 — 초안 / 블루프린트
+//
+// ⚠️ 매우 중요 — 지금 바로 적용하지 마세요.
+//   • 이 규칙은 "메인 홀 + 팀 생성/가입(멀티팀) 구조를 만든 뒤" 쓸 목표 규칙입니다.
+//   • 현재 라이브 앱(OTP FC 단일팀)은 익명 로그인을 쓰기 때문에, 아래 멤버십 검사
+//     구조(clubs/{팀}/memberships/{uid})가 아직 없습니다. 지금 그대로 올리면
+//     앱이 데이터를 못 읽어 기능이 막힙니다.
+//   • 적용 순서: ① 멀티팀 구조(clubs, memberships, users) 구현 →
+//     ② Firebase 콘솔 Rules Playground로 테스트 → ③ 게시(deploy).
+//
+// 이 파일이 잠그는 핵심 3가지(우리가 합의한 내용):
+//   1) 데이터는 "자기가 속한 팀"만 접근 — 다른 팀 전화번호는 절대 못 봄.
+//   2) 전화번호 등 민감정보는 "본인 + 운영진만" (members_private 분리 패턴).
+//   3) 팀 생성은 "대표님(플랫폼 관리자)이 승인한 사람만".
+// ─────────────────────────────────────────────────────────────────────────────
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── 공통 헬퍼 ────────────────────────────────────────────────────────────
+    function signedIn() { return request.auth != null; }
+    function uid()      { return request.auth.uid; }
+
+    // 플랫폼 관리자(대표님): platform/admins 문서의 uids 배열에 내 uid가 있으면 true
+    function isPlatformAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/platform/admins)
+        && uid() in get(/databases/$(database)/documents/platform/admins).data.uids;
+    }
+
+    // 팀 생성 권한: 대표님이 승인해 준 사람만 (club_create_grants/{uid}.approved == true)
+    function canCreateClub() {
+      return signedIn() && (
+        isPlatformAdmin() ||
+        ( exists(/databases/$(database)/documents/club_create_grants/$(uid()))
+          && get(/databases/$(database)/documents/club_create_grants/$(uid())).data.approved == true )
+      );
+    }
+
+    // 특정 팀에서 내 멤버십(역할). 가입하면 clubs/{clubId}/memberships/{내uid} 문서가 생김.
+    function membership(clubId) {
+      return get(/databases/$(database)/documents/clubs/$(clubId)/memberships/$(uid())).data;
+    }
+    function isClubMember(clubId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/clubs/$(clubId)/memberships/$(uid()));
+    }
+    // 운영진(또는 owner) 여부 — 기존 STAFF_ROLES와 맞춤
+    function isClubStaff(clubId) {
+      return isClubMember(clubId)
+        && membership(clubId).role in ['owner','회장','매니저','총무','부총무'];
+    }
+
+    // ── 내 프로필 (내가 속한 팀 목록 등) ────────────────────────────────────
+    match /users/{userId} {
+      allow read, write: if signedIn() && uid() == userId;
+    }
+
+    // ── 팀 명부(메인 홀에서 둘러보기 / 입장) ────────────────────────────────
+    match /clubs/{clubId} {
+      // 로그인하면 팀 기본정보(이름/로고)는 볼 수 있음 — 가입하려면 필요
+      allow read: if signedIn();
+      // 팀 생성: 승인받은 사람만, 본인을 owner로
+      allow create: if canCreateClub() && request.resource.data.ownerUid == uid();
+      // 팀 정보 수정/삭제: 그 팀 운영진만
+      allow update, delete: if isClubStaff(clubId);
+
+      // 누가 이 팀 회원인지·역할 (멤버십)
+      match /memberships/{memberUid} {
+        allow read:  if isClubMember(clubId);
+        allow write: if isClubStaff(clubId);   // 역할 부여/회원 추가는 운영진
+        // ※ '초대코드로 본인 가입'은 코드 검증이 필요해 서버(Cloud Function)로 처리 권장
+      }
+
+      // 가입 신청 큐 (신청/승인 방식)
+      match /join_requests/{reqUid} {
+        allow create:             if signedIn() && uid() == reqUid;  // 본인이 신청
+        allow read, update, delete: if isClubStaff(clubId);          // 운영진이 처리
+      }
+    }
+
+    // ── 팀 생성 "권한 요청"(대표님이 승인) ──────────────────────────────────
+    match /club_create_requests/{reqId} {
+      allow create: if signedIn() && request.resource.data.requesterUid == uid();
+      allow read:   if isPlatformAdmin() || (signedIn() && resource.data.requesterUid == uid());
+      allow update, delete: if isPlatformAdmin();                    // 승인/거부는 대표님만
+    }
+    // 승인 결과(권한 부여) — 대표님만 쓰기, 본인은 읽기만
+    match /club_create_grants/{grantUid} {
+      allow read:  if signedIn() && (uid() == grantUid || isPlatformAdmin());
+      allow write: if isPlatformAdmin();
+    }
+
+    // ── 팀 실데이터: artifacts/{clubId}/public/data/{컬렉션}/{문서} ──────────
+    //   그 팀 회원만 접근. 다른 팀은 절대 못 봄. (clubId = 팀 식별자 = 기존 APP_ID 자리)
+    match /artifacts/{clubId}/public/data/{col}/{docId} {
+      allow read:  if isClubMember(clubId);
+      // 기본 쓰기는 운영진. 단, 회원이 직접 해야 하는 동작(출석 신청, 내 푸시토큰 등)은
+      // 아래처럼 컬렉션별로 따로 풀어줘야 함(예시는 주석).
+      allow write: if isClubStaff(clubId);
+
+      // 예) 출석 신청: 회원이 자기 신청만 쓰게
+      // match /registrations/{regId} {
+      //   allow read:   if isClubMember(clubId);
+      //   allow create: if isClubMember(clubId) && request.resource.data.memberUid == uid();
+      //   allow update, delete: if isClubStaff(clubId)
+      //        || (isClubMember(clubId) && resource.data.memberUid == uid());
+      // }
+    }
+
+    // ── 민감정보(전화번호 등)는 "본인 + 운영진만" ──────────────────────────
+    //   ⚠️ 보안 규칙은 "필드 단위"로 못 가립니다. 회원 문서를 읽을 수 있으면 그 안의
+    //   전화번호도 다 읽힙니다. 그래서 전화번호 같은 민감 항목은 members 문서에서
+    //   빼서 별도 컬렉션(members_private)으로 분리하고, 아래처럼 본인+운영진만 읽게 합니다.
+    match /artifacts/{clubId}/public/data/members_private/{memberId} {
+      // memberId 문서에 그 회원의 authUid를 저장해 두고 본인 확인
+      allow read:  if isClubStaff(clubId)
+                   || (isClubMember(clubId)
+                       && resource.data.authUid == uid());
+      allow write: if isClubStaff(clubId)
+                   || (isClubMember(clubId)
+                       && request.resource.data.authUid == uid());
+    }
+  }
+}
