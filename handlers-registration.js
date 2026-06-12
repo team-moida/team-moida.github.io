@@ -6,14 +6,15 @@ const FieldValue = firebase.firestore.FieldValue;
 // absent   : 신청마감 직후 ~ 모임 1일 전 21:59:59
 // noshow_1 : 모임 1일 전 22:00:00 ~ 23:59:59  (1만원)
 // noshow_2 : 모임 당일 00:00:00 ~ 10:00:00    (2만원)
-const getAbsentType = (meetingDate) => {
+const getAbsentType = (meetingDate, meetingEnd) => {
     const now = new Date();
     const [y, m, d] = meetingDate.split('-').map(Number);
+    const [endH, endM] = (meetingEnd || '10:00').split(':').map(Number);
     const absentEnd    = new Date(y, m-1, d-1, 21, 59, 59, 999);
     const noshow1Start = new Date(y, m-1, d-1, 22,  0,  0,   0);
     const noshow1End   = new Date(y, m-1, d-1, 23, 59, 59, 999);
     const noshow2Start = new Date(y, m-1, d,    0,  0,  0,   0);
-    const noshow2End   = new Date(y, m-1, d,   10,  0,  0,   0);
+    const noshow2End   = new Date(y, m-1, d, endH, endM,  0,   0);
     if (now <= absentEnd)                          return 'absent';
     if (now >= noshow1Start && now <= noshow1End)  return 'noshow_1';
     if (now >= noshow2Start && now <= noshow2End)  return 'noshow_2';
@@ -163,7 +164,7 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
 
     const handleAbsent = async () => {
         if (!meetingDate || !memberData?.memberId) return;
-        const absentType = getAbsentType(meetingDate);
+        const absentType = getAbsentType(meetingDate, meetingSettings?.end);
         if (!absentType) {
             showAlert && showAlert('불참 신청 불가', '지금은 불참 신청 가능 시간이 아닙니다.\n(모임 당일 오전 10시 이후 불가)');
             return;
