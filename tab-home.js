@@ -579,7 +579,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
                     {field('1년납 링크','kakaoFull','금액 고정 링크', true)}
                 </div>
                 {field('추가 안내','amountHint','예) 신입 첫 달 반값', true)}
-                <p className="text-[11px] text-slate-400 leading-relaxed mb-3">금액을 비우면 기본값(월납 3만·휴식 1만·반년 15만·1년 30만)으로 안내됩니다. 카카오페이에서 <b>금액을 정해 만든 링크</b>를 유형별 칸에 넣으면, 회원이 그 유형을 고르고 누를 때 <b>금액이 이미 적힌 송금화면</b>이 열려요. 비운 유형은 공통 링크로 열립니다.</p>
+                <p className="text-[11px] text-slate-400 leading-relaxed mb-3"><b className="text-[#3182f6]">토스</b>는 위 <b>은행·계좌번호</b>만 채우면 회원이 고른 유형의 <b>금액까지 자동으로 채워진</b> 송금화면이 열려요(폰에 토스 앱 설치 시). 토스 송금 링크 칸은 비워도 됩니다. 금액을 비우면 기본값(월납 3만·휴식 1만·반년 15만·1년 30만)으로 안내됩니다. 카카오페이는 유형별 칸에 <b>금액을 정해 만든 링크</b>를 넣으면 그 유형 선택 시 금액이 적힌 송금화면이 열려요(비우면 공통 링크).</p>
                 <label className="flex items-center justify-between gap-3 mb-3 bg-slate-50 rounded-xl px-3 py-2.5">
                     <span className="min-w-0">
                         <span className="block text-[13px] font-black text-slate-700">미납자 모임 신청 차단</span>
@@ -658,6 +658,15 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
     const kakaoPerType = { monthly: acc.kakaoMonthly, rest: acc.kakaoRest, half_year: acc.kakaoHalf, full_year: acc.kakaoFull };
     const kakaoHref = (showPayPrompt && feeFor(sel) > 0 && kakaoPerType[sel]) ? kakaoPerType[sel] : (acc.kakaoUrl || '');
 
+    // 토스 송금: 은행+계좌번호만 있으면 회원이 고른 유형의 금액이 채워진 토스 딥링크를 자동 생성.
+    // (supertoss://send — 폰에 토스 앱 설치 시 은행·계좌·금액까지 채워진 송금화면이 열림. toss.me 링크는 fallback)
+    const tossAuto = (acc.bank && acc.accountNo)
+        ? `supertoss://send?bank=${encodeURIComponent((acc.bank||'').trim())}&accountNo=${(acc.accountNo||'').replace(/[^0-9]/g,'')}&amount=${feeFor(sel)}&origin=app`
+        : '';
+    const tossHref = (showPayPrompt && feeFor(sel) > 0 && tossAuto) ? tossAuto : (acc.tossUrl || '');
+    // 앱 스킴(supertoss://)은 새 탭이 아니라 현재 창에서 열어야 토스 앱이 호출됨. http(s)는 새 탭.
+    const openSend = (url) => { if (!url) return; if (/^https?:\/\//i.test(url)) window.open(url, '_blank'); else window.location.href = url; };
+
     // ── 계좌 표시 + 회비 납부 (회원·관리자 공통) ──
     return (
         <>
@@ -683,10 +692,10 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
                 </div>
             )}
             <div className="space-y-2">
-                {(acc.tossUrl || kakaoHref) && (
+                {(tossHref || kakaoHref) && (
                     <div className="flex gap-2">
-                        {acc.tossUrl && <button onClick={()=>window.open(acc.tossUrl,'_blank')} className="flex-1 py-2.5 rounded-xl bg-white text-[#3182f6] font-black text-sm active:scale-95 transition-all">토스로 보내기</button>}
-                        {kakaoHref && <button onClick={()=>window.open(kakaoHref,'_blank')} className="flex-1 py-2.5 rounded-xl font-black text-sm active:scale-95 transition-all" style={{background:'#FEE500',color:'#3c1e1e'}}>카카오페이로 보내기</button>}
+                        {tossHref && <button onClick={()=>openSend(tossHref)} className="flex-1 py-2.5 rounded-xl bg-white text-[#3182f6] font-black text-sm active:scale-95 transition-all">토스로 보내기</button>}
+                        {kakaoHref && <button onClick={()=>openSend(kakaoHref)} className="flex-1 py-2.5 rounded-xl font-black text-sm active:scale-95 transition-all" style={{background:'#FEE500',color:'#3c1e1e'}}>카카오페이로 보내기</button>}
                     </div>
                 )}
                 {showPayPrompt && (
