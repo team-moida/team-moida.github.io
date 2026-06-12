@@ -587,7 +587,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
     let dues = null, showPayPrompt = false;
     if (memberInfo) {
         if (isExempt) {
-            dues = (<div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3"><p className="text-sm font-black text-white">운영진은 회비가 면제됩니다 🙌</p></div>);
+            dues = null;
         } else if (ms && ms.active && ms.remaining > 1) {
             dues = (
                 <div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3">
