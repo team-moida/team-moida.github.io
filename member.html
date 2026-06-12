@@ -203,6 +203,19 @@ function App() {
         auth.signInAnonymously().catch(e=>console.error(e));
     }, []);
 
+    // 뒤로가기 버튼으로 QR 스캐너·키오스크 모달 닫기 (Android 등)
+    useEffect(() => {
+        const isOpen = isQRScannerOpen || attend.isKioskOpen;
+        if (!isOpen) return;
+        history.pushState({ modal: isQRScannerOpen ? 'qr' : 'kiosk' }, '');
+        const onPop = () => {
+            if (isQRScannerOpen) setIsQRScannerOpen(false);
+            else if (attend.isKioskOpen) attend.setIsKioskOpen(false);
+        };
+        window.addEventListener('popstate', onPop);
+        return () => window.removeEventListener('popstate', onPop);
+    }, [isQRScannerOpen, attend.isKioskOpen]);
+
     useEffect(() => {
         const unsub = getCol('settings').doc('meeting_schedule_v2').onSnapshot(doc => {
             if (doc.exists) setMeetingSettings(doc.data());
