@@ -156,6 +156,7 @@ function App() {
     const [qrStatus, setQrStatus] = useState('idle');
     const [qrMessage, setQrMessage] = useState('');
     const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [lastScannedQR, setLastScannedQR] = useState({ token:null, date:null });
     const [nowTime, setNowTime] = useState(() => new Date());
     useEffect(() => { const t = setInterval(() => setNowTime(new Date()), 30000); return () => clearInterval(t); }, []);
@@ -613,6 +614,7 @@ function App() {
                 onEndMeeting={attendHandleEndMeeting}
                 isMeetingEndSaved={attend.attendHistory?.some(h => h.date === displayMeetingSettings?.date) || false}
                 unreadCount={unreadCount} onOpenAnnouncements={openAnnouncements}
+                onOpenProfile={() => setIsProfileModalOpen(true)}
             />
             <div className="px-4 pt-4">
                 {tab === 'home' && (
@@ -885,6 +887,8 @@ function App() {
                 updateMeetingSettingsAdmin={updateMeetingSettingsAdmin}
                 announcementModal={announcementModal} setAnnouncementModal={setAnnouncementModal}
                 handleSaveAnnouncement={handleSaveAnnouncement}
+                isProfileModalOpen={isProfileModalOpen} setIsProfileModalOpen={setIsProfileModalOpen}
+                memberInfo={memberInfo} memberData={memberData} showAlert={showAlert}
             />
         </div>
     );

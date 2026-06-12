@@ -164,6 +164,83 @@ function DeleteMemberModal({ deletingMember, setDeletingMember, handleDeleteMemb
     );
 }
 
+// ─── 내 프로필 모달 ──────────────────────────────────────────────────────────
+function ProfileModal({ isOpen, onClose, memberInfo, memberData, showAlert }) {
+    const { useState, useEffect } = React;
+    const [phone, setPhone] = useState('');
+    const [address, setAddress] = useState('');
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        if (isOpen && memberInfo) {
+            setPhone(memberInfo.phone || '');
+            setAddress(memberInfo.address || '');
+        }
+    }, [isOpen, memberInfo?.id]);
+
+    if (!isOpen || !memberInfo) return null;
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await getCol('members').doc(memberData.memberId).update({ phone: formatPhoneInput(phone), address });
+            showAlert('완료', '프로필이 수정되었습니다.');
+            onClose();
+        } catch(e) { showAlert('오류', '저장 실패'); }
+        finally { setSaving(false); }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" style={{zIndex:75}} onClick={onClose}>
+            <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl overflow-y-auto max-h-[90vh]" onClick={e=>e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-5">
+                    <h2 className="text-xl font-black text-slate-800">내 프로필</h2>
+                    <button onClick={onClose} className="text-slate-400 text-2xl leading-none">×</button>
+                </div>
+                <div className="bg-slate-50 rounded-2xl p-4 mb-4 space-y-2.5">
+                    {[
+                        {label:'이름', val:memberInfo.name},
+                        memberInfo.role && memberInfo.role !== '회원' && {label:'역할', val:memberInfo.role, badge:true},
+                        memberInfo.gender && {label:'성별', val:memberInfo.gender},
+                        memberInfo.birth && {label:'생년월일', val:formatBirth(memberInfo.birth)},
+                        memberInfo.joinDate && {label:'가입일', val:memberInfo.joinDate},
+                        memberInfo.position && memberInfo.position !== 'all' && {label:'포지션', val:memberInfo.position},
+                    ].filter(Boolean).map(item=>(
+                        <div key={item.label} className="flex items-center justify-between">
+                            <span className="text-xs font-black text-slate-400">{item.label}</span>
+                            {item.badge
+                                ? <span className={`text-xs font-black px-2 py-0.5 rounded-lg ${getRoleBadgeClass(item.val)}`}>{item.val}</span>
+                                : <span className="text-sm font-black text-slate-700">{item.val}</span>
+                            }
+                        </div>
+                    ))}
+                </div>
+                <div className="space-y-3">
+                    <div>
+                        <p className="text-xs font-black text-slate-500 mb-1">전화번호</p>
+                        <input type="text" style={{userSelect:'text'}} placeholder="010-0000-0000"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                            value={formatPhoneInput(phone)} onChange={e=>setPhone(formatPhoneInput(e.target.value))}/>
+                    </div>
+                    <div>
+                        <p className="text-xs font-black text-slate-500 mb-1">거주지</p>
+                        <input type="text" style={{userSelect:'text'}} placeholder="예: 화성시 반월동"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                            value={address} onChange={e=>setAddress(e.target.value)}/>
+                    </div>
+                </div>
+                <div className="flex gap-2 mt-5">
+                    <button onClick={onClose} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
+                    <button onClick={handleSave} disabled={saving}
+                        className={`flex-1 py-3 rounded-2xl font-black text-sm ${saving?'bg-teal-200 text-white':'bg-teal-500 text-white'}`}>
+                        {saving?'저장 중...':'저장'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── 모달 모음 ────────────────────────────────────────────────────────────────
 const AppModals = ({
     // 회비 액션 모달
@@ -228,6 +305,8 @@ const AppModals = ({
     updateMeetingSettingsAdmin,
     // 공지 작성/수정 모달
     announcementModal, setAnnouncementModal, handleSaveAnnouncement,
+    // 내 프로필 모달
+    isProfileModalOpen, setIsProfileModalOpen, memberInfo, memberData, showAlert,
 }) => (
     <>
         {/* ===== 회비 액션 모달 (바텀시트) ===== */}
@@ -699,6 +778,15 @@ const AppModals = ({
             monthlyReasons={monthlyReasons}
             targetMonth={targetMonth}
             meetingParticipants={meetingParticipants}
+        />
+
+        {/* ===== 내 프로필 모달 ===== */}
+        <ProfileModal
+            isOpen={!!isProfileModalOpen}
+            onClose={()=>setIsProfileModalOpen(false)}
+            memberInfo={memberInfo}
+            memberData={memberData}
+            showAlert={showAlert}
         />
     </>
 );
