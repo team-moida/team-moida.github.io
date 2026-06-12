@@ -1112,7 +1112,7 @@ const TabAttend = ({
             <button onClick={handleGPSCheckIn}
                 className="flex-1 min-w-0 rounded-3xl p-4 text-left text-white active:scale-98 transition-all flex flex-col justify-between"
                 style={{ minHeight:'188px', background:'linear-gradient(135deg,#14b8a6,#0d9488)', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
-                <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center"><Icon.MapPin size={20} className="text-white"/></div>
+                <Icon.MapPin size={60} className="text-white"/>
                 <div className="min-w-0">
                     <p className="text-[11px] font-black uppercase tracking-widest text-white/80">GPS 출석</p>
                     <p className="font-black text-base leading-tight">위치 확인</p>
@@ -1122,7 +1122,7 @@ const TabAttend = ({
                 <button onClick={()=>setIsQRScannerOpen(true)}
                     className="flex-1 min-w-0 rounded-3xl p-4 text-left text-white active:scale-98 transition-all flex flex-col justify-between"
                     style={{ minHeight:'188px', background:'linear-gradient(135deg,#7c3aed,#a855f7)', boxShadow:'0 10px 28px -8px rgba(124,58,237,0.45)' }}>
-                    <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center"><Icon.QrCode size={20} className="text-white"/></div>
+                    <Icon.QrCode size={60} className="text-white"/>
                     <div className="min-w-0">
                         <p className="text-[11px] font-black uppercase tracking-widest text-white/80">QR 출석</p>
                         <p className="font-black text-base leading-tight">스캔하기</p>
@@ -1215,7 +1215,7 @@ const TabAttend = ({
             <button onClick={() => setIsKioskOpen(true)}
                 className="w-full rounded-3xl p-4 text-white active:scale-98 transition-all flex items-center gap-3"
                 style={{ minHeight:'96px', background:'linear-gradient(135deg,#f97316,#ea580c)', boxShadow:'0 10px 28px -8px rgba(234,88,12,0.45)' }}>
-                <div className="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center shrink-0"><span style={{fontSize:22}}>📋</span></div>
+                <Icon.CheckSq size={34} className="text-white shrink-0"/>
                 <div className="min-w-0 text-left flex-1">
                     <p className="text-[11px] font-black uppercase tracking-widest text-white/80">관리자 · 직접 출석</p>
                     <p className="font-black text-base leading-tight">키오스크 모드 열기</p>
