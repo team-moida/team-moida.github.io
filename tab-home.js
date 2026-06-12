@@ -51,7 +51,7 @@ const NotifSetupGuide = ({ notifPermission, memberData }) => {
     );
 
     return (
-        <div className="card rounded-2xl p-4 border-teal-100">
+        <div className="card rounded-3xl p-4 border-teal-100">
             <div className="flex items-start gap-3">
                 <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center flex-shrink-0">
                     <Icon.Bell size={18} className="text-teal-500"/>
@@ -498,7 +498,7 @@ const TabHome = ({
 
         {/* iOS PWA 설치 안내 */}
         {/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone && (
-            <div className="card rounded-2xl p-4 border-orange-100">
+            <div className="card rounded-3xl p-4 border-orange-100">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0 text-lg">📲</div>
                     <div className="flex-1">
@@ -512,7 +512,7 @@ const TabHome = ({
         <NotifSetupGuide notifPermission={notifPermission} memberData={memberData} />
         {/* 알림 허용 배너 */}
         {notifPermission === 'default' && (
-            <button onClick={registerFcmToken} className="w-full card rounded-2xl p-4 text-left border-teal-100 active:scale-98 transition-all">
+            <button onClick={registerFcmToken} className="w-full card rounded-3xl p-4 text-left border-teal-100 active:scale-98 transition-all">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center flex-shrink-0">
                         <Icon.Bell size={18} className="text-teal-500"/>

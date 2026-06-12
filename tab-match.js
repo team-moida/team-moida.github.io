@@ -50,7 +50,7 @@ const TabMatch = ({
                 {/* 설정 탭 */}
                 {matchAdminView === 'setup' && (
                     <div className="space-y-3">
-                        <div className="card border-slate-100 rounded-2xl p-4">
+                        <div className="card border-slate-100 rounded-3xl p-4">
                             <p className="text-[10px] font-black text-teal-500 uppercase tracking-widest mb-3">기본 설정</p>
                             <div className="space-y-3">
                                 <div>
@@ -85,7 +85,7 @@ const TabMatch = ({
                             </div>
                         </div>
 
-                        <div className="card border-slate-100 rounded-2xl p-4">
+                        <div className="card border-slate-100 rounded-3xl p-4">
                             <div className="flex items-center justify-between mb-3">
                                 <p className="text-[10px] font-black text-teal-500 uppercase tracking-widest">구장 프리셋</p>
                                 <button onClick={() => setIsPresetModalOpen(true)} className="text-xs font-black text-teal-500 bg-teal-50 px-2.5 py-1 rounded-lg">+ 추가</button>
@@ -281,14 +281,14 @@ const TabMatch = ({
                 return (
                     <div>
                         {/* 날짜 + 뷰 토글 */}
-                        <div className="flex items-center justify-between mb-4">
-                            <div>
-                                <p className="text-xs text-slate-500 uppercase tracking-widest font-black">{scheduleData.meetingDate}</p>
-                                <p className="text-[10px] text-slate-400 mt-0.5">총 {sessions.length}라운드</p>
+                        <div className="rounded-3xl p-5 mb-4 text-white flex items-center justify-between gap-3" style={{ background:'linear-gradient(135deg,#14b8a6,#0d9488)', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
+                            <div className="min-w-0">
+                                <p className="text-[11px] font-black uppercase tracking-widest text-white/80">{scheduleData.meetingDate} 매치</p>
+                                <p className="font-black text-2xl leading-tight mt-1">총 {sessions.length}<span className="text-base font-black text-white/80 ml-1">라운드</span></p>
                             </div>
-                            <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
-                                <button onClick={()=>setMatchViewMode('my')} className={`px-3 py-1.5 rounded-lg font-black text-xs transition-all ${matchViewMode==='my'?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>내 경기</button>
-                                <button onClick={()=>setMatchViewMode('all')} className={`px-3 py-1.5 rounded-lg font-black text-xs transition-all ${matchViewMode==='all'?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>전체 보기</button>
+                            <div className="flex bg-white/20 rounded-xl p-1 gap-1 shrink-0">
+                                <button onClick={()=>setMatchViewMode('my')} className={`px-3 py-1.5 rounded-lg font-black text-xs transition-all ${matchViewMode==='my'?'bg-white text-teal-600 shadow-sm':'text-white/80'}`}>내 경기</button>
+                                <button onClick={()=>setMatchViewMode('all')} className={`px-3 py-1.5 rounded-lg font-black text-xs transition-all ${matchViewMode==='all'?'bg-white text-teal-600 shadow-sm':'text-white/80'}`}>전체 보기</button>
                             </div>
                         </div>
 
@@ -407,7 +407,7 @@ const TabMatch = ({
                                     const isCurrent = si===cmi;
                                     const isPast = si<cmi;
                                     return (
-                                        <div key={si} className={`rounded-2xl p-4 border transition-all ${isCurrent?'border-teal-100 bg-teal-50':isPast?'border-slate-100 bg-slate-50 opacity-50':hasMyTeam?'border-teal-100 card':'card border-slate-100'}`}>
+                                        <div key={si} className={`rounded-3xl p-4 border transition-all ${isCurrent?'border-teal-100 bg-teal-50':isPast?'border-slate-100 bg-slate-50 opacity-50':hasMyTeam?'border-teal-100 card':'card border-slate-100'}`}>
                                             <div className="flex items-center gap-2 mb-3">
                                                 <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] flex-shrink-0 ${isCurrent?'bg-teal-500 text-white':isPast?'bg-slate-300 text-white':'bg-slate-100 text-slate-500'}`}>{isPast?'✓':si+1}</div>
                                                 <p className="text-xs font-black text-slate-400">{session.time}</p>

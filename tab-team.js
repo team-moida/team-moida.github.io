@@ -26,10 +26,10 @@ const TabTeam = ({
         {teamsDisabled ? (
             /* 팀 편성 OFF 매칭 → 팀 그리드 대신 참여 명단 (운영진·회원 공통) */
             <div>
-                <div className="text-center mb-4">
-                    <p className="text-xs text-slate-500 uppercase tracking-widest font-black">{tmMeetingDate} 참여 명단</p>
-                    <p className="text-2xl font-black text-slate-800 mt-1">{(participants||[]).length}명</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">이 매칭은 팀 편성을 사용하지 않습니다</p>
+                <div className="rounded-3xl p-5 mb-4 text-white" style={{ background:'linear-gradient(135deg,#334155,#1e293b)', boxShadow:'0 10px 28px -8px rgba(30,41,59,0.5)' }}>
+                    <p className="text-[11px] font-black uppercase tracking-widest text-white/70">{tmMeetingDate} 참여 명단</p>
+                    <p className="font-black text-3xl leading-tight mt-1">{(participants||[]).length}<span className="text-base font-black text-white/70 ml-1">명</span></p>
+                    <p className="text-xs text-white/70 mt-1">이 매칭은 팀 편성을 사용하지 않습니다</p>
                 </div>
                 {(participants||[]).length > 0 ? (
                     <div className="space-y-1.5">
@@ -80,7 +80,7 @@ const TabTeam = ({
                 {/* 편성 탭 */}
                 {teamMakerTab === 'generator' && (
                     <div className="space-y-3">
-                        <div className="card border-slate-100 rounded-2xl p-4">
+                        <div className="card border-slate-100 rounded-3xl p-4">
                             <div className="flex items-center justify-between mb-2">
                                 <div>
                                     <p className="text-[10px] font-black text-teal-500 uppercase tracking-widest">모임 날짜</p>
@@ -97,7 +97,7 @@ const TabTeam = ({
                                 ))}
                             </div>
                         </div>
-                        <div className="card border-slate-100 rounded-2xl p-4">
+                        <div className="card border-slate-100 rounded-3xl p-4">
                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">팀 수</p>
                             <div className="grid grid-cols-5 gap-2 mb-3">
                                 {[2,3,4,5,6].map(n => (
@@ -120,7 +120,7 @@ const TabTeam = ({
                             </div>
                         </div>
                         {tmEntryList.length > 0 && (
-                            <div className="card border-slate-100 rounded-2xl p-4">
+                            <div className="card border-slate-100 rounded-3xl p-4">
                                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">편성 대상 (탭하여 제외)</p>
                                 <div className="flex flex-wrap gap-1.5">
                                     {tmEntryList.map(p => {
@@ -369,12 +369,13 @@ const TabTeam = ({
                   </div>
                 : (
                     <div>
-                        <div className="text-center mb-4">
-                            <p className="text-xs text-slate-500 uppercase tracking-widest font-black">{teamDraftData.meetingDate} 팀 편성</p>
+                        <div className="rounded-3xl p-5 mb-4 text-white" style={{ background:'linear-gradient(135deg,#14b8a6,#0d9488)', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
+                            <p className="text-[11px] font-black uppercase tracking-widest text-white/80">{teamDraftData.meetingDate} 팀 편성</p>
+                            <p className="font-black text-2xl leading-tight mt-1">{teamDraftData.teams.length}팀<span className="text-base font-black text-white/80 ml-1"> 편성 완료</span></p>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             {teamDraftData.teams.map((team, teamIdx) => (
-                                <div key={teamIdx} className={`rounded-2xl p-4 border ${teamIdx===myTeamIdx?'border-teal-500 bg-teal-50':'card border-slate-100'}`}>
+                                <div key={teamIdx} className={`rounded-3xl p-4 border ${teamIdx===myTeamIdx?'border-teal-500 bg-teal-50':'card border-slate-100'}`}>
                                     <div className="flex items-center gap-2 mb-3">
                                         <span className={`w-8 h-8 rounded-xl font-black text-sm flex items-center justify-center text-white ${getTeamBadge(teamIdx)}`}>{getTeamName(teamIdx)}</span>
                                         {teamIdx===myTeamIdx && <span className="text-[9px] font-black text-teal-500 uppercase">내 팀</span>}

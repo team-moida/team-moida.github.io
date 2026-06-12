@@ -70,12 +70,18 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
     // ── 목록 화면 ──────────────────────────────────────────────────────────────
     return (
         <div className="animate-in">
-            {/* 상단: 뒤로 + 제목 */}
-            <div className="flex items-center gap-2 mb-3">
-                <button onClick={onBack} className="p-2 -ml-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-all flex items-center gap-1 font-black text-sm">
-                    <Icon.ChevronLeft size={18}/> 홈
+            {/* 상단: 홈 카드 스타일 hero (뒤로 + 제목) */}
+            <div className="rounded-3xl p-5 mb-4 text-white" style={{ background:'linear-gradient(135deg,#f59e0b,#f97316)', boxShadow:'0 10px 28px -8px rgba(249,115,22,0.45)' }}>
+                <button onClick={onBack} className="flex items-center gap-1 text-white/85 font-black text-xs mb-2 active:scale-95 transition-all">
+                    <Icon.ChevronLeft size={16}/> 홈
                 </button>
-                <h1 className="text-xl font-black text-slate-800">공지사항</h1>
+                <div className="flex items-center gap-3">
+                    <Icon.Bell size={26} className="text-white shrink-0"/>
+                    <div className="min-w-0">
+                        <p className="text-[11px] font-black uppercase tracking-widest text-white/80">공지 게시판</p>
+                        <p className="font-black text-xl leading-tight">공지사항{list.length > 0 && <span className="text-base font-black text-white/80"> · {list.length}건</span>}</p>
+                    </div>
+                </div>
             </div>
 
             {/* 관리자 도구 */}
@@ -116,7 +122,7 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                     {list.map(a => (
                         <button key={a.id}
                             onClick={() => selectMode ? toggleCheck(a.id) : setSelectedId(a.id)}
-                            className="w-full card rounded-2xl p-4 text-left active:scale-98 transition-all">
+                            className="w-full card rounded-3xl p-4 text-left active:scale-98 transition-all">
                             <div className="flex items-center gap-3">
                                 {selectMode && (
                                     <span className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center border-2 transition-all ${checkedIds.includes(a.id) ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-300'}`}>

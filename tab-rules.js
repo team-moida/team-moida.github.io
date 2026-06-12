@@ -49,11 +49,17 @@ const TabRules = ({ isAdminMode, showAlert, memberName }) => {
 
     return (
         <div className="animate-in">
-            <div className="flex items-center justify-between mb-4">
-                <p className="text-xs font-black text-slate-500 uppercase tracking-widest">OTP FC 회칙</p>
+            <div className="rounded-3xl p-5 mb-4 text-white flex items-center justify-between gap-3" style={{ background:'linear-gradient(135deg,#334155,#1e293b)', boxShadow:'0 10px 28px -8px rgba(30,41,59,0.5)' }}>
+                <div className="flex items-center gap-3 min-w-0">
+                    <Icon.ShieldCheck size={28} className="text-white shrink-0"/>
+                    <div className="min-w-0">
+                        <p className="text-[11px] font-black uppercase tracking-widest text-white/70">우리 팀 규칙</p>
+                        <p className="font-black text-xl leading-tight">OTP FC 회칙</p>
+                    </div>
+                </div>
                 {isAdminMode && !isEditing && (
                     <button onClick={()=>{setEditContent(content);setIsEditing(true);}}
-                        className="p-2 rounded-xl bg-blue-50 text-blue-500">
+                        className="p-2 rounded-xl bg-white/20 text-white shrink-0 active:scale-95 transition-all">
                         <Icon.Edit size={15}/>
                     </button>
                 )}
@@ -81,7 +87,7 @@ const TabRules = ({ isAdminMode, showAlert, memberName }) => {
                 </div>
             ) : content ? (
                 <div>
-                    <div className="card rounded-2xl p-4">
+                    <div className="card rounded-3xl p-5">
                         <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{content}</p>
                     </div>
                     {updatedAt && (
@@ -91,7 +97,7 @@ const TabRules = ({ isAdminMode, showAlert, memberName }) => {
                     )}
                 </div>
             ) : (
-                <div className="card rounded-2xl p-8 text-center text-slate-400">
+                <div className="card rounded-3xl p-8 text-center text-slate-400">
                     <div className="flex justify-center mb-2 opacity-25"><Icon.ShieldCheck size={36}/></div>
                     <p className="font-black text-sm">아직 회칙이 등록되지 않았습니다</p>
                     {isAdminMode && <p className="text-xs mt-1">우측 상단 편집 버튼으로 작성하세요</p>}
