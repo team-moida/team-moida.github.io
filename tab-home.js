@@ -491,7 +491,15 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
     const ms = memberInfo ? getMembershipStatus(memberInfo, targetMonth) : null;
     const isExempt = memberInfo ? STAFF_ROLES.includes(memberInfo.role) : false;
     const feeFor = (k) => { if (k === 'rest') { return (ms && ms.active && ms.remainingRest > 0) ? 0 : fees.rest; } return fees[k] || 0; };
-    const depositName = `${memberName || ''} ${DUES_LABELS[sel] || ''}`.trim();
+    // 입금자명: 회원명 (O월 회비 / O월 휴식비 / 반년납 / 1년납)
+    const depositNameFor = (k) => {
+        const suffix = k === 'monthly' ? `${targetMonLabel} 회비`
+            : k === 'rest' ? `${targetMonLabel} 휴식비`
+            : k === 'half_year' ? '반년납'
+            : k === 'full_year' ? '1년납' : '';
+        return `${memberName || ''} (${suffix})`.trim();
+    };
+    const depositName = depositNameFor(sel);
 
     const openEdit = () => {
         setForm({ bank:acc?.bank||'', accountNo:acc?.accountNo||'', holder:acc?.holder||'', tossUrl:acc?.tossUrl||'', kakaoUrl:acc?.kakaoUrl||'',
@@ -540,7 +548,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
         try {
             await getCol('dues_reports').doc(`${targetMonth}_${memberId}`).set({
                 memberId, memberName:memberName||'', month:targetMonth, payType,
-                amount:feeFor(payType), depositName:`${memberName||''} ${DUES_LABELS[payType]||''}`.trim(),
+                amount:feeFor(payType), depositName:depositNameFor(payType),
                 reportedAt:new Date().toISOString(), status:'pending',
             });
         } catch(e) { console.warn('납부 신고 실패:', e); }
@@ -687,7 +695,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
             {(acc.accountNo || showPayPrompt) && (
                 <div className="bg-white/10 rounded-2xl p-3 mb-3 space-y-2">
                     {acc.accountNo && infoRow('계좌번호', acc.accountNo, 'acc', false)}
-                    {showPayPrompt && infoRow('입금자명은 이렇게', depositName, 'name', !!acc.accountNo)}
+                    {showPayPrompt && infoRow('입금자명', depositName, 'name', !!acc.accountNo)}
                     {acc.amountHint && <p className="text-[11px] font-black text-white/75 pt-0.5">{acc.amountHint}</p>}
                 </div>
             )}
