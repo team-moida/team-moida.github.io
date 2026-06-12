@@ -1106,20 +1106,35 @@ const TabAttend = ({
             </div>
         )}
 
-        {/* GPS 출석 (관리자 패널 닫혔을 때만) */}
+        {/* 회원 출석 버튼: GPS / QR 나란히 (홈 카드 스타일) */}
         {!(isAdminMode && isAttendPanelOpen) && isViewActive && !mySession?.checkedIn && (
-            <div className="card rounded-3xl p-5">
-                <p className="text-xs font-black text-teal-500 uppercase tracking-widest mb-4">GPS 출석</p>
-
-                {gpsStatus==='idle' && (
-                    <div className="text-center">
-                        <p className="text-slate-400 text-sm mb-4">모임 장소 근처에 있다면<br/>아래 버튼으로 위치를 확인하세요.</p>
-                        <button onClick={handleGPSCheckIn} className="w-full py-4 bg-teal-500 text-white rounded-2xl font-black text-base flex items-center justify-center gap-2">
-                            <Icon.MapPin size={18} className="text-white"/> 위치 확인하기
-                        </button>
+          <div className="flex gap-3">
+            <button onClick={handleGPSCheckIn}
+                className="flex-1 min-w-0 rounded-3xl p-4 text-left text-white active:scale-98 transition-all flex flex-col justify-between"
+                style={{ minHeight:'116px', background:'linear-gradient(135deg,#14b8a6,#0d9488)', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
+                <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center"><Icon.MapPin size={20} className="text-white"/></div>
+                <div className="min-w-0">
+                    <p className="text-[11px] font-black uppercase tracking-widest text-white/80">GPS 출석</p>
+                    <p className="font-black text-base leading-tight">위치 확인</p>
+                </div>
+            </button>
+            {meetingSettings?.enableQR && (
+                <button onClick={()=>setIsQRScannerOpen(true)}
+                    className="flex-1 min-w-0 rounded-3xl p-4 text-left text-white active:scale-98 transition-all flex flex-col justify-between"
+                    style={{ minHeight:'116px', background:'linear-gradient(135deg,#7c3aed,#a855f7)', boxShadow:'0 10px 28px -8px rgba(124,58,237,0.45)' }}>
+                    <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center"><Icon.QrCode size={20} className="text-white"/></div>
+                    <div className="min-w-0">
+                        <p className="text-[11px] font-black uppercase tracking-widest text-white/80">QR 출석</p>
+                        <p className="font-black text-base leading-tight">스캔하기</p>
                     </div>
-                )}
+                </button>
+            )}
+          </div>
+        )}
 
+        {/* GPS 진행/결과 (위치 확인 누른 뒤에만) */}
+        {!(isAdminMode && isAttendPanelOpen) && isViewActive && !mySession?.checkedIn && gpsStatus!=='idle' && (
+            <div className="card rounded-3xl p-5">
                 {gpsStatus==='checking' && (
                     <div className="text-center py-4">
                         <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
@@ -1195,30 +1210,19 @@ const TabAttend = ({
             </div>
         )}
 
-        {/* QR 출석 버튼 — 관리자가 enableQR 활성화 시에만 표시 (패널 닫혔을 때) */}
-        {!(isAdminMode && isAttendPanelOpen) && !mySession?.checkedIn && meetingSettings?.enableQR && (
-            <div className="card rounded-3xl p-5">
-                <p className="text-xs font-black text-violet-400 uppercase tracking-widest mb-3">QR 출석</p>
-                <button onClick={()=>setIsQRScannerOpen(true)}
-                    className="w-full py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 text-white"
-                    style={{ background:'linear-gradient(135deg,#7c3aed,#a855f7)' }}>
-                    <span style={{fontSize:20}}>📷</span> QR 스캔하기
-                </button>
-                <p className="text-slate-600 text-xs text-center mt-2">관리자가 보여주는 QR코드를 스캔하세요</p>
-            </div>
-        )}
-
-        {/* 직접 출석 카드 (관리자 ON + 패널 닫힌 상태, 참가자 있을 때만) */}
+        {/* 직접 출석(키오스크) — 관리자 전용, GPS/QR 버튼 아래 가로 카드(높이 동일) */}
         {isAdminMode && !isAttendPanelOpen && attendActiveList.length > 0 && (
-            <div className="card rounded-3xl p-5">
-                <p className="text-xs font-black text-orange-400 uppercase tracking-widest mb-3">직접 출석</p>
-                <button onClick={() => setIsKioskOpen(true)}
-                    className="w-full py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 text-white"
-                    style={{ background:'linear-gradient(135deg,#f97316,#ea580c)' }}>
-                    <span style={{fontSize:20}}>📋</span> 키오스크 모드 열기
-                </button>
-                <p className="text-slate-500 text-xs text-center mt-2">회원들이 직접 이름을 탭해서 출석 처리합니다</p>
-            </div>
+            <button onClick={() => setIsKioskOpen(true)}
+                className="w-full rounded-3xl p-4 text-white active:scale-98 transition-all flex items-center gap-3"
+                style={{ minHeight:'116px', background:'linear-gradient(135deg,#f97316,#ea580c)', boxShadow:'0 10px 28px -8px rgba(234,88,12,0.45)' }}>
+                <div className="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center shrink-0"><span style={{fontSize:22}}>📋</span></div>
+                <div className="min-w-0 text-left flex-1">
+                    <p className="text-[11px] font-black uppercase tracking-widest text-white/80">관리자 · 직접 출석</p>
+                    <p className="font-black text-base leading-tight">키오스크 모드 열기</p>
+                    <p className="text-xs text-white/75 mt-0.5 truncate">회원이 직접 이름을 탭해 출석 처리</p>
+                </div>
+                <Icon.ChevronRight size={20} className="text-white/80 shrink-0"/>
+            </button>
         )}
 
         <KioskModal
