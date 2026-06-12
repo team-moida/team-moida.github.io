@@ -4,7 +4,7 @@ function useAttend({ isAdminMode, memberData, meetingSettings, tmSessionData, ac
     const testMode = !!meetingSettings?.testMode;
 
     const [isAttendPanelOpen, setIsAttendPanelOpen] = useState(false);
-    const [attendSubTab, setAttendSubTab] = useState('setup');
+    const [attendSubTab, setAttendSubTab] = useState('roster');
     const [attendHistory, setAttendHistory] = useState([]);
     const [selectedHistoryDetail, setSelectedHistoryDetail] = useState(null);
     const [historySortKey, setHistorySortKey] = useState('time');

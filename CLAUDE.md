@@ -69,6 +69,7 @@ Firestore: settings/club_rules { content, updatedAt, updatedBy }
 공지 게시판(전체화면 목록/상세/선택삭제, 종·순환 띠로 진입, tab==='notice') → tab-notice.js + member.html(handleDeleteAnnouncements). 순환 띠·종 배지는 tab-home.js(AnnounceTicker)·member-header.js.
 회원 화면 모달 전체 → modals.js
 회원용 출석 / 체크인 → tab-attend.js, handlers-attend.js, use-attend.js
+모임 탭 (모임 카드 목록 → 카드 누르면 모임 상세: 출석/대진/매치) → tab-attend.js(MeetingListScreen·MeetingDetailHeader·TabAttend) + member.html(viewMeetingId 라우팅, effectiveMeeting 컨텍스트). 팀/매치 데이터는 보고 있는 모임(meetingId) 기준
 
 출석 관리  (attendance.html)
 

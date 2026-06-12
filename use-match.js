@@ -50,14 +50,18 @@ function useMatch({ isAdminMode, meetingSettings, confirmedDrafts }) {
 
     const matchStatsData = useMemo(() => {
         if (!localSchedule.list.length || !confirmedDrafts.length) return null;
-        const latest = [...confirmedDrafts].sort((a,b) => (b.meetingDate||'').localeCompare(a.meetingDate||''))[0];
+        // 이 모임의 확정 편성 기준 (없으면 통계 생략)
+        const _mDate = meetingSettings?.date || '';
+        const _mid = meetingSettings ? getMeetingId(meetingSettings) : _mDate;
+        const forMeeting = confirmedDrafts.filter(d => d.meetingId ? d.meetingId === _mid : d.meetingDate === _mDate);
+        const latest = [...forMeeting].sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''))[0];
         if (!latest?.teams) return null;
         const teams = latest.teams.map((_,i) => getTeamName(i));
         const matchupCounts = {}, totalMatches = {};
         teams.forEach(t => { matchupCounts[t] = {}; teams.forEach(o => { if(t!==o) matchupCounts[t][o]=0; }); totalMatches[t]=0; });
         localSchedule.list.forEach(session => { session.matches.forEach(m => { const[t1,t2]=m.match; matchupCounts[t1][t2]++; matchupCounts[t2][t1]++; totalMatches[t1]++; totalMatches[t2]++; }); });
         return {matchupCounts, totalMatches, teams};
-    }, [localSchedule, confirmedDrafts]);
+    }, [localSchedule, confirmedDrafts, meetingSettings?.date, meetingSettings?.meetingType]);
 
     return {
         isMatchPanelOpen, setIsMatchPanelOpen,

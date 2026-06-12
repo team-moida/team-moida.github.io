@@ -350,7 +350,7 @@ const NextMeetingCard = ({
     const showOverlay = kind !== 'match' && isActive && isAdminMode && isMeetingOver && !isMeetingEndSaved;
     return (
         <div className="relative">
-        <button onClick={()=>onTabChange('attend', kind)}
+        <button onClick={()=>onTabChange('attend', kind, meeting.id || getMeetingId(meeting))}
             className={`w-full rounded-3xl p-5 text-left text-white active:scale-98 transition-all${showOverlay ? ' blur-sm' : ''}`}
             style={{ background: cfg.accent, boxShadow:`0 10px 28px -8px ${cfg.accent}59` }}>
             <div className="flex items-center justify-between gap-2 mb-2.5">
@@ -487,7 +487,7 @@ const TabHome = ({
                 allowFromDisplay={allowFromDisplay} participantCount={participantCount}
                 isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting} />
         )) : (
-            <button onClick={()=>onTabChange('attend')} className="w-full card rounded-3xl p-5 text-center active:scale-98 transition-all">
+            <button onClick={()=>onTabChange('meeting-list')} className="w-full card rounded-3xl p-5 text-center active:scale-98 transition-all">
                 <div className="text-slate-400 py-3">
                     <div className="flex justify-center mb-2 opacity-30"><Icon.Calendar size={32}/></div>
                     <p className="font-black text-sm">예정된 모임이 없습니다</p>

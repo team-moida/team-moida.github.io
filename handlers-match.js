@@ -1,5 +1,6 @@
 function makeMatchHandlers(ctx) {
     const {
+        meetingSettings,
         confirmedDrafts, matchConfig, setMatchConfig,
         localSchedule, setLocalSchedule, localCompletedMatches, setLocalCompletedMatches,
         localMatchIndex, setLocalMatchIndex, activeMatchScheduleId, setActiveMatchScheduleId,
@@ -11,8 +12,12 @@ function makeMatchHandlers(ctx) {
     const splitTime = (t) => { const p = (t || '08:00').split(':'); return {h: p[0] || '08', m: p[1] || '00'}; };
 
     const matchGenerateTable = () => {
-        if (!confirmedDrafts.length) return showAlert('알림', '팀 편성을 먼저 확정해주세요.');
-        const latest = [...confirmedDrafts].sort((a, b) => (b.meetingDate || '').localeCompare(a.meetingDate || ''))[0];
+        // 이 모임(보고 있는 모임)의 확정 편성만 사용 — 다른 날짜 모임의 편성을 가져오지 않는다
+        const _mDate = meetingSettings?.date || matchConfig.meetingDate;
+        const _mid = meetingSettings ? getMeetingId(meetingSettings) : _mDate;
+        const forMeeting = (confirmedDrafts || []).filter(d => d.meetingId ? d.meetingId === _mid : d.meetingDate === _mDate);
+        if (!forMeeting.length) return showAlert('알림', '이 모임의 팀 편성을 먼저 확정해주세요.');
+        const latest = [...forMeeting].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))[0];
         const teams = latest.teams.map((_, i) => getTeamName(i));
         const teamSizes = {}; latest.teams.forEach((t, i) => { teamSizes[getTeamName(i)] = t.members.length; });
         const {courtCount, matchDuration, breakDuration, startTime, endTime} = matchConfig;

@@ -40,8 +40,10 @@ function makeTeamHandlers(ctx) {
             const _confirmMid = getMeetingId(meetingSettings || {date: tmMeetingDate, meetingType: 'self'});
             const draftsRef = getCol('team_drafts');
             const snap = await draftsRef.where('meetingDate', '==', tmMeetingDate).where('isConfirmed', '==', true).get();
-            if (!snap.empty) {
-                await draftsRef.doc(snap.docs[0].id).update({teams: editTeams, updatedAt: now.toISOString()});
+            // 같은 날짜라도 다른 모임(meetingId 불일치)의 확정 기록은 건드리지 않는다
+            const existingDoc = snap.docs.find(dd => { const d = dd.data(); return d.meetingId ? d.meetingId === _confirmMid : true; });
+            if (existingDoc) {
+                await draftsRef.doc(existingDoc.id).update({teams: editTeams, updatedAt: now.toISOString()});
                 showAlert('업데이트', '기존 확정 기록을 업데이트했습니다.');
             } else {
                 await draftsRef.add({

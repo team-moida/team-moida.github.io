@@ -76,18 +76,36 @@ function App() {
             return sessionStorage.getItem('moida_meeting_sub') || 'attend';
         } catch(e) { return 'attend'; }
     });
+    // 모임 탭에서 보고 있는 모임 (null = 모임 카드 목록). 새로고침 후에도 유지.
+    const [viewMeetingId, setViewMeetingId] = useState(() => {
+        try { return sessionStorage.getItem('moida_view_meeting') || null; } catch(e) { return null; }
+    });
+    // 상세 화면 [수정] 버튼 → 목록의 모임 관리에서 수정 폼 자동 오픈
+    const [pendingEditMeeting, setPendingEditMeeting] = useState(null);
     // 현재 탭/하위 탭 기억 → 새로고침(당겨서/F5) 후 같은 위치로 복원. 앱을 완전히 닫으면 초기화(홈).
     React.useEffect(() => { try { sessionStorage.setItem('moida_tab', tab); } catch(e) {} }, [tab]);
     React.useEffect(() => { try { sessionStorage.setItem('moida_meeting_sub', meetingSubTab); } catch(e) {} }, [meetingSubTab]);
+    React.useEffect(() => { try { if (viewMeetingId) sessionStorage.setItem('moida_view_meeting', viewMeetingId); else sessionStorage.removeItem('moida_view_meeting'); } catch(e) {} }, [viewMeetingId]);
     // 매칭모임은 팀편성·매치테이블이 없음 → 'attend'/'team'(명단)만. 'match' 서브탭이면 출석으로 보냄.
     React.useEffect(() => {
         if (activeMeetingKind === 'match' && meetingSubTab === 'match') setMeetingSubTab('attend');
     }, [activeMeetingKind, meetingSubTab]);
     // 홈 탭으로 돌아오면 항상 정기 모임 컨텍스트로 리셋 (헤더/홈카드 오버레이가 정기 모임 기준으로 동작하도록)
     React.useEffect(() => { if (tab === 'home') setActiveMeetingKind('self'); }, [tab]);
-    // 출석/팀/매치로의 이동을 '모임' 탭 + 하위 탭으로 변환하는 네비게이션 헬퍼. kind='match'면 매칭모임 컨텍스트로 진입.
-    const navTab = (t, kind) => {
-        if (t === 'attend' || t === 'team' || t === 'match') { if (kind) setActiveMeetingKind(kind); setMeetingSubTab(t); setTab('meeting'); }
+    // 출석/팀/매치로의 이동을 '모임' 탭 + 하위 탭으로 변환하는 네비게이션 헬퍼.
+    // meetingId를 주면 그 모임 상세로 직행(홈 카드). 없이 들어오면(QR 출석 등) 해당 종류의 현재 모임으로.
+    const navTab = (t, kind, meetingId) => {
+        if (t === 'meeting-list') { setViewMeetingId(null); setTab('meeting'); return; }
+        if (t === 'attend' || t === 'team' || t === 'match') {
+            if (kind) setActiveMeetingKind(kind);
+            if (meetingId) setViewMeetingId(meetingId);
+            else if (!viewMeetingId) {
+                const k = kind || activeMeetingKind;
+                const act = getActiveMeeting((meetings || []).filter(m => k === 'match' ? (m.meetingType||'self') === 'match' : (m.meetingType||'self') !== 'match'));
+                if (act) setViewMeetingId(act.id);
+            }
+            setMeetingSubTab(t); setTab('meeting');
+        }
         else setTab(t);
     };
     const [memberData, setMemberData] = useState(() => {
@@ -106,6 +124,17 @@ function App() {
     const [activeMeetingKind, setActiveMeetingKind] = useState('self');
     const [meetings, setMeetings] = useState([]);
     const displayMeetingSettings = activeMeetingKind === 'match' ? meetingSettingsMatch : meetingSettings;
+    // 모임 탭에서 보고 있는 모임 객체 (meetings 실시간 구독에서 파생 — 수정/삭제 즉시 반영)
+    const viewMeeting = meetings.find(m => m.id === viewMeetingId) || null;
+    const viewKind = viewMeeting ? ((viewMeeting.meetingType || 'self') === 'match' ? 'match' : 'self') : null;
+    // 보고 있는 모임 종류에 맞춰 데이터 컨텍스트(정기/매칭 미러) 자동 전환
+    React.useEffect(() => { if (viewKind) setActiveMeetingKind(viewKind); }, [viewMeetingId, viewKind]);
+    // 모임 탭 컨텍스트 — 보고 있는 모임 우선, 아니면 현재 모임(미러). 팀편성·매치 데이터가 이 모임을 따라간다.
+    const effectiveMeeting = viewMeeting || displayMeetingSettings;
+    // 매치테이블은 정기(자체전) 모임 전용 — 매칭모임을 보는 중에는 정기 미러 유지
+    const effectiveSelfMeeting = (viewMeeting && viewKind === 'self') ? viewMeeting : meetingSettings;
+    // 모임 탭을 벗어나면 보던 모임 해제 → 홈 카드·헤더가 항상 '현재 모임' 기준으로 동작
+    React.useEffect(() => { if (tab !== 'meeting') setViewMeetingId(null); }, [tab]);
     const testMode = !!displayMeetingSettings?.testMode;
     const [mySession, setMySession] = useState(null);
     const [alertModal, setAlertModal] = useState({show:false,title:'',content:'',type:'info',onConfirm:null});
@@ -144,8 +173,8 @@ function App() {
         }
     };
     const roster = useRoster({ isAdminMode });
-    const team = useTeam({ isAdminMode, meetingSettings: displayMeetingSettings, allMembers: roster.allMembers });
-    const match = useMatch({ isAdminMode, meetingSettings, confirmedDrafts: team.confirmedDrafts });
+    const team = useTeam({ isAdminMode, meetingSettings: effectiveMeeting, allMembers: roster.allMembers });
+    const match = useMatch({ isAdminMode, meetingSettings: effectiveSelfMeeting, confirmedDrafts: team.confirmedDrafts });
     const { scheduleData, matchViewMode, setMatchViewMode } = match;
     const attend = useAttend({
         isAdminMode, memberData, meetingSettings: displayMeetingSettings,
@@ -204,10 +233,11 @@ function App() {
         return () => unsub();
     }, [memberData?.memberId, displayMeetingSettings?.date, displayMeetingSettings?.meetingType]);
 
-    // 참여 명단(매칭모임) — 홈 카드 참여인원 표시용. meetingSettingsMatch(매칭 미러)가 활성일 때만 구독.
+    // 참여 명단(매칭모임) — 홈 카드 참여인원 + 매칭모임 명단 탭 표시용.
+    // 모임 탭에서 매칭모임을 보고 있으면 그 모임 기준, 아니면 현재 매칭 미러 기준.
     const [meetingParticipants, setMeetingParticipants] = useState([]);
     useEffect(() => {
-        const ms = meetingSettingsMatch;
+        const ms = (viewMeeting && viewKind === 'match') ? viewMeeting : meetingSettingsMatch;
         if (!ms?.date) { setMeetingParticipants([]); return; }
         const lim = parseInt(ms?.maxLimit || 18);
         const _mid = getMeetingId(ms);
@@ -220,7 +250,7 @@ function App() {
                 setMeetingParticipants(list.slice(0, lim));
             }, () => setMeetingParticipants([]));
         return () => unsub();
-    }, [meetingSettingsMatch?.date, meetingSettingsMatch?.maxLimit]);
+    }, [meetingSettingsMatch?.date, meetingSettingsMatch?.maxLimit, viewMeetingId, viewKind, viewMeeting?.maxLimit]);
 
     useEffect(() => {
         if (!memberData?.memberId) return;
@@ -250,25 +280,28 @@ function App() {
         return { type:'started', label:'모임 중' };
     }, [meetingSettings, nowTime]);
 
+    // 팀 공개 시각/여부 — 보고 있는 모임 기준 (홈에서는 보던 모임이 해제되어 현재 모임 기준)
     const allowFromDisplay = useMemo(() => {
-        if (!meetingSettings?.date || !meetingSettings?.start) return null;
-        const [y,m,d] = meetingSettings.date.split('-').map(Number);
-        const [h,min] = meetingSettings.start.split(':').map(Number);
+        if (!effectiveMeeting?.date || !effectiveMeeting?.start) return null;
+        const [y,m,d] = effectiveMeeting.date.split('-').map(Number);
+        const [h,min] = effectiveMeeting.start.split(':').map(Number);
         const af = new Date(y, m-1, d, h, min, 0);
         af.setTime(af.getTime() - 70*60*1000);
         return `${String(af.getHours()).padStart(2,'0')}:${String(af.getMinutes()).padStart(2,'0')}`;
-    }, [meetingSettings]);
+    }, [effectiveMeeting]);
 
     const teamReady = useMemo(() => {
-        if (!meetingSettings?.date || !meetingSettings?.start) return false;
+        if (!effectiveMeeting?.date || !effectiveMeeting?.start) return false;
         if (testMode) return true;
-        if (meetingDayInfo?.type === 'past') return true;
-        if (meetingDayInfo?.type === 'future') return false;
-        const [y,m,d] = meetingSettings.date.split('-').map(Number);
-        const [h,min] = meetingSettings.start.split(':').map(Number);
+        const di = computeMeetingDay(effectiveMeeting.date, effectiveMeeting.start);
+        if (!di) return false;
+        if (di.type === 'past') return true;
+        if (di.type === 'future') return false;
+        const [y,m,d] = effectiveMeeting.date.split('-').map(Number);
+        const [h,min] = effectiveMeeting.start.split(':').map(Number);
         const allowFrom = new Date(y, m-1, d, h, min, 0).getTime() - 70*60*1000;
         return nowTime.getTime() >= allowFrom;
-    }, [meetingSettings, meetingDayInfo, nowTime, testMode]);
+    }, [effectiveMeeting, nowTime, testMode]);
 
     const myTeamInfo = useMemo(() => {
         if (!team.teamDraftData?.teams || !memberData?.memberId) return null;
@@ -338,8 +371,10 @@ function App() {
         meetings
     });
 
-    const { activeMeeting, handleSaveMeeting, handleDeleteMeeting } = makeMeetingHandlers({ meetings, showAlert, showConfirm });
+    const { activeMeeting, activeSelf, activeMatch, handleSaveMeeting, handleDeleteMeeting } = makeMeetingHandlers({ meetings, showAlert, showConfirm });
     const managers = roster.allMembers.filter(m => STAFF_ROLES.includes(m.role));
+    // 보고 있는 모임이 그 종류(정기/매칭)의 '현재 모임'인지 — 출석/신청/대진/매치는 현재 모임에서만 동작
+    const isViewActive = !!viewMeeting && viewMeeting.id === (viewKind === 'match' ? activeMatch : activeSelf)?.id;
 
     const { moveMonth, handleAddMember, handleUpdateMember, handleResignConfirm,
             handleRestoreResigned, handleDeleteMember,
@@ -367,7 +402,7 @@ function App() {
             tmDragStart, tmDragEnd, tmMemberDragOver, tmTeamDragOver, tmTeamDragLeave,
             tmDrop, tmMemberClick, tmMoveToTeam, tmTeamBadgeClick, tmCapture,
             tmDeleteConfirmed, tmDeleteSelectedDrafts } = makeTeamHandlers({
-        meetingSettings: displayMeetingSettings, editTeams: team.editTeams, setEditTeams: team.setEditTeams,
+        meetingSettings: effectiveMeeting, editTeams: team.editTeams, setEditTeams: team.setEditTeams,
         editIsConfirmed: team.editIsConfirmed, setEditIsConfirmed: team.setEditIsConfirmed,
         editMeetingDate: team.editMeetingDate, setEditMeetingDate: team.setEditMeetingDate,
         setTeamMakerTab: team.setTeamMakerTab, teamingSettings: team.teamingSettings,
@@ -385,6 +420,7 @@ function App() {
     const { splitTime, matchGenerateTable, matchSaveSchedule, matchHandleNextMatch,
             matchHandleCapture, matchHandlePresetSelect, matchToggleSubCourt,
             matchSavePreset } = makeMatchHandlers({
+        meetingSettings: effectiveSelfMeeting,
         confirmedDrafts: team.confirmedDrafts, matchConfig: match.matchConfig,
         setMatchConfig: match.setMatchConfig, localSchedule: match.localSchedule,
         setLocalSchedule: match.setLocalSchedule, localCompletedMatches: match.localCompletedMatches,
@@ -441,12 +477,12 @@ function App() {
         };
     }, []);
 
-    // 다른 탭(또는 모임 하위 탭)으로 이동하면 그 탭의 관리모드(관리 패널) 자동 해제
+    // 다른 탭(또는 모임 하위 탭, 다른 모임)으로 이동하면 그 탭의 관리모드(관리 패널) 자동 해제
     React.useEffect(() => {
         attend.setIsAttendPanelOpen(false);
         team.setIsTeamPanelOpen(false);
         match.setIsMatchPanelOpen(false);
-    }, [tab, meetingSubTab]);
+    }, [tab, meetingSubTab, viewMeetingId]);
 
     if (appView === 'loading') return (
         <div className="min-h-screen flex flex-col items-center justify-center">
@@ -524,18 +560,31 @@ function App() {
                         onDeleteMany={handleDeleteAnnouncements}
                     />
                 )}
-                {tab === 'meeting' && (
-                    <div className="flex gap-1.5 mb-3 p-1 bg-slate-100 rounded-2xl">
-                        {(activeMeetingKind === 'match'
-                            ? [['attend','출석'],['team','명단']]
-                            : [['attend','출석'],['team','대진'],['match','매치']]
-                        ).map(([k,l]) => (
-                            <button key={k} onClick={()=>setMeetingSubTab(k)}
-                                className={`flex-1 min-w-0 py-2 rounded-xl text-sm font-black truncate transition-all ${meetingSubTab===k?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>{l}</button>
-                        ))}
+                {tab === 'meeting' && !viewMeeting && (
+                    <MeetingListScreen
+                        meetings={meetings} isAdminMode={isAdminMode}
+                        onSelect={(m) => { setViewMeetingId(m.id); setMeetingSubTab('attend'); }}
+                        activeMeeting={activeMeeting}
+                        handleSaveMeeting={handleSaveMeeting} handleDeleteMeeting={handleDeleteMeeting}
+                        managers={managers} showAlert={showAlert}
+                        pendingEditMeeting={pendingEditMeeting} onPendingEditHandled={() => setPendingEditMeeting(null)}
+                    />
+                )}
+                {tab === 'meeting' && viewMeeting && (
+                    <div>
+                        <MeetingDetailHeader meeting={viewMeeting} onBack={() => setViewMeetingId(null)} />
+                        <div className="flex gap-1.5 mb-3 p-1 bg-slate-100 rounded-2xl">
+                            {(viewKind === 'match'
+                                ? [['attend','출석'],['team','명단']]
+                                : [['attend','출석'],['team','대진'],['match','매치']]
+                            ).map(([k,l]) => (
+                                <button key={k} onClick={()=>setMeetingSubTab(k)}
+                                    className={`flex-1 min-w-0 py-2 rounded-xl text-sm font-black truncate transition-all ${meetingSubTab===k?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>{l}</button>
+                            ))}
+                        </div>
                     </div>
                 )}
-                {tab === 'meeting' && meetingSubTab === 'team' && (
+                {tab === 'meeting' && viewMeeting && meetingSubTab === 'team' && (
                     <TabTeam
                         isAdminMode={isAdminMode} isTeamPanelOpen={team.isTeamPanelOpen} setIsTeamPanelOpen={team.setIsTeamPanelOpen}
                         teamMakerTab={team.teamMakerTab} setTeamMakerTab={team.setTeamMakerTab}
@@ -551,7 +600,7 @@ function App() {
                         isCapturing={team.isCapturing} teamDraftData={team.teamDraftData}
                         teamReady={teamReady} allowFromDisplay={allowFromDisplay}
                         myTeamIdx={myTeamIdx} memberData={memberData} allMembers={roster.allMembers}
-                        teamsDisabled={activeMeetingKind === 'match'} participants={meetingParticipants}
+                        teamsDisabled={viewKind === 'match'} participants={meetingParticipants}
                         tmMeetingDate={team.tmMeetingDate} tmActiveList={team.tmActiveList}
                         tmEntryList={team.tmEntryList} tmLevelStats={team.tmLevelStats} tmUnassigned={team.tmUnassigned}
                         generateTeams={generateTeams} tmCapture={tmCapture} tmSaveDraft={tmSaveDraft}
@@ -564,7 +613,7 @@ function App() {
                         tmDeleteConfirmed={tmDeleteConfirmed} tmDeleteSelectedDrafts={tmDeleteSelectedDrafts}
                     />
                 )}
-                {tab === 'meeting' && meetingSubTab === 'match' && activeMeetingKind !== 'match' && (
+                {tab === 'meeting' && viewMeeting && meetingSubTab === 'match' && viewKind !== 'match' && (
                     <TabMatch
                         isAdminMode={isAdminMode} isMatchPanelOpen={match.isMatchPanelOpen} setIsMatchPanelOpen={match.setIsMatchPanelOpen}
                         matchAdminView={match.matchAdminView} setMatchAdminView={match.setMatchAdminView}
@@ -584,8 +633,10 @@ function App() {
                         setIsPresetModalOpen={match.setIsPresetModalOpen}
                     />
                 )}
-                {tab === 'meeting' && meetingSubTab === 'attend' && (
+                {tab === 'meeting' && viewMeeting && meetingSubTab === 'attend' && (
                     <TabAttend
+                        viewMeeting={viewMeeting} isViewActive={isViewActive}
+                        onEditMeeting={(m) => { setPendingEditMeeting(m); setViewMeetingId(null); }}
                         isAdminMode={isAdminMode} isAttendPanelOpen={attend.isAttendPanelOpen}
                         setIsAttendPanelOpen={attend.setIsAttendPanelOpen}
                         generateAttendQRCode={generateAttendQRCode} attendToggleTestMode={attendToggleTestMode}
@@ -637,12 +688,6 @@ function App() {
                         attendHandleCheckIn={attendHandleCheckIn}
                         isMeetingOver={attend.isMeetingOver}
                         attendHandleEndMeeting={attendHandleEndMeeting}
-                        meetings={meetings}
-                        activeMeeting={activeMeeting}
-                        handleSaveMeeting={handleSaveMeeting}
-                        handleDeleteMeeting={handleDeleteMeeting}
-                        managers={managers}
-                        showAlert={showAlert}
                         myRegistration={attend.myRegistration}
                         regConfirmedCount={attend.regConfirmedCount}
                         myWaitingPosition={attend.myWaitingPosition}
@@ -681,7 +726,7 @@ function App() {
                         {key:'rules',   label:'회칙', icon:<Icon.ShieldCheck size={20}/>},
                         ...(isAdminMode ? [{key:'roster', label:'명단', icon:<Icon.List size={20}/>}] : []),
                     ].map(({key,label,icon})=>(
-                        <button key={key} onClick={()=>setTab(key)}
+                        <button key={key} onClick={()=>{ if (key === 'meeting') setViewMeetingId(null); setTab(key); }}
                             className={`flex flex-col items-center justify-center flex-1 h-12 rounded-xl transition-all ${tab===key?'bg-teal-100 text-teal-500':'text-slate-400'}`}>
                             {icon}
                             <span className={`text-[9px] font-black mt-0.5 ${tab===key?'text-teal-500':'text-slate-400'}`}>{label}</span>

@@ -357,6 +357,113 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
     );
 };
 
+// ─── 모임 카드 목록 화면 (모임 탭 첫 화면 — 홈 카드와 같은 단색 카드 디자인) ──────
+// MEETING_KIND·computeMeetingDay·fmtMeetingDate는 tab-home.js의 전역 정의를 재사용한다.
+const MeetingListScreen = ({
+    meetings, isAdminMode, onSelect,
+    activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers, showAlert,
+    pendingEditMeeting, onPendingEditHandled,
+}) => {
+    const [isManageOpen, setIsManageOpen] = React.useState(false);
+    // 상세 화면의 [수정] 버튼으로 넘어온 경우 → 관리 화면을 자동으로 연다
+    React.useEffect(() => { if (pendingEditMeeting) setIsManageOpen(true); }, [pendingEditMeeting]);
+
+    const upcoming = (meetings || [])
+        .filter(m => m && m.date && m.status !== 'done')
+        .sort((a, b) => a.date.localeCompare(b.date) || (a.meetingType||'self').localeCompare(b.meetingType||'self'));
+
+    return (
+        <div className="animate-in space-y-3">
+            {isAdminMode && (
+                <div className="flex items-center justify-between">
+                    <p className="text-xs font-black text-slate-500 uppercase tracking-widest">모임</p>
+                    <button onClick={() => setIsManageOpen(o => !o)}
+                        className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 rounded-xl transition-all active:scale-95"
+                        style={isManageOpen ? {background:'linear-gradient(135deg,#14b8a6,#0d9488)',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
+                        ⚙️ {isManageOpen ? '모임 관리 ON' : '모임 관리'}
+                    </button>
+                </div>
+            )}
+            {isAdminMode && isManageOpen ? (
+                <MeetingsTab
+                    meetings={meetings} activeMeeting={activeMeeting}
+                    handleSaveMeeting={handleSaveMeeting} handleDeleteMeeting={handleDeleteMeeting}
+                    managers={managers} showAlert={showAlert}
+                    onSelectMeeting={onSelect}
+                    pendingEditMeeting={pendingEditMeeting} onPendingEditHandled={onPendingEditHandled}
+                />
+            ) : upcoming.length === 0 ? (
+                <div className="card rounded-3xl p-8 text-center text-slate-400">
+                    <div className="flex justify-center mb-3 opacity-30"><Icon.Calendar size={36}/></div>
+                    <p className="font-black text-sm">예정된 모임이 없습니다</p>
+                    {isAdminMode && <p className="text-xs mt-1">[모임 관리]에서 모임을 등록하세요</p>}
+                </div>
+            ) : (
+                upcoming.map(m => {
+                    const kind = (m.meetingType || 'self') === 'match' ? 'match' : 'self';
+                    const cfg = MEETING_KIND[kind];
+                    const dayInfo = computeMeetingDay(m.date, m.start);
+                    return (
+                        <button key={m.id} onClick={() => onSelect(m)}
+                            className="w-full rounded-3xl p-5 text-left text-white active:scale-98 transition-all"
+                            style={{ background: cfg.accent, boxShadow: `0 10px 28px -8px ${cfg.accent}59` }}>
+                            <div className="flex items-center justify-between gap-2 mb-2.5">
+                                <p className="text-xs font-black uppercase tracking-widest text-white/80">{cfg.label}</p>
+                                {dayInfo && dayInfo.type !== 'past' && dayInfo.label && (
+                                    <span className={`flex-shrink-0 text-xs font-black px-3 py-1 rounded-xl ${
+                                        dayInfo.type === 'started' ? 'bg-white text-emerald-600' :
+                                        dayInfo.urgent ? 'bg-white text-rose-500' :
+                                        dayInfo.type === 'today' ? 'bg-white text-slate-700' :
+                                        'bg-white/25 text-white'}`}>{dayInfo.label}</span>
+                                )}
+                            </div>
+                            <p className="font-black text-lg leading-tight">{fmtMeetingDate(m.date)} · {m.start}~{m.end}</p>
+                            {kind === 'match' && m.opponentName && (
+                                <p className="text-sm font-black text-white/90 mt-1 truncate">vs {m.opponentName}</p>
+                            )}
+                            {m.location && (
+                                <p className="text-sm text-white/75 mt-1 flex items-center gap-1 min-w-0">
+                                    <Icon.MapPin size={13} className="flex-shrink-0"/><span className="truncate">{m.location}</span>
+                                </p>
+                            )}
+                            <div className="mt-3 pt-3 border-t flex items-center justify-between gap-2" style={{borderColor:'rgba(255,255,255,0.22)'}}>
+                                <span className="flex items-center gap-1.5 text-xs font-black text-white/80 min-w-0">
+                                    <Icon.Users size={14} className="flex-shrink-0"/>
+                                    <span className="truncate">{kind === 'match' ? `정원 남 ${m.maxMale||0} · 여 ${m.maxFemale||0}` : `최대 ${m.maxLimit||18}명`}</span>
+                                </span>
+                                <span className="flex items-center gap-0.5 text-xs font-black text-white flex-shrink-0">자세히 <Icon.ChevronRight size={14}/></span>
+                            </div>
+                        </button>
+                    );
+                })
+            )}
+        </div>
+    );
+};
+
+// ─── 모임 상세 상단 헤더 (뒤로가기 + 모임 요약) ──────────────────────────────────
+const MeetingDetailHeader = ({ meeting, onBack }) => {
+    const kind = (meeting.meetingType || 'self') === 'match' ? 'match' : 'self';
+    const cfg = MEETING_KIND[kind];
+    const dayInfo = computeMeetingDay(meeting.date, meeting.start);
+    return (
+        <div className="flex items-center gap-3 mb-3">
+            <button onClick={onBack} className="p-2 rounded-xl bg-slate-100 text-slate-600 shrink-0 active:scale-95 transition-all">
+                <Icon.ArrowLeft size={18}/>
+            </button>
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-lg text-white shrink-0" style={{background:cfg.accent}}>{cfg.label}</span>
+                    {kind === 'match' && meeting.opponentName && <span className="text-[10px] font-black text-indigo-500 truncate">vs {meeting.opponentName}</span>}
+                    {dayInfo && dayInfo.type !== 'past' && dayInfo.label && <span className="text-[10px] font-black text-slate-400 shrink-0">{dayInfo.label}</span>}
+                </div>
+                <p className="font-black text-slate-800 truncate mt-0.5">{fmtMeetingDate(meeting.date)} · {meeting.start}~{meeting.end}</p>
+                {meeting.location && <p className="text-[11px] text-slate-400 truncate">📍 {meeting.location}</p>}
+            </div>
+        </div>
+    );
+};
+
 // ─── 출석 탭 ────────────────────────────────────────────────────────────────────
 const TabAttend = ({
     isAdminMode,
@@ -385,12 +492,11 @@ const TabAttend = ({
     isCheckingIn, setGpsStatus,
     isKioskOpen, setIsKioskOpen, attendHandleCheckIn,
     isMeetingOver, attendHandleEndMeeting,
-    meetings, activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers,
-    showAlert,
+    viewMeeting, isViewActive, onEditMeeting,
     myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel,
 }) => {
-    const [selectedMeeting, setSelectedMeeting] = React.useState(null);
-    const [pendingEditMeeting, setPendingEditMeeting] = React.useState(null);
+    // 보고 있는 모임은 상위(member.html)에서 내려옴 — 모임 탭 카드에서 이미 선택된 모임
+    const selectedMeeting = viewMeeting;
     const [isSelecting, setIsSelecting] = React.useState(false);
     const [selMonthlyStatuses, setSelMonthlyStatuses] = React.useState({});
 
@@ -441,7 +547,7 @@ const TabAttend = ({
             <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-black text-slate-500 uppercase tracking-widest">출석</p>
                 <div className="flex items-center gap-1.5">
-                    {isAttendPanelOpen && (
+                    {isAttendPanelOpen && isViewActive && (
                         <>
                             <button onClick={generateAttendQRCode} className="px-2.5 py-1.5 rounded-xl bg-violet-50 text-violet-600 text-xs font-black flex items-center gap-1">
                                 <Icon.QrCode size={13}/> QR
@@ -469,7 +575,7 @@ const TabAttend = ({
             <div>
                 {/* 서브탭 */}
                 <div className="flex gap-2 mb-4">
-                    {[['meetings','모임목록'],['history','기록']].map(([v,l]) => (
+                    {[['roster','명단 관리'],['history','기록']].map(([v,l]) => (
                         <button key={v} onClick={() => { setAttendSubTab(v); setSelectedHistoryDetail(null); }}
                             className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${attendSubTab===v?'bg-teal-500 text-white shadow':'text-slate-400 bg-slate-100'}`}>{l}</button>
                     ))}
@@ -485,45 +591,20 @@ const TabAttend = ({
                     )}
                 </div>
 
-                {/* ── 모임목록 서브탭 ── */}
-                {attendSubTab === 'meetings' && (
-                    <div className={selectedMeeting ? 'md:flex md:gap-4 md:items-start' : ''}>
-                        {/* 모임 목록 */}
-                        <div className={selectedMeeting ? 'hidden md:block md:w-64 flex-shrink-0' : ''}>
-                            <MeetingsTab
-                                meetings={meetings}
-                                activeMeeting={activeMeeting}
-                                handleSaveMeeting={handleSaveMeeting}
-                                handleDeleteMeeting={handleDeleteMeeting}
-                                managers={managers}
-                                showAlert={showAlert}
-                                onSelectMeeting={setSelectedMeeting}
-                                pendingEditMeeting={pendingEditMeeting}
-                                onPendingEditHandled={() => setPendingEditMeeting(null)}
-                            />
-                        </div>
-
-                        {/* 상세 패널 */}
-                        {selectedMeeting && (
-                            <div className="flex-1 min-w-0">
-                                {/* 헤더: 뒤로가기 + 모임 정보 + 모임 종료 */}
+                {/* ── 명단 관리 서브탭 — 지금 보고 있는 모임의 명단 작성 ── */}
+                {attendSubTab === 'roster' && selectedMeeting && (
+                    <div className="min-w-0">
+                            <div>
+                                {/* 헤더: 모임 정보 + 모임 종료 */}
                                 <div className="flex items-center gap-3 mb-4">
-                                    <button onClick={() => setSelectedMeeting(null)}
-                                        className="p-2 rounded-xl bg-slate-100 text-slate-600 md:hidden">
-                                        <Icon.ArrowLeft size={18}/>
-                                    </button>
-                                    <button onClick={() => setSelectedMeeting(null)}
-                                        className="hidden md:flex items-center gap-1 p-2 pr-3 rounded-xl bg-slate-100 text-slate-600 text-xs font-black">
-                                        <Icon.ArrowLeft size={14}/> 목록
-                                    </button>
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <p className="font-black text-slate-800">{selectedMeeting.date}</p>
-                                            {selectedMeeting.id === activeMeeting?.id && <span className="text-[10px] font-black bg-teal-500 text-white px-1.5 py-0.5 rounded-full">현재 모임</span>}
+                                            {isViewActive && <span className="text-[10px] font-black bg-teal-500 text-white px-1.5 py-0.5 rounded-full">현재 모임</span>}
                                         </div>
                                         <p className="text-xs text-slate-400">{selectedMeeting.start} ~ {selectedMeeting.end}</p>
                                     </div>
-                                    {selectedMeeting.id === activeMeeting?.id && (
+                                    {isViewActive && (
                                         <button onClick={attendHandleEndMeeting}
                                             disabled={attendIsPending || !isMeetingOver || attendHistory.some(h => h.date === meetingSettings?.date)}
                                             className={`px-3 py-2 rounded-xl font-black text-xs transition-all disabled:opacity-30 ${attendHistory.some(h => h.date === meetingSettings?.date) ? 'bg-emerald-50 text-emerald-500' : isMeetingOver ? 'bg-rose-500 text-white active:scale-95' : 'bg-slate-100 text-slate-300'}`}>
@@ -549,7 +630,7 @@ const TabAttend = ({
                                 <div className="card border-slate-100 rounded-2xl p-4 mb-4">
                                     <div className="flex items-center justify-between mb-3">
                                         <p className="text-xs font-black text-teal-500 uppercase tracking-widest">모임 정보</p>
-                                        <button onClick={() => { setPendingEditMeeting(selectedMeeting); setSelectedMeeting(null); }}
+                                        <button onClick={() => onEditMeeting(selectedMeeting)}
                                             className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-500 text-xs font-black active:scale-95 transition-all">
                                             <Icon.Edit size={13}/> 수정
                                         </button>
@@ -664,7 +745,7 @@ const TabAttend = ({
                                         <div className="flex items-center justify-between mb-3 px-1 gap-2">
                                             <p className="text-xs font-black text-slate-700 uppercase tracking-widest shrink-0">회원 선정</p>
                                             <div className="flex gap-1.5 flex-wrap justify-end min-w-0">
-                                                {selectedMeeting.id === activeMeeting?.id && (
+                                                {isViewActive && (
                                                     <>
                                                         <button onClick={()=>attendOpenAddGuest(selectedMeeting)} className="shrink-0 px-2.5 py-1.5 bg-slate-100 text-slate-600 text-xs font-black rounded-xl flex items-center gap-1"><Icon.UserPlus size={12}/> 게스트</button>
                                                         <button onClick={attendHandleTestSelect} className="shrink-0 px-2.5 py-1.5 bg-amber-50 text-amber-600 text-xs font-black rounded-xl flex items-center gap-1"><Icon.Beaker size={12}/> 테스트</button>
@@ -742,7 +823,7 @@ const TabAttend = ({
                                 )}
 
                                 {/* 출석 현황 요약 (현재 모임일 때만) */}
-                                {selectedMeeting.id === activeMeeting?.id && (
+                                {isViewActive && (
                                     <div className="mt-6 pt-4 border-t border-slate-100">
                                         <div className="flex items-center justify-between mb-3">
                                             <p className="text-xs font-black text-slate-400 uppercase tracking-widest">출석 현황</p>
@@ -764,12 +845,11 @@ const TabAttend = ({
                                     </div>
                                 )}
                             </div>
-                        )}
                     </div>
                 )}
 
                 {/* ── 출석 서브탭 ── */}
-                {attendSubTab === 'attend' && (
+                {attendSubTab === 'attend' && isViewActive && (
                     <div>
                         {/* 모임 정보 카드 */}
                         <div className="card rounded-2xl p-4 mb-4">
@@ -979,8 +1059,17 @@ const TabAttend = ({
             </div>
         ) : null}
 
+        {/* 아직 차례가 오지 않은(다음다음) 모임 → 안내만 표시 */}
+        {!(isAdminMode && isAttendPanelOpen) && !isViewActive && (
+            <div className="card rounded-3xl p-6 text-center text-slate-400">
+                <p className="text-3xl mb-2">⏳</p>
+                <p className="font-black text-sm text-slate-500">아직 차례가 오지 않은 모임입니다</p>
+                <p className="text-xs mt-1">이 모임이 가장 가까운 모임이 되면<br/>신청·출석 기능이 여기에 열립니다</p>
+            </div>
+        )}
+
         {/* 선착순 신청 카드 (관리자 패널 닫혔을 때만) */}
-        {!(isAdminMode && isAttendPanelOpen) && (
+        {!(isAdminMode && isAttendPanelOpen) && isViewActive && (
             <RegistrationCard
                 meetingSettings={meetingSettings}
                 myRegistration={myRegistration}
@@ -992,7 +1081,7 @@ const TabAttend = ({
         )}
 
         {/* 현재 출석 상태 (관리자 패널 닫혔을 때만) */}
-        {!(isAdminMode && isAttendPanelOpen) && mySession?.checkedIn && (
+        {!(isAdminMode && isAttendPanelOpen) && isViewActive && mySession?.checkedIn && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-5 text-center">
                 <div className="flex justify-center mb-2"><div className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center"><Icon.Check size={28} className="text-white"/></div></div>
                 <p className="font-black text-xl text-emerald-400">출석 완료!</p>
@@ -1001,7 +1090,7 @@ const TabAttend = ({
         )}
 
         {/* QR 처리 결과 (관리자 패널 닫혔을 때만) */}
-        {!(isAdminMode && isAttendPanelOpen) && qrStatus !== 'idle' && (
+        {!(isAdminMode && isAttendPanelOpen) && isViewActive && qrStatus !== 'idle' && (
             <div className={`rounded-3xl p-5 text-center border ${qrStatus==='success'?'bg-emerald-50 border-emerald-200':qrStatus==='processing'?'card border-slate-100':'bg-red-50 border-red-200'}`}>
                 {qrStatus==='processing' && <><div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p className="font-black text-slate-500">QR 확인 중...</p></>}
                 {qrStatus==='success' && <><p className="text-3xl mb-2">🎉</p><p className="font-black text-emerald-400 whitespace-pre-line">{qrMessage}</p></>}
@@ -1018,7 +1107,7 @@ const TabAttend = ({
         )}
 
         {/* GPS 출석 (관리자 패널 닫혔을 때만) */}
-        {!(isAdminMode && isAttendPanelOpen) && !mySession?.checkedIn && (
+        {!(isAdminMode && isAttendPanelOpen) && isViewActive && !mySession?.checkedIn && (
             <div className="card rounded-3xl p-5">
                 <p className="text-xs font-black text-teal-500 uppercase tracking-widest mb-4">GPS 출석</p>
 
