@@ -1111,7 +1111,7 @@ const TabAttend = ({
           <div className="flex gap-3">
             <button onClick={handleGPSCheckIn}
                 className="flex-1 min-w-0 rounded-3xl p-4 text-left text-white active:scale-98 transition-all flex flex-col justify-between"
-                style={{ minHeight:'116px', background:'linear-gradient(135deg,#14b8a6,#0d9488)', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
+                style={{ minHeight:'152px', background:'linear-gradient(135deg,#14b8a6,#0d9488)', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
                 <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center"><Icon.MapPin size={20} className="text-white"/></div>
                 <div className="min-w-0">
                     <p className="text-[11px] font-black uppercase tracking-widest text-white/80">GPS 출석</p>
@@ -1121,7 +1121,7 @@ const TabAttend = ({
             {meetingSettings?.enableQR && (
                 <button onClick={()=>setIsQRScannerOpen(true)}
                     className="flex-1 min-w-0 rounded-3xl p-4 text-left text-white active:scale-98 transition-all flex flex-col justify-between"
-                    style={{ minHeight:'116px', background:'linear-gradient(135deg,#7c3aed,#a855f7)', boxShadow:'0 10px 28px -8px rgba(124,58,237,0.45)' }}>
+                    style={{ minHeight:'152px', background:'linear-gradient(135deg,#7c3aed,#a855f7)', boxShadow:'0 10px 28px -8px rgba(124,58,237,0.45)' }}>
                     <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center"><Icon.QrCode size={20} className="text-white"/></div>
                     <div className="min-w-0">
                         <p className="text-[11px] font-black uppercase tracking-widest text-white/80">QR 출석</p>
@@ -1214,7 +1214,7 @@ const TabAttend = ({
         {isAdminMode && !isAttendPanelOpen && attendActiveList.length > 0 && (
             <button onClick={() => setIsKioskOpen(true)}
                 className="w-full rounded-3xl p-4 text-white active:scale-98 transition-all flex items-center gap-3"
-                style={{ minHeight:'116px', background:'linear-gradient(135deg,#f97316,#ea580c)', boxShadow:'0 10px 28px -8px rgba(234,88,12,0.45)' }}>
+                style={{ minHeight:'152px', background:'linear-gradient(135deg,#f97316,#ea580c)', boxShadow:'0 10px 28px -8px rgba(234,88,12,0.45)' }}>
                 <div className="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center shrink-0"><span style={{fontSize:22}}>📋</span></div>
                 <div className="min-w-0 text-left flex-1">
                     <p className="text-[11px] font-black uppercase tracking-widest text-white/80">관리자 · 직접 출석</p>
