@@ -87,7 +87,7 @@ const QRScannerModal = ({ isOpen, onScan, onClose }) => {
                     </div>
 
                     {/* 닫기 버튼 */}
-                    <button onClick={onClose} style={{ position:'absolute', top:20, left:16, zIndex:10, background:'rgba(0,0,0,0.5)', border:'1px solid rgba(255,255,255,0.2)', color:'white', padding:'8px 18px', borderRadius:20, fontWeight:900, fontSize:13, backdropFilter:'blur(8px)' }}>
+                    <button onClick={onClose} style={{ position:'absolute', top:'max(20px, env(safe-area-inset-top))', left:16, zIndex:10, background:'rgba(0,0,0,0.5)', border:'1px solid rgba(255,255,255,0.2)', color:'white', padding:'8px 18px', borderRadius:20, fontWeight:900, fontSize:13, backdropFilter:'blur(8px)' }}>
                         ← 닫기
                     </button>
                 </>
