@@ -271,7 +271,7 @@ const MeetingWeather = ({ lat, lng, date, isAdminMode }) => {
 
     // 문제 상태는 회원에겐 깔끔히 숨기고, 관리자에게만 이유를 짧게 안내 (평상시엔 안 보임)
     const adminNote = (txt) => isAdminMode ? (
-        <div className="mt-3 flex items-center gap-1.5 text-[11px] font-black text-slate-400 min-w-0">
+        <div className="mt-3 flex items-center gap-1.5 text-[11px] font-black text-white/70 min-w-0">
             <Icon.MapPin size={12} className="flex-shrink-0 opacity-60"/><span className="truncate">{txt}</span>
         </div>
     ) : null;
@@ -286,7 +286,7 @@ const MeetingWeather = ({ lat, lng, date, isAdminMode }) => {
     }
     if (wState !== 'done' || !wx) {
         return (
-            <div className="mt-3 flex items-center gap-2 text-xs font-black text-slate-400">
+            <div className="mt-3 flex items-center gap-2 text-xs font-black text-white/70">
                 <span className="animate-pulse">날씨 불러오는 중…</span>
             </div>
         );
@@ -296,21 +296,21 @@ const MeetingWeather = ({ lat, lng, date, isAdminMode }) => {
     return (
         <div className="mt-3">
             {addr && (
-                <p className="text-xs font-black text-slate-500 mb-1.5 truncate">{addr}</p>
+                <p className="text-xs font-black text-white/70 mb-1.5 truncate">{addr}</p>
             )}
             <div className="flex items-center gap-3">
             <span className="text-3xl leading-none flex-shrink-0">{icon}</span>
             <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-1.5 min-w-0">
-                    <span className="text-[10px] font-black text-slate-400 flex-shrink-0">지금</span>
-                    <span className="text-lg font-black text-slate-700 flex-shrink-0">{r(wx.cur)}°</span>
-                    <span className="text-xs font-black text-slate-400 truncate">{label}</span>
+                    <span className="text-[10px] font-black text-white/70 flex-shrink-0">지금</span>
+                    <span className="text-lg font-black text-white flex-shrink-0">{r(wx.cur)}°</span>
+                    <span className="text-xs font-black text-white/80 truncate">{label}</span>
                 </div>
                 <div className="flex items-center gap-x-2.5 gap-y-0.5 mt-0.5 text-[11px] font-black flex-wrap">
-                    <span className="text-blue-400">최저 {r(wx.min)}°</span>
-                    <span className="text-red-400">최고 {r(wx.max)}°</span>
-                    <span className="text-slate-400">습도 {r(wx.humidity)}%</span>
-                    {wx.pop != null && <span className="text-teal-400">강수 {r(wx.pop)}%</span>}
+                    <span className="text-white">최저 {r(wx.min)}°</span>
+                    <span className="text-white">최고 {r(wx.max)}°</span>
+                    <span className="text-white/70">습도 {r(wx.humidity)}%</span>
+                    {wx.pop != null && <span className="text-white/70">강수 {r(wx.pop)}%</span>}
                 </div>
             </div>
             </div>
@@ -351,24 +351,24 @@ const NextMeetingCard = ({
     return (
         <div className="relative">
         <button onClick={()=>onTabChange('attend', kind)}
-            className={`w-full card rounded-3xl p-5 text-left active:scale-98 transition-all${showOverlay ? ' blur-sm' : ''}`}
-            style={{ borderLeft:`4px solid ${cfg.accent}`, ...(darkMode ? {} : { background: cfg.tint }) }}>
+            className={`w-full rounded-3xl p-5 text-left text-white active:scale-98 transition-all${showOverlay ? ' blur-sm' : ''}`}
+            style={{ background: cfg.accent, boxShadow:`0 10px 28px -8px ${cfg.accent}59` }}>
             <div className="flex items-center justify-between gap-2 mb-2.5">
-                <p className={`text-xs font-black uppercase tracking-widest ${cfg.text}`}>{cfg.label}</p>
+                <p className="text-xs font-black uppercase tracking-widest text-white/80">{cfg.label}</p>
                 {dayInfo && dayInfo.type !== 'past' && dayInfo.label && (
                     <span className={`flex-shrink-0 text-xs font-black px-3 py-1 rounded-xl ${
-                        dayInfo.type==='started'?'bg-emerald-50 text-emerald-500':
-                        dayInfo.urgent?'bg-red-50 text-red-500':
-                        dayInfo.type==='today'?'bg-teal-50 text-teal-500':
-                        'bg-slate-100 text-slate-500'}`}>{dayInfo.label}</span>
+                        dayInfo.type==='started'?'bg-white text-emerald-600':
+                        dayInfo.urgent?'bg-white text-rose-500':
+                        dayInfo.type==='today'?'bg-white text-slate-700':
+                        'bg-white/25 text-white'}`}>{dayInfo.label}</span>
                 )}
             </div>
             <p className="font-black text-lg leading-tight">{fmtMeetingDate(meeting.date)} · {meeting.start}~{meeting.end}</p>
             {kind==='match' && meeting.opponentName && (
-                <p className="text-sm font-black text-indigo-500 mt-1 truncate">vs {meeting.opponentName}</p>
+                <p className="text-sm font-black text-white/90 mt-1 truncate">vs {meeting.opponentName}</p>
             )}
             {meeting.location && (
-                <p className="text-sm text-slate-400 mt-1 flex items-center gap-1 min-w-0">
+                <p className="text-sm text-white/75 mt-1 flex items-center gap-1 min-w-0">
                     <Icon.MapPin size={13} className="flex-shrink-0"/><span className="truncate">{meeting.location}</span>
                 </p>
             )}
@@ -377,49 +377,49 @@ const NextMeetingCard = ({
                 <MeetingWeather lat={meeting.locationLat} lng={meeting.locationLng} date={meeting.date} isAdminMode={isAdminMode} />
             )}
             {isActive ? (
-                <div className="mt-4 pt-4 border-t space-y-2.5" style={{borderColor: darkMode?'rgba(255,255,255,0.08)':'#f1f5f9'}}>
+                <div className="mt-4 pt-4 border-t space-y-2.5" style={{borderColor:'rgba(255,255,255,0.22)'}}>
                     {/* 출석 상태 — 출석체크 시점(당일/모임중)이 되면 체크 버튼, 완료 시 완료 표시 */}
                     {mySession?.checkedIn ? (
                         <div className="flex items-center justify-between gap-2">
-                            <span className="flex items-center gap-1.5 text-sm font-black text-emerald-500 min-w-0">
+                            <span className="flex items-center gap-1.5 text-sm font-black text-white min-w-0">
                                 <Icon.Check size={16} className="flex-shrink-0"/><span className="truncate">출석 완료</span>
                             </span>
-                            <span className="text-xs font-black text-slate-400 flex-shrink-0">{mySession.checkInTime}</span>
+                            <span className="text-xs font-black text-white/70 flex-shrink-0">{mySession.checkInTime}</span>
                         </div>
                     ) : (dayInfo.type==='today' || dayInfo.type==='started') ? (
-                        <div className="flex items-center justify-between gap-2 -mx-1.5 px-3 py-2.5 rounded-xl" style={{background: darkMode?'rgba(20,184,166,0.14)':'#f0fdfa'}}>
-                            <span className="flex items-center gap-1.5 text-sm font-black text-teal-600 min-w-0">
+                        <div className="flex items-center justify-between gap-2 -mx-1.5 px-3 py-2.5 rounded-xl" style={{background:'rgba(255,255,255,0.2)'}}>
+                            <span className="flex items-center gap-1.5 text-sm font-black text-white min-w-0">
                                 <Icon.CheckSq size={16} className="flex-shrink-0"/><span className="truncate">지금 출석 체크하기</span>
                             </span>
-                            <Icon.ChevronRight size={16} className="text-teal-400 flex-shrink-0"/>
+                            <Icon.ChevronRight size={16} className="text-white/80 flex-shrink-0"/>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                        <div className="flex items-center gap-1.5 text-xs text-white/70">
                             <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">모임 당일에 출석 체크가 열립니다</span>
                         </div>
                     )}
                     {/* 팀 상태 — 팀편성 OFF면 참여 명단, 아니면 공개 시점에 내 팀 표시 */}
                     {meeting.meetingType === 'match' ? (
-                        <div className="flex items-center gap-1.5 text-sm font-black text-slate-700 min-w-0">
-                            <Icon.Users size={16} className="flex-shrink-0 text-teal-500"/><span className="truncate">참여 명단 {participantCount || 0}명</span>
+                        <div className="flex items-center gap-1.5 text-sm font-black text-white min-w-0">
+                            <Icon.Users size={16} className="flex-shrink-0 text-white/80"/><span className="truncate">참여 명단 {participantCount || 0}명</span>
                         </div>
                     ) : teamReady && myTeamInfo ? (
                         <div className="flex items-center justify-between gap-2">
-                            <span className="flex items-center gap-1.5 text-sm font-black text-slate-700 min-w-0">
+                            <span className="flex items-center gap-1.5 text-sm font-black text-white min-w-0">
                                 <span className={`w-5 h-5 rounded-md flex items-center justify-center text-white text-[11px] font-black flex-shrink-0 ${getTeamBadge(myTeamIdx)}`}>{myTeamInfo.jerseyNumber}</span>
                                 <span className="truncate">내 팀 · {myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</span>
                             </span>
-                            <span className="text-xs text-slate-400 flex-shrink-0">{getTeamColorName(myTeamIdx)} 조끼</span>
+                            <span className="text-xs text-white/70 flex-shrink-0">{getTeamColorName(myTeamIdx)} 조끼</span>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                        <div className="flex items-center gap-1.5 text-xs text-white/70">
                             <Icon.Users size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">팀 편성 비공개 중{allowFromDisplay?` · ${allowFromDisplay}부터 공개`:''}</span>
                         </div>
                     )}
                 </div>
             ) : (
-                <div className="mt-4 pt-4 border-t" style={{borderColor: darkMode?'rgba(255,255,255,0.08)':'#f1f5f9'}}>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                <div className="mt-4 pt-4 border-t" style={{borderColor:'rgba(255,255,255,0.22)'}}>
+                    <div className="flex items-center gap-1.5 text-xs text-white/70">
                         <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">모임이 가까워지면 출석·팀 정보가 표시됩니다</span>
                     </div>
                 </div>
