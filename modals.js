@@ -1,14 +1,14 @@
 // ─── 공지 작성/수정 모달 ─────────────────────────────────────────────────────
 function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSaveAnnouncement, activeMembers, monthlyStatuses, monthlyReasons, targetMonth, meetingParticipants }) {
     const { useState, useEffect } = React;
-    const [form, setForm] = useState({ title: '', body: '' });
+    const [form, setForm] = useState({ title: '', body: '', category: '공지' });
     const [isSaving, setIsSaving] = useState(false);
     const [targetMode, setTargetMode] = useState('all');
     const [selectedMemberIds, setSelectedMemberIds] = useState([]);
 
     useEffect(() => {
         if (announcementModal?.open) {
-            setForm({ title: announcementModal.data?.title || '', body: announcementModal.data?.body || '' });
+            setForm({ title: announcementModal.data?.title || '', body: announcementModal.data?.body || '', category: announcementModal.data?.category || '공지' });
             setTargetMode('all');
             setSelectedMemberIds([]);
         }
@@ -47,6 +47,17 @@ function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSave
             <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col" style={{maxHeight:'90vh'}} onClick={e=>e.stopPropagation()}>
                 <h2 className="text-xl font-black text-slate-800 mb-4">{isAdd ? '공지 작성' : '공지 수정'}</h2>
                 <div className="space-y-3 mb-3">
+                    <div>
+                        <p className="text-xs font-black text-slate-500 mb-1">분류</p>
+                        <div className="flex gap-2">
+                            {[['모임','bg-teal-500'],['공지','bg-slate-600'],['중요','bg-red-500']].map(([cat,activeBg]) => (
+                                <button key={cat} onClick={()=>setForm(p=>({...p,category:cat}))}
+                                    className={`flex-1 py-2 rounded-xl font-black text-sm transition-all ${form.category===cat?`${activeBg} text-white`:'bg-slate-100 text-slate-500'}`}>
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                     <div>
                         <p className="text-xs font-black text-slate-500 mb-1">제목</p>
                         <input type="text" style={{userSelect:'text'}} placeholder="제목 입력"

@@ -324,14 +324,15 @@ function App() {
     }, [urlParams.token, appView]);
 
     const handleLogout = () => { localStorage.removeItem('moida_member_data'); location.href = 'index.html'; };
-    const handleSaveAnnouncement = async ({ title, body, id, mode, targetMode, selectedMemberIds }) => {
+    const handleSaveAnnouncement = async ({ title, body, category, id, mode, targetMode, selectedMemberIds }) => {
         const senderName = memberInfo?.name || memberData?.name || '관리자';
+        const cat = category || '공지';
         if (mode === 'add') {
-            const notifDoc = { title, body, sentAt: new Date().toISOString(), sentBy: senderName };
+            const notifDoc = { title, body, category: cat, sentAt: new Date().toISOString(), sentBy: senderName };
             if (targetMode === 'select') notifDoc.targetMemberIds = selectedMemberIds;
             await getCol('notifications').add(notifDoc);
         } else {
-            await getCol('notifications').doc(id).update({ title, body, updatedAt: new Date().toISOString() });
+            await getCol('notifications').doc(id).update({ title, body, category: cat, updatedAt: new Date().toISOString() });
         }
     };
     const handleDeleteAnnouncement = (id) => showConfirm('공지 삭제', '이 공지를 삭제하시겠습니까?', async () => {

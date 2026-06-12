@@ -15,6 +15,18 @@ const fmtNoticeDate = (iso) => {
     return `${yy}.${mm}.${dd}`;
 };
 
+// 공지 분류 배지 (모임/공지/중요). 옛 공지는 category 없음 → 기본 '공지'
+const NOTICE_CAT = {
+    '모임': 'bg-teal-100 text-teal-600',
+    '중요': 'bg-red-100 text-red-600',
+    '공지': 'bg-slate-200 text-slate-600',
+};
+const NoticeBadge = ({ category }) => {
+    const cat = category || '공지';
+    const cls = NOTICE_CAT[cat] || NOTICE_CAT['공지'];
+    return <span className={`shrink-0 text-[10px] font-black px-2 py-0.5 rounded-lg ${cls}`}>{cat}</span>;
+};
+
 const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDeleteOne, onDeleteMany }) => {
     const { useState, useEffect } = React;
     const [selectedId, setSelectedId] = useState(null);   // 상세 보기 대상 (null이면 목록)
@@ -51,7 +63,10 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                 </div>
                 <div className="card rounded-3xl p-5">
                     <div className="flex items-start justify-between gap-2 mb-2">
-                        <h2 className="font-black text-lg text-slate-800 flex-1">{selected.title}</h2>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <NoticeBadge category={selected.category} />
+                            <h2 className="font-black text-lg text-slate-800 min-w-0">{selected.title}</h2>
+                        </div>
                         <span className="text-[11px] text-slate-400 whitespace-nowrap flex-shrink-0 mt-1">{fmtNoticeDate(selected.sentAt)}</span>
                     </div>
                     <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{selected.body}</p>
@@ -131,7 +146,10 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                                 )}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between gap-2">
-                                        <p className="font-black text-sm text-slate-800 truncate">{a.title}</p>
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            <NoticeBadge category={a.category} />
+                                            <p className="font-black text-sm text-slate-800 truncate">{a.title}</p>
+                                        </div>
                                         <span className="text-[10px] text-slate-400 whitespace-nowrap flex-shrink-0">{fmtNoticeDate(a.sentAt)}</span>
                                     </div>
                                     <p className="text-xs text-slate-500 mt-1 truncate">{a.body}</p>

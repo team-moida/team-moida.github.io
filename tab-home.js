@@ -160,7 +160,10 @@ const AnnounceTicker = ({ announcements, onOpen }) => {
                 <Icon.Bell size={15} className="text-teal-500 flex-shrink-0"/>
                 {/* key 변경 → moida-ticker-up 애니메이션 재생 (아래에서 위로 등장) */}
                 <div key={safeIdx} className="flex-1 min-w-0 flex items-center justify-between gap-2 moida-ticker-up">
-                    <span className="font-black text-sm text-slate-700 truncate">{a.title}</span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                        <NoticeBadge category={a.category} />
+                        <span className="font-black text-sm text-slate-700 truncate">{a.title}</span>
+                    </div>
                     <span className="text-[10px] text-slate-400 whitespace-nowrap flex-shrink-0">{fmtAnnDate(a.sentAt)}</span>
                 </div>
             </div>
