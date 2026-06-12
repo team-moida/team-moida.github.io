@@ -120,6 +120,12 @@ function App() {
     const isAdmin = ADMIN_ROLES.includes(memberData?.role);
     const isAdminMode = ADMIN_ROLES.includes(memberData?.role);
     const inTestPreview = (() => { try { return !!localStorage.getItem('moida_admin_backup'); } catch(e) { return false; } })();
+    const [testExists, setTestExists] = useState(false);
+    useEffect(() => {
+        if (!isAdmin || inTestPreview) { setTestExists(false); return; }
+        const unsub = getCol('members').where('isTest','==',true).onSnapshot(s => setTestExists(!s.empty), () => {});
+        return () => unsub();
+    }, [isAdmin, inTestPreview]);
     const [meetingSettings, setMeetingSettings] = useState(null);
     const [meetingSettingsMatch, setMeetingSettingsMatch] = useState(null);
     const [activeMeetingKind, setActiveMeetingKind] = useState('self');
@@ -343,26 +349,7 @@ function App() {
             location.reload();
         } catch(e) { try { showToast('테스트 전환 실패: ' + e.message, 'error'); } catch(_) { alert('테스트 전환 실패: ' + e.message); } }
     };
-    const exitTestPreview = async () => {
-        // 테스트회원이 만든 기록 정리 (휘발성) — 복귀하면 모두 삭제
-        try {
-            const testId = (() => { try { return JSON.parse(localStorage.getItem('moida_member_data'))?.memberId; } catch(e) { return null; } })();
-            if (testId) {
-                try {
-                    const drs = await getCol('dues_reports').where('memberId','==',testId).get();
-                    const months = new Set();
-                    const b1 = db.batch();
-                    drs.forEach(d => { const r=d.data(); if(r.month) months.add(r.month); b1.delete(d.ref); });
-                    await b1.commit();
-                    for (const mth of months) {
-                        try { await getCol('monthly_checks').doc(mth).update({ [`statuses.${testId}`]: firebase.firestore.FieldValue.delete(), [`paymentDates.${testId}`]: firebase.firestore.FieldValue.delete() }); } catch(_) {}
-                    }
-                } catch(_) {}
-                try { await getCol('fcm_tokens').doc(testId).delete(); } catch(_) {}
-                try { const ws = await getCol('weekly_session').where('memberId','==',testId).get(); const b2 = db.batch(); ws.forEach(d => b2.delete(d.ref)); await b2.commit(); } catch(_) {}
-                try { await getCol('members').doc(testId).delete(); } catch(_) {}
-            }
-        } catch(e) {}
+    const exitTestPreview = () => {
         try {
             const bak = localStorage.getItem('moida_admin_backup');
             if (bak) localStorage.setItem('moida_member_data', bak);
@@ -370,6 +357,27 @@ function App() {
             localStorage.setItem('moida_admin_mode', 'true');
         } catch(e) {}
         location.reload();
+    };
+    // 관리자에서 확인을 마친 뒤 직접 호출 — 테스트 계정·기록 일괄 삭제
+    const cleanupTestData = async () => {
+        if (!window.confirm('테스트 계정과 테스트가 만든 모든 기록을 삭제할까요?')) return;
+        try {
+            const snap = await getCol('members').where('isTest','==',true).get();
+            for (const docu of snap.docs) {
+                const testId = docu.id;
+                try {
+                    const drs = await getCol('dues_reports').where('memberId','==',testId).get();
+                    const months = new Set(); const b1 = db.batch();
+                    drs.forEach(d => { const r=d.data(); if(r.month) months.add(r.month); b1.delete(d.ref); });
+                    await b1.commit();
+                    for (const mth of months) { try { await getCol('monthly_checks').doc(mth).update({ [`statuses.${testId}`]: firebase.firestore.FieldValue.delete(), [`paymentDates.${testId}`]: firebase.firestore.FieldValue.delete() }); } catch(_) {} }
+                } catch(_) {}
+                try { await getCol('fcm_tokens').doc(testId).delete(); } catch(_) {}
+                try { const ws = await getCol('weekly_session').where('memberId','==',testId).get(); const b2 = db.batch(); ws.forEach(d => b2.delete(d.ref)); await b2.commit(); } catch(_) {}
+                try { await getCol('members').doc(testId).delete(); } catch(_) {}
+            }
+            showToast('테스트 기록을 정리했어요.', 'success');
+        } catch(e) { showToast('정리 실패: ' + e.message, 'error'); }
     };
     const handleSaveAnnouncement = async ({ title, body, category, id, mode, targetMode, selectedMemberIds }) => {
         const senderName = memberInfo?.name || memberData?.name || '관리자';
@@ -574,6 +582,12 @@ function App() {
                 <div style={{position:'sticky',top:0,zIndex:56}} className="bg-rose-600 text-white text-[11px] font-black flex items-center justify-center gap-2 py-2 px-4">
                     🔧 테스트(회원) 화면 보는 중
                     <button onClick={exitTestPreview} className="px-2 py-0.5 rounded-md bg-white/25 hover:bg-white/35 underline">관리자로 복귀</button>
+                </div>
+            )}
+            {testExists && !inTestPreview && (
+                <div style={{position:'sticky',top:0,zIndex:56}} className="bg-amber-500 text-white text-[11px] font-black flex items-center justify-center gap-2 py-2 px-4">
+                    🔧 테스트 계정·기록이 남아 있어요
+                    <button onClick={cleanupTestData} className="px-2 py-0.5 rounded-md bg-white/25 hover:bg-white/35 underline">정리</button>
                 </div>
             )}
             <MemberHeader
