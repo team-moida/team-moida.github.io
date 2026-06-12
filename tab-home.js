@@ -760,6 +760,37 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
         </>
     );
 };
+// ─── 홈: 회비 납부 신고 알림 (관리자 전용) ──────────────────────────────────────
+// 회비 탭 깊숙이 있던 신고 목록을 홈 상단에서 한눈에 보고 바로 확정/삭제할 수 있게.
+// 대기 신고가 없으면 표시 안 함(홈을 깔끔하게 유지). duesReports는 회비 탭과 동일 소스.
+const DuesReportsHomeCard = ({ duesReports, onConfirm, onReject, onGoDuesTab }) => {
+    const pend = Object.values(duesReports || {}).filter(r => r && r.status === 'pending');
+    if (!pend.length) return null;
+    return (
+        <div className="rounded-3xl p-4 border-2 border-amber-300 bg-amber-50">
+            <div className="flex items-center justify-between gap-2 mb-2.5">
+                <p className="font-black text-sm text-amber-700 flex items-center gap-1.5">
+                    <span className="text-base">🔔</span> 회비 납부 신고 {pend.length}건
+                </p>
+                {onGoDuesTab && (
+                    <button onClick={onGoDuesTab} className="text-[11px] font-black text-amber-600 bg-amber-100 px-2.5 py-1 rounded-lg active:scale-95 transition-all shrink-0">회비 탭에서 보기</button>
+                )}
+            </div>
+            <div className="space-y-1.5">
+                {pend.map(r => (
+                    <div key={r.memberId+'_'+r.month} className="flex items-center gap-2 bg-white rounded-2xl px-3 py-2 border border-amber-100">
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-black text-slate-800 truncate">{r.memberName||'회원'}</p>
+                            <p className="text-[11px] text-slate-400">{r.month} · {DUES_LABELS[r.payType]||''} {wonFmt(r.amount)}원</p>
+                        </div>
+                        <button onClick={()=>onConfirm && onConfirm(r)} className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-black shrink-0 active:scale-95 transition-all">확정</button>
+                        <button onClick={()=>onReject && onReject(r)} className="px-2 py-1.5 rounded-lg bg-slate-100 text-slate-400 text-xs font-black shrink-0 active:scale-95 transition-all">삭제</button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
 const TabHome = ({
     notifPermission, registerFcmToken, onTabChange,
     meetingDayInfo, teamReady, allowFromDisplay,
@@ -767,6 +798,7 @@ const TabHome = ({
     mySession, meetingSettings, meetingSettingsMatch, darkMode,
     memberName, announcements, onOpenAnnouncements,
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
+    duesReports, onConfirmDuesReport, onRejectDuesReport, onGoDuesTab,
 }) => {
     // 정기/매칭 다음 모임 분리 (회원이 둘 다 참여할 수 있어 종류별 카드로 표시)
     const upcoming = (meetings || []).filter(m => m && m.status !== 'done' && m.date);
@@ -804,6 +836,9 @@ const TabHome = ({
     <div className="animate-in space-y-3">
         {/* 공지 순환 띠 (맨 위, 항상 표시) */}
         <AnnounceTicker announcements={announcements} onOpen={onOpenAnnouncements} onTabChange={onTabChange} />
+
+        {/* 회비 납부 신고 (관리자 전용 · 대기 신고가 있을 때만 — 홈에서 한눈에 확정/삭제) */}
+        {isAdminMode && <DuesReportsHomeCard duesReports={duesReports} onConfirm={onConfirmDuesReport} onReject={onRejectDuesReport} onGoDuesTab={onGoDuesTab} />}
 
         {/* 다음 모임 — 정기/매칭 종류별로 분리해 색상으로 구분 (탭하면 모임 탭으로 이동) */}
         {meetingCards.length > 0 ? meetingCards.map(c => (

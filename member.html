@@ -616,6 +616,9 @@ function App() {
                         isMeetingOver={attend.isMeetingOver}
                         onEndMeeting={attendHandleEndMeeting}
                         isMeetingEndSaved={attend.attendHistory?.some(h => h.date === meetingSettings?.date) || false}
+                        duesReports={roster.duesReports}
+                        onConfirmDuesReport={confirmDuesReport} onRejectDuesReport={rejectDuesReport}
+                        onGoDuesTab={() => { roster.setRosterSubTab('monthly'); navTab('roster'); }}
                     />
                 )}
                 {tab === 'notice' && (
