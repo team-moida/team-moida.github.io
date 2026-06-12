@@ -507,8 +507,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
     const isExempt = memberInfo ? STAFF_ROLES.includes(memberInfo.role) : false;
     const feeFor = (k) => { if (k === 'rest') { return (ms && ms.active && ms.remainingRest > 0) ? 0 : fees.rest; } return fees[k] || 0; };
     // 입금자명: 회원명 (O월 회비 / O월 휴식비 / 반년납 / 1년납)
-    // 이름에 섞인 이모지(테스트용 🔧 등)는 제거해 깔끔한 입금자명만 안내.
-    const cleanMemberName = (memberName || '').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FE0F}\u{200D}]/gu, '').replace(/\s+/g, ' ').trim();
+    const cleanMemberName = (memberName || '').replace(/[\u{1F300}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B50}-\u{2BFF}\u{FE00}-\u{FE0F}]/gu, '').replace(/\s+/g, ' ').trim();
     const depositNameFor = (k) => {
         const suffix = k === 'monthly' ? `${targetMonLabel} 회비`
             : k === 'rest' ? `${targetMonLabel} 휴식비`
