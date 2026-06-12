@@ -272,7 +272,7 @@ const RegSettingsSection = ({ meetingSettings, updateMeetingSettingsAdmin }) => 
 };
 
 // ─── 회원용 신청 카드 ─────────────────────────────────────────────────────────────
-const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel }) => {
+const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel, duesUnpaid, duesBlock }) => {
     if (!meetingSettings?.isRegistrationEnabled) return null;
 
     const now = new Date();
@@ -315,10 +315,22 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
             )}
 
             {isOpen && !myRegistration && (
-                <button onClick={handleRegister}
-                    className="w-full py-3.5 bg-orange-500 text-white rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all">
-                    신청하기
-                </button>
+                <>
+                    {duesUnpaid && (
+                        <div className="mb-2 rounded-2xl px-3 py-2.5 bg-rose-50 border border-rose-200">
+                            <p className="text-xs font-black text-rose-600">⚠️ 회비 미납 상태예요</p>
+                            <p className="text-[11px] text-rose-400 mt-0.5">홈 탭에서 회비를 납부해 주세요{duesBlock ? ' · 납부해야 신청할 수 있어요' : ''}</p>
+                        </div>
+                    )}
+                    {duesBlock && duesUnpaid ? (
+                        <button disabled className="w-full py-3.5 bg-slate-200 text-slate-400 rounded-2xl font-black text-sm cursor-not-allowed">회비 미납 — 신청 불가</button>
+                    ) : (
+                        <button onClick={handleRegister}
+                            className="w-full py-3.5 bg-orange-500 text-white rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all">
+                            신청하기
+                        </button>
+                    )}
+                </>
             )}
 
             {isOpen && myRegistration?.status === 'confirmed' && (
@@ -475,7 +487,7 @@ const TabAttend = ({
     darkMode, meetingSettings, updateMeetingSettingsAdmin,
     attendActiveParticipants, snapMin, attendHourOptions, attendMinuteOptions,
     setIsLocationPickerOpen, localMaxLimit, setLocalMaxLimit,
-    memberData, attendNormalMembers, tmSessionData, activeMembers,
+    memberData, memberInfo, attendNormalMembers, tmSessionData, activeMembers,
     attendToggleParticipant, setIsAttendGuestModalOpen,
     attendHandleTestSelect, attendHandleResetSelection,
     attendGuestEligibleMembers, attendToggleParticipantAsGuest,
@@ -510,6 +522,24 @@ const TabAttend = ({
         }, () => {});
         return () => unsub();
     }, [selectedMeeting?.date]);
+    // 내 회비 미납 여부 (이 모임 달 기준) + 관리자 차단 스위치
+    const [duesBlock, setDuesBlock] = React.useState(false);
+    React.useEffect(() => {
+        const unsub = getCol('settings').doc('club_account').onSnapshot(d => setDuesBlock(d.exists ? !!d.data().blockUnpaid : false), () => {});
+        return () => unsub();
+    }, []);
+    const myDuesUnpaid = React.useMemo(() => {
+        const me = memberInfo;
+        if (!me) return false;
+        if (ADMIN_ROLES.includes(me.role) || STAFF_ROLES.includes(me.role)) return false;
+        if (me.isSpecialRest) return false;
+        const monthStr = selectedMeeting?.date?.substring(0,7) || '';
+        const st = selMonthlyStatuses[me.id];
+        if (st === 'paid' || st === 'rest') return false;
+        const info = getMembershipStatus(me, monthStr);
+        if (info?.active) return false;
+        return true;
+    }, [memberInfo, selMonthlyStatuses, selectedMeeting?.date]);
     // 다른 모임으로 바꾸면 선정 편집 모드 해제
     React.useEffect(() => { setIsSelecting(false); }, [selectedMeeting?.id]);
 
@@ -1077,6 +1107,8 @@ const TabAttend = ({
                 myWaitingPosition={myWaitingPosition}
                 handleRegister={handleRegister}
                 handleCancel={handleCancel}
+                duesUnpaid={myDuesUnpaid}
+                duesBlock={duesBlock}
             />
         )}
 

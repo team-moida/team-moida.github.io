@@ -449,7 +449,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
     const { useState, useEffect } = React;
     const [acc, setAcc] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [form, setForm] = useState({ bank:'', accountNo:'', holder:'', tossUrl:'', kakaoUrl:'', amountHint:'', monthlyFee:'', restFee:'', halfYearFee:'', fullYearFee:'' });
+    const [form, setForm] = useState({ bank:'', accountNo:'', holder:'', tossUrl:'', kakaoUrl:'', amountHint:'', monthlyFee:'', restFee:'', halfYearFee:'', fullYearFee:'', blockUnpaid:false });
     const [isSaving, setIsSaving] = useState(false);
     const [copied, setCopied] = useState(false);
     const [sel, setSel] = useState('monthly');
@@ -495,7 +495,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
 
     const openEdit = () => {
         setForm({ bank:acc?.bank||'', accountNo:acc?.accountNo||'', holder:acc?.holder||'', tossUrl:acc?.tossUrl||'', kakaoUrl:acc?.kakaoUrl||'', amountHint:acc?.amountHint||'',
-            monthlyFee:acc?.monthlyFee||'', restFee:acc?.restFee||'', halfYearFee:acc?.halfYearFee||'', fullYearFee:acc?.fullYearFee||'' });
+            monthlyFee:acc?.monthlyFee||'', restFee:acc?.restFee||'', halfYearFee:acc?.halfYearFee||'', fullYearFee:acc?.fullYearFee||'', blockUnpaid:!!acc?.blockUnpaid });
         setIsEditing(true);
     };
     const handleSave = async () => {
@@ -507,6 +507,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
                 tossUrl:normUrl(form.tossUrl), kakaoUrl:normUrl(form.kakaoUrl), amountHint:form.amountHint.trim(),
                 monthlyFee:Number(form.monthlyFee)||0, restFee:Number(form.restFee)||0,
                 halfYearFee:Number(form.halfYearFee)||0, fullYearFee:Number(form.fullYearFee)||0,
+                blockUnpaid:!!form.blockUnpaid,
                 updatedAt:new Date().toISOString(), updatedBy:memberName||'관리자',
             }, { merge:true });
             setIsEditing(false);
@@ -558,6 +559,13 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
                 {field('카카오페이 송금 링크','kakaoUrl','예) qr.kakaopay.com/...', true)}
                 {field('추가 안내','amountHint','예) 신입 첫 달 반값', true)}
                 <p className="text-[11px] text-slate-400 leading-relaxed mb-3">금액을 비우면 기본값(월납 3만·휴식 1만·반년 15만·1년 30만)으로 안내됩니다. 토스·카카오 링크를 넣으면 회원이 누를 때 송금 화면이 바로 열려요.</p>
+                <label className="flex items-center justify-between gap-3 mb-3 bg-slate-50 rounded-xl px-3 py-2.5">
+                    <span className="min-w-0">
+                        <span className="block text-[13px] font-black text-slate-700">미납자 모임 신청 차단</span>
+                        <span className="block text-[11px] text-slate-400">끄면 경고만 / 켜면 미납 시 신청 버튼이 막힘</span>
+                    </span>
+                    <input type="checkbox" checked={!!form.blockUnpaid} onChange={e=>setForm(f=>({...f,blockUnpaid:e.target.checked}))} className="w-5 h-5 shrink-0 accent-emerald-500"/>
+                </label>
                 <div className="flex gap-2">
                     <button onClick={()=>setIsEditing(false)} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
                     <button onClick={handleSave} disabled={isSaving} className={`flex-1 py-3 rounded-2xl font-black text-sm ${isSaving?'bg-emerald-300 text-white':'bg-emerald-500 text-white'}`}>{isSaving?'저장 중...':'저장'}</button>
