@@ -442,21 +442,60 @@ const NextMeetingCard = ({
 // 저장: settings/club_account { bank, accountNo, holder, tossUrl, kakaoUrl, amountHint, updatedAt, updatedBy }
 // ※ 입금 "자동 확인"은 은행 자격이 필요해 불가 → 누르면 송금 화면이 열리는 데까지 지원.
 const normUrl = (u) => { const s = (u||'').trim(); return s ? (/^https?:\/\//i.test(s) ? s : 'https://'+s) : ''; };
-const DuesAccountCard = ({ isAdminMode, memberName }) => {
+const DUES_FEE_DEFAULTS = { monthlyFee:30000, restFee:10000, halfYearFee:150000, fullYearFee:300000 };
+const DUES_LABELS = { monthly:'월납', rest:'휴식', half_year:'반년납', full_year:'1년납' };
+const wonFmt = (n) => (Number(n)||0).toLocaleString('ko-KR');
+const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
     const { useState, useEffect } = React;
     const [acc, setAcc] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [form, setForm] = useState({ bank:'', accountNo:'', holder:'', tossUrl:'', kakaoUrl:'', amountHint:'' });
+    const [form, setForm] = useState({ bank:'', accountNo:'', holder:'', tossUrl:'', kakaoUrl:'', amountHint:'', monthlyFee:'', restFee:'', halfYearFee:'', fullYearFee:'' });
     const [isSaving, setIsSaving] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [sel, setSel] = useState('monthly');
+    const [report, setReport] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
+    const [popupOff, setPopupOff] = useState(false);
+
+    const memberId = memberInfo?.id || null;
 
     useEffect(() => {
         const unsub = getCol('settings').doc('club_account').onSnapshot(d => setAcc(d.exists ? d.data() : null));
         return () => unsub();
     }, []);
 
+    // ── 대상 월 / 표시 시점 (매월 1일 7일 전부터 다음 달 회비 노출, 3일 전부터 팝업) ──
+    const now = new Date();
+    const Y = now.getFullYear(), Mo = now.getMonth(), D = now.getDate();
+    const dim = new Date(Y, Mo + 1, 0).getDate();
+    const inPreWindow = D >= dim - 6;    // 다음 달 1일 7일 전부터
+    const inPopupWindow = D >= dim - 2;  // 다음 달 1일 3일 전부터
+    const tgt = inPreWindow ? new Date(Y, Mo + 1, 1) : new Date(Y, Mo, 1);
+    const targetMonth = `${tgt.getFullYear()}-${String(tgt.getMonth() + 1).padStart(2, '0')}`;
+    const targetMonLabel = `${tgt.getMonth() + 1}월`;
+    const todayKey = `${Y}-${Mo + 1}-${D}`;
+
+    useEffect(() => {
+        if (!memberId) { setReport(null); return; }
+        const unsub = getCol('dues_reports').doc(`${targetMonth}_${memberId}`).onSnapshot(d => setReport(d.exists ? d.data() : null));
+        return () => unsub();
+    }, [memberId, targetMonth]);
+
+    const fee = (k, def) => { const v = Number(acc?.[k]); return (v && v > 0) ? v : def; };
+    const fees = {
+        monthly: fee('monthlyFee', DUES_FEE_DEFAULTS.monthlyFee),
+        rest: fee('restFee', DUES_FEE_DEFAULTS.restFee),
+        half_year: fee('halfYearFee', DUES_FEE_DEFAULTS.halfYearFee),
+        full_year: fee('fullYearFee', DUES_FEE_DEFAULTS.fullYearFee),
+    };
+    const ms = memberInfo ? getMembershipStatus(memberInfo, targetMonth) : null;
+    const isExempt = memberInfo ? STAFF_ROLES.includes(memberInfo.role) : false;
+    const feeFor = (k) => { if (k === 'rest') { return (ms && ms.active && ms.remainingRest > 0) ? 0 : fees.rest; } return fees[k] || 0; };
+    const depositName = `${memberName || ''} ${DUES_LABELS[sel] || ''}`.trim();
+
     const openEdit = () => {
-        setForm({ bank:acc?.bank||'', accountNo:acc?.accountNo||'', holder:acc?.holder||'', tossUrl:acc?.tossUrl||'', kakaoUrl:acc?.kakaoUrl||'', amountHint:acc?.amountHint||'' });
+        setForm({ bank:acc?.bank||'', accountNo:acc?.accountNo||'', holder:acc?.holder||'', tossUrl:acc?.tossUrl||'', kakaoUrl:acc?.kakaoUrl||'', amountHint:acc?.amountHint||'',
+            monthlyFee:acc?.monthlyFee||'', restFee:acc?.restFee||'', halfYearFee:acc?.halfYearFee||'', fullYearFee:acc?.fullYearFee||'' });
         setIsEditing(true);
     };
     const handleSave = async () => {
@@ -466,22 +505,36 @@ const DuesAccountCard = ({ isAdminMode, memberName }) => {
             await getCol('settings').doc('club_account').set({
                 bank:form.bank.trim(), accountNo:form.accountNo.trim(), holder:form.holder.trim(),
                 tossUrl:normUrl(form.tossUrl), kakaoUrl:normUrl(form.kakaoUrl), amountHint:form.amountHint.trim(),
+                monthlyFee:Number(form.monthlyFee)||0, restFee:Number(form.restFee)||0,
+                halfYearFee:Number(form.halfYearFee)||0, fullYearFee:Number(form.fullYearFee)||0,
                 updatedAt:new Date().toISOString(), updatedBy:memberName||'관리자',
-            });
+            }, { merge:true });
             setIsEditing(false);
         } catch(e) { console.warn('계좌 저장 실패:', e); }
         finally { setIsSaving(false); }
     };
-    const copyAccount = async () => {
-        const t = acc?.accountNo || ''; if (!t) return;
+    const copyText = async (t) => {
+        if (!t) return;
         try { await navigator.clipboard.writeText(t); }
         catch { try { const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } catch(_){} }
         setCopied(true); setTimeout(()=>setCopied(false), 1600);
     };
-    const field = (label, k, ph, optional) => (
+    const submitReport = async (payType) => {
+        if (!memberId) return;
+        setSubmitting(true);
+        try {
+            await getCol('dues_reports').doc(`${targetMonth}_${memberId}`).set({
+                memberId, memberName:memberName||'', month:targetMonth, payType,
+                amount:feeFor(payType), depositName:`${memberName||''} ${DUES_LABELS[payType]||''}`.trim(),
+                reportedAt:new Date().toISOString(), status:'pending',
+            });
+        } catch(e) { console.warn('납부 신고 실패:', e); }
+        finally { setSubmitting(false); }
+    };
+    const field = (label, k, ph, optional, numeric) => (
         <div className="mb-2.5">
             <label className="block text-[11px] font-black text-slate-500 mb-1">{label}{optional && <span className="text-slate-300 font-bold"> (선택)</span>}</label>
-            <input value={form[k]} onChange={e=>setForm(f=>({...f,[k]:e.target.value}))} placeholder={ph}
+            <input value={form[k]} onChange={e=>setForm(f=>({...f,[k]:e.target.value}))} placeholder={ph} inputMode={numeric?'numeric':'text'}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700"/>
         </div>
     );
@@ -490,14 +543,21 @@ const DuesAccountCard = ({ isAdminMode, memberName }) => {
     if (isEditing) {
         return (
             <div className="card rounded-3xl p-5">
-                <p className="font-black text-base text-slate-800 mb-3">모임 계좌 설정</p>
+                <p className="font-black text-base text-slate-800 mb-3">모임 계좌 · 회비 설정</p>
                 {field('은행','bank','예) 카카오뱅크')}
                 {field('계좌번호','accountNo','예) 3333-01-1234567')}
                 {field('예금주','holder','예) 홍길동')}
+                <p className="text-[11px] font-black text-slate-500 mb-1 mt-1">회비 금액 (원)</p>
+                <div className="grid grid-cols-2 gap-x-2">
+                    {field('월납','monthlyFee','30000', true, true)}
+                    {field('휴식비','restFee','10000', true, true)}
+                    {field('반년납','halfYearFee','150000', true, true)}
+                    {field('1년납','fullYearFee','300000', true, true)}
+                </div>
                 {field('토스 송금 링크','tossUrl','예) toss.me/otpfc', true)}
                 {field('카카오페이 송금 링크','kakaoUrl','예) qr.kakaopay.com/...', true)}
-                {field('회비 금액 안내','amountHint','예) 월 2만원', true)}
-                <p className="text-[11px] text-slate-400 leading-relaxed mb-3">토스·카카오페이 링크는 각 앱의 '내 송금링크 / 송금받기'에서 만들어 붙여넣으면, 회원이 누를 때 송금 화면이 바로 열려요. 안 넣으면 그 버튼은 숨겨집니다.</p>
+                {field('추가 안내','amountHint','예) 신입 첫 달 반값', true)}
+                <p className="text-[11px] text-slate-400 leading-relaxed mb-3">금액을 비우면 기본값(월납 3만·휴식 1만·반년 15만·1년 30만)으로 안내됩니다. 토스·카카오 링크를 넣으면 회원이 누를 때 송금 화면이 바로 열려요.</p>
                 <div className="flex gap-2">
                     <button onClick={()=>setIsEditing(false)} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
                     <button onClick={handleSave} disabled={isSaving} className={`flex-1 py-3 rounded-2xl font-black text-sm ${isSaving?'bg-emerald-300 text-white':'bg-emerald-500 text-white'}`}>{isSaving?'저장 중...':'저장'}</button>
@@ -523,8 +583,55 @@ const DuesAccountCard = ({ isAdminMode, memberName }) => {
         );
     }
 
-    // ── 계좌 표시 (회원·관리자 공통) ──
+    // ── 회비 납부 상태 영역 계산 ──
+    let dues = null, showPayPrompt = false;
+    if (memberInfo) {
+        if (isExempt) {
+            dues = (<div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3"><p className="text-sm font-black text-white">운영진은 회비가 면제됩니다 🙌</p></div>);
+        } else if (ms && ms.active && ms.remaining > 1) {
+            dues = (
+                <div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3">
+                    <p className="text-sm font-black text-white">✓ {ms.type}납 회원 · 만료 {ms.endDateFormatted}</p>
+                    <p className="text-[11px] text-white/75 mt-0.5">남은 휴식 면제 {ms.remainingRest}회</p>
+                    {report && (report.status==='pending'||report.status==='confirmed')
+                        ? <p className="text-[11px] text-white/80 mt-1">{report.status==='pending'?'⏳ 휴식 신청 확인 대기 중':'✓ 휴식 처리됨'}</p>
+                        : <button onClick={()=>submitReport('rest')} disabled={submitting} className="mt-2 px-3 py-1.5 rounded-lg bg-white/25 text-white font-black text-xs active:scale-95 transition-all">{submitting?'처리 중...':`이번 달 쉬어요 (${feeFor('rest')===0?'면제':wonFmt(feeFor('rest'))+'원'})`}</button>}
+                </div>
+            );
+        } else if (report && report.status==='confirmed') {
+            dues = (<div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3"><p className="text-sm font-black text-white">✓ {targetMonLabel} 회비 완료</p></div>);
+        } else if (report && report.status==='pending') {
+            dues = (<div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3"><p className="text-sm font-black text-white">⏳ {targetMonLabel} 회비 확인 대기 중</p><p className="text-[11px] text-white/80 mt-0.5">{DUES_LABELS[report.payType]||''} {wonFmt(report.amount)}원 · 관리자 확인 후 완료돼요</p></div>);
+        } else {
+            showPayPrompt = true;
+            const isRenew = ms && ms.active && ms.remaining <= 1;
+            dues = (
+                <div className="bg-white/15 rounded-2xl px-3 py-3 mb-3">
+                    <p className="text-sm font-black text-white mb-2">{isRenew ? `⚠️ ${ms.type}납 곧 만료 (${ms.endDateFormatted}) · 갱신해 주세요` : `${targetMonLabel} 회비를 납부해 주세요`}</p>
+                    <div className="grid grid-cols-2 gap-1.5 mb-2">
+                        {['monthly','rest','half_year','full_year'].map(k => (
+                            <button key={k} onClick={()=>setSel(k)} className={`py-2 rounded-xl font-black text-xs transition-all ${sel===k?'bg-white text-emerald-700':'bg-white/20 text-white'}`}>{DUES_LABELS[k]} · {feeFor(k)===0?'면제':wonFmt(feeFor(k))+'원'}</button>
+                        ))}
+                    </div>
+                    <div className="flex items-center justify-between bg-white/15 rounded-xl px-3 py-2 mb-2 gap-2">
+                        <div className="min-w-0"><p className="text-[10px] text-white/70 font-black">입금자명은 이렇게</p><p className="text-sm font-black text-white truncate">{depositName}</p></div>
+                        <button onClick={()=>copyText(depositName)} className="px-2.5 py-1.5 rounded-lg bg-white/25 text-white text-xs font-black shrink-0 active:scale-95 transition-all">복사</button>
+                    </div>
+                    <button onClick={()=>submitReport(sel)} disabled={submitting} className="w-full py-2.5 rounded-xl bg-white text-emerald-700 font-black text-sm active:scale-95 transition-all">{submitting?'처리 중...':'송금했어요 (납부 신고)'}</button>
+                </div>
+            );
+        }
+    }
+
+    const popupKey = `moida_dues_popup_${targetMonth}`;
+    let dismissedToday = false;
+    try { dismissedToday = localStorage.getItem(popupKey) === todayKey; } catch(_) {}
+    const showPopup = showPayPrompt && inPopupWindow && !popupOff && !dismissedToday;
+    const dismissPopup = () => { try { localStorage.setItem(popupKey, todayKey); } catch(_) {} setPopupOff(true); };
+
+    // ── 계좌 표시 + 회비 납부 (회원·관리자 공통) ──
     return (
+        <>
         <div className="rounded-3xl p-5 text-white" style={{ background:'linear-gradient(135deg,#10b981,#059669)', boxShadow:'0 10px 28px -8px rgba(5,150,105,0.45)' }}>
             <div className="flex items-start justify-between gap-2 mb-3">
                 <div className="flex items-center gap-3 min-w-0">
@@ -538,15 +645,16 @@ const DuesAccountCard = ({ isAdminMode, memberName }) => {
                     <button onClick={openEdit} className="p-2 rounded-xl bg-white/20 text-white shrink-0 active:scale-95 transition-all"><Icon.Edit size={15}/></button>
                 )}
             </div>
-            {(acc.accountNo || acc.amountHint) && (
+            {dues}
+            {acc.accountNo && (
                 <div className="mb-3">
-                    {acc.accountNo && <p className="font-black text-xl tracking-wide break-all">{acc.accountNo}</p>}
-                    {acc.amountHint && <p className="text-xs font-black text-white/80 mt-1">회비 {acc.amountHint}</p>}
+                    <p className="font-black text-xl tracking-wide break-all">{acc.accountNo}</p>
+                    {acc.amountHint && <p className="text-xs font-black text-white/80 mt-1">{acc.amountHint}</p>}
                 </div>
             )}
             <div className="space-y-2">
                 {acc.accountNo && (
-                    <button onClick={copyAccount} className="w-full py-2.5 rounded-xl bg-white/20 text-white font-black text-sm active:scale-95 transition-all flex items-center justify-center gap-1.5">
+                    <button onClick={()=>copyText(acc.accountNo)} className="w-full py-2.5 rounded-xl bg-white/20 text-white font-black text-sm active:scale-95 transition-all flex items-center justify-center gap-1.5">
                         {copied ? <><Icon.Check size={16}/> 복사됐어요</> : '계좌번호 복사'}
                     </button>
                 )}
@@ -558,12 +666,23 @@ const DuesAccountCard = ({ isAdminMode, memberName }) => {
                 )}
             </div>
         </div>
+        {showPopup && (
+            <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6" onClick={dismissPopup}>
+                <div className="bg-white rounded-3xl p-6 w-full max-w-xs text-center shadow-2xl" onClick={e=>e.stopPropagation()}>
+                    <div className="text-4xl mb-2">💳</div>
+                    <p className="font-black text-lg text-slate-800">{targetMonLabel} 회비 납부</p>
+                    <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">곧 {targetMonLabel}이 시작돼요.<br/>잊지 말고 회비를 납부해 주세요!</p>
+                    <button onClick={dismissPopup} className="mt-4 w-full py-3 rounded-2xl bg-emerald-500 text-white font-black text-sm active:scale-95 transition-all">확인</button>
+                </div>
+            </div>
+        )}
+        </>
     );
 };
 const TabHome = ({
     notifPermission, registerFcmToken, onTabChange,
     meetingDayInfo, teamReady, allowFromDisplay,
-    myTeamInfo, myTeamIdx, memberData, meetings, participantCount,
+    myTeamInfo, myTeamIdx, memberData, memberInfo, meetings, participantCount,
     mySession, meetingSettings, meetingSettingsMatch, darkMode,
     memberName, announcements, onOpenAnnouncements,
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
@@ -623,7 +742,7 @@ const TabHome = ({
         )}
 
         {/* 회비 납부 (모임 계좌 + 송금 바로가기) */}
-        <DuesAccountCard isAdminMode={isAdminMode} memberName={memberName} />
+        <DuesAccountCard isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} />
 
         {/* iOS PWA 설치 안내 */}
         {/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone && (
