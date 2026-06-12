@@ -460,3 +460,44 @@ exports.generateRecurringMeeting = onSchedule(
     console.log(`[정기모임] 생성: ${meetingId} (type=${meetingType}, override=${hasOverride})`);
   }
 );
+
+// ── 회비 납부 신고 시 운영진에게 푸시 ─────────────────────────────────────────
+// 회원이 홈에서 "송금했어요(납부 신고)" → dues_reports 문서 생성(status:pending)
+// → 운영진(STAFF_ROLES) 회원에게 알림. notifications 문서를 추가하면
+// 위 sendPushNotification 이 실제 전송을 처리한다.
+const DUES_STAFF_ROLES = ["회장", "매니저", "총무", "부총무"];
+const DUES_LABELS_FN = { monthly: "월납", rest: "휴식", half_year: "반년납", full_year: "1년납" };
+
+exports.notifyDuesReport = onDocumentCreated(
+  `${DB_PATH}/dues_reports/{reportId}`,
+  async (event) => {
+    const data = event.data && event.data.data();
+    if (!data || data.status !== "pending") return;
+
+    const db = admin.firestore();
+    const FV = admin.firestore.FieldValue;
+
+    // 운영진 회원 id 수집 (fcm_tokens 문서 id = 회원 id 와 동일)
+    const membersSnap = await db.collection(`${DB_PATH}/members`).get();
+    const adminIds = [];
+    membersSnap.forEach((doc) => {
+      const m = doc.data();
+      if (m && !m.isResigned && DUES_STAFF_ROLES.includes(m.role)) adminIds.push(doc.id);
+    });
+    if (adminIds.length === 0) return;
+
+    const who = data.memberName || "회원";
+    const what = DUES_LABELS_FN[data.payType] || "회비";
+    const amt = (Number(data.amount) || 0).toLocaleString("ko-KR");
+
+    await db.collection(`${DB_PATH}/notifications`).add({
+      title: "💰 회비 납부 신고",
+      body: `${who}님이 ${data.month || ""} ${what} ${amt}원 납부를 신고했어요. 확인해 주세요.`,
+      targetMemberIds: adminIds,
+      sentAt: FV.serverTimestamp(),
+      sentBy: "회비 신고",
+    });
+
+    console.log(`[회비신고] ${who} ${what} ${amt}원 → 운영진 ${adminIds.length}명 알림`);
+  }
+);
