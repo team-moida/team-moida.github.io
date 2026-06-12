@@ -5,9 +5,15 @@ const FieldValue = firebase.firestore.FieldValue;
 // 불참/노쇼 시간 구간 판별
 // absent   : 신청마감 직후 ~ 모임 1일 전 21:59:59
 // noshow_1 : 모임 1일 전 22:00:00 ~ 23:59:59  (1만원)
-// noshow_2 : 모임 당일 00:00:00 ~ 10:00:00    (2만원)
+// noshow_2 : 모임 당일 00:00:00 ~ 종료시간    (2만원)
+// 디버그: URL에 ?debugTime=YYYY-MM-DDTHH:MM:SS 붙이면 해당 시간으로 테스트
+const getDebugNow = () => {
+    const t = new URLSearchParams(window.location.search).get('debugTime');
+    return t ? new Date(t) : new Date();
+};
+
 const getAbsentType = (meetingDate, meetingEnd) => {
-    const now = new Date();
+    const now = getDebugNow();
     const [y, m, d] = meetingDate.split('-').map(Number);
     const [endH, endM] = (meetingEnd || '10:00').split(':').map(Number);
     const absentEnd    = new Date(y, m-1, d-1, 21, 59, 59, 999);
