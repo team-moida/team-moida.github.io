@@ -2,7 +2,7 @@ function MemberHeader({
     testMode, memberName, meetingSettings, mySession, teamReady, allowFromDisplay,
     myTeamInfo, myTeamIdx, handleLogout, toggleTheme, darkMode,
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
-    unreadCount = 0, onOpenAnnouncements
+    unreadCount = 0, onOpenAnnouncements, canPreview, onEnterTestPreview
 }) {
     const showOverlay = isAdminMode && isMeetingOver && !isMeetingEndSaved;
     // 종 클릭 → 전체 공지 모달 (2단계에서 실제 연결). 미연결 시 콘솔 로그만.
@@ -26,6 +26,9 @@ function MemberHeader({
                             <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center leading-none">{unreadCount > 9 ? '9+' : unreadCount}</span>
                         )}
                     </button>
+                    {canPreview && (
+                        <button onClick={onEnterTestPreview} className="p-2 rounded-lg bg-teal-100 hover:bg-teal-200 transition-all text-teal-600" title="회원 화면 테스트"><Icon.User size={15}/></button>
+                    )}
                     <button onClick={toggleTheme} className="p-2 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all text-slate-500" title="테마">{darkMode ? <Icon.Sun size={15}/> : <Icon.Moon size={15}/>}</button>
                     <button onClick={handleLogout} className="p-2 rounded-lg bg-red-100 hover:bg-red-200 transition-all text-red-500" title="로그아웃"><Icon.LogOut size={15}/></button>
                 </div>

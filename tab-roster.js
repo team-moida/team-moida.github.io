@@ -96,7 +96,7 @@ const TabRoster = ({
         {/* ── 회비 서브탭 ── */}
         {rosterSubTab === 'monthly' && (
             <div>
-                {(() => { const n = Object.values(duesReports||{}).filter(r=>r&&r.status==='pending').length; return n>0 ? (
+                {(() => { const n = (activeMembers||[]).filter(m=>duesReports[m.id]?.status==='pending').length; return n>0 ? (
                     <div className="mb-3 rounded-2xl px-4 py-3 bg-amber-50 border border-amber-200 flex items-center gap-2">
                         <span className="text-lg shrink-0">🔔</span>
                         <p className="text-sm font-black text-amber-700 min-w-0">회비 납부 신고 {n}건 · 확인하고 처리해 주세요</p>

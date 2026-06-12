@@ -119,6 +119,7 @@ function App() {
     const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
     const isAdmin = ADMIN_ROLES.includes(memberData?.role);
     const isAdminMode = ADMIN_ROLES.includes(memberData?.role);
+    const inTestPreview = (() => { try { return !!localStorage.getItem('moida_admin_backup'); } catch(e) { return false; } })();
     const [meetingSettings, setMeetingSettings] = useState(null);
     const [meetingSettingsMatch, setMeetingSettingsMatch] = useState(null);
     const [activeMeetingKind, setActiveMeetingKind] = useState('self');
@@ -323,7 +324,34 @@ function App() {
         if (urlParams.token && appView === 'app') handleQRAttendance();
     }, [urlParams.token, appView]);
 
-    const handleLogout = () => { localStorage.removeItem('moida_member_data'); location.href = 'index.html'; };
+    const handleLogout = () => { localStorage.removeItem('moida_member_data'); localStorage.removeItem('moida_admin_backup'); location.href = 'index.html'; };
+    const enterTestPreview = async () => {
+        try {
+            const snap = await getCol('members').where('isTest','==',true).get();
+            let testId, testName;
+            const usable = snap.docs.find(d => !d.data().isResigned);
+            if (usable) { testId = usable.id; testName = usable.data().name || '테스트회원'; }
+            else {
+                const d = new Date();
+                const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                const ref = await getCol('members').add({ name:'🔧 테스트회원', role:'회원', isTest:true, isResigned:false, gender:'미설정', position:'all', level:'4', birth:'', phone:'', joinDate:today, createdAt:new Date().toISOString() });
+                testId = ref.id; testName = '🔧 테스트회원';
+            }
+            localStorage.setItem('moida_admin_backup', localStorage.getItem('moida_member_data') || '');
+            localStorage.setItem('moida_member_data', JSON.stringify({ memberId:testId, name:testName, role:'회원' }));
+            localStorage.removeItem('moida_admin_mode');
+            location.reload();
+        } catch(e) { try { showToast('테스트 전환 실패: ' + e.message, 'error'); } catch(_) { alert('테스트 전환 실패: ' + e.message); } }
+    };
+    const exitTestPreview = () => {
+        try {
+            const bak = localStorage.getItem('moida_admin_backup');
+            if (bak) localStorage.setItem('moida_member_data', bak);
+            localStorage.removeItem('moida_admin_backup');
+            localStorage.setItem('moida_admin_mode', 'true');
+        } catch(e) {}
+        location.reload();
+    };
     const handleSaveAnnouncement = async ({ title, body, category, id, mode, targetMode, selectedMemberIds }) => {
         const senderName = memberInfo?.name || memberData?.name || '관리자';
         const cat = category || '공지';
@@ -523,12 +551,18 @@ function App() {
                     ⚙️ {adminModeLabel}에 들어와 있습니다 · 다른 탭으로 이동하면 해제됩니다
                 </div>
             )}
+            {inTestPreview && (
+                <div style={{position:'sticky',top:0,zIndex:56}} className="bg-rose-600 text-white text-[11px] font-black flex items-center justify-center gap-2 py-2 px-4">
+                    🔧 테스트(회원) 화면 보는 중
+                    <button onClick={exitTestPreview} className="px-2 py-0.5 rounded-md bg-white/25 hover:bg-white/35 underline">관리자로 복귀</button>
+                </div>
+            )}
             <MemberHeader
                 testMode={testMode} memberName={memberName} meetingSettings={meetingSettings}
                 mySession={mySession} teamReady={teamReady} allowFromDisplay={allowFromDisplay}
                 myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                 handleLogout={handleLogout} toggleTheme={toggleTheme} darkMode={darkMode}
-                isAdminMode={isAdminMode}
+                isAdminMode={isAdminMode} canPreview={isAdmin} onEnterTestPreview={enterTestPreview}
                 isMeetingOver={attend.isMeetingOver}
                 onEndMeeting={attendHandleEndMeeting}
                 isMeetingEndSaved={attend.attendHistory?.some(h => h.date === displayMeetingSettings?.date) || false}

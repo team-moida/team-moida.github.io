@@ -29,7 +29,7 @@ function useRoster({ isAdminMode }) {
     useEffect(() => {
         if (!isAdminMode) return;
         const unsub = getMemberCol().onSnapshot(snap => {
-            setAllMembers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+            setAllMembers(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(m => !m.isTest));
         });
         return () => unsub();
     }, [isAdminMode]);
