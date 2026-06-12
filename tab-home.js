@@ -437,6 +437,129 @@ const NextMeetingCard = ({
         </div>
     );
 };
+// ─── 회비 납부 (모임 계좌 + 송금 바로가기) ──────────────────────────────────────
+// 홈 탭 카드. 회원: 계좌 보기·복사 + 토스/카카오페이로 바로 송금. 관리자: 계좌 정보 등록/수정.
+// 저장: settings/club_account { bank, accountNo, holder, tossUrl, kakaoUrl, amountHint, updatedAt, updatedBy }
+// ※ 입금 "자동 확인"은 은행 자격이 필요해 불가 → 누르면 송금 화면이 열리는 데까지 지원.
+const normUrl = (u) => { const s = (u||'').trim(); return s ? (/^https?:\/\//i.test(s) ? s : 'https://'+s) : ''; };
+const DuesAccountCard = ({ isAdminMode, memberName }) => {
+    const { useState, useEffect } = React;
+    const [acc, setAcc] = useState(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [form, setForm] = useState({ bank:'', accountNo:'', holder:'', tossUrl:'', kakaoUrl:'', amountHint:'' });
+    const [isSaving, setIsSaving] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    useEffect(() => {
+        const unsub = getCol('settings').doc('club_account').onSnapshot(d => setAcc(d.exists ? d.data() : null));
+        return () => unsub();
+    }, []);
+
+    const openEdit = () => {
+        setForm({ bank:acc?.bank||'', accountNo:acc?.accountNo||'', holder:acc?.holder||'', tossUrl:acc?.tossUrl||'', kakaoUrl:acc?.kakaoUrl||'', amountHint:acc?.amountHint||'' });
+        setIsEditing(true);
+    };
+    const handleSave = async () => {
+        if (!form.accountNo.trim() && !form.tossUrl.trim() && !form.kakaoUrl.trim()) return;
+        setIsSaving(true);
+        try {
+            await getCol('settings').doc('club_account').set({
+                bank:form.bank.trim(), accountNo:form.accountNo.trim(), holder:form.holder.trim(),
+                tossUrl:normUrl(form.tossUrl), kakaoUrl:normUrl(form.kakaoUrl), amountHint:form.amountHint.trim(),
+                updatedAt:new Date().toISOString(), updatedBy:memberName||'관리자',
+            });
+            setIsEditing(false);
+        } catch(e) { console.warn('계좌 저장 실패:', e); }
+        finally { setIsSaving(false); }
+    };
+    const copyAccount = async () => {
+        const t = acc?.accountNo || ''; if (!t) return;
+        try { await navigator.clipboard.writeText(t); }
+        catch { try { const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } catch(_){} }
+        setCopied(true); setTimeout(()=>setCopied(false), 1600);
+    };
+    const field = (label, k, ph, optional) => (
+        <div className="mb-2.5">
+            <label className="block text-[11px] font-black text-slate-500 mb-1">{label}{optional && <span className="text-slate-300 font-bold"> (선택)</span>}</label>
+            <input value={form[k]} onChange={e=>setForm(f=>({...f,[k]:e.target.value}))} placeholder={ph}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700"/>
+        </div>
+    );
+
+    // ── 편집 화면 (관리자) ──
+    if (isEditing) {
+        return (
+            <div className="card rounded-3xl p-5">
+                <p className="font-black text-base text-slate-800 mb-3">모임 계좌 설정</p>
+                {field('은행','bank','예) 카카오뱅크')}
+                {field('계좌번호','accountNo','예) 3333-01-1234567')}
+                {field('예금주','holder','예) 홍길동')}
+                {field('토스 송금 링크','tossUrl','예) toss.me/otpfc', true)}
+                {field('카카오페이 송금 링크','kakaoUrl','예) qr.kakaopay.com/...', true)}
+                {field('회비 금액 안내','amountHint','예) 월 2만원', true)}
+                <p className="text-[11px] text-slate-400 leading-relaxed mb-3">토스·카카오페이 링크는 각 앱의 '내 송금링크 / 송금받기'에서 만들어 붙여넣으면, 회원이 누를 때 송금 화면이 바로 열려요. 안 넣으면 그 버튼은 숨겨집니다.</p>
+                <div className="flex gap-2">
+                    <button onClick={()=>setIsEditing(false)} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
+                    <button onClick={handleSave} disabled={isSaving} className={`flex-1 py-3 rounded-2xl font-black text-sm ${isSaving?'bg-emerald-300 text-white':'bg-emerald-500 text-white'}`}>{isSaving?'저장 중...':'저장'}</button>
+                </div>
+            </div>
+        );
+    }
+
+    // ── 계좌 미등록 ── (회원에겐 숨김, 관리자에겐 등록 안내)
+    if (!acc || (!acc.accountNo && !acc.tossUrl && !acc.kakaoUrl)) {
+        if (!isAdminMode) return null;
+        return (
+            <button onClick={openEdit} className="w-full card rounded-3xl p-4 text-left border-emerald-100 active:scale-98 transition-all">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0 text-lg">💳</div>
+                    <div className="flex-1 min-w-0">
+                        <p className="font-black text-sm text-emerald-600">회비 계좌 등록하기</p>
+                        <p className="text-xs text-slate-400 mt-0.5">계좌·송금 링크를 등록하면 회원이 홈에서 바로 회비를 보낼 수 있어요</p>
+                    </div>
+                    <Icon.ChevronRight size={16} className="text-emerald-300 flex-shrink-0"/>
+                </div>
+            </button>
+        );
+    }
+
+    // ── 계좌 표시 (회원·관리자 공통) ──
+    return (
+        <div className="rounded-3xl p-5 text-white" style={{ background:'linear-gradient(135deg,#10b981,#059669)', boxShadow:'0 10px 28px -8px rgba(5,150,105,0.45)' }}>
+            <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-2xl leading-none flex-shrink-0">💳</span>
+                    <div className="min-w-0">
+                        <p className="text-[11px] font-black uppercase tracking-widest text-white/80">회비 납부</p>
+                        <p className="font-black text-lg leading-tight truncate">{acc.bank||'모임 계좌'}{acc.holder?` · ${acc.holder}`:''}</p>
+                    </div>
+                </div>
+                {isAdminMode && (
+                    <button onClick={openEdit} className="p-2 rounded-xl bg-white/20 text-white shrink-0 active:scale-95 transition-all"><Icon.Edit size={15}/></button>
+                )}
+            </div>
+            {(acc.accountNo || acc.amountHint) && (
+                <div className="mb-3">
+                    {acc.accountNo && <p className="font-black text-xl tracking-wide break-all">{acc.accountNo}</p>}
+                    {acc.amountHint && <p className="text-xs font-black text-white/80 mt-1">회비 {acc.amountHint}</p>}
+                </div>
+            )}
+            <div className="space-y-2">
+                {acc.accountNo && (
+                    <button onClick={copyAccount} className="w-full py-2.5 rounded-xl bg-white/20 text-white font-black text-sm active:scale-95 transition-all flex items-center justify-center gap-1.5">
+                        {copied ? <><Icon.Check size={16}/> 복사됐어요</> : '계좌번호 복사'}
+                    </button>
+                )}
+                {(acc.tossUrl || acc.kakaoUrl) && (
+                    <div className="flex gap-2">
+                        {acc.tossUrl && <button onClick={()=>window.open(acc.tossUrl,'_blank')} className="flex-1 py-2.5 rounded-xl bg-white text-[#3182f6] font-black text-sm active:scale-95 transition-all">토스로 보내기</button>}
+                        {acc.kakaoUrl && <button onClick={()=>window.open(acc.kakaoUrl,'_blank')} className="flex-1 py-2.5 rounded-xl font-black text-sm active:scale-95 transition-all" style={{background:'#FEE500',color:'#3c1e1e'}}>카카오페이</button>}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 const TabHome = ({
     notifPermission, registerFcmToken, onTabChange,
     meetingDayInfo, teamReady, allowFromDisplay,
@@ -498,6 +621,9 @@ const TabHome = ({
                 </div>
             </button>
         )}
+
+        {/* 회비 납부 (모임 계좌 + 송금 바로가기) */}
+        <DuesAccountCard isAdminMode={isAdminMode} memberName={memberName} />
 
         {/* iOS PWA 설치 안내 */}
         {/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone && (
