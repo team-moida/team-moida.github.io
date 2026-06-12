@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>개인정보처리방침 · 모이다</title>
+<!--
+  ─────────────────────────────────────────────────────────────────────────
+  개인정보처리방침 — 템플릿 / 초안
+  ⚠️ 이 문서는 "양식"입니다. 아래 [대괄호] 부분을 팀 상황에 맞게 채운 뒤 쓰세요.
+     • 실제 게시 전, 운영자(개인정보 보호책임자) 이름·연락처를 반드시 채울 것.
+     • 팀마다 수집 항목이 다르면(예: 주소 안 받음) 해당 줄을 지우면 됩니다.
+     • 라이브 앱에는 영향 없는 독립 페이지입니다. 링크로 연결만 하면 됩니다.
+  ─────────────────────────────────────────────────────────────────────────
+-->
+<style>
+  :root{ --teal:#14b8a6; --teal-d:#0d9488; --ink:#1e293b; --sub:#64748b; --line:#e2e8f0; --bg:#f8fafc; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    line-height:1.7; word-break:keep-all;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap{ max-width:720px; margin:0 auto; padding:24px 18px 80px; }
+  .hero{
+    border-radius:24px; padding:28px 22px; color:#fff; margin-bottom:22px;
+    background:linear-gradient(135deg,var(--teal),var(--teal-d));
+    box-shadow:0 12px 30px -10px rgba(20,184,166,.5);
+  }
+  .hero .eyebrow{ font-size:11px; font-weight:900; letter-spacing:.18em; text-transform:uppercase; opacity:.85; margin:0 0 6px; }
+  .hero h1{ font-size:26px; font-weight:900; margin:0; line-height:1.25; }
+  .hero p{ margin:8px 0 0; font-size:13px; opacity:.9; }
+  .note{
+    background:#fff7ed; border:1px solid #fed7aa; color:#9a3412;
+    border-radius:14px; padding:12px 14px; font-size:13px; font-weight:700; margin-bottom:24px;
+  }
+  section{ background:#fff; border:1px solid var(--line); border-radius:18px; padding:20px 18px; margin-bottom:14px; }
+  h2{ font-size:16px; font-weight:900; margin:0 0 10px; color:var(--ink); display:flex; align-items:center; gap:8px; }
+  h2 .num{ flex-shrink:0; width:24px; height:24px; border-radius:8px; background:#ccfbf1; color:var(--teal-d);
+           font-size:12px; display:inline-flex; align-items:center; justify-content:center; font-weight:900; }
+  p,li{ font-size:14px; color:#334155; }
+  ul{ margin:8px 0 0; padding-left:18px; }
+  li{ margin:4px 0; }
+  table{ width:100%; border-collapse:collapse; margin-top:8px; font-size:13px; }
+  th,td{ border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top; }
+  th{ background:#f1f5f9; font-weight:800; color:#475569; white-space:nowrap; }
+  .fill{ background:#fef9c3; padding:0 4px; border-radius:4px; font-weight:800; }
+  .foot{ text-align:center; color:var(--sub); font-size:12px; margin-top:24px; }
+  a{ color:var(--teal-d); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <p class="eyebrow">Privacy Policy</p>
+    <h1>개인정보처리방침</h1>
+    <p>모이다 · <span class="fill">[팀 이름: 예) OTP FC]</span></p>
+  </div>
+
+  <div class="note">
+    ⚠️ 이 문서는 <b>양식(템플릿)</b>입니다. 노란색으로 표시된 <span class="fill">[대괄호]</span> 부분을
+    팀 상황에 맞게 채운 뒤 사용하세요. 받지 않는 항목이 있으면 해당 줄을 지우면 됩니다.
+  </div>
+
+  <p style="font-size:14px;color:#475569;margin:0 0 18px;">
+    <span class="fill">[팀 이름]</span>(이하 "운영팀")은(는) 모임 관리 서비스 <b>'모이다'</b>를 통해
+    회원의 개인정보를 소중히 다루며, 「개인정보 보호법」 등 관련 법령을 준수합니다.
+    본 방침은 운영팀이 어떤 개인정보를 어떻게 수집·이용·보관·파기하는지 알려드리기 위한 것입니다.
+  </p>
+
+  <section>
+    <h2><span class="num">1</span> 수집하는 개인정보 항목</h2>
+    <p>운영팀은 회원 가입 및 모임 운영을 위해 아래 정보를 수집합니다. (팀 설정에 따라 일부만 받을 수 있습니다.)</p>
+    <table>
+      <tr><th>구분</th><th>항목</th><th>수집 방법</th></tr>
+      <tr><td>로그인</td><td>카카오 계정 식별자(회원 구분용 고유번호)</td><td>카카오 로그인 시</td></tr>
+      <tr><td>필수</td><td>이름(또는 닉네임)</td><td>가입 시 본인 입력</td></tr>
+      <tr><td>선택*</td><td>전화번호</td><td>가입 시 본인 입력</td></tr>
+      <tr><td>선택*</td><td>생년월일</td><td>가입 시 본인 입력</td></tr>
+      <tr><td>선택*</td><td>주소</td><td>가입 시 본인 입력</td></tr>
+      <tr><td>자동</td><td>출석·회비·팀·매치 등 활동 기록</td><td>서비스 이용 중 생성</td></tr>
+    </table>
+    <p style="font-size:12px;color:#64748b;margin-top:8px;">* 선택 항목은 팀이 받기로 설정한 경우에만 수집되며, 동의하지 않아도 가입할 수 있습니다(단, 일부 기능이 제한될 수 있음).</p>
+  </section>
+
+  <section>
+    <h2><span class="num">2</span> 개인정보의 이용 목적</h2>
+    <ul>
+      <li>회원 식별 및 가입·탈퇴 관리</li>
+      <li>출석 체크, 회비 관리, 팀 편성, 매치 운영, 공지 전달 등 모임 운영</li>
+      <li>긴급 연락 및 공지(전화번호 — 운영진에 한함)</li>
+      <li>푸시 알림 발송(동의한 회원 대상)</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="num">3</span> 보유 및 이용 기간</h2>
+    <ul>
+      <li>회원 정보: <b>탈퇴 시까지</b> 보관하며, 탈퇴 즉시 파기합니다.</li>
+      <li>다만 관계 법령에 따라 보존이 필요한 경우 해당 기간 동안 보관합니다.</li>
+      <li>휴식(비활동) 회원의 정보는 운영팀 정책에 따라 보관합니다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="num">4</span> 열람 범위 · 제3자 제공</h2>
+    <p>운영팀은 회원의 개인정보를 외부에 판매하거나 제공하지 않습니다. 단, 서비스 특성상 아래 범위에서 열람됩니다.</p>
+    <ul>
+      <li><b>이름·활동 기록</b>: 같은 팀 회원에게 공개될 수 있습니다(출석부, 팀 명단 등).</li>
+      <li><b>전화번호·생년월일·주소 등 민감 정보</b>: <u>본인과 팀 운영진에게만</u> 보입니다. 일반 회원은 볼 수 없습니다.</li>
+      <li>다른 팀에는 어떤 정보도 공개되지 않습니다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="num">5</span> 개인정보 처리 위탁</h2>
+    <p>서비스 운영을 위해 아래 업체에 데이터 보관·인증을 위탁합니다.</p>
+    <table>
+      <tr><th>수탁 업체</th><th>위탁 내용</th></tr>
+      <tr><td>Google (Firebase)</td><td>데이터 저장·서버 운영</td></tr>
+      <tr><td>Kakao</td><td>로그인 인증</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2><span class="num">6</span> 정보주체(회원)의 권리</h2>
+    <p>회원은 언제든지 본인의 개인정보에 대해 아래 권리를 행사할 수 있습니다.</p>
+    <ul>
+      <li>열람, 정정, 삭제, 처리정지 요구</li>
+      <li>앱 내 '내 정보' 화면에서 직접 수정하거나, 운영진에게 요청할 수 있습니다.</li>
+      <li>탈퇴를 원하면 운영진에게 요청하면 즉시 처리됩니다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="num">7</span> 개인정보의 파기</h2>
+    <p>회원 탈퇴 또는 보유 기간 종료 시, 해당 정보를 지체 없이 복구 불가능한 방법으로 삭제합니다.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">8</span> 만 14세 미만 아동</h2>
+    <p>운영팀은 만 14세 미만 아동의 개인정보를 수집하지 않습니다. 가입 시 만 14세 이상임을 전제로 합니다.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">9</span> 개인정보 보호책임자</h2>
+    <p>개인정보 관련 문의·요청은 아래로 연락 주시기 바랍니다.</p>
+    <table>
+      <tr><th>책임자</th><td><span class="fill">[이름: 예) 홍길동]</span></td></tr>
+      <tr><th>직책</th><td><span class="fill">[예) 회장 / 매니저]</span></td></tr>
+      <tr><th>연락처</th><td><span class="fill">[이메일 또는 전화번호]</span></td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2><span class="num">10</span> 고지의 의무</h2>
+    <p>본 방침의 내용이 변경되는 경우, 변경 사항을 공지사항을 통해 안내합니다.</p>
+    <p style="margin-top:10px;"><b>시행일</b>: <span class="fill">[YYYY년 MM월 DD일]</span></p>
+  </section>
+
+  <p class="foot">모이다 · 개인정보처리방침 템플릿 v1.0</p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>가입 동의 · 모이다</title>
+<!--
+  ─────────────────────────────────────────────────────────────────────────
+  가입 동의 화면 — 미리보기 / 초안 (디자인 시안)
+  ⚠️ 이 파일은 "이렇게 생긴 화면이 나옵니다"를 보여주는 미리보기입니다.
+     • 실제 가입 흐름(member.html / handlers-kakao.js)에는 아직 연결되지 않았습니다.
+     • 멀티팀 가입 단계를 만들 때, 이 화면을 그 사이에 끼워 넣으면 됩니다.
+     • '개인정보처리방침 보기'는 같은 폴더의 privacy-policy.html을 엽니다.
+  ─────────────────────────────────────────────────────────────────────────
+-->
+<style>
+  :root{ --teal:#14b8a6; --teal-d:#0d9488; --ink:#1e293b; --sub:#64748b; --line:#e2e8f0; --bg:#f8fafc; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink); min-height:100vh;
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    line-height:1.6; word-break:keep-all;
+    display:flex; align-items:center; justify-content:center;
+    padding:24px 16px calc(24px + env(safe-area-inset-bottom));
+  }
+  .card{
+    width:100%; max-width:420px; background:#fff; border-radius:26px;
+    box-shadow:0 20px 50px -20px rgba(15,23,42,.25); overflow:hidden;
+  }
+  .head{
+    padding:30px 24px 22px; color:#fff;
+    background:linear-gradient(135deg,var(--teal),var(--teal-d));
+  }
+  .head .eyebrow{ font-size:11px; font-weight:900; letter-spacing:.18em; text-transform:uppercase; opacity:.85; margin:0 0 6px; }
+  .head h1{ font-size:22px; font-weight:900; margin:0; }
+  .head p{ margin:8px 0 0; font-size:13px; opacity:.92; }
+  .body{ padding:20px 22px 26px; }
+
+  .row{
+    display:flex; align-items:flex-start; gap:12px; padding:14px 14px;
+    border:1px solid var(--line); border-radius:16px; margin-bottom:10px; cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .row:hover{ background:#f8fafc; }
+  .row.on{ border-color:var(--teal); background:#f0fdfa; }
+  .box{
+    flex-shrink:0; width:24px; height:24px; border-radius:8px; border:2px solid #cbd5e1;
+    display:flex; align-items:center; justify-content:center; margin-top:1px;
+    transition:all .15s;
+  }
+  .row.on .box{ background:var(--teal); border-color:var(--teal); }
+  .box svg{ width:14px; height:14px; stroke:#fff; stroke-width:3.5; fill:none; opacity:0; transition:opacity .15s; }
+  .row.on .box svg{ opacity:1; }
+  .txt{ flex:1; min-width:0; }
+  .txt .t{ font-size:14px; font-weight:800; color:var(--ink); }
+  .txt .t .req{ color:var(--teal-d); }
+  .txt .t .opt{ color:var(--sub); font-weight:700; }
+  .txt .d{ font-size:12px; color:var(--sub); margin-top:3px; }
+  .txt .d a{ color:var(--teal-d); font-weight:800; text-decoration:underline; }
+
+  .all{ border-style:dashed; }
+  .all .t{ font-size:15px; font-weight:900; }
+
+  hr{ border:none; border-top:1px solid var(--line); margin:14px 2px; }
+
+  .submit{
+    width:100%; margin-top:18px; padding:15px; border:none; border-radius:16px;
+    font-size:15px; font-weight:900; color:#fff; cursor:pointer;
+    background:linear-gradient(135deg,var(--teal),var(--teal-d));
+    box-shadow:0 12px 26px -10px rgba(20,184,166,.6);
+    transition:transform .12s, opacity .15s;
+  }
+  .submit:active{ transform:scale(.97); }
+  .submit:disabled{ background:#cbd5e1; box-shadow:none; cursor:not-allowed; }
+  .hint{ text-align:center; font-size:12px; color:var(--sub); margin-top:12px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="head">
+    <p class="eyebrow">Sign up</p>
+    <h1>가입 전 동의가 필요해요</h1>
+    <p>안전한 모임 운영을 위해 아래 내용을 확인해 주세요.</p>
+  </div>
+  <div class="body">
+
+    <!-- 전체 동의 -->
+    <div class="row all" data-key="all" onclick="toggleAll()">
+      <span class="box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+      <div class="txt"><div class="t">전체 동의하기</div></div>
+    </div>
+
+    <hr>
+
+    <!-- 필수 1 -->
+    <div class="row" data-required="1" onclick="toggleRow(this)">
+      <span class="box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+      <div class="txt">
+        <div class="t"><span class="req">[필수]</span> 개인정보 수집·이용 동의</div>
+        <div class="d">이름·전화번호 등 모임 운영에 필요한 정보를 수집합니다. <a href="privacy-policy.html" target="_blank" onclick="event.stopPropagation()">처리방침 보기</a></div>
+      </div>
+    </div>
+
+    <!-- 필수 2 -->
+    <div class="row" data-required="1" onclick="toggleRow(this)">
+      <span class="box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+      <div class="txt">
+        <div class="t"><span class="req">[필수]</span> 만 14세 이상입니다</div>
+        <div class="d">만 14세 미만은 가입할 수 없습니다.</div>
+      </div>
+    </div>
+
+    <!-- 선택 -->
+    <div class="row" onclick="toggleRow(this)">
+      <span class="box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+      <div class="txt">
+        <div class="t"><span class="opt">[선택]</span> 푸시 알림 받기</div>
+        <div class="d">모임·공지 알림을 휴대폰으로 받습니다. (나중에 끌 수 있어요)</div>
+      </div>
+    </div>
+
+    <button class="submit" id="go" disabled onclick="submit()">동의하고 가입하기</button>
+    <p class="hint">필수 항목에 모두 동의해야 가입할 수 있습니다.</p>
+  </div>
+</div>
+
+<script>
+  // ※ 미리보기용 동작 로직입니다. 실제 연결 시엔 가입 처리 함수로 교체하세요.
+  function toggleRow(el){ el.classList.toggle('on'); syncAll(); refresh(); }
+  function toggleAll(){
+    const allRow = document.querySelector('.row.all');
+    const turnOn = !allRow.classList.contains('on');
+    document.querySelectorAll('.row').forEach(r => r.classList.toggle('on', turnOn));
+    refresh();
+  }
+  function syncAll(){
+    const rows = [...document.querySelectorAll('.row:not(.all)')];
+    const allOn = rows.every(r => r.classList.contains('on'));
+    document.querySelector('.row.all').classList.toggle('on', allOn);
+  }
+  function refresh(){
+    const required = [...document.querySelectorAll('.row[data-required]')];
+    const ok = required.every(r => r.classList.contains('on'));
+    document.getElementById('go').disabled = !ok;
+  }
+  function submit(){
+    alert('동의 완료! (미리보기 — 실제로는 여기서 가입이 진행됩니다)');
+  }
+</script>
+</body>
+</html>
