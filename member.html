@@ -407,7 +407,7 @@ function App() {
 
     const { moveMonth, handleAddMember, handleUpdateMember, handleResignConfirm,
             handleRestoreResigned, handleDeleteMember,
-            handleBillingMemberClick, processAction } = makeRosterHandlers({
+            handleBillingMemberClick, processAction, confirmDuesReport, rejectDuesReport } = makeRosterHandlers({
         newMemberForm: roster.newMemberForm, setNewMemberForm: roster.setNewMemberForm,
         setIsAddModalOpen: roster.setIsAddModalOpen,
         editingMember: roster.editingMember, setEditingMember: roster.setEditingMember,
@@ -750,6 +750,7 @@ function App() {
                         monthlyStatuses={roster.monthlyStatuses} monthlyReasons={roster.monthlyReasons}
                         monthlyPaymentDates={roster.monthlyPaymentDates} duesReports={roster.duesReports}
                         handleBillingMemberClick={handleBillingMemberClick}
+                        onConfirmDuesReport={confirmDuesReport} onRejectDuesReport={rejectDuesReport}
                     />
                 )}
             </div>

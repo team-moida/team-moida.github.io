@@ -494,6 +494,8 @@ exports.notifyDuesReport = onDocumentCreated(
       title: "💰 회비 납부 신고",
       body: `${who}님이 ${data.month || ""} ${what} ${amt}원 납부를 신고했어요. 확인해 주세요.`,
       targetMemberIds: adminIds,
+      type: "dues",
+      pushOnly: true,
       sentAt: FV.serverTimestamp(),
       sentBy: "회비 신고",
     });

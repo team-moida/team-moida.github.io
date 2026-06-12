@@ -11,7 +11,7 @@ const TabRoster = ({
     filteredMembers,
     monthlyStatuses, monthlyReasons,
     monthlyPaymentDates, duesReports = {},
-    handleBillingMemberClick,
+    handleBillingMemberClick, onConfirmDuesReport, onRejectDuesReport,
 }) => (
     <div className="animate-in">
         {/* 서브탭 + 회원 추가 버튼 */}
@@ -96,12 +96,27 @@ const TabRoster = ({
         {/* ── 회비 서브탭 ── */}
         {rosterSubTab === 'monthly' && (
             <div>
-                {(() => { const n = (activeMembers||[]).filter(m=>duesReports[m.id]?.status==='pending').length; return n>0 ? (
-                    <div className="mb-3 rounded-2xl px-4 py-3 bg-amber-50 border border-amber-200 flex items-center gap-2">
-                        <span className="text-lg shrink-0">🔔</span>
-                        <p className="text-sm font-black text-amber-700 min-w-0">회비 납부 신고 {n}건 · 확인하고 처리해 주세요</p>
-                    </div>
-                ) : null; })()}
+                {(() => {
+                    const pend = Object.values(duesReports||{}).filter(r=>r&&r.status==='pending');
+                    if (!pend.length) return null;
+                    return (
+                        <div className="mb-3 rounded-2xl p-3 bg-amber-50 border border-amber-200">
+                            <p className="text-sm font-black text-amber-700 mb-2">🔔 회비 납부 신고 {pend.length}건 · 확인하고 확정해 주세요</p>
+                            <div className="space-y-1.5">
+                                {pend.map(r => (
+                                    <div key={r.memberId+'_'+r.month} className="flex items-center gap-2 bg-white rounded-xl px-3 py-2">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-black text-slate-800 truncate">{r.memberName||'회원'}</p>
+                                            <p className="text-[11px] text-slate-400">{r.month} · {DUES_LABELS[r.payType]||''} {wonFmt(r.amount)}원</p>
+                                        </div>
+                                        <button onClick={()=>onConfirmDuesReport && onConfirmDuesReport(r)} className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-black shrink-0 active:scale-95">확정</button>
+                                        <button onClick={()=>onRejectDuesReport && onRejectDuesReport(r)} className="px-2 py-1.5 rounded-lg bg-slate-100 text-slate-400 text-xs font-black shrink-0 active:scale-95">삭제</button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })()}
                 <div className="flex items-center justify-between mb-4 card rounded-3xl p-4">
                     <button onClick={()=>moveMonth(-1)} className="p-2 rounded-xl bg-slate-100 text-slate-600"><Icon.ChevronLeft size={18}/></button>
                     <p className="font-black text-lg text-slate-800">{targetMonth.replace('-','년 ')}월</p>

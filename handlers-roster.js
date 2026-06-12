@@ -148,5 +148,38 @@ function makeRosterHandlers(ctx) {
         } catch(e) { console.error(e); showAlert('오류', '처리 실패'); }
     };
 
-    return { moveMonth, handleAddMember, handleUpdateMember, handleResignConfirm, handleRestoreResigned, handleDeleteMember, handleBillingMemberClick, processAction };
+    const confirmDuesReport = async (report) => {
+        if (!report || !report.memberId || !report.month) return;
+        try {
+            const mid = report.memberId, month = report.month;
+            const FV = firebase.firestore.FieldValue;
+            const monthRef = getMonthlyCol().doc(month);
+            const memberRef = getMemberCol().doc(mid);
+            const d = new Date();
+            const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            const batch = db.batch();
+            if (report.payType === 'half_year' || report.payType === 'full_year') {
+                const months = report.payType === 'half_year' ? 6 : 12;
+                batch.update(memberRef, { membershipType: report.payType, membershipStartDate: `${month}-01`, membershipEndDate: calculateEndDate(month, months), totalRestMonths: 0 });
+                batch.set(monthRef, { paymentDates: {[mid]: today}, updatedAt: new Date().toISOString() }, { merge: true });
+                batch.update(monthRef, { [`statuses.${mid}`]: FV.delete(), [`reasons.${mid}`]: FV.delete() });
+            } else if (report.payType === 'rest') {
+                batch.set(monthRef, { statuses: {[mid]: 'rest'}, paymentDates: {[mid]: today}, updatedAt: new Date().toISOString() }, { merge: true });
+            } else {
+                batch.set(monthRef, { statuses: {[mid]: 'paid'}, paymentDates: {[mid]: today}, updatedAt: new Date().toISOString() }, { merge: true });
+            }
+            batch.set(getCol('dues_reports').doc(`${month}_${mid}`), { status: 'confirmed', confirmedAt: new Date().toISOString() }, { merge: true });
+            await batch.commit();
+            showAlert('완료', `${report.memberName || '회원'}님 회비가 확정되었습니다.`);
+        } catch(e) { console.error(e); showAlert('오류', '확정 실패'); }
+    };
+    const rejectDuesReport = (report) => {
+        if (!report || !report.memberId || !report.month) return;
+        showConfirm('신고 삭제', `${report.memberName || '회원'}님의 납부 신고를 삭제할까요?`, async () => {
+            try { await getCol('dues_reports').doc(`${report.month}_${report.memberId}`).delete(); }
+            catch(e) { showAlert('오류', '삭제 실패'); }
+        });
+    };
+
+    return { moveMonth, handleAddMember, handleUpdateMember, handleResignConfirm, handleRestoreResigned, handleDeleteMember, handleBillingMemberClick, processAction, confirmDuesReport, rejectDuesReport };
 }
