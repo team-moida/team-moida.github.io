@@ -145,18 +145,23 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
                 await syncMirror(newTypeActive.id === docId ? data : newTypeActive);
             }
 
-            // 등록 시 전체 푸시 알림 (토글 ON일 때만) — 실패해도 모임 저장은 유지
-            if (formData.sendPush) {
+            // 등록 시 [모임] 공지 자동 게시 — 새 정기모임은 항상, 그 외(수정·매칭)는 푸시 토글 ON일 때.
+            // 공지를 누르면 그 모임의 신청 화면으로 이동(linkMeetingId/linkKind). 실패해도 모임 저장은 유지.
+            const isNewSelfMeeting = !editingId && meetingType === 'self';
+            if (isNewSelfMeeting || formData.sendPush) {
                 try {
                     const ann = composeMeetingAnnouncement(data);
                     await getCol('notifications').add({
                         title: ann.title,
                         body: ann.body,
+                        category: '모임',
+                        linkMeetingId: docId,
+                        linkKind: meetingType,
                         sentAt: new Date().toISOString(),
                         sentBy: data.managerName || '모임 안내',
                     });
                 } catch(e) {
-                    console.warn('모임 알림 발송 실패:', e);
+                    console.warn('모임 공지 게시 실패:', e);
                 }
             }
 

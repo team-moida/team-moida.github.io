@@ -27,7 +27,7 @@ const NoticeBadge = ({ category }) => {
     return <span className={`shrink-0 text-[10px] font-black px-2 py-0.5 rounded-lg ${cls}`}>{cat}</span>;
 };
 
-const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDeleteOne, onDeleteMany }) => {
+const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDeleteOne, onDeleteMany, onNavigateMeeting }) => {
     const { useState, useEffect } = React;
     const [selectedId, setSelectedId] = useState(null);   // 상세 보기 대상 (null이면 목록)
     const [selectMode, setSelectMode] = useState(false);  // 선택 삭제 모드
@@ -71,6 +71,12 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                     </div>
                     <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{selected.body}</p>
                     {selected.sentBy && <p className="text-xs text-slate-400 mt-4">{selected.sentBy}</p>}
+                    {selected.linkMeetingId && onNavigateMeeting && (
+                        <button onClick={() => onNavigateMeeting(selected)}
+                            className="w-full mt-4 py-2.5 rounded-xl bg-teal-500 text-white font-black text-sm active:scale-95 transition-all flex items-center justify-center gap-1.5">
+                            신청하러 가기 <Icon.ChevronRight size={16}/>
+                        </button>
+                    )}
                     {isAdminMode && (
                         <div className="flex gap-2 mt-5 pt-4 border-t border-slate-100">
                             <button onClick={() => onEdit(selected)} className="flex-1 py-2.5 rounded-xl bg-blue-50 text-blue-500 font-black text-sm active:scale-95 transition-all">수정</button>
@@ -136,7 +142,7 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                 <div className="space-y-2">
                     {list.map(a => (
                         <button key={a.id}
-                            onClick={() => selectMode ? toggleCheck(a.id) : setSelectedId(a.id)}
+                            onClick={() => selectMode ? toggleCheck(a.id) : (a.linkMeetingId && onNavigateMeeting ? onNavigateMeeting(a) : setSelectedId(a.id))}
                             className="w-full card rounded-3xl p-4 text-left active:scale-98 transition-all">
                             <div className="flex items-center gap-3">
                                 {selectMode && (

@@ -131,7 +131,7 @@ const fmtAnnDate = (iso) => {
 // 홈 콘텐츠 맨 위(헤더 아래 첫 카드)에서 최신 공지부터 5초마다 위로 슬라이드업하며 교체.
 // 1개면 고정, 0개면 빈 띠 유지(숨기지 않음) — 눌러서 게시판 진입(관리자는 거기서 작성).
 // announcements는 use-fcm.js 기준 최신순 + type:'test' 제외됨. 클릭 시 공지 게시판으로 이동.
-const AnnounceTicker = ({ announcements, onOpen }) => {
+const AnnounceTicker = ({ announcements, onOpen, onTabChange }) => {
     const [idx, setIdx] = React.useState(0);
     const list = announcements || [];
     React.useEffect(() => {
@@ -155,7 +155,7 @@ const AnnounceTicker = ({ announcements, onOpen }) => {
     const safeIdx = idx % list.length;
     const a = list[safeIdx];
     return (
-        <button onClick={onOpen} className="w-full card rounded-2xl px-4 py-3 text-left active:scale-98 transition-all overflow-hidden">
+        <button onClick={() => (a.linkMeetingId && onTabChange) ? onTabChange('attend', a.linkKind==='match'?'match':'self', a.linkMeetingId) : onOpen()} className="w-full card rounded-2xl px-4 py-3 text-left active:scale-98 transition-all overflow-hidden">
             <div className="flex items-center gap-2.5">
                 <Icon.Bell size={15} className="text-teal-500 flex-shrink-0"/>
                 {/* key 변경 → moida-ticker-up 애니메이션 재생 (아래에서 위로 등장) */}
@@ -480,7 +480,7 @@ const TabHome = ({
     return (
     <div className="animate-in space-y-3">
         {/* 공지 순환 띠 (맨 위, 항상 표시) */}
-        <AnnounceTicker announcements={announcements} onOpen={onOpenAnnouncements} />
+        <AnnounceTicker announcements={announcements} onOpen={onOpenAnnouncements} onTabChange={onTabChange} />
 
         {/* 다음 모임 — 정기/매칭 종류별로 분리해 색상으로 구분 (탭하면 모임 탭으로 이동) */}
         {meetingCards.length > 0 ? meetingCards.map(c => (
