@@ -576,7 +576,7 @@ function App() {
                         <div className="flex gap-1.5 mb-3 p-1 bg-slate-100 rounded-2xl">
                             {(viewKind === 'match'
                                 ? [['attend','출석'],['team','명단']]
-                                : [['attend','출석'],['team','대진'],['match','매치']]
+                                : [['attend','출석'],['team','팀'],['match','매치']]
                             ).map(([k,l]) => (
                                 <button key={k} onClick={()=>setMeetingSubTab(k)}
                                     className={`flex-1 min-w-0 py-2 rounded-xl text-sm font-black truncate transition-all ${meetingSubTab===k?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>{l}</button>
