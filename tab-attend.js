@@ -272,7 +272,7 @@ const RegSettingsSection = ({ meetingSettings, updateMeetingSettingsAdmin }) => 
 };
 
 // ─── 회원용 신청 카드 ─────────────────────────────────────────────────────────────
-const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel, duesUnpaid, duesBlock }) => {
+const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel, duesUnpaid, duesBlock, isPreview }) => {
     if (!meetingSettings?.isRegistrationEnabled) return null;
 
     const now = new Date();
@@ -325,9 +325,9 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
                     {duesBlock && duesUnpaid ? (
                         <button disabled className="w-full py-3.5 bg-slate-200 text-slate-400 rounded-2xl font-black text-sm cursor-not-allowed">회비 미납 — 신청 불가</button>
                     ) : (
-                        <button onClick={handleRegister}
+                        <button onClick={isPreview ? () => alert('미리보기에서는 실제로 신청되지 않아요.') : handleRegister}
                             className="w-full py-3.5 bg-orange-500 text-white rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all">
-                            신청하기
+                            신청하기{isPreview ? ' (미리보기)' : ''}
                         </button>
                     )}
                 </>
@@ -487,7 +487,7 @@ const TabAttend = ({
     darkMode, meetingSettings, updateMeetingSettingsAdmin,
     attendActiveParticipants, snapMin, attendHourOptions, attendMinuteOptions,
     setIsLocationPickerOpen, localMaxLimit, setLocalMaxLimit,
-    memberData, memberInfo, attendNormalMembers, tmSessionData, activeMembers,
+    memberData, memberInfo, inTestPreview, attendNormalMembers, tmSessionData, activeMembers,
     attendToggleParticipant, setIsAttendGuestModalOpen,
     attendHandleTestSelect, attendHandleResetSelection,
     attendGuestEligibleMembers, attendToggleParticipantAsGuest,
@@ -1109,6 +1109,7 @@ const TabAttend = ({
                 handleCancel={handleCancel}
                 duesUnpaid={myDuesUnpaid}
                 duesBlock={duesBlock}
+                isPreview={inTestPreview}
             />
         )}
 

@@ -343,7 +343,26 @@ function App() {
             location.reload();
         } catch(e) { try { showToast('테스트 전환 실패: ' + e.message, 'error'); } catch(_) { alert('테스트 전환 실패: ' + e.message); } }
     };
-    const exitTestPreview = () => {
+    const exitTestPreview = async () => {
+        // 테스트회원이 만든 기록 정리 (휘발성) — 복귀하면 모두 삭제
+        try {
+            const testId = (() => { try { return JSON.parse(localStorage.getItem('moida_member_data'))?.memberId; } catch(e) { return null; } })();
+            if (testId) {
+                try {
+                    const drs = await getCol('dues_reports').where('memberId','==',testId).get();
+                    const months = new Set();
+                    const b1 = db.batch();
+                    drs.forEach(d => { const r=d.data(); if(r.month) months.add(r.month); b1.delete(d.ref); });
+                    await b1.commit();
+                    for (const mth of months) {
+                        try { await getCol('monthly_checks').doc(mth).update({ [`statuses.${testId}`]: firebase.firestore.FieldValue.delete(), [`paymentDates.${testId}`]: firebase.firestore.FieldValue.delete() }); } catch(_) {}
+                    }
+                } catch(_) {}
+                try { await getCol('fcm_tokens').doc(testId).delete(); } catch(_) {}
+                try { const ws = await getCol('weekly_session').where('memberId','==',testId).get(); const b2 = db.batch(); ws.forEach(d => b2.delete(d.ref)); await b2.commit(); } catch(_) {}
+                try { await getCol('members').doc(testId).delete(); } catch(_) {}
+            }
+        } catch(e) {}
         try {
             const bak = localStorage.getItem('moida_admin_backup');
             if (bak) localStorage.setItem('moida_member_data', bak);
@@ -687,7 +706,7 @@ function App() {
                         attendMinuteOptions={attend.attendMinuteOptions}
                         setIsLocationPickerOpen={attend.setIsLocationPickerOpen}
                         localMaxLimit={attend.localMaxLimit} setLocalMaxLimit={attend.setLocalMaxLimit}
-                        memberData={memberData} memberInfo={memberInfo} attendNormalMembers={attend.attendNormalMembers}
+                        memberData={memberData} memberInfo={memberInfo} inTestPreview={inTestPreview} attendNormalMembers={attend.attendNormalMembers}
                         activeMembers={roster.activeMembers}
                         tmSessionData={team.tmSessionData}
                         attendToggleParticipant={attendToggleParticipant}
