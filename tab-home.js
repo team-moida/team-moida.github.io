@@ -456,6 +456,8 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
     const [report, setReport] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [popupOff, setPopupOff] = useState(false);
+    const [confirmType, setConfirmType] = useState(null);   // 토스/카카오 송금 후 복귀 시 '신고할까요?' 확인
+    const paySentTypeRef = React.useRef(null);
 
     const memberId = memberInfo?.id || null;
 
@@ -480,6 +482,19 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
         const unsub = getCol('dues_reports').doc(`${targetMonth}_${memberId}`).onSnapshot(d => setReport(d.exists ? d.data() : null));
         return () => unsub();
     }, [memberId, targetMonth]);
+
+    // 송금 버튼으로 토스/카카오를 열고 앱으로 돌아오면 '송금 마치셨어요?'를 한 번 물어보고 신고.
+    // (앱이 입금 자체를 자동 감지할 수는 없어, 복귀 시 본인 확인 한 번으로 처리 — 안 보냈으면 신고 안 됨)
+    useEffect(() => {
+        const onVis = () => {
+            if (document.visibilityState === 'visible' && paySentTypeRef.current) {
+                setConfirmType(paySentTypeRef.current);
+                paySentTypeRef.current = null;
+            }
+        };
+        document.addEventListener('visibilitychange', onVis);
+        return () => document.removeEventListener('visibilitychange', onVis);
+    }, []);
 
     const fee = (k, def) => { const v = Number(acc?.[k]); return (v && v > 0) ? v : def; };
     const fees = {
@@ -674,6 +689,8 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
     const tossHref = (showPayPrompt && feeFor(sel) > 0 && tossAuto) ? tossAuto : (acc.tossUrl || '');
     // 앱 스킴(supertoss://)은 새 탭이 아니라 현재 창에서 열어야 토스 앱이 호출됨. http(s)는 새 탭.
     const openSend = (url) => { if (!url) return; if (/^https?:\/\//i.test(url)) window.open(url, '_blank'); else window.location.href = url; };
+    // 송금 버튼: 토스/카카오를 열면서, 회원이 유형을 고른 상태면 복귀 시 신고 확인을 띄우도록 표시.
+    const handlePaySend = (url) => { openSend(url); if (showPayPrompt && feeFor(sel) > 0) paySentTypeRef.current = sel; };
 
     // ── 계좌 표시 + 회비 납부 (회원·관리자 공통) ──
     return (
@@ -708,8 +725,8 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
             <div className="space-y-2">
                 {(tossHref || kakaoHref) && (
                     <div className="flex gap-2">
-                        {tossHref && <button onClick={()=>openSend(tossHref)} className="flex-1 py-2.5 rounded-xl bg-white text-[#3182f6] font-black text-sm active:scale-95 transition-all">토스로 보내기</button>}
-                        {kakaoHref && <button onClick={()=>openSend(kakaoHref)} className="flex-1 py-2.5 rounded-xl font-black text-sm active:scale-95 transition-all" style={{background:'#FEE500',color:'#3c1e1e'}}>카카오페이로 보내기</button>}
+                        {tossHref && <button onClick={()=>handlePaySend(tossHref)} className="flex-1 py-2.5 rounded-xl bg-white text-[#3182f6] font-black text-sm active:scale-95 transition-all">토스로 보내기</button>}
+                        {kakaoHref && <button onClick={()=>handlePaySend(kakaoHref)} className="flex-1 py-2.5 rounded-xl font-black text-sm active:scale-95 transition-all" style={{background:'#FEE500',color:'#3c1e1e'}}>카카오페이로 보내기</button>}
                     </div>
                 )}
                 {showPayPrompt && (
@@ -724,6 +741,19 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
                     <p className="font-black text-lg text-slate-800">{targetMonLabel} 회비 납부</p>
                     <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">곧 {targetMonLabel}이 시작돼요.<br/>잊지 말고 회비를 납부해 주세요!</p>
                     <button onClick={dismissPopup} className="mt-4 w-full py-3 rounded-2xl bg-emerald-500 text-white font-black text-sm active:scale-95 transition-all">확인</button>
+                </div>
+            </div>
+        )}
+        {confirmType && (!report || report.status !== 'confirmed') && (
+            <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6" onClick={()=>setConfirmType(null)}>
+                <div className="bg-white rounded-3xl p-6 w-full max-w-xs text-center shadow-2xl" onClick={e=>e.stopPropagation()}>
+                    <div className="text-4xl mb-2">💸</div>
+                    <p className="font-black text-lg text-slate-800">송금 마치셨어요?</p>
+                    <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">{DUES_LABELS[confirmType]||''} {wonFmt(feeFor(confirmType))}원 납부로 신고할게요.<br/>아직 안 보냈으면 '아직요'를 누르세요.</p>
+                    <div className="flex gap-2 mt-4">
+                        <button onClick={()=>setConfirmType(null)} className="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-500 font-black text-sm active:scale-95 transition-all">아직요</button>
+                        <button onClick={async()=>{ await submitReport(confirmType); setConfirmType(null); }} disabled={submitting} className="flex-1 py-3 rounded-2xl bg-emerald-500 text-white font-black text-sm active:scale-95 transition-all">{submitting?'처리 중...':'네, 신고할게요'}</button>
+                    </div>
                 </div>
             </div>
         )}
