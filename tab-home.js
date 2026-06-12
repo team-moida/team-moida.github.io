@@ -696,6 +696,12 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo }) => {
                 <div className="bg-white/10 rounded-2xl p-3 mb-3 space-y-2">
                     {acc.accountNo && infoRow('계좌번호', acc.accountNo, 'acc', false)}
                     {showPayPrompt && infoRow('입금자명', depositName, 'name', !!acc.accountNo)}
+                    {showPayPrompt && acc.accountNo && (
+                        <button onClick={()=>copyText(`${acc.bank?acc.bank+' ':''}${acc.accountNo}\n${depositName}`, 'both')}
+                            className="w-full py-2 rounded-xl bg-white/25 text-white text-xs font-black active:scale-95 transition-all flex items-center justify-center gap-1">
+                            {copied==='both' ? <><Icon.Check size={13}/>복사됨</> : '계좌번호 · 입금자명 함께 복사'}
+                        </button>
+                    )}
                     {acc.amountHint && <p className="text-[11px] font-black text-white/75 pt-0.5">{acc.amountHint}</p>}
                 </div>
             )}
