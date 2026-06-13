@@ -200,7 +200,7 @@ const WMO_WEATHER = {
 };
 const _wxCache = new Map();   // 날씨: `${lat},${lng},${date}` → {at, data} (30분)
 const _addrCache = new Map(); // 주소: `${lat},${lng}` → {at, text} (24시간)
-const MeetingWeather = ({ lat, lng, date, isAdminMode, isToday }) => {
+const MeetingWeather = ({ lat, lng, isAdminMode }) => {
     const [wx, setWx] = React.useState(null);
     const [wState, setWState] = React.useState('idle'); // idle|loading|done|error
     const [wErr, setWErr] = React.useState('');
@@ -209,7 +209,7 @@ const MeetingWeather = ({ lat, lng, date, isAdminMode, isToday }) => {
     // ① 날씨 (Open-Meteo) — 주소와 독립. 캐시 즉시 표시 후 백그라운드 갱신(stale-while-revalidate).
     React.useEffect(() => {
         if (lat == null || lng == null) { setWState('idle'); setWx(null); return; }
-        const key = `${lat},${lng},${date||''}`;
+        const key = `${lat},${lng}`;
         // 즉시 표시: 메모리 → localStorage 순으로 최근 값 있으면 바로 렌더 (오래됐어도 우선 표시)
         let shown = _wxCache.get(key) || null;
         if (!shown) {
@@ -219,28 +219,23 @@ const MeetingWeather = ({ lat, lng, date, isAdminMode, isToday }) => {
             } catch (_) {}
         }
         if (shown) { setWx(shown.data); setWState('done'); }
-        // 충분히 최신(30분 이내)이면 네트워크 생략
-        if (shown && Date.now() - shown.at < 30*60*1000) return;
+        // 충분히 최신(10분 이내)이면 네트워크 생략
+        if (shown && Date.now() - shown.at < 10*60*1000) return;
         let alive = true;
         if (!shown) setWState('loading'); // 캐시 있으면 '불러오는 중' 깜빡임 없이 조용히 갱신
         const p = new URLSearchParams({
             latitude: lat, longitude: lng,
             current: 'temperature_2m,relative_humidity_2m,weather_code',
-            daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
             timezone: 'Asia/Seoul',
         });
-        if (date) { p.set('start_date', date); p.set('end_date', date); }
         fetch(`https://api.open-meteo.com/v1/forecast?${p}`)
             .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
             .then(j => {
                 if (!alive) return;
-                const cur = j.current || {}, d = j.daily || {};
+                const cur = j.current || {};
                 const data = {
-                    code: (d.weather_code && d.weather_code[0] != null) ? d.weather_code[0] : cur.weather_code,
+                    code: cur.weather_code,
                     cur: cur.temperature_2m, humidity: cur.relative_humidity_2m,
-                    min: d.temperature_2m_min && d.temperature_2m_min[0],
-                    max: d.temperature_2m_max && d.temperature_2m_max[0],
-                    pop: d.precipitation_probability_max && d.precipitation_probability_max[0],
                 };
                 const entry = { at: Date.now(), data };
                 _wxCache.set(key, entry);
@@ -249,7 +244,7 @@ const MeetingWeather = ({ lat, lng, date, isAdminMode, isToday }) => {
             })
             .catch((e) => { if (alive && !shown) { setWErr(String((e && e.message) || e)); setWState('error'); } }); // 캐시 있으면 에러로 안 바꿈
         return () => { alive = false; };
-    }, [lat, lng, date]);
+    }, [lat, lng]);
 
     // ② 주소 (카카오 역지오코딩) — 베스트에포트. 실패/지연돼도 날씨엔 영향 없음.
     React.useEffect(() => {
@@ -304,29 +299,13 @@ const MeetingWeather = ({ lat, lng, date, isAdminMode, isToday }) => {
             <div className="flex items-center gap-3">
             <span className="text-3xl leading-none flex-shrink-0">{icon}</span>
             <div className="min-w-0 flex-1">
-                {isToday ? (
-                    <div className="flex items-baseline gap-1.5 min-w-0">
-                        <span className="text-[10px] font-black text-white/70 flex-shrink-0">지금</span>
-                        <span className="text-lg font-black text-white flex-shrink-0">{r(wx.cur)}°</span>
-                        <span className="text-xs font-black text-white/80 truncate">{label}</span>
-                    </div>
-                ) : (
-                    <div className="flex items-baseline gap-1.5 min-w-0">
-                        <span className="text-lg font-black text-white flex-shrink-0">{r(wx.min)}°~{r(wx.max)}°</span>
-                        <span className="text-xs font-black text-white/80 truncate">{label}</span>
-                    </div>
-                )}
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                    <span className="text-[10px] font-black text-white/70 flex-shrink-0">지금</span>
+                    <span className="text-lg font-black text-white flex-shrink-0">{r(wx.cur)}°</span>
+                    <span className="text-xs font-black text-white/80 truncate">{label}</span>
+                </div>
                 <div className="flex items-center gap-x-2.5 gap-y-0.5 mt-0.5 text-[11px] font-black flex-wrap">
-                    {isToday ? (
-                        <>
-                            <span className="text-white">최저 {r(wx.min)}°</span>
-                            <span className="text-white">최고 {r(wx.max)}°</span>
-                            <span className="text-white/70">습도 {r(wx.humidity)}%</span>
-                        </>
-                    ) : (
-                        <span className="text-white/70">습도 {r(wx.humidity)}%</span>
-                    )}
-                    {wx.pop != null && <span className="text-white/70">강수 {r(wx.pop)}%</span>}
+                    <span className="text-white/70">습도 {r(wx.humidity)}%</span>
                 </div>
             </div>
             </div>
@@ -390,7 +369,7 @@ const NextMeetingCard = ({
             )}
             {/* 실시간 날씨 (모임 좌표 기준) — 지난 모임에는 표시 안 함 */}
             {dayInfo && dayInfo.type !== 'past' && (
-                <MeetingWeather lat={meeting.locationLat} lng={meeting.locationLng} date={meeting.date} isAdminMode={isAdminMode} isToday={dayInfo.type === 'today' || dayInfo.type === 'started'} />
+                <MeetingWeather lat={meeting.locationLat} lng={meeting.locationLng} isAdminMode={isAdminMode} />
             )}
             {isActive ? (
                 <div className="mt-4 pt-4 border-t space-y-2.5" style={{borderColor:'rgba(255,255,255,0.22)'}}>
