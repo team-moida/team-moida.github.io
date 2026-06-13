@@ -32,11 +32,11 @@ function MemberHeader({
                     {(canPreview || isInPreview) && (
                         <button
                             onClick={isInPreview ? onExitTestPreview : onEnterTestPreview}
-                            className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-all ${isInPreview ? 'bg-orange-100 hover:bg-orange-200 text-orange-500' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-600'}`}
+                            className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-all ${isInPreview ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-600' : 'bg-orange-100 hover:bg-orange-200 text-orange-500'}`}
                             title={isInPreview ? '관리자 모드로 복귀' : '회원 화면으로 전환'}
                         >
                             <Icon.User size={13}/>
-                            <span className="text-[9px] font-black leading-none">{isInPreview ? '회원' : '관리자'}</span>
+                            <span className="text-[9px] font-black leading-none">{isInPreview ? '관리자' : '회원'}</span>
                         </button>
                     )}
                     <button onClick={handleLogout} className="p-2 rounded-lg bg-red-100 hover:bg-red-200 transition-all text-red-500" title="로그아웃"><Icon.LogOut size={15}/></button>
