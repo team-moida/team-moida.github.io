@@ -200,7 +200,7 @@ const WMO_WEATHER = {
 };
 const _wxCache = new Map();   // 날씨: `${lat},${lng},${date}` → {at, data} (30분)
 const _addrCache = new Map(); // 주소: `${lat},${lng}` → {at, text} (24시간)
-const MeetingWeather = ({ lat, lng, date, isAdminMode }) => {
+const MeetingWeather = ({ lat, lng, date, isAdminMode, isToday }) => {
     const [wx, setWx] = React.useState(null);
     const [wState, setWState] = React.useState('idle'); // idle|loading|done|error
     const [wErr, setWErr] = React.useState('');
@@ -304,15 +304,28 @@ const MeetingWeather = ({ lat, lng, date, isAdminMode }) => {
             <div className="flex items-center gap-3">
             <span className="text-3xl leading-none flex-shrink-0">{icon}</span>
             <div className="min-w-0 flex-1">
-                <div className="flex items-baseline gap-1.5 min-w-0">
-                    <span className="text-[10px] font-black text-white/70 flex-shrink-0">지금</span>
-                    <span className="text-lg font-black text-white flex-shrink-0">{r(wx.cur)}°</span>
-                    <span className="text-xs font-black text-white/80 truncate">{label}</span>
-                </div>
+                {isToday ? (
+                    <div className="flex items-baseline gap-1.5 min-w-0">
+                        <span className="text-[10px] font-black text-white/70 flex-shrink-0">지금</span>
+                        <span className="text-lg font-black text-white flex-shrink-0">{r(wx.cur)}°</span>
+                        <span className="text-xs font-black text-white/80 truncate">{label}</span>
+                    </div>
+                ) : (
+                    <div className="flex items-baseline gap-1.5 min-w-0">
+                        <span className="text-lg font-black text-white flex-shrink-0">{r(wx.min)}°~{r(wx.max)}°</span>
+                        <span className="text-xs font-black text-white/80 truncate">{label}</span>
+                    </div>
+                )}
                 <div className="flex items-center gap-x-2.5 gap-y-0.5 mt-0.5 text-[11px] font-black flex-wrap">
-                    <span className="text-white">최저 {r(wx.min)}°</span>
-                    <span className="text-white">최고 {r(wx.max)}°</span>
-                    <span className="text-white/70">습도 {r(wx.humidity)}%</span>
+                    {isToday ? (
+                        <>
+                            <span className="text-white">최저 {r(wx.min)}°</span>
+                            <span className="text-white">최고 {r(wx.max)}°</span>
+                            <span className="text-white/70">습도 {r(wx.humidity)}%</span>
+                        </>
+                    ) : (
+                        <span className="text-white/70">습도 {r(wx.humidity)}%</span>
+                    )}
                     {wx.pop != null && <span className="text-white/70">강수 {r(wx.pop)}%</span>}
                 </div>
             </div>
@@ -377,7 +390,7 @@ const NextMeetingCard = ({
             )}
             {/* 실시간 날씨 (모임 좌표 기준) — 지난 모임에는 표시 안 함 */}
             {dayInfo && dayInfo.type !== 'past' && (
-                <MeetingWeather lat={meeting.locationLat} lng={meeting.locationLng} date={meeting.date} isAdminMode={isAdminMode} />
+                <MeetingWeather lat={meeting.locationLat} lng={meeting.locationLng} date={meeting.date} isAdminMode={isAdminMode} isToday={dayInfo.type === 'today' || dayInfo.type === 'started'} />
             )}
             {isActive ? (
                 <div className="mt-4 pt-4 border-t space-y-2.5" style={{borderColor:'rgba(255,255,255,0.22)'}}>
