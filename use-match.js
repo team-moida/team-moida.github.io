@@ -29,7 +29,7 @@ function useMatch({ isAdminMode, meetingSettings, confirmedDrafts }) {
         if (!meetingSettings?.date) { setScheduleData(null); return; }
         const mid = getMeetingId(meetingSettings);
         const unsub = getCol('match_schedules').orderBy('createdAt', 'desc').onSnapshot(snap => {
-            const found = snap.docs.map(d => d.data())
+            const found = snap.docs.map(d => ({id:d.id,...d.data()}))
                 .find(d => d.meetingId ? d.meetingId === mid : d.meetingDate === meetingSettings.date);
             setScheduleData(found || null);
         });
@@ -42,6 +42,16 @@ function useMatch({ isAdminMode, meetingSettings, confirmedDrafts }) {
         const u2 = getCol('match_schedules').orderBy('createdAt','desc').onSnapshot(snap => setSavedMatchSchedules(snap.docs.map(d => ({id:d.id,...d.data()}))));
         return () => { u1(); u2(); };
     }, [isAdminMode]);
+
+    // scheduleData가 로드됐고 local 상태가 비어 있으면 자동 동기화
+    useEffect(() => {
+        if (!scheduleData || activeMatchScheduleId) return;
+        setLocalSchedule(scheduleData.schedule || {list:[], stats:{}});
+        setLocalCompletedMatches(new Set(scheduleData.completedMatches || []));
+        setLocalMatchIndex(scheduleData.currentMatchIndex ?? 0);
+        if (scheduleData.id) setActiveMatchScheduleId(scheduleData.id);
+        setMatchAdminView('results');
+    }, [scheduleData]);
 
     // 최신 매치 상태를 ref로 유지 (워치 리스너의 stale closure 방지)
     const matchStateRef = React.useRef({});
