@@ -170,11 +170,13 @@ function ProfileModal({ isOpen, onClose, memberInfo, memberData, showAlert }) {
     const [phone, setPhone] = useState('');
     const [address, setAddress] = useState('');
     const [saving, setSaving] = useState(false);
+    const [editing, setEditing] = useState(false);
 
     useEffect(() => {
         if (isOpen && memberInfo) {
             setPhone(memberInfo.phone || '');
             setAddress(memberInfo.address || '');
+            setEditing(false);
         }
     }, [isOpen, memberInfo?.id]);
 
@@ -190,6 +192,12 @@ function ProfileModal({ isOpen, onClose, memberInfo, memberData, showAlert }) {
         finally { setSaving(false); }
     };
 
+    const handleCancelEdit = () => {
+        setPhone(memberInfo.phone || '');
+        setAddress(memberInfo.address || '');
+        setEditing(false);
+    };
+
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" style={{zIndex:75}} onClick={onClose}>
             <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl overflow-y-auto max-h-[90vh]" onClick={e=>e.stopPropagation()}>
@@ -197,6 +205,7 @@ function ProfileModal({ isOpen, onClose, memberInfo, memberData, showAlert }) {
                     <h2 className="text-xl font-black text-slate-800">내 프로필</h2>
                     <button onClick={onClose} className="text-slate-400 text-2xl leading-none">×</button>
                 </div>
+                {/* 기본 정보 (항상 읽기 전용) */}
                 <div className="bg-slate-50 rounded-2xl p-4 mb-4 space-y-2.5">
                     {[
                         {label:'이름', val:memberInfo.name},
@@ -215,27 +224,52 @@ function ProfileModal({ isOpen, onClose, memberInfo, memberData, showAlert }) {
                         </div>
                     ))}
                 </div>
-                <div className="space-y-3">
-                    <div>
-                        <p className="text-xs font-black text-slate-500 mb-1">전화번호</p>
-                        <input type="text" style={{userSelect:'text'}} placeholder="010-0000-0000"
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
-                            value={formatPhoneInput(phone)} onChange={e=>setPhone(formatPhoneInput(e.target.value))}/>
-                    </div>
-                    <div>
-                        <p className="text-xs font-black text-slate-500 mb-1">거주지</p>
-                        <input type="text" style={{userSelect:'text'}} placeholder="예: 화성시 반월동"
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
-                            value={address} onChange={e=>setAddress(e.target.value)}/>
-                    </div>
-                </div>
-                <div className="flex gap-2 mt-5">
-                    <button onClick={onClose} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
-                    <button onClick={handleSave} disabled={saving}
-                        className={`flex-1 py-3 rounded-2xl font-black text-sm ${saving?'bg-teal-200 text-white':'bg-teal-500 text-white'}`}>
-                        {saving?'저장 중...':'저장'}
-                    </button>
-                </div>
+                {/* 전화번호 · 거주지 — 보기 모드 or 수정 모드 */}
+                {!editing ? (
+                    <>
+                        <div className="space-y-2.5 mb-4 px-1">
+                            {[
+                                {label:'전화번호', val: phone ? formatPhoneInput(phone) : null},
+                                {label:'거주지',   val: address || null},
+                            ].map(row => (
+                                <div key={row.label} className="flex items-center justify-between">
+                                    <span className="text-xs font-black text-slate-400">{row.label}</span>
+                                    <span className={`text-sm font-black ${row.val ? 'text-slate-700' : 'text-slate-300'}`}>
+                                        {row.val || '미입력'}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                        <button onClick={() => setEditing(true)}
+                            className="w-full py-3 bg-teal-50 text-teal-600 rounded-2xl font-black text-sm active:scale-95 transition-all flex items-center justify-center gap-2">
+                            <Icon.Edit size={15}/> 수정하기
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <div className="space-y-3 mb-5">
+                            <div>
+                                <p className="text-xs font-black text-slate-500 mb-1">전화번호</p>
+                                <input type="text" style={{userSelect:'text'}} placeholder="010-0000-0000"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                                    value={formatPhoneInput(phone)} onChange={e=>setPhone(formatPhoneInput(e.target.value))}/>
+                            </div>
+                            <div>
+                                <p className="text-xs font-black text-slate-500 mb-1">거주지</p>
+                                <input type="text" style={{userSelect:'text'}} placeholder="예: 화성시 반월동"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
+                                    value={address} onChange={e=>setAddress(e.target.value)}/>
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={handleCancelEdit} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
+                            <button onClick={handleSave} disabled={saving}
+                                className={`flex-1 py-3 rounded-2xl font-black text-sm ${saving?'bg-teal-200 text-white':'bg-teal-500 text-white'}`}>
+                                {saving?'저장 중...':'저장'}
+                            </button>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );
