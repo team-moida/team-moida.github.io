@@ -86,6 +86,8 @@ function makeMatchHandlers(ctx) {
                 label: `${matchConfig.meetingDate} 매치 (${localSchedule.list.length}라운드)`
             });
             setActiveMatchScheduleId(docRef.id);
+            // 워치 컨트롤 초기화
+            getCol('settings').doc('watch_control').set({ command: null, currentMatchIndex: 0, totalMatches: localSchedule.list.length }).catch(() => {});
             showAlert('저장 완료', '매치 테이블이 저장되었습니다.');
         } catch(e) { showAlert('오류', '저장 실패'); } finally { setMatchIsSaving(false); }
     };
@@ -100,6 +102,8 @@ function makeMatchHandlers(ctx) {
         if (activeMatchScheduleId) {
             try { await getCol('match_schedules').doc(activeMatchScheduleId).update({completedMatches: Array.from(newCompleted), currentMatchIndex: newIndex}); } catch(e) {}
         }
+        // 워치에 현재 경기 인덱스 동기화
+        getCol('settings').doc('watch_control').update({ command: null, currentMatchIndex: newIndex, totalMatches: localSchedule.list.length }).catch(() => {});
     };
 
     const matchHandleCapture = async () => {

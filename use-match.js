@@ -43,6 +43,34 @@ function useMatch({ isAdminMode, meetingSettings, confirmedDrafts }) {
         return () => { u1(); u2(); };
     }, [isAdminMode]);
 
+    // 최신 매치 상태를 ref로 유지 (워치 리스너의 stale closure 방지)
+    const matchStateRef = React.useRef({});
+    useEffect(() => {
+        matchStateRef.current = { localMatchIndex, localCompletedMatches, localSchedule, activeMatchScheduleId };
+    }, [localMatchIndex, localCompletedMatches, localSchedule, activeMatchScheduleId]);
+
+    // 워치 "다음 경기" 명령 수신
+    useEffect(() => {
+        if (!isAdminMode) return;
+        const unsub = getCol('settings').doc('watch_control').onSnapshot(snap => {
+            if (!snap.exists()) return;
+            const data = snap.data();
+            if (data.command !== 'next') return;
+            const { localMatchIndex: idx, localCompletedMatches: completed, localSchedule: sched, activeMatchScheduleId: schedId } = matchStateRef.current;
+            if (!sched.list.length || idx >= sched.list.length) return;
+            const newCompleted = new Set(completed);
+            newCompleted.add(sched.list[idx].id);
+            const newIndex = idx + 1;
+            setLocalCompletedMatches(newCompleted);
+            setLocalMatchIndex(newIndex);
+            if (schedId) {
+                getCol('match_schedules').doc(schedId).update({ completedMatches: Array.from(newCompleted), currentMatchIndex: newIndex }).catch(() => {});
+            }
+            getCol('settings').doc('watch_control').update({ command: null, currentMatchIndex: newIndex, totalMatches: sched.list.length }).catch(() => {});
+        });
+        return () => unsub();
+    }, [isAdminMode]);
+
     useEffect(() => {
         if (!isAdminMode) return;
         setMatchConfig(p => ({...p, meetingDate: meetingSettings?.date || p.meetingDate}));
