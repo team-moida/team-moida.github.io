@@ -405,6 +405,30 @@ const TabMatch = ({
                             </div>
                         )}
 
+                        {/* ── 관리자 라운드 컨트롤 ── */}
+                        {isAdminMode && (
+                            <div className="mt-3 p-3 card border-slate-100 rounded-2xl">
+                                <p className="text-center text-xs font-black text-slate-500 mb-2">
+                                    {localMatchIndex < localSchedule.list.length
+                                        ? `${localMatchIndex+1} / ${localSchedule.list.length} 라운드 · ${localSchedule.list[localMatchIndex]?.time}`
+                                        : '✓ 모든 경기 종료'}
+                                </p>
+                                <div className="flex gap-2">
+                                    <button onClick={matchHandlePrevMatch} disabled={localMatchIndex <= 0}
+                                        className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-black text-xs disabled:opacity-30">← 이전</button>
+                                    {localMatchIndex < localSchedule.list.length && (
+                                        localCompletedMatches.has(localSchedule.list[localMatchIndex]?.id)
+                                            ? <button onClick={() => matchHandleToggleComplete(localSchedule.list[localMatchIndex].id)}
+                                                className="flex-1 py-2.5 rounded-xl bg-slate-200 text-slate-500 font-black text-xs">종료 취소</button>
+                                            : <button onClick={() => matchHandleToggleComplete(localSchedule.list[localMatchIndex].id)}
+                                                className="flex-1 py-2.5 rounded-xl bg-emerald-500 text-white font-black text-xs">종료</button>
+                                    )}
+                                    <button onClick={matchHandleNextMatch} disabled={localMatchIndex >= localSchedule.list.length}
+                                        className="flex-1 py-2.5 rounded-xl bg-teal-500 text-white font-black text-xs disabled:opacity-30">다음 →</button>
+                                </div>
+                            </div>
+                        )}
+
                         {/* ── 전체 보기 뷰 ── */}
                         {matchViewMode==='all' && (
                             <div className="space-y-2">
