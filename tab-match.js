@@ -9,7 +9,7 @@ const TabMatch = ({
     scheduleData, matchViewMode, setMatchViewMode,
     myTeamInfo,
     matchSaveSchedule, matchHandleCapture, matchGenerateTable,
-    matchHandleNextMatch, matchHandlePresetSelect, matchToggleSubCourt,
+    matchHandleNextMatch, matchHandleToggleComplete, matchHandlePresetSelect, matchToggleSubCourt,
     splitTime, setIsLoadMatchModalOpen, setIsPresetModalOpen,
 }) => (
     <div className="animate-in">
@@ -172,7 +172,7 @@ const TabMatch = ({
                                             const isPast = si < localMatchIndex;
                                             return (
                                                 <div key={session.id}
-                                                    onClick={() => setLocalCompletedMatches(prev => { const n=new Set(prev); n.has(session.id)?n.delete(session.id):n.add(session.id); return n; })}
+                                                    onClick={() => matchHandleToggleComplete(session.id)}
                                                     className={`match-row mb-2 p-3.5 rounded-2xl border shadow-sm transition-all ${isCurrent?'bg-teal-50 border-teal-300':isPast||isDone?'match-completed border-slate-100':'bg-white border-slate-100'}`}
                                                     style={isCurrent?{boxShadow:'0 0 0 2px #2dd4bf40'}:{}}>
                                                     <div className="flex items-center gap-2 mb-2">
@@ -202,17 +202,11 @@ const TabMatch = ({
                                         })}
                                     </div>
                                     {!matchIsCapturing && (
-                                        <div className="flex items-center gap-3 mt-3 p-4 card border-slate-100 rounded-2xl">
-                                            <div className="flex-1">
-                                                {localMatchIndex < localSchedule.list.length
-                                                    ? <div><p className="text-xs font-black text-slate-500">{localMatchIndex+1} / {localSchedule.list.length} 라운드</p><p className="text-[10px] text-slate-400 mt-0.5">{localSchedule.list[localMatchIndex]?.time}</p></div>
-                                                    : <p className="text-sm font-black text-emerald-500">✓ 모든 경기 종료</p>
-                                                }
-                                            </div>
-                                            <button onClick={matchHandleNextMatch} disabled={localMatchIndex >= localSchedule.list.length}
-                                                className="py-2.5 px-5 bg-teal-500 text-white rounded-xl font-black text-sm disabled:opacity-30">
-                                                {localMatchIndex >= localSchedule.list.length ? '종료' : '다음 매치 →'}
-                                            </button>
+                                        <div className="mt-3 p-4 card border-slate-100 rounded-2xl text-center">
+                                            {localMatchIndex < localSchedule.list.length
+                                                ? <div><p className="text-xs font-black text-slate-500">{localMatchIndex+1} / {localSchedule.list.length} 라운드 진행 중</p><p className="text-[10px] text-slate-400 mt-0.5">{localSchedule.list[localMatchIndex]?.time} · 카드를 눌러 완료 처리</p></div>
+                                                : <p className="text-sm font-black text-emerald-500">✓ 모든 경기 종료</p>
+                                            }
                                         </div>
                                     )}
                                 </div>

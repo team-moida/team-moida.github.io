@@ -102,8 +102,20 @@ function makeMatchHandlers(ctx) {
         if (activeMatchScheduleId) {
             try { await getCol('match_schedules').doc(activeMatchScheduleId).update({completedMatches: Array.from(newCompleted), currentMatchIndex: newIndex}); } catch(e) {}
         }
-        // 워치에 현재 경기 인덱스 동기화
         getCol('settings').doc('watch_control').update({ command: null, currentMatchIndex: newIndex, totalMatches: localSchedule.list.length }).catch(() => {});
+    };
+
+    const matchHandleToggleComplete = async (sessionId) => {
+        const newCompleted = new Set(localCompletedMatches);
+        newCompleted.has(sessionId) ? newCompleted.delete(sessionId) : newCompleted.add(sessionId);
+        setLocalCompletedMatches(newCompleted);
+        const newIndex = localSchedule.list.findIndex(s => !newCompleted.has(s.id));
+        const actualIndex = newIndex === -1 ? localSchedule.list.length : newIndex;
+        setLocalMatchIndex(actualIndex);
+        if (activeMatchScheduleId) {
+            try { await getCol('match_schedules').doc(activeMatchScheduleId).update({completedMatches: Array.from(newCompleted), currentMatchIndex: actualIndex}); } catch(e) {}
+        }
+        getCol('settings').doc('watch_control').update({ command: null, currentMatchIndex: actualIndex, totalMatches: localSchedule.list.length }).catch(() => {});
     };
 
     const matchHandleCapture = async () => {
@@ -146,6 +158,7 @@ function makeMatchHandlers(ctx) {
 
     return {
         splitTime, matchGenerateTable, matchSaveSchedule, matchHandleNextMatch,
+        matchHandleToggleComplete,
         matchHandleCapture, matchHandlePresetSelect, matchToggleSubCourt, matchSavePreset
     };
 }
