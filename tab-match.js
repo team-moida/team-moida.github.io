@@ -435,16 +435,17 @@ const TabMatch = ({
                                 {sessions.map((session,si)=>{
                                     const hasMyTeam = myTeam && session.matches.some(m=>m.match.includes(myTeam));
                                     const isResting = myTeam && session.resting?.includes(myTeam);
-                                    const isCurrent = si===cmi;
-                                    const isPast = si<cmi;
+                                    const isCurrent = si===localMatchIndex;
+                                    const isDone = localCompletedMatches.has(session.id);
+                                    const isPast = si<localMatchIndex;
                                     return (
-                                        <div key={si} className={`rounded-3xl p-4 border transition-all ${isCurrent?'border-teal-100 bg-teal-50':isPast?'border-slate-100 bg-slate-50 opacity-50':hasMyTeam?'border-teal-100 card':'card border-slate-100'}`}>
+                                        <div key={si} className={`rounded-3xl p-4 border transition-all ${isCurrent?'border-teal-100 bg-teal-50':isDone||isPast?'border-slate-100 bg-slate-50 opacity-40':hasMyTeam?'border-teal-100 card':'card border-slate-100'}`}>
                                             <div className="flex items-center gap-2 mb-3">
-                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] flex-shrink-0 ${isCurrent?'bg-teal-500 text-white':isPast?'bg-slate-300 text-white':'bg-slate-100 text-slate-500'}`}>{isPast?'✓':si+1}</div>
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] flex-shrink-0 ${isCurrent?'bg-teal-500 text-white':isDone||isPast?'bg-emerald-400 text-white':'bg-slate-100 text-slate-500'}`}>{isDone||isPast?'✓':si+1}</div>
                                                 <p className="text-xs font-black text-slate-400">{session.time}</p>
                                                 {isCurrent&&<span className="text-[9px] font-black text-teal-600 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-full">진행 중</span>}
-                                                {hasMyTeam&&!isCurrent&&<span className="text-[9px] font-black text-teal-500 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-full">내 경기</span>}
-                                                {isResting&&<span className="text-[9px] font-black text-amber-500 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">휴식</span>}
+                                                {hasMyTeam&&!isCurrent&&!isDone&&<span className="text-[9px] font-black text-teal-500 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-full">내 경기</span>}
+                                                {isResting&&!isDone&&<span className="text-[9px] font-black text-amber-500 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">휴식</span>}
                                             </div>
                                             {session.matches.map((m,mi)=>{
                                                 const[t1,t2]=m.match;
