@@ -92,30 +92,32 @@ function makeMatchHandlers(ctx) {
         } catch(e) { showAlert('오류', '저장 실패'); } finally { setMatchIsSaving(false); }
     };
 
-    const matchHandleNextMatch = async () => {
-        if (!localSchedule.list.length || localMatchIndex >= localSchedule.list.length) return;
-        const newCompleted = new Set(localCompletedMatches);
-        newCompleted.add(localSchedule.list[localMatchIndex].id);
-        setLocalCompletedMatches(newCompleted);
-        const newIndex = localMatchIndex + 1;
-        setLocalMatchIndex(newIndex);
+    const syncMatchState = (newCompleted, newIndex) => {
         if (activeMatchScheduleId) {
-            try { await getCol('match_schedules').doc(activeMatchScheduleId).update({completedMatches: Array.from(newCompleted), currentMatchIndex: newIndex}); } catch(e) {}
+            getCol('match_schedules').doc(activeMatchScheduleId).update({ completedMatches: Array.from(newCompleted), currentMatchIndex: newIndex }).catch(() => {});
         }
         getCol('settings').doc('watch_control').update({ command: null, currentMatchIndex: newIndex, totalMatches: localSchedule.list.length }).catch(() => {});
     };
 
-    const matchHandleToggleComplete = async (sessionId) => {
+    const matchHandleNextMatch = () => {
+        if (localMatchIndex >= localSchedule.list.length) return;
+        const newIndex = localMatchIndex + 1;
+        setLocalMatchIndex(newIndex);
+        syncMatchState(localCompletedMatches, newIndex);
+    };
+
+    const matchHandlePrevMatch = () => {
+        if (localMatchIndex <= 0) return;
+        const newIndex = localMatchIndex - 1;
+        setLocalMatchIndex(newIndex);
+        syncMatchState(localCompletedMatches, newIndex);
+    };
+
+    const matchHandleToggleComplete = (sessionId) => {
         const newCompleted = new Set(localCompletedMatches);
         newCompleted.has(sessionId) ? newCompleted.delete(sessionId) : newCompleted.add(sessionId);
         setLocalCompletedMatches(newCompleted);
-        const newIndex = localSchedule.list.findIndex(s => !newCompleted.has(s.id));
-        const actualIndex = newIndex === -1 ? localSchedule.list.length : newIndex;
-        setLocalMatchIndex(actualIndex);
-        if (activeMatchScheduleId) {
-            try { await getCol('match_schedules').doc(activeMatchScheduleId).update({completedMatches: Array.from(newCompleted), currentMatchIndex: actualIndex}); } catch(e) {}
-        }
-        getCol('settings').doc('watch_control').update({ command: null, currentMatchIndex: actualIndex, totalMatches: localSchedule.list.length }).catch(() => {});
+        syncMatchState(newCompleted, localMatchIndex);
     };
 
     const matchHandleCapture = async () => {
@@ -157,8 +159,8 @@ function makeMatchHandlers(ctx) {
     };
 
     return {
-        splitTime, matchGenerateTable, matchSaveSchedule, matchHandleNextMatch,
-        matchHandleToggleComplete,
+        splitTime, matchGenerateTable, matchSaveSchedule,
+        matchHandleNextMatch, matchHandlePrevMatch, matchHandleToggleComplete,
         matchHandleCapture, matchHandlePresetSelect, matchToggleSubCourt, matchSavePreset
     };
 }

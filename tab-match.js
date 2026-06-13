@@ -9,7 +9,7 @@ const TabMatch = ({
     scheduleData, matchViewMode, setMatchViewMode,
     myTeamInfo,
     matchSaveSchedule, matchHandleCapture, matchGenerateTable,
-    matchHandleNextMatch, matchHandleToggleComplete, matchHandlePresetSelect, matchToggleSubCourt,
+    matchHandleNextMatch, matchHandlePrevMatch, matchHandleToggleComplete, matchHandlePresetSelect, matchToggleSubCourt,
     splitTime, setIsLoadMatchModalOpen, setIsPresetModalOpen,
 }) => (
     <div className="animate-in">
@@ -172,7 +172,6 @@ const TabMatch = ({
                                             const isPast = si < localMatchIndex;
                                             return (
                                                 <div key={session.id}
-                                                    onClick={() => matchHandleToggleComplete(session.id)}
                                                     className={`match-row mb-2 p-3.5 rounded-2xl border shadow-sm transition-all ${isCurrent?'bg-teal-50 border-teal-300':isPast||isDone?'match-completed border-slate-100':'bg-white border-slate-100'}`}
                                                     style={isCurrent?{boxShadow:'0 0 0 2px #2dd4bf40'}:{}}>
                                                     <div className="flex items-center gap-2 mb-2">
@@ -202,11 +201,25 @@ const TabMatch = ({
                                         })}
                                     </div>
                                     {!matchIsCapturing && (
-                                        <div className="mt-3 p-4 card border-slate-100 rounded-2xl text-center">
-                                            {localMatchIndex < localSchedule.list.length
-                                                ? <div><p className="text-xs font-black text-slate-500">{localMatchIndex+1} / {localSchedule.list.length} 라운드 진행 중</p><p className="text-[10px] text-slate-400 mt-0.5">{localSchedule.list[localMatchIndex]?.time} · 카드를 눌러 완료 처리</p></div>
-                                                : <p className="text-sm font-black text-emerald-500">✓ 모든 경기 종료</p>
-                                            }
+                                        <div className="mt-3 p-3 card border-slate-100 rounded-2xl">
+                                            <p className="text-center text-xs font-black text-slate-500 mb-2">
+                                                {localMatchIndex < localSchedule.list.length
+                                                    ? `${localMatchIndex+1} / ${localSchedule.list.length} 라운드 · ${localSchedule.list[localMatchIndex]?.time}`
+                                                    : '✓ 모든 경기 종료'}
+                                            </p>
+                                            <div className="flex gap-2">
+                                                <button onClick={matchHandlePrevMatch} disabled={localMatchIndex <= 0}
+                                                    className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-black text-xs disabled:opacity-30">← 이전</button>
+                                                {localMatchIndex < localSchedule.list.length && (
+                                                    localCompletedMatches.has(localSchedule.list[localMatchIndex]?.id)
+                                                        ? <button onClick={() => matchHandleToggleComplete(localSchedule.list[localMatchIndex].id)}
+                                                            className="flex-1 py-2.5 rounded-xl bg-slate-200 text-slate-500 font-black text-xs">종료 취소</button>
+                                                        : <button onClick={() => matchHandleToggleComplete(localSchedule.list[localMatchIndex].id)}
+                                                            className="flex-1 py-2.5 rounded-xl bg-emerald-500 text-white font-black text-xs">종료</button>
+                                                )}
+                                                <button onClick={matchHandleNextMatch} disabled={localMatchIndex >= localSchedule.list.length}
+                                                    className="flex-1 py-2.5 rounded-xl bg-teal-500 text-white font-black text-xs disabled:opacity-30">다음 →</button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>

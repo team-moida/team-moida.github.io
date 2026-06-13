@@ -487,8 +487,8 @@ function App() {
         setIsCapturing: team.setIsCapturing, showAlert, showConfirm
     });
 
-    const { splitTime, matchGenerateTable, matchSaveSchedule, matchHandleNextMatch,
-            matchHandleToggleComplete,
+    const { splitTime, matchGenerateTable, matchSaveSchedule,
+            matchHandleNextMatch, matchHandlePrevMatch, matchHandleToggleComplete,
             matchHandleCapture, matchHandlePresetSelect, matchToggleSubCourt,
             matchSavePreset } = makeMatchHandlers({
         meetingSettings: effectiveSelfMeeting,
@@ -716,7 +716,8 @@ function App() {
                         scheduleData={scheduleData} matchViewMode={matchViewMode} setMatchViewMode={setMatchViewMode}
                         myTeamInfo={myTeamInfo}
                         matchSaveSchedule={matchSaveSchedule} matchHandleCapture={matchHandleCapture}
-                        matchGenerateTable={matchGenerateTable} matchHandleNextMatch={matchHandleNextMatch}
+                        matchGenerateTable={matchGenerateTable}
+                        matchHandleNextMatch={matchHandleNextMatch} matchHandlePrevMatch={matchHandlePrevMatch}
                         matchHandleToggleComplete={matchHandleToggleComplete}
                         matchHandlePresetSelect={matchHandlePresetSelect} matchToggleSubCourt={matchToggleSubCourt}
                         splitTime={splitTime} setIsLoadMatchModalOpen={match.setIsLoadMatchModalOpen}
