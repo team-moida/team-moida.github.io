@@ -185,32 +185,53 @@ const fmtMeetingDate = (ds) => {
 // 모임 좌표(locationLat/Lng)로 그날 날씨를 받아 카드에 직관적 아이콘 + 기온/습도 표시.
 //  · 지금 기온·습도 = 실시간(current)  · 최저/최고·강수확률 = 모임 날짜(daily) 기준.
 //  · 좌표가 없거나(관리자 GPS 미지정) 조회 실패 시 조용히 숨김 → 카드 깔끔 유지.
-// WMO 날씨코드 → [이모지, 한글]  (이모지는 PC·안드로이드·iOS 모두 기본 렌더되어 가장 직관적)
-const WMO_WEATHER = {
-    0:['☀️','맑음'], 1:['🌤️','대체로 맑음'], 2:['⛅','구름 조금'], 3:['☁️','흐림'],
-    45:['🌫️','안개'], 48:['🌫️','짙은 안개'],
-    51:['🌦️','약한 이슬비'], 53:['🌦️','이슬비'], 55:['🌦️','강한 이슬비'],
-    56:['🌧️','어는 이슬비'], 57:['🌧️','어는 이슬비'],
-    61:['🌧️','약한 비'], 63:['🌧️','비'], 65:['🌧️','강한 비'],
-    66:['🌧️','어는 비'], 67:['🌧️','어는 비'],
-    71:['🌨️','약한 눈'], 73:['🌨️','눈'], 75:['🌨️','많은 눈'], 77:['🌨️','싸락눈'],
-    80:['🌦️','소나기'], 81:['🌦️','소나기'], 82:['⛈️','강한 소나기'],
-    85:['🌨️','소낙눈'], 86:['🌨️','소낙눈'],
-    95:['⛈️','뇌우'], 96:['⛈️','뇌우(우박)'], 99:['⛈️','강한 뇌우(우박)'],
+// 기상청 PTY(강수형태) → [이모지, 한글]
+const PTY_MAP = {
+    0: ['☀️', '맑음'],
+    1: ['🌧️', '비'],
+    2: ['🌨️', '비/눈'],
+    3: ['🌨️', '눈'],
+    5: ['🌦️', '빗방울'],
+    6: ['🌦️', '빗방울·눈날림'],
+    7: ['🌨️', '눈날림'],
 };
-const _wxCache = new Map();   // 날씨: `${lat},${lng},${date}` → {at, data} (30분)
-const _addrCache = new Map(); // 주소: `${lat},${lng}` → {at, text} (24시간)
+// WGS84 위경도 → 기상청 격자 좌표 변환 (LCC 투영)
+function latLngToKmaGrid(lat, lng) {
+    const RE = 6371.00877, GRID = 5.0, DEGRAD = Math.PI / 180;
+    const slat1 = 30 * DEGRAD, slat2 = 60 * DEGRAD, olon = 126 * DEGRAD, olat = 38 * DEGRAD;
+    const sn = Math.log(Math.cos(slat1) / Math.cos(slat2)) / Math.log(Math.tan(Math.PI * 0.25 + slat2 * 0.5) / Math.tan(Math.PI * 0.25 + slat1 * 0.5));
+    const sf = Math.pow(Math.tan(Math.PI * 0.25 + slat1 * 0.5), sn) * Math.cos(slat1) / sn;
+    const ro = RE / GRID * sf / Math.pow(Math.tan(Math.PI * 0.25 + olat * 0.5), sn);
+    const ra = RE / GRID * sf / Math.pow(Math.tan(Math.PI * 0.25 + lat * DEGRAD * 0.5), sn);
+    let theta = lng * DEGRAD - olon;
+    if (theta > Math.PI) theta -= 2 * Math.PI;
+    if (theta < -Math.PI) theta += 2 * Math.PI;
+    theta *= sn;
+    return { nx: Math.floor(ra * Math.sin(theta) + 43 + 0.5), ny: Math.floor(ro - ra * Math.cos(theta) + 136 + 0.5) };
+}
+// 초단기실황 base_date/base_time (매 시각 발표, 45분 이후 현재 시각 자료 안정)
+function getKmaBaseDateTime() {
+    const now = new Date();
+    const d = new Date(now);
+    if (now.getMinutes() < 45) d.setHours(d.getHours() - 1);
+    return {
+        base_date: `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`,
+        base_time: `${String(d.getHours()).padStart(2,'0')}00`,
+    };
+}
+const KMA_KEY = 'f9c8dbdd1d9d41fbcf71eac3d375f47b1cb34a4b36d4ed1cdafd91442c7653da';
+const _wxCache = new Map();
+const _addrCache = new Map();
 const MeetingWeather = ({ lat, lng, isAdminMode }) => {
     const [wx, setWx] = React.useState(null);
     const [wState, setWState] = React.useState('idle'); // idle|loading|done|error
     const [wErr, setWErr] = React.useState('');
     const [addr, setAddr] = React.useState('');
 
-    // ① 날씨 (Open-Meteo) — 주소와 독립. 캐시 즉시 표시 후 백그라운드 갱신(stale-while-revalidate).
+    // ① 날씨 (기상청 초단기실황) — 주소와 독립. 캐시 즉시 표시 후 백그라운드 갱신.
     React.useEffect(() => {
         if (lat == null || lng == null) { setWState('idle'); setWx(null); return; }
         const key = `${lat},${lng}`;
-        // 즉시 표시: 메모리 → localStorage 순으로 최근 값 있으면 바로 렌더 (오래됐어도 우선 표시)
         let shown = _wxCache.get(key) || null;
         if (!shown) {
             try {
@@ -219,30 +240,25 @@ const MeetingWeather = ({ lat, lng, isAdminMode }) => {
             } catch (_) {}
         }
         if (shown) { setWx(shown.data); setWState('done'); }
-        // 충분히 최신(10분 이내)이면 네트워크 생략
         if (shown && Date.now() - shown.at < 10*60*1000) return;
         let alive = true;
-        if (!shown) setWState('loading'); // 캐시 있으면 '불러오는 중' 깜빡임 없이 조용히 갱신
-        const p = new URLSearchParams({
-            latitude: lat, longitude: lng,
-            current: 'temperature_2m,relative_humidity_2m,weather_code',
-            timezone: 'Asia/Seoul',
-        });
-        fetch(`https://api.open-meteo.com/v1/forecast?${p}`)
+        if (!shown) setWState('loading');
+        const { nx, ny } = latLngToKmaGrid(lat, lng);
+        const { base_date, base_time } = getKmaBaseDateTime();
+        const url = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=${KMA_KEY}&pageNo=1&numOfRows=10&dataType=JSON&base_date=${base_date}&base_time=${base_time}&nx=${nx}&ny=${ny}`;
+        fetch(url)
             .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
             .then(j => {
                 if (!alive) return;
-                const cur = j.current || {};
-                const data = {
-                    code: cur.weather_code,
-                    cur: cur.temperature_2m, humidity: cur.relative_humidity_2m,
-                };
+                const items = (j?.response?.body?.items?.item) || [];
+                const get = (cat) => items.find(i => i.category === cat)?.obsrValue;
+                const data = { temp: get('T1H'), humidity: get('REH'), pty: Number(get('PTY') || 0) };
                 const entry = { at: Date.now(), data };
                 _wxCache.set(key, entry);
                 try { localStorage.setItem('moida_wx_' + key, JSON.stringify(entry)); } catch (_) {}
                 setWx(data); setWState('done');
             })
-            .catch((e) => { if (alive && !shown) { setWErr(String((e && e.message) || e)); setWState('error'); } }); // 캐시 있으면 에러로 안 바꿈
+            .catch(e => { if (alive && !shown) { setWErr(String((e && e.message) || e)); setWState('error'); } });
         return () => { alive = false; };
     }, [lat, lng]);
 
@@ -289,8 +305,8 @@ const MeetingWeather = ({ lat, lng, isAdminMode }) => {
             </div>
         );
     }
-    const [icon, label] = WMO_WEATHER[wx.code] || ['🌡️','날씨'];
-    const r = (v) => (v == null || isNaN(v)) ? '–' : Math.round(v);
+    const [icon, label] = PTY_MAP[wx.pty] || PTY_MAP[0];
+    const r = (v) => (v == null || isNaN(Number(v))) ? '–' : Math.round(Number(v));
     return (
         <div className="mt-3">
             {addr && (
@@ -301,7 +317,7 @@ const MeetingWeather = ({ lat, lng, isAdminMode }) => {
             <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-1.5 min-w-0">
                     <span className="text-[10px] font-black text-white/70 flex-shrink-0">지금</span>
-                    <span className="text-lg font-black text-white flex-shrink-0">{r(wx.cur)}°</span>
+                    <span className="text-lg font-black text-white flex-shrink-0">{r(wx.temp)}°</span>
                     <span className="text-xs font-black text-white/80 truncate">{label}</span>
                 </div>
                 <div className="flex items-center gap-x-2.5 gap-y-0.5 mt-0.5 text-[11px] font-black flex-wrap">
