@@ -610,6 +610,7 @@ function App() {
                 myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                 handleLogout={handleLogout} toggleTheme={toggleTheme} darkMode={darkMode}
                 isAdminMode={isAdminMode} canPreview={isAdmin} onEnterTestPreview={enterTestPreview}
+                isInPreview={inTestPreview} onExitTestPreview={exitTestPreview}
                 isMeetingOver={attend.isMeetingOver}
                 onEndMeeting={attendHandleEndMeeting}
                 isMeetingEndSaved={attend.attendHistory?.some(h => h.date === displayMeetingSettings?.date) || false}

@@ -3,7 +3,7 @@ function MemberHeader({
     myTeamInfo, myTeamIdx, handleLogout, toggleTheme, darkMode,
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
     unreadCount = 0, onOpenAnnouncements, canPreview, onEnterTestPreview,
-    onOpenProfile
+    onOpenProfile, isInPreview, onExitTestPreview
 }) {
     const showOverlay = isAdminMode && isMeetingOver && !isMeetingEndSaved;
     // 종 클릭 → 전체 공지 모달 (2단계에서 실제 연결). 미연결 시 콘솔 로그만.
@@ -28,10 +28,17 @@ function MemberHeader({
                         )}
                     </button>
                     <button onClick={onOpenProfile} className="p-2 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all text-slate-500" title="내 프로필"><Icon.User size={15}/></button>
-                    {canPreview && (
-                        <button onClick={onEnterTestPreview} className="p-2 rounded-lg bg-teal-100 hover:bg-teal-200 transition-all text-teal-600" title="회원 화면 테스트"><Icon.Edit2 size={15}/></button>
-                    )}
                     <button onClick={toggleTheme} className="p-2 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all text-slate-500" title="테마">{darkMode ? <Icon.Sun size={15}/> : <Icon.Moon size={15}/>}</button>
+                    {(canPreview || isInPreview) && (
+                        <button
+                            onClick={isInPreview ? onExitTestPreview : onEnterTestPreview}
+                            className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-all ${isInPreview ? 'bg-orange-100 hover:bg-orange-200 text-orange-500' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-600'}`}
+                            title={isInPreview ? '관리자 모드로 복귀' : '회원 화면으로 전환'}
+                        >
+                            <Icon.User size={13}/>
+                            <span className="text-[9px] font-black leading-none">{isInPreview ? '회원' : '관리자'}</span>
+                        </button>
+                    )}
                     <button onClick={handleLogout} className="p-2 rounded-lg bg-red-100 hover:bg-red-200 transition-all text-red-500" title="로그아웃"><Icon.LogOut size={15}/></button>
                 </div>
             </div>
