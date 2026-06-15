@@ -165,6 +165,50 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
                 }
             }
 
+            // 새 선착순 정기모임: 담당자를 자동으로 선착순 1번으로 등록
+            if (!editingId && meetingType === 'self' && (formData.isFirstComeFirstServed ?? true) && data.managerId) {
+                try {
+                    const managerDoc = await getCol('members').doc(data.managerId).get();
+                    if (managerDoc.exists) {
+                        const mgr = managerDoc.data();
+                        const regRef = getCol('registrations').doc(`${docId}_${data.managerId}`);
+                        const sessionRef = getCol('weekly_session').doc(`${docId}_${data.managerId}`);
+                        const autoBatch = db.batch();
+                        autoBatch.set(regRef, {
+                            meetingDate: data.date,
+                            meetingId: docId,
+                            meetingType: 'self',
+                            memberId: data.managerId,
+                            name: mgr.name || data.managerName || '',
+                            gender: mgr.gender || '',
+                            level: mgr.level || '',
+                            registeredAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            status: 'confirmed',
+                            waitingNumber: null,
+                        });
+                        autoBatch.set(sessionRef, {
+                            memberId: data.managerId,
+                            name: mgr.name || data.managerName || '',
+                            gender: mgr.gender || '',
+                            level: mgr.level || '',
+                            date: data.date,
+                            meetingId: docId,
+                            checkedIn: false,
+                            checkInTime: null,
+                            status: 'active',
+                            isGuest: false,
+                            team: null,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        });
+                        autoBatch.update(getMeetingsCol().doc(docId), { confirmedCount: 1 });
+                        autoBatch.update(getSettingsCol().doc('meeting_schedule_v2'), { confirmedCount: 1 });
+                        await autoBatch.commit();
+                    }
+                } catch(e) {
+                    console.warn('담당자 자동 등록 실패:', e);
+                }
+            }
+
             if (onSuccess) onSuccess();
         } catch(e) {
             showAlert('오류', '저장 실패: ' + e.message);
