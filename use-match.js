@@ -59,24 +59,34 @@ function useMatch({ isAdminMode, meetingSettings, confirmedDrafts }) {
         matchStateRef.current = { localMatchIndex, localCompletedMatches, localSchedule, activeMatchScheduleId };
     }, [localMatchIndex, localCompletedMatches, localSchedule, activeMatchScheduleId]);
 
-    // 워치 "다음 경기" 명령 수신
+    // 워치 "다음/이전 경기" 명령 수신 (next: 현재 완료+다음 / prev: 되돌아가는 경기 미완료+이전)
     useEffect(() => {
         if (!isAdminMode) return;
         const unsub = getCol('settings').doc('watch_control').onSnapshot(snap => {
             if (!snap.exists()) return;
             const data = snap.data();
-            if (data.command !== 'next') return;
+            if (data.command !== 'next' && data.command !== 'prev') return;
             const { localMatchIndex: idx, localCompletedMatches: completed, localSchedule: sched, activeMatchScheduleId: schedId } = matchStateRef.current;
-            if (!sched.list.length || idx >= sched.list.length) return;
+            const total = sched.list.length;
+            const clearCmd = () => getCol('settings').doc('watch_control').update({ command: null }).catch(() => {});
+            if (!total) { clearCmd(); return; }
             const newCompleted = new Set(completed);
-            newCompleted.add(sched.list[idx].id);
-            const newIndex = idx + 1;
+            let newIndex = idx;
+            if (data.command === 'next') {
+                if (idx >= total) { clearCmd(); return; }
+                newCompleted.add(sched.list[idx].id);          // 현재 경기 완료 처리하며 다음으로
+                newIndex = idx + 1;
+            } else { // prev
+                if (idx <= 0) { clearCmd(); return; }
+                newIndex = idx - 1;
+                newCompleted.delete(sched.list[newIndex].id);  // 되돌아가는 경기는 미완료로
+            }
             setLocalCompletedMatches(newCompleted);
             setLocalMatchIndex(newIndex);
             if (schedId) {
                 getCol('match_schedules').doc(schedId).update({ completedMatches: Array.from(newCompleted), currentMatchIndex: newIndex }).catch(() => {});
             }
-            getCol('settings').doc('watch_control').update({ command: null, currentMatchIndex: newIndex, totalMatches: sched.list.length }).catch(() => {});
+            getCol('settings').doc('watch_control').update({ command: null, currentMatchIndex: newIndex, totalMatches: total }).catch(() => {});
         });
         return () => unsub();
     }, [isAdminMode]);
