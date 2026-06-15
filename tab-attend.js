@@ -779,48 +779,26 @@ const TabAttend = ({
         }).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
     }, [tmSessionData, selectedMeeting?.date, selectedMeeting?.meetingType]);
 
-    // 모임 당일(출석 시작) + 현재 모임이면, 관리자는 들어왔을 때 출석 현황(명단)을 바로 표시
+    // 모임 당일(출석 시작) + 현재 모임이면 관리자는 들어왔을 때 출석 현황(명단)을 바로 표시.
+    // 활성 모임이 아니면 '출석 현황' 탭이 없으므로, 그 탭이 선택돼 있으면 명단으로 되돌린다.
     React.useEffect(() => {
         const di = computeMeetingDay(meetingSettings?.date, meetingSettings?.start);
         if (isAdminMode && isViewActive && (di?.type === 'today' || di?.type === 'started')) {
-            setIsAttendPanelOpen(true);
             setAttendSubTab('attend');
+        } else if (!isViewActive) {
+            setAttendSubTab(prev => prev === 'attend' ? 'roster' : prev);
         }
     }, [isViewActive, meetingSettings?.date]);
 
     return (
     <div className="animate-in space-y-4">
 
-        {/* 관리자 ⚙️ 토글 */}
-        {isAdminMode && (
-            <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-black text-slate-500 uppercase tracking-widest">출석</p>
-                <div className="flex items-center gap-1.5">
-                    {isAttendPanelOpen && isViewActive && (
-                        <>
-                            <button onClick={generateAttendQRCode} className="px-2.5 py-1.5 rounded-xl bg-violet-50 text-violet-600 text-xs font-black flex items-center gap-1">
-                                <Icon.QrCode size={13}/> QR
-                            </button>
-                            <button onClick={() => setAttendSubTab('attend')} className="px-2.5 py-1.5 rounded-xl bg-teal-50 text-teal-600 text-xs font-black flex items-center gap-1">
-                                <Icon.Check size={13}/> 출석
-                            </button>
-                        </>
-                    )}
-                    <button onClick={() => setIsAttendPanelOpen(p=>!p)}
-                        className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 rounded-xl transition-all active:scale-95"
-                        style={isAttendPanelOpen ? {background:'linear-gradient(135deg,#14b8a6,#0d9488)',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
-                        ⚙️ {isAttendPanelOpen ? '출석 관리 ON' : '출석 관리'}
-                    </button>
-                </div>
-            </div>
-        )}
-
-        {/* 관리자 패널 */}
-        {isAdminMode && isAttendPanelOpen ? (
+        {/* 관리자 패널 — 항상 표시 (출석 관리 토글 제거, 서브탭으로 직접 이동) */}
+        {isAdminMode ? (
             <div>
                 {/* 서브탭 */}
                 <div className="flex gap-2 mb-4">
-                    {[['roster','명단 관리'],['history','기록']].map(([v,l]) => (
+                    {[['roster','명단 관리'], ...(isViewActive ? [['attend','출석 현황']] : []), ['history','기록']].map(([v,l]) => (
                         <button key={v} onClick={() => { setAttendSubTab(v); setSelectedHistoryDetail(null); }}
                             className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${attendSubTab===v?'bg-teal-500 text-white shadow':'text-slate-400 bg-slate-100'}`}>{l}</button>
                     ))}
@@ -1304,7 +1282,7 @@ const TabAttend = ({
         ) : null}
 
         {/* 아직 차례가 오지 않은(다음다음) 모임 → 안내만 표시 */}
-        {!(isAdminMode && isAttendPanelOpen) && !isViewActive && (
+        {!isAdminMode && !isViewActive && (
             <div className="card rounded-3xl p-6 text-center text-slate-400">
                 <p className="text-3xl mb-2">⏳</p>
                 <p className="font-black text-sm text-slate-500">아직 차례가 오지 않은 모임입니다</p>
@@ -1313,7 +1291,7 @@ const TabAttend = ({
         )}
 
         {/* 선착순 신청 카드 (관리자 패널 닫혔을 때만) */}
-        {!(isAdminMode && isAttendPanelOpen) && isViewActive && (
+        {!isAdminMode && isViewActive && (
             <RegistrationCard
                 meetingSettings={meetingSettings}
                 myRegistration={myRegistration}
@@ -1329,7 +1307,7 @@ const TabAttend = ({
         )}
 
         {/* 현재 출석 상태 (관리자 패널 닫혔을 때만) */}
-        {!(isAdminMode && isAttendPanelOpen) && isViewActive && mySession?.checkedIn && (
+        {!isAdminMode && isViewActive && mySession?.checkedIn && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-5 text-center">
                 <div className="flex justify-center mb-2"><div className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center"><Icon.Check size={28} className="text-white"/></div></div>
                 <p className="font-black text-xl text-emerald-400">출석 완료!</p>
@@ -1338,7 +1316,7 @@ const TabAttend = ({
         )}
 
         {/* QR 처리 결과 (관리자 패널 닫혔을 때만) */}
-        {!(isAdminMode && isAttendPanelOpen) && isViewActive && qrStatus !== 'idle' && (
+        {!isAdminMode && isViewActive && qrStatus !== 'idle' && (
             <div className={`rounded-3xl p-5 text-center border ${qrStatus==='success'?'bg-emerald-50 border-emerald-200':qrStatus==='processing'?'card border-slate-100':'bg-red-50 border-red-200'}`}>
                 {qrStatus==='processing' && <><div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p className="font-black text-slate-500">QR 확인 중...</p></>}
                 {qrStatus==='success' && <><p className="text-3xl mb-2">🎉</p><p className="font-black text-emerald-400 whitespace-pre-line">{qrMessage}</p></>}
@@ -1355,7 +1333,7 @@ const TabAttend = ({
         )}
 
         {/* 회원 출석 버튼: GPS / QR 나란히 (홈 카드 스타일) */}
-        {!(isAdminMode && isAttendPanelOpen) && isViewActive && !mySession?.checkedIn && (
+        {!isAdminMode && isViewActive && !mySession?.checkedIn && (
           <div className="flex gap-3">
             <button onClick={handleGPSCheckIn}
                 className="flex-1 min-w-0 rounded-3xl p-4 text-left text-white active:scale-98 transition-all flex flex-col justify-between"
@@ -1381,7 +1359,7 @@ const TabAttend = ({
         )}
 
         {/* GPS 진행/결과 (위치 확인 누른 뒤에만) */}
-        {!(isAdminMode && isAttendPanelOpen) && isViewActive && !mySession?.checkedIn && gpsStatus!=='idle' && (
+        {!isAdminMode && isViewActive && !mySession?.checkedIn && gpsStatus!=='idle' && (
             <div className="card rounded-3xl p-5">
                 {gpsStatus==='checking' && (
                     <div className="text-center py-4">
@@ -1458,8 +1436,8 @@ const TabAttend = ({
             </div>
         )}
 
-        {/* 직접 출석(키오스크) — 관리자 전용, GPS/QR 버튼 아래 가로 카드(높이 동일) */}
-        {isAdminMode && !isAttendPanelOpen && attendActiveList.length > 0 && (
+        {/* 직접 출석(키오스크) — 관리자 전용, 현재 모임 + 선정 인원 있을 때 */}
+        {isAdminMode && isViewActive && attendActiveList.length > 0 && (
             <button onClick={() => setIsKioskOpen(true)}
                 className="w-full rounded-3xl p-4 text-white active:scale-98 transition-all flex items-center gap-3"
                 style={{ minHeight:'96px', background:'linear-gradient(135deg,#f97316,#ea580c)', boxShadow:'0 10px 28px -8px rgba(234,88,12,0.45)' }}>
