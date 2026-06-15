@@ -155,6 +155,8 @@ function makeRosterHandlers(ctx) {
             const FV = firebase.firestore.FieldValue;
             const monthRef = getMonthlyCol().doc(month);
             const memberRef = getMemberCol().doc(mid);
+            const memSnap = await memberRef.get();
+            const mem = memSnap.exists ? memSnap.data() : {};
             const d = new Date();
             const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
             const batch = db.batch();
@@ -164,7 +166,14 @@ function makeRosterHandlers(ctx) {
                 batch.set(monthRef, { paymentDates: {[mid]: today}, updatedAt: new Date().toISOString() }, { merge: true });
                 batch.update(monthRef, { [`statuses.${mid}`]: FV.delete(), [`reasons.${mid}`]: FV.delete() });
             } else if (report.payType === 'rest') {
+                // 휴식 확정. 반년/1년납이면 만료일 1개월 연장 + 누적(이월) → 갱신 시점이 그만큼 뒤로 밀림.
+                // (회원별 [휴식] 버튼 처리와 동일하게 맞춤. 최대 휴식 횟수 초과 시엔 연장 안 함)
                 batch.set(monthRef, { statuses: {[mid]: 'rest'}, paymentDates: {[mid]: today}, updatedAt: new Date().toISOString() }, { merge: true });
+                const isLong = mem.membershipType === 'half_year' || mem.membershipType === 'full_year';
+                const maxRest = mem.membershipType === 'full_year' ? 6 : 3;
+                if (isLong && mem.membershipEndDate && (mem.totalRestMonths || 0) < maxRest) {
+                    batch.update(memberRef, { membershipEndDate: extendEndDate(mem.membershipEndDate, 1), totalRestMonths: FV.increment(1) });
+                }
             } else {
                 batch.set(monthRef, { statuses: {[mid]: 'paid'}, paymentDates: {[mid]: today}, updatedAt: new Date().toISOString() }, { merge: true });
             }
