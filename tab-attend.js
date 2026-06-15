@@ -543,8 +543,10 @@ const MeetingListScreen = ({
     const [listView, setListView] = React.useState('upcoming'); // upcoming | ended(기록)
     const [pendingAction, setPendingAction] = React.useState(null); // 'add' | 'recurring' — 카드 화면에서 모달 바로 열기
     const [embeddedEdit, setEmbeddedEdit] = React.useState(null); // 기록 탭에서 [수정] → 카드 위에 수정 폼
-    // 상세 화면의 [수정] 버튼으로 넘어온 경우 → 관리 화면을 자동으로 연다
-    React.useEffect(() => { if (pendingEditMeeting) setIsManageOpen(true); }, [pendingEditMeeting]);
+    // 홈/상세 카드의 [수정] 버튼으로 넘어온 경우 → 관리 목록을 거치지 않고 수정 폼을 카드 위에 바로 연다
+    React.useEffect(() => {
+        if (pendingEditMeeting) { setEmbeddedEdit(pendingEditMeeting); onPendingEditHandled && onPendingEditHandled(); }
+    }, [pendingEditMeeting]);
 
     // 예정: 종료 안 됐고(정기 done 아님) + 지난 날짜 아님 → 끝난 모임은 '기록'으로
     const upcoming = (meetings || [])
