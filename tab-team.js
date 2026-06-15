@@ -361,7 +361,7 @@ const TabTeam = ({
                     <p className="font-black text-lg mb-2">아직 팀이 편성되지 않았습니다</p>
                     <p className="text-sm text-slate-400">운영진이 팀 편성을 완료하면<br/>여기에 표시됩니다</p>
                   </div>
-                : !teamReady
+                : (!teamReady && !isAdminMode)
                 ? <div className="text-center py-20 text-slate-500">
                     <div className="flex justify-center mb-4 opacity-25"><Icon.Users size={56}/></div>
                     <p className="font-black text-lg mb-2">팀 편성 비공개 중</p>
@@ -369,6 +369,11 @@ const TabTeam = ({
                   </div>
                 : (
                     <div>
+                        {isAdminMode && !teamReady && (
+                            <div className="mb-3 px-4 py-2.5 rounded-2xl bg-amber-50 text-amber-600 text-xs font-black flex items-center gap-2">
+                                <span className="shrink-0">⏳</span><span className="min-w-0">관리자 미리보기 — 회원에게는 {allowFromDisplay}부터 공개됩니다</span>
+                            </div>
+                        )}
                         <div className="rounded-3xl p-5 mb-4 text-white" style={{ background:'linear-gradient(135deg,#14b8a6,#0d9488)', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
                             <p className="text-[11px] font-black uppercase tracking-widest text-white/80">{teamDraftData.meetingDate} 팀 편성</p>
                             <p className="font-black text-2xl leading-tight mt-1">{teamDraftData.teams.length}팀<span className="text-base font-black text-white/80 ml-1"> 편성 완료</span></p>
