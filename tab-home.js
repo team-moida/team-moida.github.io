@@ -838,8 +838,9 @@ const TabHome = ({
     let meetingCards = [];
     if (nextSelf)  meetingCards.push({ kind: 'self',  meeting: nextSelf });
     if (nextMatch) meetingCards.push({ kind: 'match', meeting: nextMatch });
-    // 미러가 로드됐지만 meetings 목록이 아직 비어 있으면 미러로 폴백
-    if (meetingCards.length === 0) {
+    // 미러는 meetings 목록이 아직 로드 전(빈 배열)일 때만 폴백으로 쓴다.
+    // 모임을 모두 종료한 경우 done 모임이 목록에 남아 length>0 이므로 폴백 안 함 → 끝난 모임이 홈에 다시 뜨지 않음.
+    if (meetingCards.length === 0 && (!meetings || meetings.length === 0)) {
         if (meetingSettings?.date && meetingDayInfo) {
             meetingCards.push({ kind: (meetingSettings.meetingType === 'match' ? 'match' : 'self'), meeting: meetingSettings });
         }
