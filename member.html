@@ -204,18 +204,53 @@ function App() {
         auth.signInAnonymously().catch(e=>console.error(e));
     }, []);
 
-    // 뒤로가기 버튼으로 QR 스캐너·키오스크 모달 닫기 (Android 등)
-    useEffect(() => {
-        const isOpen = isQRScannerOpen || attend.isKioskOpen;
-        if (!isOpen) return;
-        history.pushState({ modal: isQRScannerOpen ? 'qr' : 'kiosk' }, '');
+    // ── Android 뒤로가기: 모달 → 상세 → 탭 → 홈 순으로 한 단계씩 닫고, 홈에서만 종료 ──
+    // 현재 열려 있는 화면 단계를 '깊은 것부터' 나열 (매 렌더 최신값으로 갱신)
+    const navLevels = [
+        isQRScannerOpen && 'qr',
+        attend.isKioskOpen && 'kiosk',
+        announcementModal.open && 'announce',
+        isProfileModalOpen && 'profile',
+        (attend.attendModal && attend.attendModal.type) && 'attendModal',
+        alertModal.show && 'alert',
+        viewMeetingId && 'detail',
+        (tab !== 'home') && 'tab',
+    ].filter(Boolean);
+    const navLevelsRef = React.useRef(navLevels);
+    navLevelsRef.current = navLevels;
+    const navTrapArmedRef = React.useRef(false);
+    const closeNavLevel = (key) => {
+        if (key === 'qr') setIsQRScannerOpen(false);
+        else if (key === 'kiosk') attend.setIsKioskOpen(false);
+        else if (key === 'announce') setAnnouncementModal(m => ({ ...m, open: false }));
+        else if (key === 'profile') setIsProfileModalOpen(false);
+        else if (key === 'attendModal') attend.setAttendModal({ type: null, data: null });
+        else if (key === 'alert') setAlertModal(m => ({ ...m, show: false }));
+        else if (key === 'detail') setViewMeetingId(null);
+        else if (key === 'tab') { setViewMeetingId(null); setTab('home'); }
+    };
+    // 되돌릴 화면이 있으면 히스토리 트랩 1개 유지 (이미 있으면 추가 안 함 → 누적 방지)
+    React.useEffect(() => {
+        if (navLevels.length > 0 && !navTrapArmedRef.current) {
+            history.pushState({ moidaNav: true }, '');
+            navTrapArmedRef.current = true;
+        }
+    }, [navLevels.length]);
+    // 뒤로가기 리스너 (한 번만 등록) — 가장 깊은 단계를 닫고, 더 남았으면 트랩 재무장
+    React.useEffect(() => {
         const onPop = () => {
-            if (isQRScannerOpen) setIsQRScannerOpen(false);
-            else if (attend.isKioskOpen) attend.setIsKioskOpen(false);
+            navTrapArmedRef.current = false;          // 방금 트랩이 빠짐
+            const levels = navLevelsRef.current;
+            if (levels.length === 0) return;          // 홈 루트 → 앱 종료 허용
+            closeNavLevel(levels[0]);                 // 가장 깊은 화면 한 단계 닫기
+            if (levels.length > 1) {                  // 더 되돌릴 게 남았으면 재무장
+                history.pushState({ moidaNav: true }, '');
+                navTrapArmedRef.current = true;
+            }
         };
         window.addEventListener('popstate', onPop);
         return () => window.removeEventListener('popstate', onPop);
-    }, [isQRScannerOpen, attend.isKioskOpen]);
+    }, []);
 
     useEffect(() => {
         const unsub = getCol('settings').doc('meeting_schedule_v2').onSnapshot(doc => {
