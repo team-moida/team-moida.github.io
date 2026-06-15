@@ -413,7 +413,7 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
 const isMeetingEnded = (m) => !!m && (m.status === 'done' || computeMeetingDay(m.date, m.start)?.type === 'past');
 
 // ─── 종료 모임 출석 기록 상세 (저장된 attendHistory 기록을 그대로 표시) ──────────
-const RecordDetailModal = ({ detail, onClose }) => {
+const RecordDetailModal = ({ detail, onClose, onEdit, onDelete }) => {
     const { meeting: m, hist } = detail;
     const kind = (m.meetingType || 'self') === 'match' ? 'match' : 'self';
     const cfg = MEETING_KIND[kind];
@@ -460,13 +460,21 @@ const RecordDetailModal = ({ detail, onClose }) => {
                         {kind === 'match' && <p className="text-[11px] mt-1">매칭 모임은 출석 기록을 저장하지 않습니다</p>}
                     </div>
                 )}
+                {(onEdit || onDelete) && (
+                    <div className="flex gap-2 mt-4 pt-3 border-t border-slate-100">
+                        {onEdit && <button onClick={() => { onEdit(m); onClose(); }}
+                            className="flex-1 py-2.5 rounded-xl bg-blue-50 text-blue-600 font-black text-sm active:scale-95 transition-all">✏️ 수정</button>}
+                        {onDelete && <button onClick={() => { onDelete(m, hist); onClose(); }}
+                            className="flex-1 py-2.5 rounded-xl bg-rose-50 text-rose-500 font-black text-sm active:scale-95 transition-all">🗑 삭제</button>}
+                    </div>
+                )}
             </div>
         </div>
     );
 };
 
 // ─── 종료 모임 기록 목록 (모임 탭 '기록' — 정기 / 매칭 분리, 관리자 전용) ──────────
-const MeetingRecordsView = ({ meetings, attendHistory, darkMode }) => {
+const MeetingRecordsView = ({ meetings, attendHistory, darkMode, onEdit, onDelete }) => {
     const [kindTab, setKindTab] = React.useState('self');
     const [detail, setDetail] = React.useState(null);
     const histByDate = {};
@@ -510,7 +518,7 @@ const MeetingRecordsView = ({ meetings, attendHistory, darkMode }) => {
                     </button>
                 );
             })}
-            {detail && <RecordDetailModal detail={detail} onClose={() => setDetail(null)} />}
+            {detail && <RecordDetailModal detail={detail} onClose={() => setDetail(null)} onEdit={onEdit} onDelete={onDelete} />}
         </div>
     );
 };
@@ -521,11 +529,12 @@ const MeetingListScreen = ({
     meetings, isAdminMode, onSelect,
     activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers, showAlert,
     pendingEditMeeting, onPendingEditHandled,
-    attendHistory, darkMode,
+    attendHistory, darkMode, onDeleteRecord,
 }) => {
     const [isManageOpen, setIsManageOpen] = React.useState(false);
     const [listView, setListView] = React.useState('upcoming'); // upcoming | ended(기록)
     const [pendingAction, setPendingAction] = React.useState(null); // 'add' | 'recurring' — 카드 화면에서 모달 바로 열기
+    const [embeddedEdit, setEmbeddedEdit] = React.useState(null); // 기록 탭에서 [수정] → 카드 위에 수정 폼
     // 상세 화면의 [수정] 버튼으로 넘어온 경우 → 관리 화면을 자동으로 연다
     React.useEffect(() => { if (pendingEditMeeting) setIsManageOpen(true); }, [pendingEditMeeting]);
 
@@ -576,7 +585,8 @@ const MeetingListScreen = ({
                     </div>
                 )}
                 {isAdminMode && listView === 'ended' ? (
-                    <MeetingRecordsView meetings={meetings} attendHistory={attendHistory} darkMode={darkMode} />
+                    <MeetingRecordsView meetings={meetings} attendHistory={attendHistory} darkMode={darkMode}
+                        onEdit={(m) => setEmbeddedEdit(m)} onDelete={onDeleteRecord} />
                 ) : upcoming.length === 0 ? (
                 <div className="card rounded-3xl p-8 text-center text-slate-400">
                     <div className="flex justify-center mb-3 opacity-30"><Icon.Calendar size={36}/></div>
@@ -625,6 +635,7 @@ const MeetingListScreen = ({
                 {/* 모달 호스트 — 카드 화면에서 [정기]·[추가]가 모달을 바로 열도록 (관리자) */}
                 {isAdminMode && (
                     <MeetingsTab embedded pendingAction={pendingAction} onPendingActionHandled={() => setPendingAction(null)}
+                        pendingEditMeeting={embeddedEdit} onPendingEditHandled={() => setEmbeddedEdit(null)}
                         meetings={meetings} activeMeeting={activeMeeting}
                         handleSaveMeeting={handleSaveMeeting} handleDeleteMeeting={handleDeleteMeeting}
                         managers={managers} showAlert={showAlert} onSelectMeeting={onSelect} />
