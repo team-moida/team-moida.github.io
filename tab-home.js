@@ -805,6 +805,151 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
         </>
     );
 };
+// ─── 지각 / 노쇼 벌금 납부 카드 ────────────────────────────────────────────────
+// penalties/{meetingId}_{memberId} { memberId, memberName, meetingId, meetingDate, type, amount, status('unpaid'|'reported'|'paid'), reason }
+// mode 'full'(회비 탭)=회원 납부 + 관리자 확정/삭제, mode 'banner'(홈)=회원 미납 슬림 배너. 회비 토스 송금 로직 재사용.
+const PENALTY_TYPE_LABEL = { late: '지각', noshow_notified_1: '노쇼(전날 통보)', noshow_notified_2: '노쇼(당일 통보)', noshow_no_notice: '노쇼(무통보)' };
+const PenaltyPayCard = ({ isAdminMode, memberName, memberInfo, managers = [], mode = 'full', onGoDues }) => {
+    const { useState, useEffect } = React;
+    const [acc, setAcc] = useState(null);
+    const [myList, setMyList] = useState([]);
+    const [allList, setAllList] = useState([]);
+    const [copied, setCopied] = useState(false);
+    const [busy, setBusy] = useState(false);
+    const memberId = memberInfo?.id || null;
+
+    useEffect(() => {
+        const unsub = getCol('settings').doc('club_account').onSnapshot(d => setAcc(d.exists ? d.data() : null));
+        return () => unsub();
+    }, []);
+    useEffect(() => {
+        if (!memberId) { setMyList([]); return; }
+        const unsub = getCol('penalties').where('memberId', '==', memberId).onSnapshot(s => {
+            setMyList(s.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.status !== 'paid')
+                .sort((a, b) => (a.meetingDate || '').localeCompare(b.meetingDate || '')));
+        });
+        return () => unsub();
+    }, [memberId]);
+    useEffect(() => {
+        if (!isAdminMode || mode !== 'full') { setAllList([]); return; }
+        const unsub = getCol('penalties').onSnapshot(s => {
+            setAllList(s.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.status !== 'paid')
+                .sort((a, b) => (b.meetingDate || '').localeCompare(a.meetingDate || '')));
+        });
+        return () => unsub();
+    }, [isAdminMode, mode]);
+
+    const fmtWon = (n) => (n || 0).toLocaleString() + '원';
+    const copyText = (t) => { try { navigator.clipboard.writeText(t); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch (_) {} };
+    const cleanName = (memberName || '').replace(/[\u{1F300}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B50}-\u{2BFF}\u{FE00}-\u{FE0F}]/gu, '').replace(/\s+/g, ' ').trim();
+    const myUnpaid = myList.filter(p => p.status === 'unpaid');
+    const myReported = myList.filter(p => p.status === 'reported');
+    const payTotal = myUnpaid.reduce((s, p) => s + (p.amount || 0), 0);
+    const myTotal = myList.reduce((s, p) => s + (p.amount || 0), 0);
+    const depositName = `${cleanName} (벌금)`;
+    const tossAuto = (acc?.bank && acc?.accountNo && payTotal > 0)
+        ? `supertoss://send?bank=${encodeURIComponent((acc.bank || '').trim())}&accountNo=${(acc.accountNo || '').replace(/[^0-9]/g, '')}&amount=${payTotal}&origin=app`
+        : '';
+    const openSend = (url) => { if (!url) return; if (/^https?:\/\//i.test(url)) window.open(url, '_blank'); else window.location.href = url; };
+
+    const reportPaid = async () => {
+        if (myUnpaid.length === 0 || busy) return;
+        setBusy(true);
+        try {
+            const now = new Date().toISOString();
+            await Promise.all(myUnpaid.map(p => getCol('penalties').doc(p.id).update({ status: 'reported', reportedAt: now })));
+            const staffIds = (managers || []).map(m => m.id).filter(Boolean);
+            if (staffIds.length > 0) {
+                await getCol('notifications').add({
+                    title: '벌금 납부 신고', body: `${cleanName}님이 벌금 ${fmtWon(payTotal)}을 납부했다고 신고했어요. 확인 후 확정해주세요.`,
+                    category: '벌금', type: 'penalty', pushOnly: true, targetMemberIds: staffIds,
+                    sentAt: now, sentBy: cleanName,
+                });
+            }
+        } catch (_) {}
+        setBusy(false);
+    };
+    const confirmPaid = async (p) => { try { await getCol('penalties').doc(p.id).update({ status: 'paid', paidAt: new Date().toISOString() }); } catch (_) {} };
+    const deletePenalty = async (p) => { try { await getCol('penalties').doc(p.id).delete(); } catch (_) {} };
+
+    // 홈 슬림 배너 (회원 · 미납 있을 때만)
+    if (mode === 'banner') {
+        if (isAdminMode || myList.length === 0) return null;
+        return (
+            <button onClick={onGoDues} className="w-full flex items-center gap-2 px-4 py-3 rounded-2xl bg-rose-500 text-white active:scale-98 transition-all shadow-sm">
+                <span className="text-base">💸</span>
+                <span className="flex-1 text-left font-black text-sm truncate">미납 벌금 {myList.length}건 · {fmtWon(myTotal)}</span>
+                <span className="text-xs font-black shrink-0">납부하기 ›</span>
+            </button>
+        );
+    }
+
+    const showMember = !isAdminMode && myList.length > 0;
+    const showAdmin = isAdminMode && allList.length > 0;
+    if (!showMember && !showAdmin) return null;
+
+    return (
+        <div className="card rounded-3xl p-5 border-2 border-rose-100">
+            <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">💸</span>
+                <h3 className="font-black text-slate-800">지각 · 노쇼 벌금</h3>
+            </div>
+            {showMember && (
+                <>
+                    <div className="space-y-1.5 mb-3">
+                        {myList.map(p => (
+                            <div key={p.id} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 min-w-0">
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-black text-sm text-slate-700 truncate">{p.meetingDate} · {PENALTY_TYPE_LABEL[p.type] || '벌금'}</p>
+                                    {p.reason && <p className="text-[10px] text-slate-400 truncate">사유: {p.reason}</p>}
+                                </div>
+                                <span className="text-sm font-black text-rose-600 shrink-0">{fmtWon(p.amount)}</span>
+                                {p.status === 'reported' && <span className="text-[10px] font-black bg-amber-100 text-amber-600 px-2 py-0.5 rounded-lg shrink-0">확인중</span>}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex items-center justify-between px-1 mb-3">
+                        <span className="text-xs font-black text-slate-500">납부할 금액</span>
+                        <span className="text-lg font-black text-rose-600">{fmtWon(payTotal)}</span>
+                    </div>
+                    {acc?.accountNo && (
+                        <button onClick={() => copyText(`${acc.bank ? acc.bank + ' ' : ''}${acc.accountNo}\n${depositName}`)}
+                            className="w-full mb-2 py-2 rounded-xl bg-slate-100 text-slate-600 font-black text-xs active:scale-95 transition-all flex items-center justify-center gap-1">
+                            {copied ? <><Icon.Check size={13} />복사됨</> : '계좌번호 · 입금자명 복사'}
+                        </button>
+                    )}
+                    {payTotal > 0 ? (
+                        <div className="flex gap-2">
+                            {tossAuto && <button onClick={() => openSend(tossAuto)} className="flex-1 py-2.5 rounded-xl bg-white border border-[#3182f6] text-[#3182f6] font-black text-sm active:scale-95 transition-all">토스로 보내기</button>}
+                            <button onClick={reportPaid} disabled={busy} className="flex-1 py-2.5 rounded-xl bg-rose-500 text-white font-black text-sm active:scale-95 transition-all disabled:opacity-50">{busy ? '처리 중...' : '보냈어요'}</button>
+                        </div>
+                    ) : myReported.length > 0 ? (
+                        <p className="text-[11px] text-slate-400 text-center">관리자 확인을 기다리는 중입니다.</p>
+                    ) : null}
+                    <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">미납 벌금이 있으면 다음 모임 신청이 제한됩니다. '보냈어요'는 송금 후 눌러주세요(관리자 확인 뒤 해제).</p>
+                </>
+            )}
+            {showAdmin && (
+                <div className="space-y-1.5">
+                    {allList.map(p => (
+                        <div key={p.id} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 min-w-0">
+                            <div className="flex-1 min-w-0">
+                                <p className="font-black text-sm text-slate-700 truncate">{p.memberName} <span className="text-slate-400 font-medium">· {p.meetingDate}</span></p>
+                                <p className="text-[10px] text-slate-400 truncate">{PENALTY_TYPE_LABEL[p.type] || '벌금'} {fmtWon(p.amount)}{p.reason ? ' · ' + p.reason : ''}</p>
+                            </div>
+                            {p.status === 'reported'
+                                ? <span className="text-[10px] font-black bg-amber-100 text-amber-600 px-2 py-0.5 rounded-lg shrink-0">보냈대요</span>
+                                : <span className="text-[10px] font-black bg-rose-100 text-rose-500 px-2 py-0.5 rounded-lg shrink-0">미납</span>}
+                            <button onClick={() => confirmPaid(p)} className="text-[10px] font-black bg-emerald-500 text-white px-2 py-1 rounded-lg shrink-0 active:scale-95">확정</button>
+                            <button onClick={() => deletePenalty(p)} className="text-[10px] font-black bg-slate-200 text-slate-500 px-2 py-1 rounded-lg shrink-0 active:scale-95">삭제</button>
+                        </div>
+                    ))}
+                    <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">'확정'을 누르면 납부 완료 처리되고 그 회원의 모임 신청 제한이 풀립니다.</p>
+                </div>
+            )}
+        </div>
+    );
+};
 // ─── 홈: 회비 납부 신고 알림 (관리자 전용) ──────────────────────────────────────
 // 회비 탭 깊숙이 있던 신고 목록을 홈 상단에서 한눈에 보고 바로 확정/삭제할 수 있게.
 // 대기 신고가 없으면 표시 안 함(홈을 깔끔하게 유지). duesReports는 회비 탭과 동일 소스.
@@ -890,6 +1035,9 @@ const TabHome = ({
 
         {/* 회비 납부 시기 배너 (납부 시기일 때만 표시 · 누르면 회비 탭으로 이동) */}
         <DuesAccountCard mode="banner" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} onGoDues={() => onTabChange('dues')} />
+
+        {/* 미납 벌금 배너 (회원 · 미납 있을 때만 · 누르면 회비 탭으로 이동) */}
+        <PenaltyPayCard mode="banner" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} onGoDues={() => onTabChange('dues')} />
 
         {/* 다음 모임 — 정기/매칭 종류별로 분리해 색상으로 구분 (탭하면 모임 탭으로 이동) */}
         {meetingCards.length > 0 ? meetingCards.map(c => (

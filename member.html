@@ -817,6 +817,7 @@ function App() {
                     <div className="animate-in space-y-3">
                         <h2 className="font-black text-lg text-slate-800 px-1">회비 납부</h2>
                         <DuesAccountCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} />
+                        <PenaltyPayCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} managers={managers} />
                     </div>
                 )}
                 {tab === 'rules' && (
