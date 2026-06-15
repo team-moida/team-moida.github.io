@@ -59,6 +59,29 @@
 <script type="text/babel">
 const { useState, useEffect, useMemo } = React;
 
+// ── 전역 뒤로가기 등록소: 모달·전체화면 오버레이를 LIFO로 닫기 (자식 컴포넌트 공용) ──
+window.MoidaBack = window.MoidaBack || {
+    stack: [], onChange: null,
+    register(close) {
+        const e = { close };
+        this.stack.push(e);
+        this.onChange && this.onChange();
+        return () => { const i = this.stack.indexOf(e); if (i >= 0) { this.stack.splice(i, 1); this.onChange && this.onChange(); } };
+    },
+    pop() { const e = this.stack.pop(); if (e) { e.close(); this.onChange && this.onChange(); return true; } return false; },
+    get depth() { return this.stack.length; }
+};
+// 오버레이가 열려 있는 동안 등록소에 닫기 함수를 올려둔다 (자식 어디서든 한 줄로 뒤로가기 연동)
+function useMoidaBack(isOpen, close) {
+    const closeRef = React.useRef(close);
+    closeRef.current = close;
+    React.useEffect(() => {
+        if (!isOpen) return;
+        return window.MoidaBack.register(() => closeRef.current && closeRef.current());
+    }, [isOpen]);
+}
+window.useMoidaBack = useMoidaBack;
+
 function App() {
     const [appView, setAppView] = useState('loading');
     const [tab, setTab] = useState(() => {
@@ -204,49 +227,68 @@ function App() {
         auth.signInAnonymously().catch(e=>console.error(e));
     }, []);
 
-    // ── Android 뒤로가기: 모달 → 상세 → 탭 → 홈 순으로 한 단계씩 닫고, 홈에서만 종료 ──
-    // 현재 열려 있는 화면 단계를 '깊은 것부터' 나열 (매 렌더 최신값으로 갱신)
-    const navLevels = [
-        isQRScannerOpen && 'qr',
-        attend.isKioskOpen && 'kiosk',
-        announcementModal.open && 'announce',
-        isProfileModalOpen && 'profile',
-        (attend.attendModal && attend.attendModal.type) && 'attendModal',
-        alertModal.show && 'alert',
-        viewMeetingId && 'detail',
-        (tab !== 'home') && 'tab',
-    ].filter(Boolean);
-    const navLevelsRef = React.useRef(navLevels);
-    navLevelsRef.current = navLevels;
+    // ── Android 뒤로가기: 오버레이(등록소) → 화면 히스토리(직전 탭/상세) → 홈 → 종료 ──
+    // member.html 레벨 모달들도 같은 등록소에 등록 (자식 오버레이와 동일하게 LIFO 처리)
+    useMoidaBack(isQRScannerOpen, () => setIsQRScannerOpen(false));
+    useMoidaBack(attend.isKioskOpen, () => attend.setIsKioskOpen(false));
+    useMoidaBack(announcementModal.open, () => setAnnouncementModal(m => ({ ...m, open: false })));
+    useMoidaBack(isProfileModalOpen, () => setIsProfileModalOpen(false));
+    useMoidaBack(!!(attend.attendModal && attend.attendModal.type), () => attend.setAttendModal({ type: null, data: null }));
+    useMoidaBack(alertModal.show, () => setAlertModal(m => ({ ...m, show: false })));
+
+    // 화면 히스토리 스택 (탭/모임상세 이동 기록 → 뒤로가기 시 '직전 화면' 복원, 홈 하드코딩 X)
+    const navStackRef = React.useRef([]);
     const navTrapArmedRef = React.useRef(false);
-    const closeNavLevel = (key) => {
-        if (key === 'qr') setIsQRScannerOpen(false);
-        else if (key === 'kiosk') attend.setIsKioskOpen(false);
-        else if (key === 'announce') setAnnouncementModal(m => ({ ...m, open: false }));
-        else if (key === 'profile') setIsProfileModalOpen(false);
-        else if (key === 'attendModal') attend.setAttendModal({ type: null, data: null });
-        else if (key === 'alert') setAlertModal(m => ({ ...m, show: false }));
-        else if (key === 'detail') setViewMeetingId(null);
-        else if (key === 'tab') { setViewMeetingId(null); setTab('home'); }
+    const navPoppingRef = React.useRef(false);
+    const tabRef = React.useRef(tab);
+    tabRef.current = tab;
+    const navView = tab === 'meeting' ? viewMeetingId : null; // 모임 상세는 모임 탭일 때만 화면 구분에 의미
+    const curScreen = { tab, viewMeetingId: navView };
+    const curSig = `${tab}|${navView || ''}`;
+    const prevSigRef = React.useRef(curSig);
+    const prevScreenRef = React.useRef(curScreen);
+    const syncBackTrap = React.useCallback(() => {
+        const has = window.MoidaBack.depth > 0 || navStackRef.current.length > 0 || tabRef.current !== 'home';
+        if (has && !navTrapArmedRef.current) { history.pushState({ moidaNav: true }, ''); navTrapArmedRef.current = true; }
+    }, []);
+    const restoreScreen = (s) => {
+        navPoppingRef.current = true;
+        setViewMeetingId(s.viewMeetingId || null);
+        setTab(s.tab);
     };
-    // 되돌릴 화면이 있으면 히스토리 트랩 1개 유지 (이미 있으면 추가 안 함 → 누적 방지)
+    // 화면이 바뀌면(전진) 직전 화면을 스택에 저장. 뒤로가기로 복원된 경우엔 저장 안 함.
     React.useEffect(() => {
-        if (navLevels.length > 0 && !navTrapArmedRef.current) {
-            history.pushState({ moidaNav: true }, '');
-            navTrapArmedRef.current = true;
+        if (curSig !== prevSigRef.current) {
+            if (navPoppingRef.current) navPoppingRef.current = false;
+            else navStackRef.current.push(prevScreenRef.current);
+            prevSigRef.current = curSig;
+            prevScreenRef.current = curScreen;
         }
-    }, [navLevels.length]);
-    // 뒤로가기 리스너 (한 번만 등록) — 가장 깊은 단계를 닫고, 더 남았으면 트랩 재무장
+        syncBackTrap();
+    }, [curSig]);
+    // 등록소 변화(자식 오버레이 열림/닫힘) 시에도 트랩 동기화
+    React.useEffect(() => {
+        window.MoidaBack.onChange = syncBackTrap;
+        return () => { if (window.MoidaBack.onChange === syncBackTrap) window.MoidaBack.onChange = null; };
+    }, [syncBackTrap]);
+    // 뒤로가기 리스너 (한 번만 등록)
     React.useEffect(() => {
         const onPop = () => {
             navTrapArmedRef.current = false;          // 방금 트랩이 빠짐
-            const levels = navLevelsRef.current;
-            if (levels.length === 0) return;          // 홈 루트 → 앱 종료 허용
-            closeNavLevel(levels[0]);                 // 가장 깊은 화면 한 단계 닫기
-            if (levels.length > 1) {                  // 더 되돌릴 게 남았으면 재무장
-                history.pushState({ moidaNav: true }, '');
-                navTrapArmedRef.current = true;
+            let remaining;
+            if (window.MoidaBack.depth > 0) {         // 1) 오버레이부터 닫기 (LIFO)
+                window.MoidaBack.pop();
+                remaining = window.MoidaBack.depth + navStackRef.current.length;
+            } else if (navStackRef.current.length > 0) { // 2) 직전 화면으로
+                restoreScreen(navStackRef.current.pop());
+                remaining = navStackRef.current.length;
+            } else if (tabRef.current !== 'home') {   // 3) 스택 비었지만 홈 아니면 홈으로
+                restoreScreen({ tab: 'home', viewMeetingId: null });
+                remaining = 0;
+            } else {
+                return;                               // 4) 홈 루트 → 앱 종료 허용
             }
+            if (remaining > 0) { history.pushState({ moidaNav: true }, ''); navTrapArmedRef.current = true; }
         };
         window.addEventListener('popstate', onPop);
         return () => window.removeEventListener('popstate', onPop);

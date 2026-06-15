@@ -22,6 +22,10 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
     const [ovrForm, setOvrForm] = useState(null);
     const [isOvrLocPickerOpen, setIsOvrLocPickerOpen] = useState(false);
     const [isOvrSaving, setIsOvrSaving] = useState(false);
+    // 뒤로가기로 닫기 (안드로이드) — 모임 수정/추가 전체화면 · 정기설정 · 날짜별지정 (지도 선택은 자체 처리)
+    window.useMoidaBack && window.useMoidaBack(isModalOpen, () => setIsModalOpen(false));
+    window.useMoidaBack && window.useMoidaBack(isRecModalOpen, () => setIsRecModalOpen(false));
+    window.useMoidaBack && window.useMoidaBack(isOvrModalOpen, () => setIsOvrModalOpen(false));
 
     const openRecurring = async () => {
         const cfg = await loadRecurringConfig();

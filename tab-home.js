@@ -483,6 +483,8 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
     const [popupOff, setPopupOff] = useState(false);
     const [confirmType, setConfirmType] = useState(null);   // 토스/카카오 송금 후 복귀 시 '신고할까요?' 확인
     const paySentTypeRef = React.useRef(null);
+    // 뒤로가기로 회비 설정 편집 화면 닫기 (안드로이드)
+    window.useMoidaBack && window.useMoidaBack(isEditing, () => setIsEditing(false));
 
     const memberId = memberInfo?.id || null;
 

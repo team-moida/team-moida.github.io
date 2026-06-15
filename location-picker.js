@@ -83,6 +83,7 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
         }, 200);
         return () => { clearTimeout(t); if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; markerRef.current = null; } };
     }, [isOpen]);
+    window.useMoidaBack && window.useMoidaBack(isOpen, onClose);
     if (!isOpen) return null;
     return (
         <div style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', flexDirection:'column', background:'var(--t-surface)' }}>

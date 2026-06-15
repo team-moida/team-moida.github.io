@@ -428,6 +428,8 @@ const isMeetingEnded = (m) => !!m && (m.status === 'done' || computeMeetingDay(m
 // ─── 종료 모임 출석 기록 상세 (저장된 attendHistory 기록을 그대로 표시) ──────────
 const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalty }) => {
     const { meeting: m, hist } = detail;
+    window.useMoidaBack && window.useMoidaBack(true, onClose); // 뒤로가기로 기록 상세 닫기
+
     const kind = (m.meetingType || 'self') === 'match' ? 'match' : 'self';
     const cfg = MEETING_KIND[kind];
     const stColor = (s) => s === '정상' ? 'bg-emerald-100 text-emerald-600'
