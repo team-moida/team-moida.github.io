@@ -241,16 +241,16 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
             </>)}
 
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-[60]"
-                    onClick={e => { if(e.target === e.currentTarget) setIsModalOpen(false); }}>
-                    <div className="bg-white w-full max-w-lg rounded-t-3xl p-6 space-y-4"
-                        style={{paddingBottom:'max(1.5rem,env(safe-area-inset-bottom))'}}>
-                        <div className="flex items-center justify-between">
+                <div className="fixed inset-0 bg-white z-[60] flex flex-col animate-in">
+                    <div className="shrink-0 border-b border-slate-100" style={{paddingTop:'env(safe-area-inset-top)'}}>
+                        <div className="max-w-lg mx-auto w-full flex items-center justify-between px-5 py-4">
                             <h3 className="font-black text-lg">{editingId ? '모임 수정' : '모임 추가'}</h3>
                             <button onClick={() => setIsModalOpen(false)}
                                 className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-500 text-sm font-black">✕ 닫기</button>
                         </div>
-                        <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                    </div>
+                    <div className="flex-1 overflow-y-auto">
+                        <div className="max-w-lg mx-auto w-full px-5 py-4 space-y-3">
                             <div>
                                 <label className="text-xs font-black text-slate-500 mb-1 block">모임 유형</label>
                                 <div className="flex gap-2">
@@ -430,7 +430,6 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                     </div>
                                 )}
                             </div>
-                        </div>
                         {/* 등록 시 전체 푸시 알림 (새 모임 기본 ON, 수정 기본 OFF) */}
                         <div className="flex items-center justify-between px-1 py-2 border-t border-slate-100">
                             <div className="min-w-0 pr-2">
@@ -442,10 +441,16 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                 <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${form.sendPush ? 'left-6' : 'left-0.5'}`}/>
                             </button>
                         </div>
-                        <button onClick={handleSave} disabled={isSaving}
-                            className="w-full py-3 bg-teal-500 text-white rounded-2xl font-black text-sm active:scale-95 transition-all disabled:opacity-50">
-                            {isSaving ? '저장 중...' : editingId ? '수정 완료' : '모임 등록'}
-                        </button>
+                        </div>
+                    </div>
+                    <div className="shrink-0 border-t border-slate-100"
+                        style={{paddingBottom:'max(0.75rem,env(safe-area-inset-bottom))'}}>
+                        <div className="max-w-lg mx-auto w-full px-5 pt-3">
+                            <button onClick={handleSave} disabled={isSaving}
+                                className="w-full py-3 bg-teal-500 text-white rounded-2xl font-black text-sm active:scale-95 transition-all disabled:opacity-50">
+                                {isSaving ? '저장 중...' : editingId ? '수정 완료' : '모임 등록'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
