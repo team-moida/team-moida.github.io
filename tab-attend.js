@@ -790,6 +790,9 @@ const TabAttend = ({
         }
     }, [isViewActive, meetingSettings?.date]);
 
+    // 현재 모임이면 회원은 항상, 관리자는 '출석체크' 서브탭일 때 체크인 UI 표시
+    const showCheckin = isViewActive && (!isAdminMode || attendSubTab === 'checkin');
+
     return (
     <div className="animate-in space-y-4">
 
@@ -798,7 +801,7 @@ const TabAttend = ({
             <div>
                 {/* 서브탭 */}
                 <div className="flex gap-2 mb-4">
-                    {[['roster','명단 관리'], ...(isViewActive ? [['attend','출석 현황']] : []), ['history','기록']].map(([v,l]) => (
+                    {[['roster','명단 관리'], ...(isViewActive ? [['attend','출석 현황'],['checkin','출석체크']] : []), ['history','기록']].map(([v,l]) => (
                         <button key={v} onClick={() => { setAttendSubTab(v); setSelectedHistoryDetail(null); }}
                             className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${attendSubTab===v?'bg-teal-500 text-white shadow':'text-slate-400 bg-slate-100'}`}>{l}</button>
                     ))}
@@ -1291,7 +1294,7 @@ const TabAttend = ({
         )}
 
         {/* 선착순 신청 카드 (관리자 패널 닫혔을 때만) */}
-        {!isAdminMode && isViewActive && (
+        {showCheckin && (
             <RegistrationCard
                 meetingSettings={meetingSettings}
                 myRegistration={myRegistration}
@@ -1307,7 +1310,7 @@ const TabAttend = ({
         )}
 
         {/* 현재 출석 상태 (관리자 패널 닫혔을 때만) */}
-        {!isAdminMode && isViewActive && mySession?.checkedIn && (
+        {showCheckin && mySession?.checkedIn && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-5 text-center">
                 <div className="flex justify-center mb-2"><div className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center"><Icon.Check size={28} className="text-white"/></div></div>
                 <p className="font-black text-xl text-emerald-400">출석 완료!</p>
@@ -1316,7 +1319,7 @@ const TabAttend = ({
         )}
 
         {/* QR 처리 결과 (관리자 패널 닫혔을 때만) */}
-        {!isAdminMode && isViewActive && qrStatus !== 'idle' && (
+        {showCheckin && qrStatus !== 'idle' && (
             <div className={`rounded-3xl p-5 text-center border ${qrStatus==='success'?'bg-emerald-50 border-emerald-200':qrStatus==='processing'?'card border-slate-100':'bg-red-50 border-red-200'}`}>
                 {qrStatus==='processing' && <><div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p className="font-black text-slate-500">QR 확인 중...</p></>}
                 {qrStatus==='success' && <><p className="text-3xl mb-2">🎉</p><p className="font-black text-emerald-400 whitespace-pre-line">{qrMessage}</p></>}
@@ -1333,7 +1336,7 @@ const TabAttend = ({
         )}
 
         {/* 회원 출석 버튼: GPS / QR 나란히 (홈 카드 스타일) */}
-        {!isAdminMode && isViewActive && !mySession?.checkedIn && (
+        {showCheckin && !mySession?.checkedIn && (
           <div className="flex gap-3">
             <button onClick={handleGPSCheckIn}
                 className="flex-1 min-w-0 rounded-3xl p-4 text-left text-white active:scale-98 transition-all flex flex-col justify-between"
@@ -1359,7 +1362,7 @@ const TabAttend = ({
         )}
 
         {/* GPS 진행/결과 (위치 확인 누른 뒤에만) */}
-        {!isAdminMode && isViewActive && !mySession?.checkedIn && gpsStatus!=='idle' && (
+        {showCheckin && !mySession?.checkedIn && gpsStatus!=='idle' && (
             <div className="card rounded-3xl p-5">
                 {gpsStatus==='checking' && (
                     <div className="text-center py-4">
