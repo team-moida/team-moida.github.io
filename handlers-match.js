@@ -11,6 +11,17 @@ function makeMatchHandlers(ctx) {
 
     const splitTime = (t) => { const p = (t || '08:00').split(':'); return {h: p[0] || '08', m: p[1] || '00'}; };
 
+    // 워치로 내려줄 간략 라운드 목록 (라운드번호/구장별 대진/전체시간/완료여부)
+    const buildWatchRounds = (list, completedSet) => (list || []).map((s, i) => ({
+        n: i + 1, id: s.id, time: s.time || '',
+        matchDuration: matchConfig.matchDuration || 12,
+        matchups: (s.matches || []).map(m => {
+            const fname = (matchConfig.fieldNames && matchConfig.fieldNames[m.fieldIdx]) || `${m.fieldIdx + 1}구장`;
+            return `${fname} ${m.match[0]} vs ${m.match[1]}`;
+        }),
+        done: completedSet.has(s.id)
+    }));
+
     const matchGenerateTable = () => {
         // 이 모임(보고 있는 모임)의 확정 편성만 사용 — 다른 날짜 모임의 편성을 가져오지 않는다
         const _mDate = meetingSettings?.date || matchConfig.meetingDate;
@@ -86,8 +97,13 @@ function makeMatchHandlers(ctx) {
                 label: `${matchConfig.meetingDate} 매치 (${localSchedule.list.length}라운드)`
             });
             setActiveMatchScheduleId(docRef.id);
-            // 워치 컨트롤 초기화
-            getCol('settings').doc('watch_control').set({ command: null, currentMatchIndex: 0, totalMatches: localSchedule.list.length }).catch(() => {});
+            // 워치 컨트롤 초기화 (라운드 목록/교체시간 기본값 포함)
+            getCol('settings').doc('watch_control').set({
+                command: null, cmdId: null, currentMatchIndex: 0,
+                totalMatches: localSchedule.list.length,
+                rounds: buildWatchRounds(localSchedule.list, localCompletedMatches),
+                subInterval: matchConfig.subIntervalSec ?? 180
+            }).catch(() => {});
             showAlert('저장 완료', '매치 테이블이 저장되었습니다.');
         } catch(e) { showAlert('오류', '저장 실패'); } finally { setMatchIsSaving(false); }
     };
@@ -96,7 +112,11 @@ function makeMatchHandlers(ctx) {
         if (activeMatchScheduleId) {
             getCol('match_schedules').doc(activeMatchScheduleId).update({ completedMatches: Array.from(newCompleted), currentMatchIndex: newIndex }).catch(() => {});
         }
-        getCol('settings').doc('watch_control').update({ command: null, currentMatchIndex: newIndex, totalMatches: localSchedule.list.length }).catch(() => {});
+        getCol('settings').doc('watch_control').update({
+            command: null, currentMatchIndex: newIndex, totalMatches: localSchedule.list.length,
+            rounds: buildWatchRounds(localSchedule.list, newCompleted),
+            subInterval: matchConfig.subIntervalSec ?? 180
+        }).catch(() => {});
     };
 
     const matchHandleNextMatch = () => {

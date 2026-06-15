@@ -82,6 +82,11 @@ const TabMatch = ({
                                         </div>
                                     ))}
                                 </div>
+                                <div className="mt-2">
+                                    <p className="text-[10px] font-black text-slate-400 mb-1">교체 시간(분) · 워치 기본값 (30초 단위)</p>
+                                    <input type="number" step="0.5" min="0.5" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 font-black text-center text-sm" style={{userSelect:'text'}}
+                                        value={(matchConfig.subIntervalSec ?? 180)/60} onChange={e => { const v = parseFloat(e.target.value); if(!v||v<=0) return; setMatchConfig(p => ({...p, subIntervalSec: Math.round(v*60/30)*30})); }}/>
+                                </div>
                             </div>
                         </div>
 

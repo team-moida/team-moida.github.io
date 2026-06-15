@@ -6,7 +6,7 @@ function useMatch({ isAdminMode, meetingSettings, confirmedDrafts }) {
     const [isMatchPanelOpen, setIsMatchPanelOpen] = useState(false);
     const [matchAdminView, setMatchAdminView] = useState('setup');
     const [matchConfig, setMatchConfig] = useState({
-        meetingDate:'', courtCount:3, matchDuration:12, breakDuration:3,
+        meetingDate:'', courtCount:3, matchDuration:12, breakDuration:3, subIntervalSec:180,
         startTime:'08:00', endTime:'10:00',
         fieldNames:['1구장','2구장','3구장'], fieldTypes:['6vs6','6vs6','6vs6'],
         strictCourtSize:false
@@ -59,34 +59,26 @@ function useMatch({ isAdminMode, meetingSettings, confirmedDrafts }) {
         matchStateRef.current = { localMatchIndex, localCompletedMatches, localSchedule, activeMatchScheduleId };
     }, [localMatchIndex, localCompletedMatches, localSchedule, activeMatchScheduleId]);
 
-    // 워치 "다음/이전 경기" 명령 수신 (next: 현재 완료+다음 / prev: 되돌아가는 경기 미완료+이전)
+    // 워치 "종료" 명령 수신 (해당 라운드 완료표시 토글 → 웹/앱 연동). 이전/다음은 워치 로컬 이동이라 여기서 처리 안 함
     useEffect(() => {
         if (!isAdminMode) return;
-        const unsub = getCol('settings').doc('watch_control').onSnapshot(snap => {
-            if (!snap.exists()) return;
+        const ref = getCol('settings').doc('watch_control');
+        const unsub = ref.onSnapshot(snap => {
+            if (!snap.exists) return;
             const data = snap.data();
-            if (data.command !== 'next' && data.command !== 'prev') return;
-            const { localMatchIndex: idx, localCompletedMatches: completed, localSchedule: sched, activeMatchScheduleId: schedId } = matchStateRef.current;
-            const total = sched.list.length;
-            const clearCmd = () => getCol('settings').doc('watch_control').update({ command: null }).catch(() => {});
-            if (!total) { clearCmd(); return; }
+            if (data.command !== 'end') return;
+            const id = data.cmdId;
+            const { localCompletedMatches: completed, localSchedule: sched, activeMatchScheduleId: schedId } = matchStateRef.current;
+            const round = (sched.list || []).find(s => s.id === id);
+            if (id == null || !round) { ref.update({ command: null, cmdId: null }).catch(() => {}); return; }
             const newCompleted = new Set(completed);
-            let newIndex = idx;
-            if (data.command === 'next') {
-                if (idx >= total) { clearCmd(); return; }
-                newCompleted.add(sched.list[idx].id);          // 현재 경기 완료 처리하며 다음으로
-                newIndex = idx + 1;
-            } else { // prev
-                if (idx <= 0) { clearCmd(); return; }
-                newIndex = idx - 1;
-                newCompleted.delete(sched.list[newIndex].id);  // 되돌아가는 경기는 미완료로
-            }
+            newCompleted.has(id) ? newCompleted.delete(id) : newCompleted.add(id);
             setLocalCompletedMatches(newCompleted);
-            setLocalMatchIndex(newIndex);
             if (schedId) {
-                getCol('match_schedules').doc(schedId).update({ completedMatches: Array.from(newCompleted), currentMatchIndex: newIndex }).catch(() => {});
+                getCol('match_schedules').doc(schedId).update({ completedMatches: Array.from(newCompleted) }).catch(() => {});
             }
-            getCol('settings').doc('watch_control').update({ command: null, currentMatchIndex: newIndex, totalMatches: total }).catch(() => {});
+            const newRounds = (data.rounds || []).map(r => r.id === id ? { ...r, done: newCompleted.has(id) } : r);
+            ref.update({ command: null, cmdId: null, rounds: newRounds }).catch(() => {});
         });
         return () => unsub();
     }, [isAdminMode]);
