@@ -275,6 +275,7 @@ const RegSettingsSection = ({ meetingSettings, updateMeetingSettingsAdmin }) => 
 const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel, handleAbsent, duesUnpaid, duesBlock, isPreview }) => {
     const { useState } = React;
     const [absentConfirm, setAbsentConfirm] = useState(false);
+    const [absentReason, setAbsentReason] = useState('');
 
     if (!meetingSettings?.isRegistrationEnabled) return null;
 
@@ -384,9 +385,13 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
                                         ? `노쇼로 처리됩니다.\n벌금 ${absentFine / 10000}만원이 부과됩니다.`
                                         : '불참 처리됩니다.\n출석 명단에서 제외됩니다.'}
                                 </p>
+                                <textarea value={absentReason} onChange={e => setAbsentReason(e.target.value)}
+                                    rows={2} maxLength={200}
+                                    placeholder={absentFine > 0 ? '노쇼 사유 (선택) — 예: 갑작스런 일정' : '불참 사유 (선택) — 예: 컨디션 난조'}
+                                    className="w-full border border-amber-200 rounded-xl px-3 py-2 text-sm mb-3 resize-none bg-white focus:outline-none focus:ring-2 focus:ring-amber-300"/>
                                 <div className="flex gap-2">
-                                    <button onClick={() => setAbsentConfirm(false)} className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm active:scale-95">취소</button>
-                                    <button onClick={() => { if (!isPreview) handleAbsent && handleAbsent(); setAbsentConfirm(false); }}
+                                    <button onClick={() => { setAbsentConfirm(false); setAbsentReason(''); }} className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm active:scale-95">취소</button>
+                                    <button onClick={() => { if (!isPreview) handleAbsent && handleAbsent(absentReason.trim()); setAbsentConfirm(false); setAbsentReason(''); }}
                                         className={`flex-1 py-2.5 rounded-2xl font-black text-sm active:scale-95 ${absentBtnCls}`}>확인</button>
                                 </div>
                             </div>
@@ -445,7 +450,10 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete }) => {
                         <div className="space-y-1.5">
                             {records.map((r, i) => (
                                 <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 min-w-0">
-                                    <span className="font-black text-sm text-slate-700 truncate flex-1 min-w-0">{r.name}</span>
+                                    <div className="flex-1 min-w-0">
+                                        <span className="font-black text-sm text-slate-700 truncate block">{r.name}</span>
+                                        {r.reason && <span className="text-[10px] text-rose-400 font-black truncate block">사유: {r.reason}</span>}
+                                    </div>
                                     {r.team && r.team !== '-' && <span className="text-[10px] font-black text-slate-400 shrink-0">{r.team}</span>}
                                     {r.checkInTime && r.checkInTime !== '미출석' && <span className="text-[10px] font-black text-slate-400 shrink-0">{r.checkInTime}</span>}
                                     <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg shrink-0 ${stColor(r.status)}`}>{r.status}</span>
@@ -1150,7 +1158,7 @@ const TabAttend = ({
                                                             {p.gender==='여성'&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg">W</span>}
                                                             {p.isGuest&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-slate-800 text-white rounded-lg">G</span>}
                                                         </div>
-                                                        {p.status==='노쇼'?<p className="text-[10px] text-red-600 font-black mt-0.5">✗ 노쇼</p>:p.checkedIn?<p className={`text-[10px] font-black mt-0.5 ${p.status==='지각'?'text-yellow-600':'text-emerald-600'}`}>{p.status==='지각'?'⚠️ 지각':'✓ 정상'} · {p.checkInTime}</p>:null}
+                                                        {p.status==='노쇼'?<p className="text-[10px] text-red-600 font-black mt-0.5">✗ 노쇼{p.noShowReason ? (' · ' + p.noShowReason) : ''}</p>:p.checkedIn?<p className={`text-[10px] font-black mt-0.5 ${p.status==='지각'?'text-yellow-600':'text-emerald-600'}`}>{p.status==='지각'?'⚠️ 지각':'✓ 정상'} · {p.checkInTime}</p>:null}
                                                     </div>
                                                     {p.status==='노쇼'?<span className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-black">✗</span>:p.checkedIn?<span className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0"><Icon.Check size={12} className="text-white"/></span>:<span className="text-xs font-black text-slate-300 flex-shrink-0">체크인 →</span>}
                                                 </button>
@@ -1172,7 +1180,7 @@ const TabAttend = ({
                                                 {p.gender==='여성'&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg">W</span>}
                                                 {p.isGuest&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-slate-800 text-white rounded-lg">G</span>}
                                             </div>
-                                            {p.status==='노쇼'?<p className="text-[10px] text-red-600 font-black mt-0.5">✗ 노쇼</p>:p.checkedIn?<p className={`text-[10px] font-black mt-0.5 ${p.status==='지각'?'text-yellow-600':'text-emerald-600'}`}>{p.status==='지각'?'⚠️ 지각':'✓ 정상'} · {p.checkInTime}</p>:null}
+                                            {p.status==='노쇼'?<p className="text-[10px] text-red-600 font-black mt-0.5">✗ 노쇼{p.noShowReason ? (' · ' + p.noShowReason) : ''}</p>:p.checkedIn?<p className={`text-[10px] font-black mt-0.5 ${p.status==='지각'?'text-yellow-600':'text-emerald-600'}`}>{p.status==='지각'?'⚠️ 지각':'✓ 정상'} · {p.checkInTime}</p>:null}
                                         </div>
                                         {p.status==='노쇼'?<span className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-black">✗</span>:p.checkedIn?<span className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0"><Icon.Check size={12} className="text-white"/></span>:<span className="text-xs font-black text-slate-300 flex-shrink-0">체크인 →</span>}
                                     </button>

@@ -384,7 +384,7 @@ function makeAttendHandlers(ctx) {
                 const records = sorted.map((p, idx) => {
                     const isWaiting = idx + 1 > limit;
                     const finalStatus = isWaiting ? '대기' : p.checkedIn ? (p.status || '정상') : '노쇼';
-                    return {name: p.isGuest ? `${p.name} - 초대:${p.inviterName || '없음'}` : p.name, gender: p.gender, status: finalStatus, checkInTime: p.checkedIn ? (p.checkInTime || '-') : '미출석', type: isWaiting ? '대기자' : (p.isGuest ? '게스트' : '정규'), level: p.level || '-', team: p.team || '-', timestamp: p.checkedIn ? p.checkInTime : '99:99:99'};
+                    return {name: p.isGuest ? `${p.name} - 초대:${p.inviterName || '없음'}` : p.name, gender: p.gender, status: finalStatus, checkInTime: p.checkedIn ? (p.checkInTime || '-') : '미출석', type: isWaiting ? '대기자' : (p.isGuest ? '게스트' : '정규'), level: p.level || '-', team: p.team || '-', timestamp: p.checkedIn ? p.checkInTime : '99:99:99', reason: p.noShowReason || ''};
                 });
                 const presentCount = records.filter(r => r.status === '정상' || r.status === '지각').length;
                 await getHistoryCol().add({date: meetingSettings.date, meetingTime: `${meetingSettings.start}~${meetingSettings.end}`, location: meetingSettings.location || '장소 미지정', locationLat: meetingSettings.locationLat || null, locationLng: meetingSettings.locationLng || null, managerName: meetingSettings.managerName || '미지정', total: records.length, present: presentCount, records, createdAt: new Date().toISOString()});

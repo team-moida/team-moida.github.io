@@ -168,8 +168,9 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
         }
     };
 
-    const handleAbsent = async () => {
+    const handleAbsent = async (reason) => {
         if (!meetingDate || !memberData?.memberId) return;
+        const absentReason = (reason || '').slice(0, 200);
         const absentType = getAbsentType(meetingDate, meetingSettings?.end);
         if (!absentType) {
             showAlert && showAlert('불참 신청 불가', '지금은 불참 신청 가능 시간이 아닙니다.\n(모임 당일 오전 10시 이후 불가)');
@@ -197,6 +198,7 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
                 const regUpdate = {
                     status: absentType === 'absent' ? 'absent' : 'noshow',
                     absentType,
+                    absentReason,
                     absentAt: FieldValue.serverTimestamp(),
                 };
                 if (fine > 0) regUpdate.noShowFine = fine;
@@ -208,7 +210,7 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
                 if (absentType === 'absent') {
                     tx.delete(sessionRef);
                 } else {
-                    tx.update(sessionRef, { status: '노쇼', noShowFine: fine });
+                    tx.update(sessionRef, { status: '노쇼', noShowFine: fine, noShowReason: absentReason });
                 }
             });
 
