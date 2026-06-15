@@ -472,6 +472,64 @@ exports.generateRecurringMeeting = onSchedule(
   }
 );
 
+// ── 정기 모임 자동 생성 전 사전 알림 (10분 전·5분 전, 전체 회원) ────────────────
+// settings/recurring_meeting 의 생성요일·시각(uploadWeekday/uploadHour:00) 기준
+// 10분 전·5분 전에 "곧 신청 시작" 푸시를 전체 회원에게 발송 (pushOnly: 게시판 미표시).
+// 실제로 생성될 모임이 아직 없을 때만 보냄(이미 있으면 신청이 새로 열리지 않음).
+exports.notifyBeforeRecurring = onSchedule(
+  { schedule: "*/5 * * * *", timeZone: "Asia/Seoul" },
+  async () => {
+    const db = admin.firestore();
+    const FV = admin.firestore.FieldValue;
+    const pad = (n) => String(n).padStart(2, "0");
+
+    const cfgSnap = await db.doc(`${DB_PATH}/settings/recurring_meeting`).get();
+    if (!cfgSnap.exists) return;
+    const cfg = cfgSnap.data();
+    if (!cfg.enabled) return;
+
+    const kst = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+    // 생성 시각(uploadWeekday, uploadHour:00) 기준 10분 전 / 5분 전인지 판정
+    const hits = (offsetMin) => {
+      const t = new Date(kst.getTime() + offsetMin * 60000);
+      return t.getDay() === Number(cfg.uploadWeekday)
+        && t.getHours() === Number(cfg.uploadHour)
+        && t.getMinutes() === 0;
+    };
+    const mins = hits(10) ? 10 : hits(5) ? 5 : 0;
+    if (!mins) return;
+
+    // 곧 생성될 모임 날짜 (생성 시각 기준 — generateRecurringMeeting과 동일 규칙)
+    const genMoment = new Date(kst.getTime() + mins * 60000);
+    let daysUntil = (Number(cfg.weekday) - genMoment.getDay() + 7) % 7;
+    if (daysUntil === 0) daysUntil = 7;
+    const target = new Date(genMoment);
+    target.setDate(genMoment.getDate() + daysUntil);
+    const targetDate = `${target.getFullYear()}-${pad(target.getMonth() + 1)}-${pad(target.getDate())}`;
+
+    // 이미 생성된 모임이면 알림 생략 (신청이 새로 열리지 않으므로)
+    const ovrSnap = await db.doc(`${DB_PATH}/recurring_overrides/${targetDate}`).get();
+    const ovr = ovrSnap.exists ? ovrSnap.data() : null;
+    const meetingType = ((ovr && ovr.meetingType ? ovr.meetingType : cfg.defaultMeetingType || "self") === "match") ? "match" : "self";
+    const meetingId = meetingType === "match" ? `${targetDate}__match` : targetDate;
+    if ((await db.doc(`${DB_PATH}/meetings/${meetingId}`).get()).exists) return;
+
+    const days = ["일", "월", "화", "수", "목", "금", "토"];
+    const dLabel = `${target.getMonth() + 1}/${target.getDate()}(${days[target.getDay()]})`;
+
+    await db.collection(`${DB_PATH}/notifications`).add({
+      title: "⏰ 곧 이번 모임 신청 시작",
+      body: `${mins}분 후 ${dLabel} 정기 모임 신청이 열립니다. 미리 준비해 주세요!`,
+      type: "recurring_reminder",
+      pushOnly: true,
+      sentAt: FV.serverTimestamp(),
+      sentBy: "정기 모임 안내",
+    });
+
+    console.log(`[정기 사전알림] ${mins}분 전 → 전체 발송 (모임 ${dLabel})`);
+  }
+);
+
 // ── 회비 납부 신고 시 운영진에게 푸시 ─────────────────────────────────────────
 // 회원이 홈에서 "송금했어요(납부 신고)" → dues_reports 문서 생성(status:pending)
 // → 운영진(STAFF_ROLES) 회원에게 알림. notifications 문서를 추가하면
