@@ -9,7 +9,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
 
     // ── 정기 모임 설정 ──
     const DOW = ['일','월','화','수','목','금','토'];
-    const RECUR_DEFAULT = { enabled:false, weekday:0, start:'08:00', end:'10:00', uploadWeekday:1, uploadHour:20, defaultLocation:'', defaultLat:null, defaultLng:null, defaultRadius:100, defaultEnableQR:false, defaultFCFS:true, defaultMaxLimit:18, managerId:'', managerName:'', autoAnnounce:true };
+    const RECUR_DEFAULT = { enabled:false, weekday:0, start:'08:00', end:'10:00', uploadWeekday:1, uploadHour:20, regCloseWeekday:null, regCloseHour:null, defaultLocation:'', defaultLat:null, defaultLng:null, defaultRadius:100, defaultEnableQR:false, defaultFCFS:true, defaultMaxLimit:18, managerId:'', managerName:'', autoAnnounce:true };
     const [isRecModalOpen, setIsRecModalOpen] = useState(false);
     const [recCfg, setRecCfg] = useState(null);
     const [isRecSaving, setIsRecSaving] = useState(false);
@@ -25,7 +25,11 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
 
     const openRecurring = async () => {
         const cfg = await loadRecurringConfig();
-        setRecCfg({ ...RECUR_DEFAULT, ...(cfg || {}) });
+        const merged = { ...RECUR_DEFAULT, ...(cfg || {}) };
+        // 신청 마감 미설정 시 모임 요일·시작시각으로 기본값 (기존 동작: 모임 시작 시각 마감)
+        if (merged.regCloseWeekday == null) merged.regCloseWeekday = Number(merged.weekday) || 0;
+        if (merged.regCloseHour == null) merged.regCloseHour = parseInt((merged.start || '08:00').split(':')[0]) || 8;
+        setRecCfg(merged);
         setIsRecModalOpen(true);
     };
 
@@ -39,6 +43,8 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                 start: recCfg.start || '08:00', end: recCfg.end || '10:00',
                 uploadWeekday: Number(recCfg.uploadWeekday),
                 uploadHour: Number(recCfg.uploadHour),
+                regCloseWeekday: Number(recCfg.regCloseWeekday),
+                regCloseHour: Number(recCfg.regCloseHour),
                 defaultLocation: recCfg.defaultLocation || '',
                 defaultLat: recCfg.defaultLat ?? null, defaultLng: recCfg.defaultLng ?? null,
                 defaultRadius: Number(recCfg.defaultRadius) || 100,
@@ -505,6 +511,24 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                     <span className="text-xs text-slate-400 font-black">에 다음 모임 생성</span>
                                 </div>
                                 <p className="text-[11px] text-slate-400 leading-relaxed">예: 모임 <b>일</b> / 생성 <b>월 20시</b> → 매주 월 20시에 그 주 일요일 모임이 만들어집니다</p>
+                            </div>
+                            <div className="bg-rose-50 rounded-2xl p-3 space-y-2">
+                                <label className="text-xs font-black text-slate-500 block">신청 마감</label>
+                                <div className="flex gap-1">
+                                    {DOW.map((d, i) => (
+                                        <button key={i} type="button" onClick={() => setRecCfg(c => ({...c, regCloseWeekday: i}))}
+                                            className={`flex-1 min-w-0 py-2 rounded-lg text-xs font-black border transition-all ${Number(recCfg.regCloseWeekday)===i ? 'bg-rose-500 text-white border-rose-500' : 'bg-white text-slate-500 border-slate-200'}`}>{d}</button>
+                                    ))}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <select value={String(recCfg.regCloseHour).padStart(2,'0')}
+                                        onChange={e => setRecCfg(c => ({...c, regCloseHour: parseInt(e.target.value)}))}
+                                        className="border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-rose-400">
+                                        {Array.from({length:24},(_,i)=>i).map(h => <option key={h} value={String(h).padStart(2,'0')}>{String(h).padStart(2,'0')}시</option>)}
+                                    </select>
+                                    <span className="text-xs text-slate-400 font-black">까지 신청 받기</span>
+                                </div>
+                                <p className="text-[11px] text-slate-400 leading-relaxed">이 시각 이후엔 신청을 받지 않습니다. 모임 요일과 같은 날로 두면 모임 당일 마감, 전날 요일로 두면 전날 마감입니다.</p>
                             </div>
                             <div className="pt-1 border-t border-slate-100">
                                 <button type="button" onClick={openOverrides}
