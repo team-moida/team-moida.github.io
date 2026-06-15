@@ -108,7 +108,10 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
         }
     };
 
-    const sortedMeetings = [...meetings].sort((a, b) => a.date.localeCompare(b.date));
+    // 끝난 모임(정기 done / 매칭=지난 날짜)은 관리 목록에서 제외 → '기록' 탭에만 남김
+    const _mtTodayStr = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
+    const _mtIsEnded = (m) => !!m && (m.status === 'done' || (!!m.date && m.date < _mtTodayStr));
+    const sortedMeetings = [...meetings].filter(m => !_mtIsEnded(m)).sort((a, b) => a.date.localeCompare(b.date));
 
     const openAdd = () => {
         setEditingId(null);
