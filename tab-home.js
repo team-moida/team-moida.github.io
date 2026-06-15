@@ -355,7 +355,7 @@ const computeMeetingDay = (date, start) => {
 const NextMeetingCard = ({
     meeting, kind, isActive, dayInfo, darkMode, isAdminMode, onTabChange,
     mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount,
-    isMeetingOver, isMeetingEndSaved, onEndMeeting, onGenerateQR,
+    isMeetingOver, isMeetingEndSaved, onEndMeeting, onGenerateQR, onEditMeeting, onDeleteMeeting,
 }) => {
     const cfg = MEETING_KIND[kind] || MEETING_KIND.self;
     const showOverlay = kind !== 'match' && isActive && isAdminMode && isMeetingOver && !isMeetingEndSaved;
@@ -441,6 +441,15 @@ const NextMeetingCard = ({
                     <div className="flex items-center gap-1.5 text-xs text-white/70">
                         <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">모임이 가까워지면 출석·팀 정보가 표시됩니다</span>
                     </div>
+                </div>
+            )}
+            {/* 관리자: 카드에서 바로 수정/삭제 */}
+            {isAdminMode && (onEditMeeting || onDeleteMeeting) && (
+                <div className="mt-3 pt-3 border-t flex items-center justify-end gap-1.5" style={{borderColor:'rgba(255,255,255,0.22)'}}>
+                    {onEditMeeting && <span role="button" onClick={(e)=>{ e.stopPropagation(); onEditMeeting(meeting); }}
+                        className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-white/25 text-white active:scale-95 cursor-pointer"><Icon.Edit size={12}/> 수정</span>}
+                    {onDeleteMeeting && <span role="button" onClick={(e)=>{ e.stopPropagation(); onDeleteMeeting(meeting); }}
+                        className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-rose-500/80 text-white active:scale-95 cursor-pointer"><Icon.Trash size={12}/> 삭제</span>}
                 </div>
             )}
         </button>
@@ -835,7 +844,7 @@ const TabHome = ({
     memberName, announcements, onOpenAnnouncements,
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
     duesReports, onConfirmDuesReport, onRejectDuesReport, onGoDuesTab,
-    generateAttendQRCode,
+    generateAttendQRCode, onEditMeeting, onDeleteMeeting,
 }) => {
     // 정기/매칭 다음 모임 분리 (회원이 둘 다 참여할 수 있어 종류별 카드로 표시)
     // 종료(done) + 지난 날짜 모임은 홈 '다음 모임'에서 제외 (끝난 모임은 기록 탭에서만)
@@ -889,7 +898,7 @@ const TabHome = ({
                 mySession={mySession} teamReady={teamReady} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                 allowFromDisplay={allowFromDisplay} participantCount={participantCount}
                 isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting}
-                onGenerateQR={generateAttendQRCode} />
+                onGenerateQR={generateAttendQRCode} onEditMeeting={onEditMeeting} onDeleteMeeting={onDeleteMeeting} />
         )) : (
             <button onClick={()=>onTabChange('meeting-list')} className="w-full card rounded-3xl p-5 text-center active:scale-98 transition-all">
                 <div className="text-slate-400 py-3">

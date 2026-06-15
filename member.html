@@ -656,6 +656,8 @@ function App() {
                         onConfirmDuesReport={confirmDuesReport} onRejectDuesReport={rejectDuesReport}
                         onGoDuesTab={() => { roster.setRosterSubTab('monthly'); navTab('roster'); }}
                         generateAttendQRCode={generateAttendQRCode}
+                        onEditMeeting={(m) => { setPendingEditMeeting(m); navTab('meeting-list'); }}
+                        onDeleteMeeting={handleDeleteMeeting}
                     />
                 )}
                 {tab === 'notice' && (
