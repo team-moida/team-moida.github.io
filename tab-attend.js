@@ -418,7 +418,7 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
 const isMeetingEnded = (m) => !!m && (m.status === 'done' || computeMeetingDay(m.date, m.start)?.type === 'past');
 
 // ─── 종료 모임 출석 기록 상세 (저장된 attendHistory 기록을 그대로 표시) ──────────
-const RecordDetailModal = ({ detail, onClose, onEdit, onDelete }) => {
+const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalty }) => {
     const { meeting: m, hist } = detail;
     const kind = (m.meetingType || 'self') === 'match' ? 'match' : 'self';
     const cfg = MEETING_KIND[kind];
@@ -427,6 +427,30 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete }) => {
         : s === '노쇼' ? 'bg-rose-100 text-rose-500'
         : 'bg-slate-100 text-slate-400';
     const records = (hist?.records || []).slice().sort((a, b) => (a.timestamp || '99:99').localeCompare(b.timestamp || '99:99'));
+    // ── 벌금 부과 (관리자 전용, 정기 모임만) ──
+    const penTargets = records.filter(r => r.type === '정규' && r.memberId && (r.status === '지각' || r.status === '노쇼'));
+    const [penOverrides, setPenOverrides] = React.useState({}); // memberId -> 'none'|'late'|'noshow'
+    const penFinalized = !!hist?.penaltyFinalizedAt;
+    const penResolve = (r) => penOverrides[r.memberId] || (r.status === '지각' ? 'late' : r.status === '노쇼' ? 'noshow' : 'none');
+    const penAmt = (r) => {
+        const v = penResolve(r);
+        if (v === 'none') return 0;
+        if (v === 'late') return 5000;
+        return r.noShowFine === 10000 ? 10000 : r.noShowFine === 20000 ? 20000 : 30000; // 노쇼: 통보(1만/2만) / 무통보(3만)
+    };
+    const penType = (r) => {
+        const v = penResolve(r);
+        if (v === 'none') return null;
+        if (v === 'late') return 'late';
+        return r.noShowFine === 10000 ? 'noshow_notified_1' : r.noShowFine === 20000 ? 'noshow_notified_2' : 'noshow_no_notice';
+    };
+    const penTotal = penTargets.reduce((s, r) => s + penAmt(r), 0);
+    const doFinalizePenalty = () => {
+        const items = penTargets.map(r => ({ r, t: penType(r) })).filter(x => x.t)
+            .map(({ r, t }) => ({ memberId: r.memberId, name: r.name, type: t, amount: penAmt(r), reason: r.reason || '' }));
+        onFinalizePenalty && onFinalizePenalty(hist, m, items);
+        onClose();
+    };
     return (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-6" onClick={onClose}>
             <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()} style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
@@ -468,6 +492,40 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete }) => {
                         {kind === 'match' && <p className="text-[11px] mt-1">매칭 모임은 출석 기록을 저장하지 않습니다</p>}
                     </div>
                 )}
+                {onFinalizePenalty && kind === 'self' && hist && penTargets.length > 0 && (
+                    <div className="mt-4 pt-3 border-t border-slate-100">
+                        <p className="text-xs font-black text-slate-500 mb-2">💸 벌금 부과 {penFinalized && <span className="text-emerald-500">· ✅ 발송됨</span>}</p>
+                        {penFinalized ? (
+                            <p className="text-[11px] text-slate-400">{new Date(hist.penaltyFinalizedAt).toLocaleDateString('ko-KR')} 납부 안내가 발송되었습니다.</p>
+                        ) : (
+                            <>
+                                <div className="space-y-1.5">
+                                    {penTargets.map((r, i) => (
+                                        <div key={i} className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-slate-50 min-w-0">
+                                            <span className="flex-1 min-w-0 font-black text-sm text-slate-700 truncate">{r.name}</span>
+                                            <span className="text-[11px] font-black text-rose-500 shrink-0 w-16 text-right">{penAmt(r) ? penAmt(r).toLocaleString() + '원' : '-'}</span>
+                                            <div className="flex gap-0.5 shrink-0">
+                                                {[['none', '없음'], ['late', '지각'], ['noshow', '노쇼']].map(([v, l]) => (
+                                                    <button key={v} onClick={() => setPenOverrides(o => ({ ...o, [r.memberId]: v }))}
+                                                        className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${penResolve(r) === v ? (v === 'none' ? 'bg-slate-400 text-white' : v === 'late' ? 'bg-amber-400 text-white' : 'bg-rose-500 text-white') : 'bg-white text-slate-400 border border-slate-200'}`}>{l}</button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="flex items-center justify-between mt-2 px-1">
+                                    <span className="text-[11px] font-black text-slate-500">합계</span>
+                                    <span className="text-sm font-black text-rose-600">{penTotal.toLocaleString()}원</span>
+                                </div>
+                                <button onClick={doFinalizePenalty} disabled={penTotal === 0}
+                                    className="w-full mt-2 py-2.5 rounded-xl bg-rose-500 text-white font-black text-sm active:scale-95 transition-all disabled:opacity-40">
+                                    벌금 확정 · 납부 안내 발송
+                                </button>
+                                <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed">정상 출석했는데 체크 누락된 회원은 '없음'으로 바꾸세요. 발송하면 대상자에게 푸시가 가고, 회비 탭에서 납부할 수 있습니다.</p>
+                            </>
+                        )}
+                    </div>
+                )}
                 {(onEdit || onDelete) && (
                     <div className="flex gap-2 mt-4 pt-3 border-t border-slate-100">
                         {onEdit && <button onClick={() => { onEdit(m); onClose(); }}
@@ -482,7 +540,7 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete }) => {
 };
 
 // ─── 종료 모임 기록 목록 (모임 탭 '기록' — 정기 / 매칭 분리, 관리자 전용) ──────────
-const MeetingRecordsView = ({ meetings, attendHistory, darkMode, onEdit, onDelete }) => {
+const MeetingRecordsView = ({ meetings, attendHistory, darkMode, onEdit, onDelete, onFinalizePenalty }) => {
     const [kindTab, setKindTab] = React.useState('self');
     const [detail, setDetail] = React.useState(null);
     const histByDate = {};
@@ -526,7 +584,7 @@ const MeetingRecordsView = ({ meetings, attendHistory, darkMode, onEdit, onDelet
                     </button>
                 );
             })}
-            {detail && <RecordDetailModal detail={detail} onClose={() => setDetail(null)} onEdit={onEdit} onDelete={onDelete} />}
+            {detail && <RecordDetailModal detail={detail} onClose={() => setDetail(null)} onEdit={onEdit} onDelete={onDelete} onFinalizePenalty={onFinalizePenalty} />}
         </div>
     );
 };
@@ -537,7 +595,7 @@ const MeetingListScreen = ({
     meetings, isAdminMode, onSelect,
     activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers, showAlert,
     pendingEditMeeting, onPendingEditHandled,
-    attendHistory, darkMode, onDeleteRecord, generateAttendQRCode,
+    attendHistory, darkMode, onDeleteRecord, generateAttendQRCode, onFinalizePenalty,
 }) => {
     const [isManageOpen, setIsManageOpen] = React.useState(false);
     const [listView, setListView] = React.useState('upcoming'); // upcoming | ended(기록)
@@ -596,7 +654,7 @@ const MeetingListScreen = ({
                 )}
                 {isAdminMode && listView === 'ended' ? (
                     <MeetingRecordsView meetings={meetings} attendHistory={attendHistory} darkMode={darkMode}
-                        onEdit={(m) => setEmbeddedEdit(m)} onDelete={onDeleteRecord} />
+                        onEdit={(m) => setEmbeddedEdit(m)} onDelete={onDeleteRecord} onFinalizePenalty={onFinalizePenalty} />
                 ) : upcoming.length === 0 ? (
                 <div className="card rounded-3xl p-8 text-center text-slate-400">
                     <div className="flex justify-center mb-3 opacity-30"><Icon.Calendar size={36}/></div>

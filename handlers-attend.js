@@ -384,10 +384,10 @@ function makeAttendHandlers(ctx) {
                 const records = sorted.map((p, idx) => {
                     const isWaiting = idx + 1 > limit;
                     const finalStatus = isWaiting ? '대기' : p.checkedIn ? (p.status || '정상') : '노쇼';
-                    return {name: p.isGuest ? `${p.name} - 초대:${p.inviterName || '없음'}` : p.name, gender: p.gender, status: finalStatus, checkInTime: p.checkedIn ? (p.checkInTime || '-') : '미출석', type: isWaiting ? '대기자' : (p.isGuest ? '게스트' : '정규'), level: p.level || '-', team: p.team || '-', timestamp: p.checkedIn ? p.checkInTime : '99:99:99', reason: p.noShowReason || ''};
+                    return {name: p.isGuest ? `${p.name} - 초대:${p.inviterName || '없음'}` : p.name, memberId: p.isGuest ? '' : (p.memberId || ''), gender: p.gender, status: finalStatus, checkInTime: p.checkedIn ? (p.checkInTime || '-') : '미출석', type: isWaiting ? '대기자' : (p.isGuest ? '게스트' : '정규'), level: p.level || '-', team: p.team || '-', timestamp: p.checkedIn ? p.checkInTime : '99:99:99', reason: p.noShowReason || '', noShowFine: (!p.checkedIn ? (p.noShowFine || 0) : 0)};
                 });
                 const presentCount = records.filter(r => r.status === '정상' || r.status === '지각').length;
-                await getHistoryCol().add({date: meetingSettings.date, meetingTime: `${meetingSettings.start}~${meetingSettings.end}`, location: meetingSettings.location || '장소 미지정', locationLat: meetingSettings.locationLat || null, locationLng: meetingSettings.locationLng || null, managerName: meetingSettings.managerName || '미지정', total: records.length, present: presentCount, records, createdAt: new Date().toISOString()});
+                await getHistoryCol().add({date: meetingSettings.date, meetingId: _endMid, meetingType: _endMType, meetingTime: `${meetingSettings.start}~${meetingSettings.end}`, location: meetingSettings.location || '장소 미지정', locationLat: meetingSettings.locationLat || null, locationLng: meetingSettings.locationLng || null, managerName: meetingSettings.managerName || '미지정', total: records.length, present: presentCount, records, createdAt: new Date().toISOString()});
 
                 // 현재 모임 done 처리 (meetingId 기준)
                 try { await getMeetingsCol().doc(_endMid).update({ status: 'done' }); } catch(_) {}
@@ -434,12 +434,49 @@ function makeAttendHandlers(ctx) {
         });
     };
 
+    // 벌금 확정 + 납부 안내 푸시 발송 (관리자가 기록 검토 후 호출)
+    // items: [{ memberId, name, type('late'|'noshow_notified_1'|'noshow_notified_2'|'noshow_no_notice'), amount, reason }]
+    const PENALTY_LABEL = { late: '지각', noshow_notified_1: '노쇼(전날 통보)', noshow_notified_2: '노쇼(당일 통보)', noshow_no_notice: '노쇼(무통보)' };
+    const attendFinalizePenalties = async (hist, meeting, items) => {
+        if (!hist || !hist.id) return showAlert('오류', '기록 정보를 찾을 수 없습니다.');
+        if (!items || items.length === 0) return showAlert('알림', '부과할 벌금 대상이 없습니다.');
+        const mDate = meeting?.date || hist.date || '';
+        const mId = meeting ? getMeetingId(meeting) : mDate;
+        const now = new Date().toISOString();
+        try {
+            const batch = db.batch();
+            items.forEach(it => {
+                batch.set(getCol('penalties').doc(`${mId}_${it.memberId}`), {
+                    memberId: it.memberId, memberName: it.name || '',
+                    meetingId: mId, meetingDate: mDate,
+                    type: it.type, amount: it.amount,
+                    status: 'unpaid', reason: it.reason || '',
+                    createdAt: now, notifiedAt: now,
+                });
+            });
+            batch.update(getHistoryCol().doc(hist.id), { penaltyFinalizedAt: now });
+            await batch.commit();
+            // 대상자별 개별 푸시 (notifications 트리거가 실제 전송, 공지판에는 안 뜨도록 pushOnly)
+            await Promise.all(items.map(it => getCol('notifications').add({
+                title: '벌금 납부 안내',
+                body: `${mDate} 모임 ${PENALTY_LABEL[it.type] || '벌금'} ${it.amount.toLocaleString()}원 납부 부탁드립니다. 앱 회비 탭에서 납부할 수 있어요.`,
+                category: '벌금', type: 'penalty', pushOnly: true,
+                targetMemberIds: [it.memberId],
+                sentAt: now, sentBy: '관리자',
+            })));
+            showAlert('완료', `${items.length}명에게 납부 안내를 보냈습니다.`);
+        } catch(e) {
+            showAlert('오류', '벌금 처리 실패: ' + e.message);
+        }
+    };
+
     return {
         updateMeetingSettingsAdmin, attendHandleCheckIn, attendHandleUncheckIn,
         attendToggleParticipant, attendToggleParticipantAsGuest, attendHandleResetSelection,
         attendHandleAddGuest, attendHandleTestSelect,
         attendOpenAddGuest, attendOpenEditGuest, attendDeleteParticipant,
         attendHandleDeleteHistory, handleHistoryStatusUpdate, handleUpdateHistoryLocation,
-        generateAttendQRCode, attendToggleTestMode, attendHandleEndMeeting
+        generateAttendQRCode, attendToggleTestMode, attendHandleEndMeeting,
+        attendFinalizePenalties
     };
 }

@@ -424,7 +424,7 @@ function App() {
             attendOpenAddGuest, attendOpenEditGuest, attendDeleteParticipant,
             attendHandleDeleteHistory, handleHistoryStatusUpdate, handleUpdateHistoryLocation,
             generateAttendQRCode, attendToggleTestMode,
-            attendHandleEndMeeting } = makeAttendHandlers({
+            attendHandleEndMeeting, attendFinalizePenalties } = makeAttendHandlers({
         meetingSettings: displayMeetingSettings, testMode, showAlert, showConfirm, setAttendModal: attend.setAttendModal,
         tmSessionData: team.tmSessionData, activeMembers: roster.activeMembers,
         selectedHistoryDetail: attend.selectedHistoryDetail, setSelectedHistoryDetail: attend.setSelectedHistoryDetail,
@@ -681,6 +681,7 @@ function App() {
                         attendHistory={attend.attendHistory} darkMode={darkMode}
                         onDeleteRecord={handleDeleteMeetingRecord}
                         generateAttendQRCode={generateAttendQRCode}
+                        onFinalizePenalty={attendFinalizePenalties}
                         pendingEditMeeting={pendingEditMeeting} onPendingEditHandled={() => setPendingEditMeeting(null)}
                     />
                 )}
