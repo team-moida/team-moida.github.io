@@ -70,6 +70,7 @@ Firestore: settings/club_rules { content, updatedAt, updatedBy }
 회원 화면 모달 전체 → modals.js
 회원용 출석 / 체크인 → tab-attend.js, handlers-attend.js, use-attend.js
 모임 탭 (모임 카드 목록 → 카드 누르면 모임 상세: 출석/대진/매치) → tab-attend.js(MeetingListScreen·MeetingDetailHeader·TabAttend) + member.html(viewMeetingId 라우팅, effectiveMeeting 컨텍스트). 팀/매치 데이터는 보고 있는 모임(meetingId) 기준
+모임 탭 '기록'(관리자 전용, 예정/기록 토글 → 정기/매칭 분리, 종료된 모임 목록·출석기록 상세) → tab-attend.js(MeetingRecordsView·RecordDetailModal·isMeetingEnded). 종료 판정: 정기=status 'done' / 매칭='지난 날짜'(computeMeetingDay past). 예정 목록·홈은 종료 모임 제외
 
 출석 관리  (attendance.html)
 

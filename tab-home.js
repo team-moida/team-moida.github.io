@@ -829,7 +829,8 @@ const TabHome = ({
     duesReports, onConfirmDuesReport, onRejectDuesReport, onGoDuesTab,
 }) => {
     // 정기/매칭 다음 모임 분리 (회원이 둘 다 참여할 수 있어 종류별 카드로 표시)
-    const upcoming = (meetings || []).filter(m => m && m.status !== 'done' && m.date);
+    // 종료(done) + 지난 날짜 모임은 홈 '다음 모임'에서 제외 (끝난 모임은 기록 탭에서만)
+    const upcoming = (meetings || []).filter(m => m && m.status !== 'done' && m.date && computeMeetingDay(m.date, m.start)?.type !== 'past');
     const byDate = (a, b) => a.date.localeCompare(b.date);
     const nextSelf  = upcoming.filter(m => (m.meetingType || 'self') !== 'match').sort(byDate)[0] || null;
     const nextMatch = upcoming.filter(m => (m.meetingType || 'self') === 'match').sort(byDate)[0] || null;

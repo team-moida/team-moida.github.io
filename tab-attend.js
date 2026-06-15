@@ -408,19 +408,129 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
     );
 };
 
+// ─── 종료 모임 판정 (정기=done 표시 / 매칭=지난 날짜) ─────────────────────────
+// 매칭 모임은 종료 흐름이 없어 'done'이 안 붙으므로 날짜(past)로 종료 간주한다.
+const isMeetingEnded = (m) => !!m && (m.status === 'done' || computeMeetingDay(m.date, m.start)?.type === 'past');
+
+// ─── 종료 모임 출석 기록 상세 (저장된 attendHistory 기록을 그대로 표시) ──────────
+const RecordDetailModal = ({ detail, onClose }) => {
+    const { meeting: m, hist } = detail;
+    const kind = (m.meetingType || 'self') === 'match' ? 'match' : 'self';
+    const cfg = MEETING_KIND[kind];
+    const stColor = (s) => s === '정상' ? 'bg-emerald-100 text-emerald-600'
+        : s === '지각' ? 'bg-amber-100 text-amber-600'
+        : s === '노쇼' ? 'bg-rose-100 text-rose-500'
+        : 'bg-slate-100 text-slate-400';
+    const records = (hist?.records || []).slice().sort((a, b) => (a.timestamp || '99:99').localeCompare(b.timestamp || '99:99'));
+    return (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-6" onClick={onClose}>
+            <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()} style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
+                <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-lg text-white shrink-0" style={{ background: cfg.accent }}>{cfg.label}</span>
+                            {kind === 'match' && m.opponentName && <span className="text-[11px] font-black text-indigo-500 truncate">vs {m.opponentName}</span>}
+                        </div>
+                        <p className="font-black text-slate-800 mt-1">{fmtMeetingDate(m.date)} · {m.start}~{m.end}</p>
+                        {m.location && <p className="text-[11px] text-slate-400 truncate">📍 {m.location}</p>}
+                        {m.managerName && <p className="text-[11px] text-slate-400">담당 {m.managerName}</p>}
+                    </div>
+                    <button onClick={onClose} className="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 shrink-0 active:scale-95 font-black">✕</button>
+                </div>
+                {hist ? (
+                    <>
+                        <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xs font-black px-3 py-1.5 rounded-xl bg-teal-50 text-teal-600">출석 {hist.present ?? '-'} / 전체 {hist.total ?? records.length}명</span>
+                        </div>
+                        <div className="space-y-1.5">
+                            {records.map((r, i) => (
+                                <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 min-w-0">
+                                    <span className="font-black text-sm text-slate-700 truncate flex-1 min-w-0">{r.name}</span>
+                                    {r.team && r.team !== '-' && <span className="text-[10px] font-black text-slate-400 shrink-0">{r.team}</span>}
+                                    {r.checkInTime && r.checkInTime !== '미출석' && <span className="text-[10px] font-black text-slate-400 shrink-0">{r.checkInTime}</span>}
+                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg shrink-0 ${stColor(r.status)}`}>{r.status}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                ) : (
+                    <div className="text-center text-slate-400 py-6">
+                        <p className="text-2xl mb-1">📋</p>
+                        <p className="text-xs font-black">저장된 출석 기록이 없습니다</p>
+                        {kind === 'match' && <p className="text-[11px] mt-1">매칭 모임은 출석 기록을 저장하지 않습니다</p>}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// ─── 종료 모임 기록 목록 (모임 탭 '기록' — 정기 / 매칭 분리, 관리자 전용) ──────────
+const MeetingRecordsView = ({ meetings, attendHistory, darkMode }) => {
+    const [kindTab, setKindTab] = React.useState('self');
+    const [detail, setDetail] = React.useState(null);
+    const histByDate = {};
+    (attendHistory || []).forEach(h => { if (h && h.date) histByDate[h.date] = h; });
+    const ended = (meetings || [])
+        .filter(m => m && m.date && isMeetingEnded(m))
+        .filter(m => kindTab === 'match' ? (m.meetingType || 'self') === 'match' : (m.meetingType || 'self') !== 'match')
+        .sort((a, b) => b.date.localeCompare(a.date));
+    return (
+        <div className="space-y-3">
+            <div className="flex gap-1.5 p-1 bg-slate-100 rounded-2xl">
+                {[['self', '정기'], ['match', '매칭']].map(([v, l]) => (
+                    <button key={v} onClick={() => setKindTab(v)}
+                        className={`flex-1 py-2 rounded-xl text-sm font-black transition-all ${kindTab === v ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-400'}`}>{l}</button>
+                ))}
+            </div>
+            {ended.length === 0 ? (
+                <div className="card rounded-3xl p-8 text-center text-slate-400">
+                    <div className="flex justify-center mb-3 opacity-30"><Icon.Calendar size={36} /></div>
+                    <p className="font-black text-sm">지난 {kindTab === 'match' ? '매칭' : '정기'} 모임 기록이 없습니다</p>
+                </div>
+            ) : ended.map(m => {
+                const kind = (m.meetingType || 'self') === 'match' ? 'match' : 'self';
+                const cfg = MEETING_KIND[kind];
+                const hist = kind === 'self' ? histByDate[m.date] : null;
+                return (
+                    <button key={m.id} onClick={() => setDetail({ meeting: m, hist })}
+                        className="w-full rounded-2xl p-4 text-left bg-white border border-slate-100 active:scale-98 transition-all"
+                        style={darkMode ? { background: '#1e293b', borderColor: '#334155' } : {}}>
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: cfg.accent }} />
+                                <span className="text-[10px] font-black uppercase tracking-widest shrink-0" style={{ color: cfg.accent }}>{cfg.label}</span>
+                                <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md shrink-0">종료</span>
+                            </div>
+                            {hist && <span className="text-[11px] font-black text-teal-600 shrink-0">출석 {hist.present ?? '-'}/{hist.total ?? '-'}</span>}
+                        </div>
+                        <p className="font-black text-slate-800" style={darkMode ? { color: '#f1f5f9' } : {}}>{fmtMeetingDate(m.date)} · {m.start}~{m.end}</p>
+                        {kind === 'match' && m.opponentName && <p className="text-xs font-black text-indigo-500 mt-0.5 truncate">vs {m.opponentName}</p>}
+                        {m.location && <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1 min-w-0"><Icon.MapPin size={12} className="shrink-0" /><span className="truncate">{m.location}</span></p>}
+                    </button>
+                );
+            })}
+            {detail && <RecordDetailModal detail={detail} onClose={() => setDetail(null)} />}
+        </div>
+    );
+};
+
 // ─── 모임 카드 목록 화면 (모임 탭 첫 화면 — 홈 카드와 같은 단색 카드 디자인) ──────
 // MEETING_KIND·computeMeetingDay·fmtMeetingDate는 tab-home.js의 전역 정의를 재사용한다.
 const MeetingListScreen = ({
     meetings, isAdminMode, onSelect,
     activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers, showAlert,
     pendingEditMeeting, onPendingEditHandled,
+    attendHistory, darkMode,
 }) => {
     const [isManageOpen, setIsManageOpen] = React.useState(false);
+    const [listView, setListView] = React.useState('upcoming'); // upcoming | ended(기록)
     // 상세 화면의 [수정] 버튼으로 넘어온 경우 → 관리 화면을 자동으로 연다
     React.useEffect(() => { if (pendingEditMeeting) setIsManageOpen(true); }, [pendingEditMeeting]);
 
+    // 예정: 종료 안 됐고(정기 done 아님) + 지난 날짜 아님 → 끝난 모임은 '기록'으로
     const upcoming = (meetings || [])
-        .filter(m => m && m.date && m.status !== 'done')
+        .filter(m => m && m.date && !isMeetingEnded(m))
         .sort((a, b) => a.date.localeCompare(b.date) || (a.meetingType||'self').localeCompare(b.meetingType||'self'));
 
     return (
@@ -443,7 +553,20 @@ const MeetingListScreen = ({
                     onSelectMeeting={onSelect}
                     pendingEditMeeting={pendingEditMeeting} onPendingEditHandled={onPendingEditHandled}
                 />
-            ) : upcoming.length === 0 ? (
+            ) : (
+              <>
+                {/* 예정 / 기록 전환 (관리자 전용) */}
+                {isAdminMode && (
+                    <div className="flex gap-1.5 p-1 bg-slate-100 rounded-2xl">
+                        {[['upcoming','예정'],['ended','기록']].map(([v,l]) => (
+                            <button key={v} onClick={()=>setListView(v)}
+                                className={`flex-1 py-2 rounded-xl text-sm font-black transition-all ${listView===v?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>{l}</button>
+                        ))}
+                    </div>
+                )}
+                {isAdminMode && listView === 'ended' ? (
+                    <MeetingRecordsView meetings={meetings} attendHistory={attendHistory} darkMode={darkMode} />
+                ) : upcoming.length === 0 ? (
                 <div className="card rounded-3xl p-8 text-center text-slate-400">
                     <div className="flex justify-center mb-3 opacity-30"><Icon.Calendar size={36}/></div>
                     <p className="font-black text-sm">예정된 모임이 없습니다</p>
@@ -487,6 +610,8 @@ const MeetingListScreen = ({
                         </button>
                     );
                 })
+              )}
+              </>
             )}
         </div>
     );
