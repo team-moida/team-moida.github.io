@@ -634,7 +634,16 @@ const MeetingListScreen = ({
                                     <Icon.Users size={14} className="flex-shrink-0"/>
                                     <span className="truncate">{kind === 'match' ? `정원 남 ${m.maxMale||0} · 여 ${m.maxFemale||0}` : `최대 ${m.maxLimit||18}명`}</span>
                                 </span>
-                                <span className="flex items-center gap-0.5 text-xs font-black text-white flex-shrink-0">자세히 <Icon.ChevronRight size={14}/></span>
+                                {isAdminMode ? (
+                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                        <span role="button" onClick={(e)=>{ e.stopPropagation(); setEmbeddedEdit(m); }}
+                                            className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-white/25 text-white active:scale-95 cursor-pointer"><Icon.Edit size={12}/> 수정</span>
+                                        <span role="button" onClick={(e)=>{ e.stopPropagation(); handleDeleteMeeting(m); }}
+                                            className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-rose-500/80 text-white active:scale-95 cursor-pointer"><Icon.Trash size={12}/> 삭제</span>
+                                    </div>
+                                ) : (
+                                    <span className="flex items-center gap-0.5 text-xs font-black text-white flex-shrink-0">자세히 <Icon.ChevronRight size={14}/></span>
+                                )}
                             </div>
                         </button>
                     );
@@ -769,6 +778,15 @@ const TabAttend = ({
             return !_selMid || !_selMid.endsWith('__match');
         }).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
     }, [tmSessionData, selectedMeeting?.date, selectedMeeting?.meetingType]);
+
+    // 모임 당일(출석 시작) + 현재 모임이면, 관리자는 들어왔을 때 출석 현황(명단)을 바로 표시
+    React.useEffect(() => {
+        const di = computeMeetingDay(meetingSettings?.date, meetingSettings?.start);
+        if (isAdminMode && isViewActive && (di?.type === 'today' || di?.type === 'started')) {
+            setIsAttendPanelOpen(true);
+            setAttendSubTab('attend');
+        }
+    }, [isViewActive, meetingSettings?.date]);
 
     return (
     <div className="animate-in space-y-4">
@@ -975,7 +993,6 @@ const TabAttend = ({
                                                 {isViewActive && (
                                                     <>
                                                         <button onClick={()=>attendOpenAddGuest(selectedMeeting)} className="shrink-0 px-2.5 py-1.5 bg-slate-100 text-slate-600 text-xs font-black rounded-xl flex items-center gap-1"><Icon.UserPlus size={12}/> 게스트</button>
-                                                        <button onClick={attendHandleTestSelect} className="shrink-0 px-2.5 py-1.5 bg-amber-50 text-amber-600 text-xs font-black rounded-xl flex items-center gap-1"><Icon.Beaker size={12}/> 테스트</button>
                                                     </>
                                                 )}
                                                 <button onClick={()=>attendHandleResetSelection(selectedMeeting)} className="shrink-0 px-2.5 py-1.5 bg-red-50 text-red-500 text-xs font-black rounded-xl flex items-center gap-1"><Icon.RotateCcw size={12}/> 초기화</button>
