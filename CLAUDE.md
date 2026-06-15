@@ -36,6 +36,7 @@ Firebase 초기화 (db, auth, getCol, APP_ID, STAFF_ROLES) → firebase-init.js
 회비 (월납/반년납/1년납) + 휴식 회원 처리 → roster-payment.js, handlers-roster.js
 회원권 상태 유틸 → roster-utils.js
 (member.html) 회원탭 UI → tab-roster.js
+지각/노쇼 벌금 (지각5천·통보노쇼1만/2만·무통보노쇼3만) → 관리자 확정·발송=handlers-attend.js(attendFinalizePenalties)+tab-attend.js(RecordDetailModal 벌금패널). 회원 납부(토스 금액자동·계좌복사·보냈어요)+관리자 확정/삭제=tab-home.js(PenaltyPayCard, 회비탭). 미납 시 모임신청 완전차단=handlers-registration.js(handleRegister 게이트)+tab-attend.js(RegistrationCard). Firestore: penalties/{모임ID}_{회원ID}. 토스/계좌는 회비 settings/club_account 재사용
 
 팀 편성  (team-maker.html · member.html 팀탭)
 
