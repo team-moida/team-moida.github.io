@@ -525,6 +525,7 @@ const MeetingListScreen = ({
 }) => {
     const [isManageOpen, setIsManageOpen] = React.useState(false);
     const [listView, setListView] = React.useState('upcoming'); // upcoming | ended(기록)
+    const [pendingAction, setPendingAction] = React.useState(null); // 'add' | 'recurring' — 카드 화면에서 모달 바로 열기
     // 상세 화면의 [수정] 버튼으로 넘어온 경우 → 관리 화면을 자동으로 연다
     React.useEffect(() => { if (pendingEditMeeting) setIsManageOpen(true); }, [pendingEditMeeting]);
 
@@ -536,13 +537,23 @@ const MeetingListScreen = ({
     return (
         <div className="animate-in space-y-3">
             {isAdminMode && (
-                <div className="flex items-center justify-between">
-                    <p className="text-xs font-black text-slate-500 uppercase tracking-widest">모임</p>
-                    <button onClick={() => setIsManageOpen(o => !o)}
-                        className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 rounded-xl transition-all active:scale-95"
-                        style={isManageOpen ? {background:'linear-gradient(135deg,#14b8a6,#0d9488)',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
-                        ⚙️ {isManageOpen ? '모임 관리 ON' : '모임 관리'}
-                    </button>
+                <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-black text-slate-500 uppercase tracking-widest shrink-0">모임</p>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {!isManageOpen && (
+                            <>
+                                <button onClick={() => setPendingAction('recurring')}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-xl font-black text-[11px] active:scale-95 transition-all">🔁 정기</button>
+                                <button onClick={() => setPendingAction('add')}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-teal-500 text-white rounded-xl font-black text-[11px] active:scale-95 transition-all shadow-sm"><Icon.Plus size={13}/> 추가</button>
+                            </>
+                        )}
+                        <button onClick={() => setIsManageOpen(o => !o)}
+                            className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 rounded-xl transition-all active:scale-95"
+                            style={isManageOpen ? {background:'linear-gradient(135deg,#14b8a6,#0d9488)',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
+                            ⚙️ {isManageOpen ? '관리 ON' : '관리'}
+                        </button>
+                    </div>
                 </div>
             )}
             {isAdminMode && isManageOpen ? (
@@ -611,6 +622,13 @@ const MeetingListScreen = ({
                     );
                 })
               )}
+                {/* 모달 호스트 — 카드 화면에서 [정기]·[추가]가 모달을 바로 열도록 (관리자) */}
+                {isAdminMode && (
+                    <MeetingsTab embedded pendingAction={pendingAction} onPendingActionHandled={() => setPendingAction(null)}
+                        meetings={meetings} activeMeeting={activeMeeting}
+                        handleSaveMeeting={handleSaveMeeting} handleDeleteMeeting={handleDeleteMeeting}
+                        managers={managers} showAlert={showAlert} onSelectMeeting={onSelect} />
+                )}
               </>
             )}
         </div>

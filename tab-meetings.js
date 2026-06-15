@@ -1,5 +1,5 @@
 // ── 모임 목록 탭 ──────────────────────────────────────────────────────────────
-function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers = [], showAlert, onSelectMeeting = null, pendingEditMeeting = null, onPendingEditHandled = null }) {
+function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers = [], showAlert, onSelectMeeting = null, pendingEditMeeting = null, onPendingEditHandled = null, embedded = false, pendingAction = null, onPendingActionHandled = null }) {
     const { useState } = React;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
@@ -173,8 +173,16 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
         }
     }, [pendingEditMeeting]);
 
+    // 외부(모임 탭 헤더의 [정기]·[추가] 버튼)에서 모달 바로 열기 요청
+    React.useEffect(() => {
+        if (pendingAction === 'add') openAdd();
+        else if (pendingAction === 'recurring') openRecurring();
+        if (pendingAction) onPendingActionHandled && onPendingActionHandled();
+    }, [pendingAction]);
+
     return (
         <div className="animate-in space-y-4">
+            {!embedded && (<>
             <div className="flex items-center justify-between gap-2">
                 <h2 className="font-black text-xl min-w-0 truncate">모임 목록</h2>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -230,6 +238,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                     })}
                 </div>
             )}
+            </>)}
 
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-[60]"
