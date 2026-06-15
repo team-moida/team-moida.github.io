@@ -112,9 +112,6 @@ function useTeam({ isAdminMode, meetingSettings, allMembers }) {
             if (s.isGuest) return true;
             const mi = allMembers.find(mm => mm.id === s.memberId);
             if (!mi) return true;
-            if (mi.isResigned) return false;
-            if (mi.isSpecialRest && targetMonthStr >= (mi.specialRestStartMonth || '0000-00')) return false;
-            if (tmMonthlyStatuses[s.memberId] === 'rest') return false;
             return true;
         }).sort((a, b) => ms(a.createdAt) - ms(b.createdAt) || a.name.localeCompare(b.name));
     }, [tmSessionData, tmMeetingDate, allMembers, tmMonthlyStatuses, meetingSettings?.meetingType]);

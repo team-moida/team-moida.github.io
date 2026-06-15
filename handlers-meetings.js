@@ -181,8 +181,8 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
         showConfirm('모임 삭제', confirmMsg, async () => {
             try {
                 const [regSnap, sessionSnap] = await Promise.all([
-                    getCol('registrations').where('meetingDate', '==', meeting.id).get(),
-                    getCol('weekly_session').where('date', '==', meeting.id).get(),
+                    getCol('registrations').where('meetingId', '==', meeting.id).get(),
+                    getCol('weekly_session').where('meetingId', '==', meeting.id).get(),
                 ]);
                 const batch = db.batch();
                 batch.delete(getMeetingsCol().doc(meeting.id));
