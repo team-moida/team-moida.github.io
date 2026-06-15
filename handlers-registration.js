@@ -35,6 +35,17 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
     const handleRegister = async () => {
         if (!meetingDate || !memberData?.memberId) return;
 
+        // 미납 벌금(지각/노쇼)이 있으면 신청 완전 차단
+        try {
+            const penSnap = await getCol('penalties').where('memberId', '==', memberData.memberId).get();
+            const unpaid = penSnap.docs.map(d => d.data()).filter(p => p.status !== 'paid');
+            if (unpaid.length > 0) {
+                const total = unpaid.reduce((s, p) => s + (p.amount || 0), 0);
+                showAlert && showAlert('신청 불가', `미납 벌금이 ${unpaid.length}건(${total.toLocaleString()}원) 있습니다.\n회비 탭에서 납부 후 신청해주세요.`);
+                return;
+            }
+        } catch (_) {}
+
         const maxLimit = meetingSettings?.maxLimit || 18;
         const meetingRef = getMeetingsCol().doc(meetingId);
         const regRef = getRegistrationsCol().doc(`${meetingId}_${memberData.memberId}`);

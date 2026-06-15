@@ -272,7 +272,7 @@ const RegSettingsSection = ({ meetingSettings, updateMeetingSettingsAdmin }) => 
 };
 
 // ─── 회원용 신청 카드 ─────────────────────────────────────────────────────────────
-const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel, handleAbsent, duesUnpaid, duesBlock, isPreview }) => {
+const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel, handleAbsent, duesUnpaid, duesBlock, penaltyUnpaid = 0, penaltyTotal = 0, isPreview }) => {
     const { useState } = React;
     const [absentConfirm, setAbsentConfirm] = useState(false);
     const [absentReason, setAbsentReason] = useState('');
@@ -326,13 +326,21 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
 
             {isOpen && !myRegistration && (
                 <>
+                    {penaltyUnpaid > 0 && (
+                        <div className="mb-2 rounded-2xl px-3 py-2.5 bg-rose-50 border border-rose-200">
+                            <p className="text-xs font-black text-rose-600">⚠️ 미납 벌금 {penaltyUnpaid}건 ({penaltyTotal.toLocaleString()}원)</p>
+                            <p className="text-[11px] text-rose-400 mt-0.5">회비 탭에서 벌금을 납부해야 신청할 수 있어요</p>
+                        </div>
+                    )}
                     {duesUnpaid && (
                         <div className="mb-2 rounded-2xl px-3 py-2.5 bg-rose-50 border border-rose-200">
                             <p className="text-xs font-black text-rose-600">⚠️ 회비 미납 상태예요</p>
                             <p className="text-[11px] text-rose-400 mt-0.5">홈 탭에서 회비를 납부해 주세요{duesBlock ? ' · 납부해야 신청할 수 있어요' : ''}</p>
                         </div>
                     )}
-                    {duesBlock && duesUnpaid ? (
+                    {penaltyUnpaid > 0 ? (
+                        <button disabled className="w-full py-3.5 bg-slate-200 text-slate-400 rounded-2xl font-black text-sm cursor-not-allowed">벌금 미납 — 신청 불가</button>
+                    ) : duesBlock && duesUnpaid ? (
                         <button disabled className="w-full py-3.5 bg-slate-200 text-slate-400 rounded-2xl font-black text-sm cursor-not-allowed">회비 미납 — 신청 불가</button>
                     ) : (
                         <button onClick={isPreview ? () => alert('미리보기에서는 실제로 신청되지 않아요.') : handleRegister}
@@ -806,6 +814,19 @@ const TabAttend = ({
         const unsub = getCol('settings').doc('club_account').onSnapshot(d => setDuesBlock(d.exists ? !!d.data().blockUnpaid : false), () => {});
         return () => unsub();
     }, []);
+    // 내 미납 벌금(지각/노쇼) — 완전 차단 (스위치 없음)
+    const [penaltyUnpaid, setPenaltyUnpaid] = React.useState(0);
+    const [penaltyTotal, setPenaltyTotal] = React.useState(0);
+    React.useEffect(() => {
+        const meId = memberInfo?.id;
+        if (!meId) { setPenaltyUnpaid(0); setPenaltyTotal(0); return; }
+        const unsub = getCol('penalties').where('memberId', '==', meId).onSnapshot(s => {
+            const list = s.docs.map(d => d.data()).filter(p => p.status !== 'paid');
+            setPenaltyUnpaid(list.length);
+            setPenaltyTotal(list.reduce((a, p) => a + (p.amount || 0), 0));
+        }, () => {});
+        return () => unsub();
+    }, [memberInfo?.id]);
     const myDuesUnpaid = React.useMemo(() => {
         const me = memberInfo;
         if (!me) return false;
@@ -1373,6 +1394,8 @@ const TabAttend = ({
                 handleAbsent={handleAbsent}
                 duesUnpaid={myDuesUnpaid}
                 duesBlock={duesBlock}
+                penaltyUnpaid={penaltyUnpaid}
+                penaltyTotal={penaltyTotal}
                 isPreview={inTestPreview}
             />
         )}
