@@ -529,7 +529,7 @@ const MeetingListScreen = ({
     meetings, isAdminMode, onSelect,
     activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers, showAlert,
     pendingEditMeeting, onPendingEditHandled,
-    attendHistory, darkMode, onDeleteRecord,
+    attendHistory, darkMode, onDeleteRecord, generateAttendQRCode,
 }) => {
     const [isManageOpen, setIsManageOpen] = React.useState(false);
     const [listView, setListView] = React.useState('upcoming'); // upcoming | ended(기록)
@@ -604,13 +604,21 @@ const MeetingListScreen = ({
                             style={{ background: cfg.accent, boxShadow: `0 10px 28px -8px ${cfg.accent}59` }}>
                             <div className="flex items-center justify-between gap-2 mb-2.5">
                                 <p className="text-xs font-black uppercase tracking-widest text-white/80">{cfg.label}</p>
-                                {dayInfo && dayInfo.type !== 'past' && dayInfo.label && (
-                                    <span className={`flex-shrink-0 text-xs font-black px-3 py-1 rounded-xl ${
-                                        dayInfo.type === 'started' ? 'bg-white text-emerald-600' :
-                                        dayInfo.urgent ? 'bg-white text-rose-500' :
-                                        dayInfo.type === 'today' ? 'bg-white text-slate-700' :
-                                        'bg-white/25 text-white'}`}>{dayInfo.label}</span>
-                                )}
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                    {isAdminMode && kind === 'self' && (dayInfo?.type === 'today' || dayInfo?.type === 'started') && generateAttendQRCode && (
+                                        <span role="button" onClick={(e) => { e.stopPropagation(); generateAttendQRCode(m); }}
+                                            className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-white/25 text-white active:scale-95 cursor-pointer">
+                                            <Icon.QrCode size={12}/> QR
+                                        </span>
+                                    )}
+                                    {dayInfo && dayInfo.type !== 'past' && dayInfo.label && (
+                                        <span className={`text-xs font-black px-3 py-1 rounded-xl ${
+                                            dayInfo.type === 'started' ? 'bg-white text-emerald-600' :
+                                            dayInfo.urgent ? 'bg-white text-rose-500' :
+                                            dayInfo.type === 'today' ? 'bg-white text-slate-700' :
+                                            'bg-white/25 text-white'}`}>{dayInfo.label}</span>
+                                    )}
+                                </div>
                             </div>
                             <p className="font-black text-lg leading-tight">{fmtMeetingDate(m.date)} · {m.start}~{m.end}</p>
                             {kind === 'match' && m.opponentName && (
@@ -777,10 +785,6 @@ const TabAttend = ({
                             </button>
                             <button onClick={() => setAttendSubTab('attend')} className="px-2.5 py-1.5 rounded-xl bg-teal-50 text-teal-600 text-xs font-black flex items-center gap-1">
                                 <Icon.Check size={13}/> 출석
-                            </button>
-                            <button onClick={attendToggleTestMode}
-                                className={`px-2.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1 ${testMode?'bg-amber-100 text-amber-600':'bg-slate-100 text-slate-400'}`}>
-                                <Icon.Beaker size={13}/> {testMode?'테스트 ON':'테스트'}
                             </button>
                         </>
                     )}

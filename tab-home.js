@@ -355,7 +355,7 @@ const computeMeetingDay = (date, start) => {
 const NextMeetingCard = ({
     meeting, kind, isActive, dayInfo, darkMode, isAdminMode, onTabChange,
     mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount,
-    isMeetingOver, isMeetingEndSaved, onEndMeeting,
+    isMeetingOver, isMeetingEndSaved, onEndMeeting, onGenerateQR,
 }) => {
     const cfg = MEETING_KIND[kind] || MEETING_KIND.self;
     const showOverlay = kind !== 'match' && isActive && isAdminMode && isMeetingOver && !isMeetingEndSaved;
@@ -366,13 +366,21 @@ const NextMeetingCard = ({
             style={{ background: cfg.accent, boxShadow:`0 10px 28px -8px ${cfg.accent}59` }}>
             <div className="flex items-center justify-between gap-2 mb-2.5">
                 <p className="text-xs font-black uppercase tracking-widest text-white/80">{cfg.label}</p>
-                {dayInfo && dayInfo.type !== 'past' && dayInfo.label && (
-                    <span className={`flex-shrink-0 text-xs font-black px-3 py-1 rounded-xl ${
-                        dayInfo.type==='started'?'bg-white text-emerald-600':
-                        dayInfo.urgent?'bg-white text-rose-500':
-                        dayInfo.type==='today'?'bg-white text-slate-700':
-                        'bg-white/25 text-white'}`}>{dayInfo.label}</span>
-                )}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {isAdminMode && kind === 'self' && (dayInfo?.type==='today' || dayInfo?.type==='started') && onGenerateQR && (
+                        <span role="button" onClick={(e)=>{ e.stopPropagation(); onGenerateQR(meeting); }}
+                            className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-white/25 text-white active:scale-95 cursor-pointer">
+                            <Icon.QrCode size={12}/> QR
+                        </span>
+                    )}
+                    {dayInfo && dayInfo.type !== 'past' && dayInfo.label && (
+                        <span className={`text-xs font-black px-3 py-1 rounded-xl ${
+                            dayInfo.type==='started'?'bg-white text-emerald-600':
+                            dayInfo.urgent?'bg-white text-rose-500':
+                            dayInfo.type==='today'?'bg-white text-slate-700':
+                            'bg-white/25 text-white'}`}>{dayInfo.label}</span>
+                    )}
+                </div>
             </div>
             <p className="font-black text-lg leading-tight">{fmtMeetingDate(meeting.date)} · {meeting.start}~{meeting.end}</p>
             {kind==='match' && meeting.opponentName && (
@@ -827,6 +835,7 @@ const TabHome = ({
     memberName, announcements, onOpenAnnouncements,
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
     duesReports, onConfirmDuesReport, onRejectDuesReport, onGoDuesTab,
+    generateAttendQRCode,
 }) => {
     // 정기/매칭 다음 모임 분리 (회원이 둘 다 참여할 수 있어 종류별 카드로 표시)
     // 종료(done) + 지난 날짜 모임은 홈 '다음 모임'에서 제외 (끝난 모임은 기록 탭에서만)
@@ -879,7 +888,8 @@ const TabHome = ({
                 dayInfo={c.dayInfo} darkMode={darkMode} isAdminMode={isAdminMode} onTabChange={onTabChange}
                 mySession={mySession} teamReady={teamReady} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                 allowFromDisplay={allowFromDisplay} participantCount={participantCount}
-                isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting} />
+                isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting}
+                onGenerateQR={generateAttendQRCode} />
         )) : (
             <button onClick={()=>onTabChange('meeting-list')} className="w-full card rounded-3xl p-5 text-center active:scale-98 transition-all">
                 <div className="text-slate-400 py-3">

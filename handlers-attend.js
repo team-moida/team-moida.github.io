@@ -288,17 +288,20 @@ function makeAttendHandlers(ctx) {
         } catch(e) { showAlert('오류', '장소명 수정 실패'); }
     };
 
-    const generateAttendQRCode = async () => {
-        if (!meetingSettings?.date) return;
+    // meetingArg를 넘기면 그 모임으로 QR 생성 (홈/모임 카드에서 호출). 없으면 현재 모임.
+    // onClick 이벤트가 인자로 들어와도 안전하도록 .date 유무로 판별.
+    const generateAttendQRCode = async (meetingArg) => {
+        const ms = (meetingArg && meetingArg.date) ? meetingArg : meetingSettings;
+        if (!ms?.date) return;
         try {
             const token = Math.random().toString(36).substring(2, 10).toUpperCase() + Date.now().toString(36).toUpperCase();
-            const [sy, sm, sd] = meetingSettings.date.split('-');
-            const [startH, startM] = (meetingSettings.start || '08:00').split(':');
-            const [endH, endM] = (meetingSettings.end || '10:00').split(':');
+            const [sy, sm, sd] = ms.date.split('-');
+            const [startH, startM] = (ms.start || '08:00').split(':');
+            const [endH, endM] = (ms.end || '10:00').split(':');
             const meetingStartTs = new Date(parseInt(sy), parseInt(sm) - 1, parseInt(sd), parseInt(startH), parseInt(startM), 0);
             const validFrom = new Date(meetingStartTs.getTime() - 70 * 60 * 1000).toISOString();
             const validUntil = new Date(parseInt(sy), parseInt(sm) - 1, parseInt(sd), parseInt(endH), parseInt(endM), 0).toISOString();
-            await getQRCol().doc(meetingSettings.date).set({token, date: meetingSettings.date, validFrom, validUntil, createdAt: new Date().toISOString(), usedBy: []});
+            await getQRCol().doc(ms.date).set({token, date: ms.date, validFrom, validUntil, createdAt: new Date().toISOString(), usedBy: []});
             setCurrentQRToken(token);
             setIsQRGenModalOpen(true);
         } catch(e) { showAlert('오류', 'QR 생성 실패: ' + e.message); }
