@@ -367,7 +367,7 @@ const NextMeetingCard = ({
             <div className="flex items-center justify-between gap-2 mb-2.5">
                 <p className="text-xs font-black uppercase tracking-widest text-white/80">{cfg.label}</p>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
-                    {isAdminMode && kind === 'self' && (dayInfo?.type==='today' || dayInfo?.type==='started') && onGenerateQR && (
+                    {isAdminMode && kind === 'self' && onGenerateQR && (
                         <span role="button" onClick={(e)=>{ e.stopPropagation(); onGenerateQR(meeting); }}
                             className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-white/25 text-white active:scale-95 cursor-pointer">
                             <Icon.QrCode size={12}/> QR
