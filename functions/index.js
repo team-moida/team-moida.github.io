@@ -572,3 +572,58 @@ exports.notifyDuesReport = onDocumentCreated(
     console.log(`[회비신고] ${who} ${what} ${amt}원 → 운영진 ${adminIds.length}명 알림`);
   }
 );
+
+// ── 워치 명령 처리 (라운드 완료 토글) ─────────────────────────────────────────
+// 워치가 종료/취소를 누르면 watch_commands 컬렉션에 { roundId, done } 문서를 추가한다.
+// (오프라인이면 워치에 큐로 쌓였다가 재연결 시 자동 전송됨 — Firestore 기본 오프라인 큐잉)
+// 서버가 이 문서를 받아 해당 라운드의 완료 상태를 match_schedules + watch_control 에
+// 트랜잭션으로 반영한 뒤 명령 문서를 삭제한다. → 관리자 폰이 꺼져 있어도 동작.
+// done 을 명시(토글 아님)하므로 같은 명령이 중복 도착해도 결과가 동일(멱등).
+exports.processWatchCommand = onDocumentCreated(
+  `${DB_PATH}/watch_commands/{cmdId}`,
+  async (event) => {
+    const cmd = event.data && event.data.data();
+    const cmdRef = event.data.ref;
+    if (!cmd || cmd.roundId == null) {
+      await cmdRef.delete().catch(() => {});
+      return;
+    }
+    const roundId = cmd.roundId;
+    const wantDone = !!cmd.done;
+
+    const db = admin.firestore();
+    const wcRef = db.doc(`${DB_PATH}/settings/watch_control`);
+
+    try {
+      await db.runTransaction(async (tx) => {
+        const wcSnap = await tx.get(wcRef);
+        if (!wcSnap.exists) return;
+        const wc = wcSnap.data();
+        const scheduleId = wc.activeMatchScheduleId || null;
+
+        // 1) 매치표 문서의 completedMatches 갱신 (있을 때만)
+        if (scheduleId) {
+          const schedRef = db.doc(`${DB_PATH}/match_schedules/${scheduleId}`);
+          const schedSnap = await tx.get(schedRef);
+          if (schedSnap.exists) {
+            const set = new Set(schedSnap.data().completedMatches || []);
+            if (wantDone) set.add(roundId); else set.delete(roundId);
+            tx.update(schedRef, { completedMatches: Array.from(set) });
+          }
+        }
+
+        // 2) watch_control.rounds 의 해당 라운드 done 플래그 갱신 (워치 화면 동기화)
+        const newRounds = (wc.rounds || []).map(
+          (r) => (r && r.id === roundId ? { ...r, done: wantDone } : r)
+        );
+        tx.update(wcRef, { rounds: newRounds });
+      });
+    } catch (e) {
+      console.error("[워치명령] 처리 실패:", e);
+      throw e; // 실패 시 Function 자동 재시도
+    }
+
+    await cmdRef.delete().catch(() => {});
+    console.log(`[워치명령] round ${roundId} → done=${wantDone}`);
+  }
+);

@@ -102,7 +102,8 @@ function makeMatchHandlers(ctx) {
                 command: null, cmdId: null, currentMatchIndex: 0,
                 totalMatches: localSchedule.list.length,
                 rounds: buildWatchRounds(localSchedule.list, localCompletedMatches),
-                subInterval: matchConfig.subIntervalSec ?? 180
+                subInterval: matchConfig.subIntervalSec ?? 180,
+                activeMatchScheduleId: docRef.id  // 서버(워치 명령 처리)가 갱신할 매치표 지정
             }).catch(() => {});
             showAlert('저장 완료', '매치 테이블이 저장되었습니다.');
         } catch(e) { showAlert('오류', '저장 실패'); } finally { setMatchIsSaving(false); }
@@ -115,7 +116,8 @@ function makeMatchHandlers(ctx) {
         getCol('settings').doc('watch_control').update({
             command: null, currentMatchIndex: newIndex, totalMatches: localSchedule.list.length,
             rounds: buildWatchRounds(localSchedule.list, newCompleted),
-            subInterval: matchConfig.subIntervalSec ?? 180
+            subInterval: matchConfig.subIntervalSec ?? 180,
+            ...(activeMatchScheduleId ? { activeMatchScheduleId } : {})
         }).catch(() => {});
     };
 

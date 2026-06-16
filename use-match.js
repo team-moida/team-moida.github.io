@@ -53,35 +53,14 @@ function useMatch({ isAdminMode, meetingSettings, confirmedDrafts }) {
         setMatchAdminView('results');
     }, [scheduleData]);
 
-    // 최신 매치 상태를 ref로 유지 (워치 리스너의 stale closure 방지)
-    const matchStateRef = React.useRef({});
+    // 워치 "종료/취소"는 서버(Cloud Function processWatchCommand)가 직접 처리한다.
+    // → 관리자 폰이 꺼져 있거나 멀리 있어도 동작. 폰은 더 이상 워치 명령을 중계하지 않는다(이중 처리 방지).
+    // 폰 매치탭을 연 상태라면, 서버가 match_schedules 에 반영한 완료 상태를 화면에도 따라오게 한다.
     useEffect(() => {
-        matchStateRef.current = { localMatchIndex, localCompletedMatches, localSchedule, activeMatchScheduleId };
-    }, [localMatchIndex, localCompletedMatches, localSchedule, activeMatchScheduleId]);
-
-    // 워치 "종료" 명령 수신 (해당 라운드 완료표시 토글 → 웹/앱 연동). 이전/다음은 워치 로컬 이동이라 여기서 처리 안 함
-    useEffect(() => {
-        if (!isAdminMode) return;
-        const ref = getCol('settings').doc('watch_control');
-        const unsub = ref.onSnapshot(snap => {
-            if (!snap.exists) return;
-            const data = snap.data();
-            if (data.command !== 'end') return;
-            const id = data.cmdId;
-            const { localCompletedMatches: completed, localSchedule: sched, activeMatchScheduleId: schedId } = matchStateRef.current;
-            const round = (sched.list || []).find(s => s.id === id);
-            if (id == null || !round) { ref.update({ command: null, cmdId: null }).catch(() => {}); return; }
-            const newCompleted = new Set(completed);
-            newCompleted.has(id) ? newCompleted.delete(id) : newCompleted.add(id);
-            setLocalCompletedMatches(newCompleted);
-            if (schedId) {
-                getCol('match_schedules').doc(schedId).update({ completedMatches: Array.from(newCompleted) }).catch(() => {});
-            }
-            const newRounds = (data.rounds || []).map(r => r.id === id ? { ...r, done: newCompleted.has(id) } : r);
-            ref.update({ command: null, cmdId: null, rounds: newRounds }).catch(() => {});
-        });
-        return () => unsub();
-    }, [isAdminMode]);
+        if (!scheduleData || !activeMatchScheduleId) return;
+        if (scheduleData.id !== activeMatchScheduleId) return;
+        setLocalCompletedMatches(new Set(scheduleData.completedMatches || []));
+    }, [scheduleData, activeMatchScheduleId]);
 
     useEffect(() => {
         if (!isAdminMode) return;
