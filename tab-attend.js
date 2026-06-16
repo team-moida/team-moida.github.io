@@ -37,7 +37,7 @@ const KioskModal = ({
         <div className="fixed inset-0 z-50 flex flex-col" style={{background:'#f8fafc',overscrollBehavior:'none'}}>
             <KioskScrollLock />
             {/* 상단 바 */}
-            <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'14px 16px',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div style={{background:'white',borderBottom:'1px solid #e2e8f0',paddingLeft:'16px',paddingRight:'16px',paddingBottom:'14px',paddingTop:'max(14px, env(safe-area-inset-top))',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                 <div>
                     <p style={{color:'#1e293b',fontWeight:900,fontSize:'1rem'}}>직접 출석</p>
                     <p style={{color:'#64748b',fontSize:'0.75rem',marginTop:'2px'}}>{meetingSettings?.date} · <span style={{color:'#0d9488',fontWeight:900}}>{attendCheckedInCount}명 출석</span> / {attendActiveList.length}명</p>
