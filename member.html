@@ -168,9 +168,29 @@ function App() {
     const testMode = !!displayMeetingSettings?.testMode;
     const [mySession, setMySession] = useState(null);
     const [alertModal, setAlertModal] = useState({show:false,title:'',content:'',type:'info',onConfirm:null});
+    const [duesReject, setDuesReject] = useState(null);          // 회비 신고 반려 대상 report (null이면 닫힘)
+    const [duesRejectReason, setDuesRejectReason] = useState(''); // 반려 사유 입력값
     const [announcementModal, setAnnouncementModal] = useState({ open: false, mode: 'add', data: null });
     const showAlert = (title, content, type='info', onConfirm=null) => setAlertModal({show:true, title, content, type, onConfirm});
     const showConfirm = (title, content, onConfirm) => setAlertModal({show:true, title, content, type:'confirm', onConfirm});
+    // 회비 신고 반려: 사유 입력 모달 열기 → 확인 시 신고 삭제 + 회원에게 반려 푸시(사유 포함).
+    // 푸시는 notifications 문서 추가(type:'dues',pushOnly) → 서버가 전송, 공지엔 안 뜸.
+    const openDuesReject = (report) => { if (!report || !report.memberId || !report.month) return; setDuesRejectReason(''); setDuesReject(report); };
+    const submitDuesReject = async () => {
+        const r = duesReject; if (!r) return;
+        const reason = duesRejectReason.trim();
+        try {
+            await getCol('dues_reports').doc(`${r.month}_${r.memberId}`).delete();
+            await getCol('notifications').add({
+                title: '회비 신고가 반려되었어요',
+                body: reason ? `${r.month} 회비 신고가 반려되었어요. 사유: ${reason}` : `${r.month} 회비 신고가 반려되었어요. 입금 내역을 다시 확인해 주세요.`,
+                targetMemberIds: [r.memberId], type: 'dues', pushOnly: true,
+                sentAt: new Date().toISOString(),
+            });
+            setDuesReject(null);
+            showAlert('반려 완료', `${r.memberName || '회원'}님께 반려 알림을 보냈어요.`);
+        } catch(e) { console.error(e); showAlert('오류', '반려 처리에 실패했어요.'); }
+    };
     const [toast, setToast] = useState({ show:false, msg:'', type:'info' });
     const showToast = (msg, type='info') => { setToast({show:true,msg,type}); setTimeout(()=>setToast(p=>({...p,show:false})),3000); };
     const [gpsStatus, setGpsStatus] = useState('idle');
@@ -421,7 +441,7 @@ function App() {
         if (urlParams.token && appView === 'app') handleQRAttendance();
     }, [urlParams.token, appView]);
 
-    const handleLogout = () => { localStorage.removeItem('moida_member_data'); localStorage.removeItem('moida_admin_backup'); location.href = 'index.html'; };
+    const handleLogout = () => { showConfirm('로그아웃', '로그아웃 하시겠어요?', () => { localStorage.removeItem('moida_member_data'); localStorage.removeItem('moida_admin_backup'); location.href = 'index.html'; }); };
     const enterTestPreview = async () => {
         try {
             const snap = await getCol('members').where('isTest','==',true).get();
@@ -730,7 +750,7 @@ function App() {
                         onEndMeeting={attendHandleEndMeeting}
                         isMeetingEndSaved={attend.attendHistory?.some(h => h.date === meetingSettings?.date) || false}
                         duesReports={roster.duesReports}
-                        onConfirmDuesReport={confirmDuesReport} onRejectDuesReport={rejectDuesReport}
+                        onConfirmDuesReport={confirmDuesReport} onRejectDuesReport={openDuesReject}
                         onGoDuesTab={() => { roster.setRosterSubTab('monthly'); navTab('roster'); }}
                         generateAttendQRCode={generateAttendQRCode}
                         onEditMeeting={(m) => { setPendingEditMeeting(m); navTab('meeting-list'); }}
@@ -916,7 +936,7 @@ function App() {
                         monthlyStatuses={roster.monthlyStatuses} monthlyReasons={roster.monthlyReasons}
                         monthlyPaymentDates={roster.monthlyPaymentDates} duesReports={roster.duesReports}
                         handleBillingMemberClick={handleBillingMemberClick}
-                        onConfirmDuesReport={confirmDuesReport} onRejectDuesReport={rejectDuesReport}
+                        onConfirmDuesReport={confirmDuesReport} onRejectDuesReport={openDuesReject}
                     />
                 )}
             </div>
@@ -999,6 +1019,24 @@ function App() {
                 isProfileModalOpen={isProfileModalOpen} setIsProfileModalOpen={setIsProfileModalOpen}
                 memberInfo={memberInfo} memberData={memberData} showAlert={showAlert}
             />
+            {/* 회비 신고 반려 사유 모달 (관리자) */}
+            {duesReject && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40" onClick={() => setDuesReject(null)}>
+                    <div className="bg-white rounded-3xl p-5 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+                        <p className="font-black text-lg text-slate-800">납부 신고 반려</p>
+                        <p className="text-sm text-slate-500 mt-1 leading-relaxed">
+                            <b className="text-slate-700">{duesReject.memberName || '회원'}</b>님의 {duesReject.month} 회비 신고를 반려합니다. 사유를 적으면 회원에게 함께 전달돼요.
+                        </p>
+                        <textarea value={duesRejectReason} onChange={e => setDuesRejectReason(e.target.value)} rows={3}
+                            placeholder="반려 사유 (예: 입금 확인 안 됨) · 비워도 됩니다"
+                            className="w-full mt-3 p-3 rounded-xl border border-slate-200 text-sm resize-none focus:outline-none focus:border-teal-400"/>
+                        <div className="flex gap-2 mt-4">
+                            <button onClick={() => setDuesReject(null)} className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-500 font-black text-sm active:scale-95 transition-all">취소</button>
+                            <button onClick={submitDuesReject} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-black text-sm active:scale-95 transition-all">반려하고 알림 보내기</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

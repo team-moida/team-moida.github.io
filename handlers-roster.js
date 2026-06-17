@@ -179,6 +179,16 @@ function makeRosterHandlers(ctx) {
             }
             batch.set(getCol('dues_reports').doc(`${month}_${mid}`), { status: 'confirmed', confirmedAt: new Date().toISOString() }, { merge: true });
             await batch.commit();
+            // 확정 푸시: notifications 문서 추가 → 서버(sendPushNotification)가 그 회원에게 전송.
+            // type:'dues'+pushOnly → 공지 게시판엔 안 뜨고 푸시만 감.
+            try {
+                await getCol('notifications').add({
+                    title: '회비 납부가 확정되었어요 ✅',
+                    body: `${month} 회비 납부가 확정되었습니다. 감사합니다!`,
+                    targetMemberIds: [mid], type: 'dues', pushOnly: true,
+                    sentAt: new Date().toISOString(),
+                });
+            } catch(pe) { console.warn('확정 알림 전송 실패:', pe); }
             showAlert('완료', `${report.memberName || '회원'}님 회비가 확정되었습니다.`);
         } catch(e) { console.error(e); showAlert('오류', '확정 실패'); }
     };

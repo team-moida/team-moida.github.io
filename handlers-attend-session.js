@@ -65,8 +65,10 @@ function makeAttendSessionHandlers(ctx) {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('moida_member_data');
-        location.href = 'index.html';
+        showConfirm('로그아웃', '로그아웃 하시겠어요?', () => {
+            localStorage.removeItem('moida_member_data');
+            location.href = 'index.html';
+        });
     };
 
     const toggleTestMode = async () => {

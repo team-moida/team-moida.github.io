@@ -206,7 +206,7 @@ function App() {
 
     const handleDeleteSchedule = (id) => showConfirm('삭제','이 기록을 삭제하시겠습니까?',async()=>await getCol('match_schedules').doc(id).delete());
 
-    const handleLogout = () => { localStorage.removeItem('moida_member_data'); location.href = 'index.html'; };
+    const handleLogout = () => { showConfirm('로그아웃', '로그아웃 하시겠어요?', () => { localStorage.removeItem('moida_member_data'); location.href = 'index.html'; }); };
 
     if(loading)return(
         <div className="h-screen flex items-center justify-center">
