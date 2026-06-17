@@ -32,6 +32,7 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
     const [selectedId, setSelectedId] = useState(null);   // 상세 보기 대상 (null이면 목록)
     const [selectMode, setSelectMode] = useState(false);  // 선택 삭제 모드
     const [checkedIds, setCheckedIds] = useState([]);     // 선택된 공지 id
+    const [showGuide, setShowGuide] = useState(false);    // '알림 설정 안내' 고정 항목 펼침
 
     const list = announcements || [];
 
@@ -104,6 +105,23 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                     </div>
                 </div>
             </div>
+
+            {/* 알림 설정 안내 (고정) — 홈 배너와 같은 내용. 권한·기기 상태와 무관하게 항상 노출 */}
+            {!selectMode && (
+                <div className="card rounded-3xl p-4 border-teal-100 mb-3">
+                    <button onClick={() => setShowGuide(v => !v)} className="w-full flex items-center gap-3 text-left active:scale-98 transition-all">
+                        <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <Icon.Bell size={18} className="text-teal-500"/>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="font-black text-sm text-teal-600">알림이 조용히 오나요?</p>
+                            <p className="text-xs text-slate-400 mt-0.5">{showGuide ? '내 폰에 맞게 한 번만 설정하면 배너로 떠요' : '탭하면 설정 방법을 알려드려요'}</p>
+                        </div>
+                        <Icon.ChevronRight size={18} className={`text-slate-300 flex-shrink-0 transition-transform ${showGuide ? 'rotate-90' : ''}`}/>
+                    </button>
+                    {showGuide && <div className="mt-3"><NotifGuideBody /></div>}
+                </div>
+            )}
 
             {/* 관리자 도구 */}
             {isAdminMode && (

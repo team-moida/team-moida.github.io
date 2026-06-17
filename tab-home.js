@@ -7,41 +7,10 @@
 // ※ 웹/PWA에서 OS 알림 설정 화면으로 직접 보내는 표준 API는 없어(chrome://·
 //   android-app:// intent는 JS로 이동 불가) 수동 안내 단계를 보여준다.
 const NOTIF_GUIDE_DISMISS_KEY = 'moida_androidNotifGuideDismissed';
-const NotifSetupGuide = ({ notifPermission, memberData }) => {
-    const isStandalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
-    const [dismissed, setDismissed] = React.useState(() => {
-        try { return localStorage.getItem(NOTIF_GUIDE_DISMISS_KEY) === '1'; } catch { return false; }
-    });
+// 기기별 알림 설정 안내 본문 — 홈 배너(NotifSetupGuide)와 공지 게시판(TabNotice)에서 공유.
+// 안드로이드/iPhone 탭 + 단계 안내만 담는다(테스트/닫기 버튼은 사용하는 쪽에서 붙임).
+const NotifGuideBody = () => {
     const [tab, setTab] = React.useState(() => /android/i.test(navigator.userAgent) ? 'android' : 'iphone');
-    const [testState, setTestState] = React.useState('idle'); // idle | sending | sent
-
-    if (!isStandalone || notifPermission !== 'granted' || dismissed) return null;
-
-    const dismiss = () => {
-        try { localStorage.setItem(NOTIF_GUIDE_DISMISS_KEY, '1'); } catch {}
-        setDismissed(true);
-    };
-
-    // 본인에게만 가는 테스트 푸시. 기존 공지 발송 흐름 재활용(notifications 문서 생성
-    // → Cloud Function sendPushNotification). type:'test'로 공지 목록에서 숨김.
-    const sendTest = async () => {
-        if (testState === 'sending' || !memberData?.memberId) return;
-        setTestState('sending');
-        try {
-            await getCol('notifications').add({
-                title: '🔔 알림 테스트',
-                body: '이 알림이 배너로 떴다면 설정 완료예요!',
-                targetMemberIds: [memberData.memberId],
-                type: 'test',
-                sentAt: new Date().toISOString(),
-            });
-            setTestState('sent');
-            setTimeout(() => setTestState('idle'), 5000); // 5초 쿨다운
-        } catch (e) {
-            console.warn('알림 테스트 발송 실패:', e);
-            setTestState('idle');
-        }
-    };
 
     const Step = ({ n, children }) => (
         <li className="flex gap-2.5 text-xs text-slate-600">
@@ -51,19 +20,9 @@ const NotifSetupGuide = ({ notifPermission, memberData }) => {
     );
 
     return (
-        <div className="card rounded-3xl p-4 border-teal-100">
-            <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Icon.Bell size={18} className="text-teal-500"/>
-                </div>
-                <div className="flex-1 min-w-0">
-                    <p className="font-black text-sm text-teal-600">알림이 조용히 오나요?</p>
-                    <p className="text-xs text-slate-400 mt-0.5">아래에서 내 폰에 맞게 한 번만 설정하면 배너로 떠요</p>
-                </div>
-            </div>
-
+        <>
             {/* 기기 탭 */}
-            <div className="flex gap-1.5 mt-3 p-1 bg-slate-100 rounded-xl">
+            <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl">
                 {[['android','안드로이드'],['iphone','iPhone']].map(([key,label]) => (
                     <button key={key} onClick={()=>setTab(key)}
                         className={`flex-1 text-xs font-black py-1.5 rounded-lg transition-all ${tab===key?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>
@@ -100,17 +59,76 @@ const NotifSetupGuide = ({ notifPermission, memberData }) => {
                     </>
                 )}
             </div>
+        </>
+    );
+};
 
-            {/* 알림 테스트 + 닫기 */}
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
-                <button onClick={dismiss} className="text-[11px] font-black text-slate-400 active:scale-95">다음에 안 보기</button>
-                <button onClick={sendTest} disabled={testState!=='idle'}
-                    className={`text-xs font-black px-3 py-1.5 rounded-xl active:scale-95 transition-all ${testState==='idle'?'bg-teal-500 text-white':'bg-slate-100 text-slate-400'}`}>
-                    {testState==='sending' ? '보내는 중…' : testState==='sent' ? '보냈어요 ✓' : '알림 테스트'}
-                </button>
-            </div>
-            {testState==='sent' && (
-                <p className="text-[11px] font-black text-teal-500 mt-2 text-right">테스트 알림을 보냈어요. 잠시 후 배너를 확인하세요!</p>
+const NotifSetupGuide = ({ notifPermission, memberData }) => {
+    const isStandalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    const [dismissed, setDismissed] = React.useState(() => {
+        try { return localStorage.getItem(NOTIF_GUIDE_DISMISS_KEY) === '1'; } catch { return false; }
+    });
+    const [expanded, setExpanded] = React.useState(false); // 기본 접힘 — 제목만 보이고 탭하면 펼침
+    const [testState, setTestState] = React.useState('idle'); // idle | sending | sent
+
+    if (!isStandalone || notifPermission !== 'granted' || dismissed) return null;
+
+    const dismiss = () => {
+        try { localStorage.setItem(NOTIF_GUIDE_DISMISS_KEY, '1'); } catch {}
+        setDismissed(true);
+    };
+
+    // 본인에게만 가는 테스트 푸시. 기존 공지 발송 흐름 재활용(notifications 문서 생성
+    // → Cloud Function sendPushNotification). type:'test'로 공지 목록에서 숨김.
+    const sendTest = async () => {
+        if (testState === 'sending' || !memberData?.memberId) return;
+        setTestState('sending');
+        try {
+            await getCol('notifications').add({
+                title: '🔔 알림 테스트',
+                body: '이 알림이 배너로 떴다면 설정 완료예요!',
+                targetMemberIds: [memberData.memberId],
+                type: 'test',
+                sentAt: new Date().toISOString(),
+            });
+            setTestState('sent');
+            setTimeout(() => setTestState('idle'), 5000); // 5초 쿨다운
+        } catch (e) {
+            console.warn('알림 테스트 발송 실패:', e);
+            setTestState('idle');
+        }
+    };
+
+    return (
+        <div className="card rounded-3xl p-4 border-teal-100">
+            {/* 헤더 — 항상 보임. 탭하면 펼침/접힘(기본 접힘) */}
+            <button onClick={() => setExpanded(v => !v)} className="w-full flex items-center gap-3 text-left active:scale-98 transition-all">
+                <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Icon.Bell size={18} className="text-teal-500"/>
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="font-black text-sm text-teal-600">알림이 조용히 오나요?</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{expanded ? '내 폰에 맞게 한 번만 설정하면 배너로 떠요' : '탭하면 설정 방법을 알려드려요'}</p>
+                </div>
+                <Icon.ChevronRight size={18} className={`text-slate-300 flex-shrink-0 transition-transform ${expanded ? 'rotate-90' : ''}`}/>
+            </button>
+
+            {expanded && (
+                <>
+                    <div className="mt-3"><NotifGuideBody /></div>
+
+                    {/* 알림 테스트 + 닫기 */}
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
+                        <button onClick={dismiss} className="text-[11px] font-black text-slate-400 active:scale-95">다음에 안 보기</button>
+                        <button onClick={sendTest} disabled={testState!=='idle'}
+                            className={`text-xs font-black px-3 py-1.5 rounded-xl active:scale-95 transition-all ${testState==='idle'?'bg-teal-500 text-white':'bg-slate-100 text-slate-400'}`}>
+                            {testState==='sending' ? '보내는 중…' : testState==='sent' ? '보냈어요 ✓' : '알림 테스트'}
+                        </button>
+                    </div>
+                    {testState==='sent' && (
+                        <p className="text-[11px] font-black text-teal-500 mt-2 text-right">테스트 알림을 보냈어요. 잠시 후 배너를 확인하세요!</p>
+                    )}
+                </>
             )}
         </div>
     );
