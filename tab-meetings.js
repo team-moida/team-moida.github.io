@@ -3,7 +3,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
     const { useState } = React;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', meetingType:'self', opponentName:'', maxMale:12, maxFemale:6, maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false });
+    const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', meetingType:'self', opponentName:'', maxMale:12, maxFemale:6, maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false, editPin:'' });
     const [isSaving, setIsSaving] = useState(false);
     const [isLocPickerOpen, setIsLocPickerOpen] = useState(false);
 
@@ -125,11 +125,15 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
 
     const openAdd = () => {
         setEditingId(null);
-        setForm({ date:'', start:'08:00', end:'10:00', location:'', meetingType:'self', opponentName:'', maxMale:12, maxFemale:6, maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false });
+        setForm({ date:'', start:'08:00', end:'10:00', location:'', meetingType:'self', opponentName:'', maxMale:12, maxFemale:6, maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false, editPin:'' });
         setIsModalOpen(true);
     };
 
-    const openEdit = (m) => {
+    const [pinGate, setPinGate] = useState(null); // 모임 수정 PIN 게이트 {meeting, input, error}
+    // 현재 로그인 회원 id (members 문서 id). attendance.html·member.html 모두 moida_member_data에 저장.
+    const myMemberId = () => { try { return JSON.parse(localStorage.getItem('moida_member_data'))?.memberId || ''; } catch { return ''; } };
+
+    const doOpenEdit = (m) => {
         setEditingId(m.id);
         const parseRegDT = (isoStr) => {
             if (!isoStr) return { date: '', hour: '09', minute: '00' };
@@ -145,6 +149,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
             meetingType: m.meetingType || 'self', opponentName: m.opponentName || '',
             maxMale: m.maxMale ?? 12, maxFemale: m.maxFemale ?? 6,
             managerId: m.managerId||'', managerName: m.managerName||'',
+            editPin: m.editPin || '',
             isRegistrationEnabled: m.isRegistrationEnabled || false,
             isFirstComeFirstServed: m.isFirstComeFirstServed ?? true,
             regOpenDate: openDT.date, regOpenHour: openDT.hour, regOpenMinute: openDT.minute,
@@ -154,6 +159,21 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
             locationRadius: m.locationRadius || 100, enableQR: m.enableQR || false,
         });
         setIsModalOpen(true);
+    };
+
+    // 모임 수정 게이트: 담당자 본인이면 통과, 아니면 PIN 입력. 둘 다 없으면(잠금 미설정) 자유 수정.
+    const openEdit = (m) => {
+        const me = myMemberId();
+        if (m.managerId && me && me === m.managerId) return doOpenEdit(m);   // 담당자 본인
+        if (m.editPin) { setPinGate({ meeting: m, input: '', error: false }); return; } // PIN 입력
+        if (m.managerId) { showAlert('수정 잠김', `이 모임은 담당자(${m.managerName || '지정된 분'})만 수정할 수 있어요.`); return; }
+        doOpenEdit(m); // 잠금 없음
+    };
+    const submitPinGate = () => {
+        if (!pinGate) return;
+        if (pinGate.input && pinGate.input === (pinGate.meeting.editPin || '')) {
+            const m = pinGate.meeting; setPinGate(null); doOpenEdit(m);
+        } else { setPinGate(g => ({ ...g, error: true })); }
     };
 
     const handleSave = async () => {
@@ -243,6 +263,25 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                 </div>
             )}
             </>)}
+
+            {pinGate && (
+                <div className="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-black/40" onClick={() => setPinGate(null)}>
+                    <div className="bg-white rounded-3xl p-5 w-full max-w-xs" onClick={e => e.stopPropagation()}>
+                        <p className="font-black text-lg text-slate-800">담당자 확인</p>
+                        <p className="text-sm text-slate-500 mt-1 leading-relaxed">{pinGate.meeting.date} 모임은 담당자 전용이에요. 수정하려면 PIN 4자리를 입력하세요.</p>
+                        <input type="password" inputMode="numeric" maxLength={4} autoFocus value={pinGate.input}
+                            onChange={e => setPinGate(g => ({...g, input: e.target.value.replace(/[^0-9]/g,'').slice(0,4), error:false}))}
+                            onKeyDown={e => { if (e.key === 'Enter') submitPinGate(); }}
+                            className={`w-full mt-3 p-3 rounded-xl border text-center text-lg tracking-[0.5em] font-black focus:outline-none ${pinGate.error ? 'border-red-400' : 'border-slate-200 focus:border-teal-400'}`}
+                            placeholder="••••"/>
+                        {pinGate.error && <p className="text-[11px] font-black text-red-500 mt-1.5 text-center">PIN이 맞지 않아요</p>}
+                        <div className="flex gap-2 mt-4">
+                            <button onClick={() => setPinGate(null)} className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-500 font-black text-sm active:scale-95 transition-all">취소</button>
+                            <button onClick={submitPinGate} className="flex-1 py-2.5 rounded-xl bg-teal-500 text-white font-black text-sm active:scale-95 transition-all">확인</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {isModalOpen && (
                 <div className="fixed inset-0 bg-white z-[60] flex flex-col animate-in">
@@ -370,6 +409,14 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                     <option value="">담당자 없음</option>
                                     {managers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                                 </select>
+                            </div>
+                            <div>
+                                <label className="text-xs font-black text-slate-500 mb-1 block">수정 잠금 PIN (4자리, 선택)</label>
+                                <input type="text" inputMode="numeric" maxLength={4} value={form.editPin}
+                                    onChange={e => setForm(f => ({...f, editPin: e.target.value.replace(/[^0-9]/g,'').slice(0,4)}))}
+                                    placeholder="비우면 담당자 본인만 수정 가능"
+                                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+                                <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">담당자 본인은 PIN 없이 수정할 수 있어요. PIN을 정하면 담당자가 아니어도 이 PIN으로 수정할 수 있어요.</p>
                             </div>
                             <div className="pt-2 border-t border-slate-100">
                                 <div className="flex items-center justify-between mb-1">

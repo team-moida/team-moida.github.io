@@ -113,6 +113,7 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
                 maxLimit: meetingType === 'match' ? (maxMale + maxFemale) : (parseInt(formData.maxLimit) || 18),
                 managerId: formData.managerId || '',
                 managerName: formData.managerName || '',
+                editPin: formData.editPin || '',
                 status: originalMeeting?.status || 'upcoming',
                 createdAt: originalMeeting?.createdAt || new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
