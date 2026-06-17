@@ -9,7 +9,7 @@ function MemberHeader({
     // 종 클릭 → 전체 공지 모달 (2단계에서 실제 연결). 미연결 시 콘솔 로그만.
     const openAnn = onOpenAnnouncements || (() => console.log('전체 공지 모달 (2단계에서 연결)'));
     return (
-        <div className="px-5 pb-4 member-header-bg" style={{paddingTop:'max(3rem, calc(env(safe-area-inset-top) + 0.75rem))'}}>
+        <div className="px-5 pb-4 member-header-bg" style={{paddingTop:'max(4rem, calc(env(safe-area-inset-top) + 0.75rem))'}}>
             <div className="flex items-center justify-between gap-2 mb-0">
                 {/* 엠블럼을 이름 텍스트 왼쪽에 배치 */}
                 <div className="flex items-center gap-2.5 min-w-0">
