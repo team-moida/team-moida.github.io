@@ -24,17 +24,21 @@ function makeTeamStorageHandlers({ teams, displayedMeetingDate, meetingDate, mee
 
     const confirmTeams = async () => {
         setIsConfirmed(true);
-        localStorage.setItem('moida_confirmed_teams', JSON.stringify({ teams, meetingDate: displayedMeetingDate || meetingDate, updatedAt: new Date().toISOString() }));
+        // 덮어쓰기 기준 날짜 = 현재 보고 있는 편성의 날짜(displayedMeetingDate).
+        // 기록에서 불러오면 displayedMeetingDate만 그 날짜로 바뀌고 meetingDate(현재 설정값)는
+        // 안 바뀌므로, meetingDate로 찾으면 불러온 기록을 못 찾아 새 기록이 생겼었음 → 통일.
+        const targetDate = displayedMeetingDate || meetingDate;
+        localStorage.setItem('moida_confirmed_teams', JSON.stringify({ teams, meetingDate: targetDate, updatedAt: new Date().toISOString() }));
         try {
             const now = new Date();
             const draftsRef = getCol('team_drafts');
-            const snap = await draftsRef.where('meetingDate', '==', meetingDate).where('isConfirmed', '==', true).get();
+            const snap = await draftsRef.where('meetingDate', '==', targetDate).where('isConfirmed', '==', true).get();
             if (!snap.empty) {
                 await draftsRef.doc(snap.docs[0].id).update({ teams, updatedAt: now.toISOString(), managerName: syncManagerName });
-                showAlert('업데이트', '기존 확정 기록을 업데이트했습니다.');
+                showAlert('업데이트', '기존 확정 기록을 덮어썼습니다.');
             } else {
                 await draftsRef.add({
-                    meetingDate, meetingTimeRange: `${meetingTime.start} ~ ${meetingTime.end}`,
+                    meetingDate: targetDate, meetingTimeRange: `${meetingTime.start} ~ ${meetingTime.end}`,
                     createdAt: now.toISOString(), timeLabel: now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                     teams, managerName: syncManagerName, isConfirmed: true
                 });
