@@ -173,7 +173,7 @@ const AnnounceTicker = ({ announcements, onOpen, onTabChange }) => {
     const safeIdx = idx % list.length;
     const a = list[safeIdx];
     return (
-        <button onClick={() => (a.linkMeetingId && onTabChange) ? onTabChange('attend', a.linkKind==='match'?'match':'self', a.linkMeetingId) : onOpen()} className="w-full card rounded-2xl px-4 py-3 text-left active:scale-98 transition-all overflow-hidden">
+        <button onClick={onOpen} className="w-full card rounded-2xl px-4 py-3 text-left active:scale-98 transition-all overflow-hidden">
             <div className="flex items-center gap-2.5">
                 <Icon.Bell size={15} className="text-teal-500 flex-shrink-0"/>
                 {/* key 변경 → moida-ticker-up 애니메이션 재생 (아래에서 위로 등장) */}
