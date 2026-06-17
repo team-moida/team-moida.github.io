@@ -212,6 +212,7 @@ function App() {
                         {[['generator','편성'],['results','결과'],['storage','기록']].map(([v,l])=>(
                             <button key={v} onClick={()=>setActiveTab(v)} className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${activeTab===v?'bg-teal-500 text-white shadow-lg':'text-slate-400 hover:text-slate-600'}`}>{l}</button>
                         ))}
+                        <span className="text-[9px] font-black text-slate-300 ml-1" title="앱 버전">v43</span>
                     </div>
                     <div className="flex gap-2">
                         {teams.length>0&&<button onClick={handleCapture} className="p-2.5 rounded-xl bg-slate-50 text-slate-400"><Icon.Camera size={16}/></button>}
