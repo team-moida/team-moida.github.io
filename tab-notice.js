@@ -160,7 +160,7 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                 <div className="space-y-2">
                     {list.map(a => (
                         <button key={a.id}
-                            onClick={() => selectMode ? toggleCheck(a.id) : (a.linkMeetingId && onNavigateMeeting ? onNavigateMeeting(a) : setSelectedId(a.id))}
+                            onClick={() => selectMode ? toggleCheck(a.id) : setSelectedId(a.id)}
                             className="w-full card rounded-3xl p-4 text-left active:scale-98 transition-all">
                             <div className="flex items-center gap-3">
                                 {selectMode && (
