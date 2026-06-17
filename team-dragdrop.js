@@ -1,4 +1,6 @@
-function makeTeamMoveHandlers({ teams, setTeams, draggedItem, setDraggedItem, dropIndicator, setDropIndicator, isDraggingRef, selectedMember, setSelectedMember, selectedTeam, setSelectedTeam, isPastMeeting }) {
+function makeTeamMoveHandlers({ teams, setTeams: rawSetTeams, setIsConfirmed, draggedItem, setDraggedItem, dropIndicator, setDropIndicator, isDraggingRef, selectedMember, setSelectedMember, selectedTeam, setSelectedTeam, isPastMeeting }) {
+    // 드래그/이동으로 팀을 수정하면 확정 상태를 해제 → '확정하기' 버튼이 다시 활성화됨
+    const setTeams = (t) => { rawSetTeams(t); if (typeof setIsConfirmed === 'function') setIsConfirmed(false); };
 
     const handleDragStart = (e, teamIdx, memberIdx) => {
         isDraggingRef.current = true;

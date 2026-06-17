@@ -152,7 +152,7 @@ function App() {
     };
 
     const storageHandlers = makeTeamStorageHandlers({ teams, displayedMeetingDate, meetingDate, meetingTime, syncManagerName, setTeams, setIsConfirmed, setDisplayedMeetingDate, setActiveTab, setPreviewDraft, showAlert, showConfirm, generateTeams, isConfirmed });
-    const moveHandlers = makeTeamMoveHandlers({ teams, setTeams, draggedItem, setDraggedItem, dropIndicator, setDropIndicator, isDraggingRef, selectedMember, setSelectedMember, selectedTeam, setSelectedTeam, isPastMeeting });
+    const moveHandlers = makeTeamMoveHandlers({ teams, setTeams, setIsConfirmed, draggedItem, setDraggedItem, dropIndicator, setDropIndicator, isDraggingRef, selectedMember, setSelectedMember, selectedTeam, setSelectedTeam, isPastMeeting });
 
     const handleCapture = () => captureTeams(meetingDate, setIsCapturing, showAlert);
     const handleLogout = () => { showConfirm('로그아웃', '로그아웃 하시겠어요?', () => { localStorage.removeItem('moida_member_data'); location.href = 'index.html'; }); };
