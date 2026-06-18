@@ -66,27 +66,27 @@ const KioskModal = ({
                                     <p className="text-xs text-slate-400">출석 {group.members.filter(m=>m.checkedIn).length}/{group.members.length}명</p>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-3 gap-2.5">
+                            <div style={{display:'flex',gap:'6px'}}>
                                 {group.members.map(p => (
                                     <button key={p.id}
                                         onClick={() => p.checkedIn
                                             ? setAttendModal({type:'checkin', data:{...p, teamIdx:group.teamIdx, teamName:group.teamName}})
                                             : setConfirmTarget({...p, teamIdx:group.teamIdx, teamName:group.teamName})
                                         }
-                                        style={{minHeight:'100px'}}
+                                        style={{flex:'1 1 0',minWidth:0,aspectRatio:'1',minHeight:'72px'}}
                                         className={`relative overflow-hidden rounded-2xl active:scale-95 transition-all text-white ${getTeamBadge(group.teamIdx)} ${p.checkedIn?'opacity-40':''}`}>
                                         {p.checkedIn && (
                                             <div className="absolute inset-0 flex items-center justify-center" style={{background:'rgba(0,0,0,0.2)'}}>
-                                                <div style={{width:'40px',height:'40px',borderRadius:'50%',background:'rgba(255,255,255,0.3)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                                                    <Icon.Check size={20} className="text-white"/>
+                                                <div style={{width:'36px',height:'36px',borderRadius:'50%',background:'rgba(255,255,255,0.3)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                                                    <Icon.Check size={18} className="text-white"/>
                                                 </div>
                                             </div>
                                         )}
-                                        <div style={{position:'absolute',top:'8px',left:'10px',fontSize:'1.9rem',fontWeight:900,lineHeight:1,opacity:0.9,pointerEvents:'none',userSelect:'none'}}>
+                                        <div style={{position:'absolute',top:'5px',left:'7px',fontSize:'1.2rem',fontWeight:900,lineHeight:1,opacity:0.85,pointerEvents:'none',userSelect:'none'}}>
                                             {p.jerseyNumber}
                                         </div>
-                                        <div style={{position:'absolute',bottom:'10px',left:0,right:0,display:'flex',flexDirection:'column',alignItems:'center',gap:'3px',pointerEvents:'none',userSelect:'none'}}>
-                                            <span style={{fontWeight:900,fontSize:'1rem',textAlign:'center',wordBreak:'keep-all',lineHeight:1.2,paddingLeft:'4px',paddingRight:'4px'}}>{p.name}</span>
+                                        <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'3px',padding:'0 4px',pointerEvents:'none',userSelect:'none'}}>
+                                            <span style={{fontWeight:900,fontSize:'1.35rem',textAlign:'center',wordBreak:'keep-all',lineHeight:1.1}}>{p.name}</span>
                                             <div style={{display:'flex',gap:'3px'}}>
                                                 {p.gender==='여성'&&<span style={{fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'#ec4899',color:'white'}}>W</span>}
                                                 {p.isGuest&&<span style={{fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'rgba(0,0,0,0.3)',color:'white'}}>G</span>}
