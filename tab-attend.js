@@ -82,10 +82,14 @@ const KioskModal = ({
                                                 </div>
                                             </div>
                                         )}
-                                        <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',gap:'4px',padding:'0 6px 0 10px',pointerEvents:'none',userSelect:'none'}}>
-                                            <span style={{fontSize:'3.5rem',fontWeight:900,lineHeight:1,flexShrink:0}}>{p.jerseyNumber}</span>
-                                            <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',alignItems:'center',gap:'2px'}}>
-                                                <span style={{fontWeight:900,fontSize:'1.1rem',textAlign:'center',wordBreak:'keep-all',lineHeight:1.1}}>{p.name}</span>
+                                        <div style={{position:'absolute',inset:0,display:'flex',alignItems:'stretch',pointerEvents:'none',userSelect:'none'}}>
+                                            {/* 번호 — 카드 높이에 맞춰 초대형(좌측). 카드 크기에 비례(cqw) */}
+                                            <div style={{flex:'0 0 60%',containerType:'inline-size',overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',paddingLeft:'4px'}}>
+                                                <span style={{fontSize:(String(p.jerseyNumber ?? '').length >= 2 ? '85cqw' : '162cqw'),fontWeight:900,lineHeight:1}}>{p.jerseyNumber}</span>
+                                            </div>
+                                            {/* 이름 — 우측 가운데 */}
+                                            <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'2px',paddingRight:'6px'}}>
+                                                <span style={{fontWeight:900,fontSize:'1.65rem',textAlign:'center',wordBreak:'keep-all',lineHeight:1.1}}>{p.name}</span>
                                                 <div style={{display:'flex',gap:'3px'}}>
                                                     {p.gender==='여성'&&<span style={{fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'#ec4899',color:'white'}}>W</span>}
                                                     {p.isGuest&&<span style={{fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'rgba(0,0,0,0.3)',color:'white'}}>G</span>}
