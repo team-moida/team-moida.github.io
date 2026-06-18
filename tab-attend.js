@@ -82,14 +82,14 @@ const KioskModal = ({
                                                 </div>
                                             </div>
                                         )}
-                                        <div style={{position:'absolute',top:0,bottom:0,left:'10px',display:'flex',alignItems:'center',fontSize:'3.4rem',fontWeight:900,lineHeight:1,opacity:0.95,pointerEvents:'none',userSelect:'none'}}>
-                                            {p.jerseyNumber}
-                                        </div>
-                                        <div style={{position:'absolute',bottom:'6px',left:0,right:0,display:'flex',flexDirection:'column',alignItems:'center',gap:'2px',padding:'0 4px',pointerEvents:'none',userSelect:'none'}}>
-                                            <span style={{fontWeight:900,fontSize:'1.05rem',textAlign:'center',wordBreak:'keep-all',lineHeight:1.05,textShadow:'0 1px 3px rgba(0,0,0,0.4)'}}>{p.name}</span>
-                                            <div style={{display:'flex',gap:'3px'}}>
-                                                {p.gender==='여성'&&<span style={{fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'#ec4899',color:'white'}}>W</span>}
-                                                {p.isGuest&&<span style={{fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'rgba(0,0,0,0.3)',color:'white'}}>G</span>}
+                                        <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',gap:'4px',padding:'0 6px 0 10px',pointerEvents:'none',userSelect:'none'}}>
+                                            <span style={{fontSize:'3.5rem',fontWeight:900,lineHeight:1,flexShrink:0}}>{p.jerseyNumber}</span>
+                                            <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',alignItems:'center',gap:'2px'}}>
+                                                <span style={{fontWeight:900,fontSize:'1.1rem',textAlign:'center',wordBreak:'keep-all',lineHeight:1.1}}>{p.name}</span>
+                                                <div style={{display:'flex',gap:'3px'}}>
+                                                    {p.gender==='여성'&&<span style={{fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'#ec4899',color:'white'}}>W</span>}
+                                                    {p.isGuest&&<span style={{fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'rgba(0,0,0,0.3)',color:'white'}}>G</span>}
+                                                </div>
                                             </div>
                                         </div>
                                     </button>
