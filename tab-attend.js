@@ -34,7 +34,7 @@ const KioskModal = ({
     const teamColorLabel = confirmTarget?.teamIdx != null ? getTeamColorName(confirmTarget.teamIdx) : '';
 
     return (
-        <div className="fixed inset-0 z-50 flex flex-col" style={{background:'#f8fafc',overscrollBehavior:'none'}}>
+        <div className="fixed inset-0 z-50 flex flex-col" style={{background:'#f8fafc',overscrollBehavior:'none',fontFamily:"'Esamanru', sans-serif"}}>
             <KioskScrollLock />
             {/* 상단 바 */}
             <div style={{background:'white',borderBottom:'1px solid #e2e8f0',paddingLeft:'16px',paddingRight:'16px',paddingBottom:'14px',paddingTop:'max(14px, env(safe-area-inset-top))',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>

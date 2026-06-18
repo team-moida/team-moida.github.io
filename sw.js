@@ -32,7 +32,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ── 기존 캐시 로직 ──────────────────────────────────────
-const CACHE_NAME = 'moida-v49';
+const CACHE_NAME = 'moida-v50';
 const CACHE_URLS = [
     '/moida/index.html',
     '/moida/attendance.html',
