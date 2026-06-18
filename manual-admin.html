@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>모이다 관리자 설명서</title>
+<style>
+  @font-face{font-family:'Esamanru';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10@1.0/GongGothicMedium.woff') format('woff');font-weight:normal}
+  @font-face{font-family:'Esamanru';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10@1.0/GongGothicBold.woff') format('woff');font-weight:700}
+  :root{--teal:#14b8a6;--teal-dark:#0d9488;--indigo:#6366f1;--slate900:#0f172a;--slate700:#334155;--slate500:#64748b;--slate300:#cbd5e1;--bg:#f8fafc;--line:#e2e8f0}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Esamanru',sans-serif;color:var(--slate900);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:820px;margin:0 auto;padding:24px}
+  .howto{background:#eef2ff;border:1px solid #c7d2fe;border-radius:16px;padding:18px 20px;margin-bottom:28px;font-size:14px;color:#3730a3}
+  .howto b{color:#4338ca} .howto ol{margin:8px 0 0 18px}
+  .printbtn{position:fixed;top:16px;right:16px;z-index:100;background:var(--indigo);color:#fff;border:none;border-radius:14px;padding:12px 18px;font-family:inherit;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 8px 20px rgba(99,102,241,.35)}
+  .cover{text-align:center;padding:60px 20px 50px}
+  .cover .logo{font-size:64px} .cover h1{font-size:38px;font-weight:700;margin-top:10px;letter-spacing:-.5px}
+  .cover .sub{color:var(--slate500);font-size:16px;margin-top:8px}
+  .cover .tag{display:inline-block;margin-top:18px;background:var(--indigo);color:#fff;font-weight:700;border-radius:999px;padding:6px 16px;font-size:13px}
+  .sec{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px 24px;margin-bottom:20px;break-inside:avoid}
+  .sec h3{font-size:19px;font-weight:700;color:var(--slate900);border-left:5px solid var(--indigo);padding-left:12px;margin-bottom:6px}
+  .sec .who{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;margin-bottom:12px}
+  .who.a{background:#eef2ff;color:#4f46e5}
+  .sec p{font-size:14.5px;color:var(--slate700);margin-bottom:10px}
+  .step{font-size:14px;color:var(--slate700);background:var(--bg);border-radius:12px;padding:10px 14px;margin:8px 0;border:1px solid var(--line)}
+  .loc{display:inline-block;background:var(--slate900);color:#fff;font-size:12px;font-weight:700;border-radius:6px;padding:1px 8px;margin-right:4px}
+  .tip{font-size:13px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 12px;margin-top:8px}
+  figure.shot{margin:12px 0 2px;text-align:center}
+  figure.shot img{max-width:100%;max-height:460px;border:1px solid var(--line);border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.08)}
+  figure.shot .ph{display:none;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:2px dashed var(--slate300);border-radius:14px;padding:34px 16px;color:var(--slate500);background:#fff;font-size:13.5px}
+  figure.shot .ph .big{font-size:30px}
+  figure.shot .ph code{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-size:12px;color:var(--slate700)}
+  figcaption{font-size:12px;color:var(--slate500);margin-top:6px}
+  .check{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px 24px;margin-bottom:20px}
+  .check h3{font-size:18px;color:var(--slate900);margin-bottom:10px}
+  .check table{width:100%;border-collapse:collapse;font-size:13px}
+  .check td{border-bottom:1px solid var(--line);padding:7px 6px;color:var(--slate700);vertical-align:top}
+  .check td:first-child{white-space:nowrap;color:var(--slate900);font-weight:700}
+  .check code{background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12px}
+  .foot{text-align:center;color:var(--slate500);font-size:12px;padding:24px 0}
+  @media print{ body{background:#fff} .no-print{display:none!important} .wrap{max-width:none;padding:0} .who,.loc,.cover .tag{-webkit-print-color-adjust:exact;print-color-adjust:exact} .sec,.check{break-inside:avoid;box-shadow:none} .pagebreak{page-break-before:always} }
+  @page{size:A4;margin:15mm}
+</style>
+</head>
+<body>
+<button class="printbtn no-print" onclick="window.print()">🖨 PDF로 저장</button>
+<div class="wrap">
+
+  <div class="howto no-print">
+    <b>📌 PDF로 저장하는 법</b>
+    <ol>
+      <li>오른쪽 위 <b>🖨 PDF로 저장</b> 버튼 → 대상을 <b>'PDF로 저장'</b> 선택 → 저장. 끝!</li>
+      <li>(선택) 실제 화면 사진은 <b>manual-img</b> 폴더에 맨 끝 체크리스트의 파일명대로 넣으면 자동으로 들어갑니다.</li>
+    </ol>
+    이 안내 박스와 버튼은 PDF에는 나오지 않습니다.
+  </div>
+
+  <div class="cover">
+    <div class="logo">🛠️</div>
+    <h1>모이다 관리자 설명서</h1>
+    <div class="sub">OTP FC 모이다 · 운영진용</div>
+    <div class="tag">관리자(운영진)용</div>
+  </div>
+
+  <div class="sec">
+    <h3>관리자 페이지 접속</h3>
+    <p>관리 기능은 페이지별로 나뉘어 있습니다. 운영진 권한 계정으로 로그인해야 보입니다.</p>
+    <div class="step"><span class="loc">출석관리</span> https://nakdo0415-crypto.github.io/moida/attendance.html</div>
+    <div class="step"><span class="loc">명단·회비</span> https://nakdo0415-crypto.github.io/moida/roster.html</div>
+    <div class="step"><span class="loc">팀 편성</span> https://nakdo0415-crypto.github.io/moida/team-maker.html</div>
+    <div class="step"><span class="loc">매치</span> https://nakdo0415-crypto.github.io/moida/match.html</div>
+    <div class="tip">회원 화면(member.html)에서도 운영진은 모임·팀·매치·공지·벌금 관리를 할 수 있습니다.</div>
+  </div>
+
+  <div class="sec">
+    <h3>1. 모임 등록 & 정기 모임 자동 생성</h3>
+    <span class="who a">관리자</span>
+    <div class="step"><span class="loc">출석관리</span> 모임 목록에서 모임을 <b>등록 · 수정 · 삭제</b>합니다. (날짜·시간·장소·종류)</div>
+    <div class="step"><b>정기 모임 설정</b>에서 요일·시간·생성 시점을 정하면 정기 모임이 자동으로 만들어집니다. 날짜별로 구장·선착순 인원을 미리 지정할 수도 있습니다.</div>
+    <figure class="shot"><img src="manual-img/admin-meetings.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>모임 목록/정기설정</b> 캡처</div><code>manual-img/admin-meetings.png</code></div><figcaption>모임 관리 · 정기 모임 설정</figcaption></figure>
+  </div>
+
+  <div class="sec">
+    <h3>2. 모임 설정 (위치 · QR · 선착순)</h3>
+    <span class="who a">관리자</span>
+    <div class="step"><span class="loc">출석관리</span> 모임 설정에서 <b>GPS 반경 · QR 사용 · 선착순 정원 · 담당자</b>를 지정합니다.</div>
+    <div class="step">QR 출석을 쓰면 <b>QR 코드</b>를 생성해 현장에 띄워두고 회원이 스캔해 체크인합니다.</div>
+    <figure class="shot"><img src="manual-img/admin-setup.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>모임 설정 화면</b> 캡처</div><code>manual-img/admin-setup.png</code></div><figcaption>모임 설정 · QR</figcaption></figure>
+  </div>
+
+  <div class="sec">
+    <h3>3. 출석 현황 & 키오스크(직접 출석)</h3>
+    <span class="who a">관리자</span>
+    <div class="step"><span class="loc">출석관리</span> 출석 현황에서 실시간으로 팀별 출석 상태를 봅니다.</div>
+    <div class="step"><b>키오스크 모드 열기</b>를 누르면(주로 아이패드) 팀별 번호 카드가 한 줄로 나오고, 회원이 자기 번호/이름을 눌러 직접 출석합니다.</div>
+    <div class="step">모임이 끝나면 <b>기록 확정</b>으로 그날 출석을 저장합니다.</div>
+    <figure class="shot"><img src="manual-img/admin-kiosk.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>키오스크 출석 화면</b> 캡처 (아이패드)</div><code>manual-img/admin-kiosk.png</code></div><figcaption>키오스크 직접 출석</figcaption></figure>
+  </div>
+
+  <div class="sec">
+    <h3>4. 가입 승인 & 출결 기록 관리</h3>
+    <span class="who a">관리자</span>
+    <div class="step"><span class="loc">출석관리</span> 새 가입 신청을 <b>승인 / 거부</b>합니다.</div>
+    <div class="step"><b>출결 기록</b>에서 지난 모임의 출석 목록·상세를 보고, 상태 변경·장소 수정·삭제를 할 수 있습니다.</div>
+    <figure class="shot"><img src="manual-img/admin-history.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>출결 기록 화면</b> 캡처</div><code>manual-img/admin-history.png</code></div><figcaption>출결 기록</figcaption></figure>
+  </div>
+
+  <div class="sec">
+    <h3>5. 회원 & 회비 관리</h3>
+    <span class="who a">관리자</span>
+    <div class="step"><span class="loc">명단</span> 회원 추가·수정·탈퇴, 운영진 지정을 합니다.</div>
+    <div class="step">회비(월납·반년납·1년납)와 휴식 회원을 관리하고, 회원이 '보냈어요' 한 납부를 <b>확정</b>합니다.</div>
+    <figure class="shot"><img src="manual-img/admin-roster.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>회원/회비 관리 화면</b> 캡처</div><code>manual-img/admin-roster.png</code></div><figcaption>회원 · 회비 관리</figcaption></figure>
+  </div>
+
+  <div class="sec">
+    <h3>6. 팀 편성</h3>
+    <span class="who a">관리자</span>
+    <div class="step"><span class="loc">팀 편성</span> 참가자를 바탕으로 <b>자동으로 균형 잡힌 팀</b>을 만듭니다.</div>
+    <div class="step">드래그로 직접 옮겨 조정하고, <b>저장 · 확정</b>합니다. 팀 결과는 이미지로도 저장할 수 있습니다.</div>
+    <figure class="shot"><img src="manual-img/admin-team.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>팀 편성 화면</b> 캡처</div><code>manual-img/admin-team.png</code></div><figcaption>팀 편성</figcaption></figure>
+  </div>
+
+  <div class="sec">
+    <h3>7. 매치 진행</h3>
+    <span class="who a">관리자</span>
+    <div class="step"><span class="loc">매치</span> 경기 스케줄(대진표)을 자동 생성하고, 경기 진행·결과를 기록합니다.</div>
+    <div class="step">통계 확인과 대진표 이미지 저장이 가능합니다. (워치앱으로 경기 종료를 원격 기록할 수도 있습니다.)</div>
+    <figure class="shot"><img src="manual-img/admin-match.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>매치 진행 화면</b> 캡처</div><code>manual-img/admin-match.png</code></div><figcaption>매치 스케줄 · 진행</figcaption></figure>
+  </div>
+
+  <div class="sec">
+    <h3>8. 벌금 확정 & 공지 발송</h3>
+    <span class="who a">관리자</span>
+    <div class="step"><span class="loc">출결 기록</span> 모임 상세의 벌금 패널에서 지각·노쇼 벌금을 <b>확정·발송</b>합니다.</div>
+    <div class="step"><span class="loc">공지</span> 공지를 작성해 <b>대상(전체/직접/회비 자격자/이번 모임 참여자)</b>을 골라 발송합니다.</div>
+    <figure class="shot"><img src="manual-img/admin-announce.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>벌금/공지 화면</b> 캡처</div><code>manual-img/admin-announce.png</code></div><figcaption>벌금 확정 · 공지 발송</figcaption></figure>
+  </div>
+
+  <div class="check">
+    <h3>📋 (선택) 스크린샷 체크리스트</h3>
+    <p style="font-size:13px;color:var(--slate500);margin-bottom:12px">사진을 넣고 싶을 때만 — 아래 파일명으로 <code>manual-img</code> 폴더에 넣으면 자동으로 들어갑니다.</p>
+    <table>
+      <tr><td>admin-meetings.png</td><td>출석관리 — 모임 목록 / 정기 설정</td></tr>
+      <tr><td>admin-setup.png</td><td>모임 설정 (GPS·QR·선착순)</td></tr>
+      <tr><td>admin-kiosk.png</td><td>키오스크 직접 출석 (아이패드)</td></tr>
+      <tr><td>admin-history.png</td><td>출결 기록 목록/상세</td></tr>
+      <tr><td>admin-roster.png</td><td>명단 — 회원/회비 관리</td></tr>
+      <tr><td>admin-team.png</td><td>팀 편성 화면</td></tr>
+      <tr><td>admin-match.png</td><td>매치 스케줄/진행 화면</td></tr>
+      <tr><td>admin-announce.png</td><td>벌금 확정 / 공지 작성</td></tr>
+    </table>
+  </div>
+
+  <div class="foot">모이다 · OTP FC · 관리자 설명서</div>
+</div>
+</body>
+</html>
