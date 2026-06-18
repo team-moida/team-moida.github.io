@@ -84,7 +84,7 @@ const KioskModal = ({
                                         )}
                                         {/* 번호 — 이름 뒤에 깔리는 연한 워터마크(조끼색보다 연하게). 카드 크기에 비례 */}
                                         <div style={{position:'absolute',inset:0,containerType:'inline-size',overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none',userSelect:'none'}}>
-                                            <span style={{fontSize:(String(p.jerseyNumber ?? '').length >= 2 ? '78cqw' : '110cqw'),fontWeight:900,lineHeight:1,color:'rgba(255,255,255,0.3)'}}>{p.jerseyNumber}</span>
+                                            <span style={{fontSize:(String(p.jerseyNumber ?? '').length >= 2 ? '78cqw' : '110cqw'),fontWeight:900,lineHeight:1,color:'rgba(255,255,255,0.3)',transform:'translateY(0.05em)'}}>{p.jerseyNumber}</span>
                                         </div>
                                         {/* 이름 — 정중앙, 번호 위에 */}
                                         <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'3px',padding:'0 4px',pointerEvents:'none',userSelect:'none'}}>
