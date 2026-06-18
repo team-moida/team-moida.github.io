@@ -82,7 +82,7 @@ const KioskModal = ({
                                                 </div>
                                             </div>
                                         )}
-                                        <div style={{position:'absolute',top:'5px',left:'7px',fontSize:'1.2rem',fontWeight:900,lineHeight:1,opacity:0.85,pointerEvents:'none',userSelect:'none'}}>
+                                        <div style={{position:'absolute',top:'6px',left:'9px',fontSize:'2rem',fontWeight:900,lineHeight:1,opacity:0.9,pointerEvents:'none',userSelect:'none'}}>
                                             {p.jerseyNumber}
                                         </div>
                                         <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'3px',padding:'0 4px',pointerEvents:'none',userSelect:'none'}}>
