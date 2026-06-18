@@ -172,7 +172,7 @@ function ResultsTab({ teams, isConfirmed, displayedMeetingDate, isPastMeeting, s
                                         onDrop={!isPastMeeting ? e => { e.stopPropagation(); handleDrop(e, teamIdx); } : undefined}
                                         onDragEnd={handleDragEnd}
                                         onClick={e => { e.stopPropagation(); handleMemberClick(teamIdx, mi); }}
-                                        className={`flex items-center gap-1.5 p-2 mb-1 rounded-xl border transition-all
+                                        className={`flex items-center leading-none gap-1.5 p-2 mb-1 rounded-xl border transition-all
                                             ${isSelected ? 'bg-teal-100 border-teal-400 ring-2 ring-teal-400 scale-105' :
                                               selectedMember ? 'bg-white/70 border-transparent hover:border-teal-300 cursor-pointer' :
                                               `bg-white/70 border-transparent hover:border-teal-200 ${!isPastMeeting ? 'cursor-grab active:cursor-grabbing' : ''}`}
@@ -181,7 +181,6 @@ function ResultsTab({ teams, isConfirmed, displayedMeetingDate, isPastMeeting, s
                                         <span className="font-black text-xs text-slate-800 flex-1">{m.name}</span>
                                         {m.gender === '여성' && <span className="text-[8px] text-pink-400 font-black">W</span>}
                                         {m.isGuest && <span className="text-[8px] bg-slate-700 text-white px-1 rounded font-black">G</span>}
-                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${getLevelColor(m.level)}`}>{m.level}</span>
                                     </div>
                                 );
                             });

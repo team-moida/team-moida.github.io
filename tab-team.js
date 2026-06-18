@@ -203,7 +203,7 @@ const TabTeam = ({
                                                                 onDrop={e => {e.stopPropagation(); tmDrop(e, teamIdx);}}
                                                                 onDragEnd={tmDragEnd}
                                                                 onClick={e => {e.stopPropagation(); tmMemberClick(teamIdx, mi);}}
-                                                                className={`flex items-center gap-1 p-1.5 mb-1 rounded-lg border transition-all cursor-grab active:cursor-grabbing
+                                                                className={`flex items-center leading-none gap-1 p-1.5 mb-1 rounded-lg border transition-all cursor-grab active:cursor-grabbing
                                                                     ${isSelected ? 'bg-teal-100 border-teal-400 ring-2 ring-teal-400 scale-105' :
                                                                       selectedMemberTM ? 'bg-white/70 border-transparent hover:border-teal-300 cursor-pointer' :
                                                                       'bg-white/70 border-transparent hover:border-teal-200'}
@@ -212,7 +212,6 @@ const TabTeam = ({
                                                                 <span className="font-black text-[11px] text-slate-800 flex-1">{m.name}</span>
                                                                 {m.gender==='여성' && <span className="text-[8px] text-pink-400 font-black">W</span>}
                                                                 {m.isGuest && <span className="text-[8px] bg-slate-700 text-white px-1 rounded font-black">G</span>}
-                                                                <span className={`text-[8px] font-black px-1 py-0.5 rounded ${getLevelColor(m.level)}`}>{m.level}</span>
                                                             </div>
                                                         );
                                                     });
