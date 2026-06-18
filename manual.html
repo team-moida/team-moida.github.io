@@ -90,13 +90,12 @@
 
   <!-- 사용 방법(화면에서만 보임) -->
   <div class="howto no-print">
-    <b>📌 이 설명서로 PDF 만드는 법</b>
+    <b>📌 PDF로 저장하는 법</b>
     <ol>
-      <li>이 파일과 같은 위치에 <b>manual-img</b> 폴더를 만드세요.</li>
-      <li>각 자리에 적힌 <b>파일명(예: <code>home.png</code>)</b>으로 캡처를 저장해 그 폴더에 넣으면 자동으로 들어갑니다.</li>
-      <li>다 넣었으면 오른쪽 위 <b>🖨 PDF로 저장</b> 버튼 → 대상을 <b>'PDF로 저장'</b> 선택 → 저장.</li>
+      <li>오른쪽 위 <b>🖨 PDF로 저장</b> 버튼 → 대상을 <b>'PDF로 저장'</b> 선택 → 저장. 끝!</li>
+      <li>(선택) 실제 화면 사진을 넣고 싶으면, 같은 위치에 <b>manual-img</b> 폴더를 만들고 맨 끝 체크리스트의 파일명대로 캡처를 넣으면 자동으로 들어갑니다.</li>
     </ol>
-    이 안내 박스와 버튼은 PDF에는 나오지 않습니다.
+    스크린샷 없이도 완성된 설명서입니다. 이 안내 박스와 버튼은 PDF에는 나오지 않습니다.
   </div>
 
   <!-- 표지 -->
@@ -124,7 +123,7 @@
     <span class="who m">일반 회원</span>
     <div class="step"><span class="loc">첫 화면</span> <b>카카오로 시작</b>을 누르면 카카오 계정으로 로그인됩니다. 처음이면 이름·연락처 등 간단한 가입 정보를 입력합니다.</div>
     <div class="step">가입 신청을 하면 <b>운영진 승인</b> 후 정식 회원으로 이용할 수 있습니다.</div>
-    <figure class="shot"><img src="manual-img/login.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ph"><span class="big">📷</span><div>여기에 <b>로그인/가입 화면</b> 캡처</div><code>manual-img/login.png</code></div><figcaption>로그인 화면</figcaption></figure>
+    <figure class="shot"><img src="manual-img/login.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>로그인/가입 화면</b> 캡처</div><code>manual-img/login.png</code></div><figcaption>로그인 화면</figcaption></figure>
   </div>
 
   <div class="sec">
@@ -133,7 +132,7 @@
     <p>로그인하면 가장 먼저 보이는 화면입니다.</p>
     <div class="step"><span class="loc">홈 탭</span> <b>다음 모임 카드</b>에서 가장 가까운 모임을 한눈에 봅니다. 정기 모임은 청록색, 매칭 모임은 남보라색으로 구분됩니다.</div>
     <div class="step">상단의 <b>공지 띠/종 아이콘</b>을 누르면 공지 게시판으로 들어갑니다.</div>
-    <figure class="shot"><img src="manual-img/home.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ph"><span class="big">📷</span><div>여기에 <b>홈 화면</b> 캡처</div><code>manual-img/home.png</code></div><figcaption>홈 화면 · 다음 모임 카드</figcaption></figure>
+    <figure class="shot"><img src="manual-img/home.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>홈 화면</b> 캡처</div><code>manual-img/home.png</code></div><figcaption>홈 화면 · 다음 모임 카드</figcaption></figure>
   </div>
 
   <div class="sec">
@@ -143,7 +142,7 @@
     <div class="step"><b>신청</b> 버튼으로 참가 신청을 합니다. (선착순 모임은 정원이 차면 대기로 넘어갑니다.)</div>
     <div class="step">모임 당일 현장에서 <b>QR 코드 스캔</b> 또는 <b>현재 위치(GPS)</b>로 출석 체크인을 합니다.</div>
     <div class="tip">회비나 벌금이 미납이면 모임 신청이 제한될 수 있습니다. (회비/벌금 항목 참고)</div>
-    <figure class="shot"><img src="manual-img/checkin.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ph"><span class="big">📷</span><div>여기에 <b>모임 신청/체크인 화면</b> 캡처</div><code>manual-img/checkin.png</code></div><figcaption>모임 신청 · 체크인</figcaption></figure>
+    <figure class="shot"><img src="manual-img/checkin.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>모임 신청/체크인 화면</b> 캡처</div><code>manual-img/checkin.png</code></div><figcaption>모임 신청 · 체크인</figcaption></figure>
   </div>
 
   <div class="sec">
@@ -152,7 +151,7 @@
     <div class="step"><span class="loc">회비 탭</span> 내 회비 상태(납부/미납)를 확인합니다.</div>
     <div class="step"><b>토스로 납부</b>를 누르면 금액이 자동 입력된 송금 화면으로 연결되거나, <b>계좌 복사</b> 후 직접 이체할 수 있습니다.</div>
     <div class="step">이체 후 <b>보냈어요</b>를 누르면 운영진 확인 대기 상태가 되고, 확정되면 납부 완료로 바뀝니다.</div>
-    <figure class="shot"><img src="manual-img/dues.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ph"><span class="big">📷</span><div>여기에 <b>회비 탭</b> 캡처</div><code>manual-img/dues.png</code></div><figcaption>회비 납부</figcaption></figure>
+    <figure class="shot"><img src="manual-img/dues.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>회비 탭</b> 캡처</div><code>manual-img/dues.png</code></div><figcaption>회비 납부</figcaption></figure>
   </div>
 
   <div class="sec">
@@ -161,7 +160,7 @@
     <p>지각·노쇼 시 벌금이 부과됩니다. (지각 5천 · 통보 노쇼 1만/2만 · 무통보 노쇼 3만)</p>
     <div class="step"><span class="loc">회비 탭</span> 벌금 카드에서 <b>토스 납부</b> 또는 <b>계좌 복사</b>로 납부 후 <b>보냈어요</b>를 누릅니다.</div>
     <div class="tip">벌금 미납 시에는 다음 모임 신청이 완전히 차단됩니다. 납부 후 운영진 확정되면 풀립니다.</div>
-    <figure class="shot"><img src="manual-img/penalty.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ph"><span class="big">📷</span><div>여기에 <b>벌금 납부 화면</b> 캡처</div><code>manual-img/penalty.png</code></div><figcaption>벌금 납부</figcaption></figure>
+    <figure class="shot"><img src="manual-img/penalty.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>벌금 납부 화면</b> 캡처</div><code>manual-img/penalty.png</code></div><figcaption>벌금 납부</figcaption></figure>
   </div>
 
   <div class="sec">
@@ -169,7 +168,7 @@
     <span class="who m">일반 회원</span>
     <div class="step"><span class="loc">모임 상세</span> <b>대진(팀) 탭</b>에서 내가 속한 팀과 조끼 색을 확인합니다.</div>
     <div class="step"><b>매치 탭</b>에서 경기 순서와 상대를 봅니다.</div>
-    <figure class="shot"><img src="manual-img/team.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ph"><span class="big">📷</span><div>여기에 <b>팀/매치 화면</b> 캡처</div><code>manual-img/team.png</code></div><figcaption>팀 편성 · 매치</figcaption></figure>
+    <figure class="shot"><img src="manual-img/team.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>팀/매치 화면</b> 캡처</div><code>manual-img/team.png</code></div><figcaption>팀 편성 · 매치</figcaption></figure>
   </div>
 
   <div class="sec">
@@ -177,7 +176,7 @@
     <span class="who m">일반 회원</span>
     <div class="step"><span class="loc">회칙 탭</span> 팀 회칙을 언제든 볼 수 있습니다.</div>
     <div class="step"><span class="loc">공지</span> 상단 종 아이콘 → 공지 게시판에서 지난 공지를 모아 봅니다. 새 공지는 알림으로도 옵니다.</div>
-    <figure class="shot"><img src="manual-img/notice.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ph"><span class="big">📷</span><div>여기에 <b>공지/회칙 화면</b> 캡처</div><code>manual-img/notice.png</code></div><figcaption>공지 게시판</figcaption></figure>
+    <figure class="shot"><img src="manual-img/notice.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>공지/회칙 화면</b> 캡처</div><code>manual-img/notice.png</code></div><figcaption>공지 게시판</figcaption></figure>
   </div>
 
   <!-- ========================= 관리자용 ========================= -->
@@ -189,7 +188,7 @@
     <span class="who a">관리자</span>
     <div class="step"><span class="loc">출석관리</span> 모임 목록에서 모임을 <b>등록 · 수정 · 삭제</b>합니다. (날짜·시간·장소·종류)</div>
     <div class="step"><b>정기 모임 설정</b>에서 요일·시간·생성 시점을 정하면 정기 모임이 자동으로 만들어집니다. 날짜별로 구장·선착순 인원을 미리 지정할 수도 있습니다.</div>
-    <figure class="shot"><img src="manual-img/admin-meetings.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ph"><span class="big">📷</span><div>여기에 <b>모임 목록/정기설정</b> 캡처</div><code>manual-img/admin-meetings.png</code></div><figcaption>모임 관리 · 정기 모임 설정</figcaption></figure>
+    <figure class="shot"><img src="manual-img/admin-meetings.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>모임 목록/정기설정</b> 캡처</div><code>manual-img/admin-meetings.png</code></div><figcaption>모임 관리 · 정기 모임 설정</figcaption></figure>
   </div>
 
   <div class="sec admin">
@@ -197,7 +196,7 @@
     <span class="who a">관리자</span>
     <div class="step"><span class="loc">출석관리</span> 모임 설정에서 <b>GPS 반경 · QR 사용 · 선착순 정원 · 담당자</b>를 지정합니다.</div>
     <div class="step">QR 출석을 쓰면 <b>QR 코드</b>를 생성해 현장에 띄워두고 회원이 스캔해 체크인합니다.</div>
-    <figure class="shot"><img src="manual-img/admin-setup.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ph"><span class="big">📷</span><div>여기에 <b>모임 설정 화면</b> 캡처</div><code>manual-img/admin-setup.png</code></div><figcaption>모임 설정 · QR</figcaption></figure>
+    <figure class="shot"><img src="manual-img/admin-setup.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>모임 설정 화면</b> 캡처</div><code>manual-img/admin-setup.png</code></div><figcaption>모임 설정 · QR</figcaption></figure>
   </div>
 
   <div class="sec admin">
@@ -206,7 +205,7 @@
     <div class="step"><span class="loc">출석관리</span> 출석 현황에서 실시간으로 팀별 출석 상태를 봅니다.</div>
     <div class="step"><b>키오스크 모드 열기</b>를 누르면(주로 아이패드) 팀별 번호 카드가 한 줄로 나오고, 회원이 자기 번호/이름을 눌러 직접 출석합니다.</div>
     <div class="step">모임이 끝나면 <b>기록 확정</b>으로 그날 출석을 저장합니다.</div>
-    <figure class="shot"><img src="manual-img/admin-kiosk.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ph"><span class="big">📷</span><div>여기에 <b>키오스크 출석 화면</b> 캡처 (아이패드)</div><code>manual-img/admin-kiosk.png</code></div><figcaption>키오스크 직접 출석</figcaption></figure>
+    <figure class="shot"><img src="manual-img/admin-kiosk.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>키오스크 출석 화면</b> 캡처 (아이패드)</div><code>manual-img/admin-kiosk.png</code></div><figcaption>키오스크 직접 출석</figcaption></figure>
   </div>
 
   <div class="sec admin">
@@ -214,7 +213,7 @@
     <span class="who a">관리자</span>
     <div class="step"><span class="loc">출석관리</span> 새 가입 신청을 <b>승인 / 거부</b>합니다.</div>
     <div class="step"><b>출결 기록</b>에서 지난 모임의 출석 목록·상세를 보고, 상태 변경·장소 수정·삭제를 할 수 있습니다.</div>
-    <figure class="shot"><img src="manual-img/admin-history.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ph"><span class="big">📷</span><div>여기에 <b>출결 기록 화면</b> 캡처</div><code>manual-img/admin-history.png</code></div><figcaption>출결 기록</figcaption></figure>
+    <figure class="shot"><img src="manual-img/admin-history.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>출결 기록 화면</b> 캡처</div><code>manual-img/admin-history.png</code></div><figcaption>출결 기록</figcaption></figure>
   </div>
 
   <div class="sec admin">
@@ -222,7 +221,7 @@
     <span class="who a">관리자</span>
     <div class="step"><span class="loc">명단</span> 회원 추가·수정·탈퇴, 운영진 지정을 합니다.</div>
     <div class="step">회비(월납·반년납·1년납)와 휴식 회원을 관리하고, 회원이 '보냈어요' 한 납부를 <b>확정</b>합니다.</div>
-    <figure class="shot"><img src="manual-img/admin-roster.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ph"><span class="big">📷</span><div>여기에 <b>회원/회비 관리 화면</b> 캡처</div><code>manual-img/admin-roster.png</code></div><figcaption>회원 · 회비 관리</figcaption></figure>
+    <figure class="shot"><img src="manual-img/admin-roster.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>회원/회비 관리 화면</b> 캡처</div><code>manual-img/admin-roster.png</code></div><figcaption>회원 · 회비 관리</figcaption></figure>
   </div>
 
   <div class="sec admin">
@@ -230,7 +229,7 @@
     <span class="who a">관리자</span>
     <div class="step"><span class="loc">팀 편성</span> 참가자를 바탕으로 <b>자동으로 균형 잡힌 팀</b>을 만듭니다.</div>
     <div class="step">드래그로 직접 옮겨 조정하고, <b>저장 · 확정</b>합니다. 팀 결과는 이미지로도 저장할 수 있습니다.</div>
-    <figure class="shot"><img src="manual-img/admin-team.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ph"><span class="big">📷</span><div>여기에 <b>팀 편성 화면</b> 캡처</div><code>manual-img/admin-team.png</code></div><figcaption>팀 편성</figcaption></figure>
+    <figure class="shot"><img src="manual-img/admin-team.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>팀 편성 화면</b> 캡처</div><code>manual-img/admin-team.png</code></div><figcaption>팀 편성</figcaption></figure>
   </div>
 
   <div class="sec admin">
@@ -238,7 +237,7 @@
     <span class="who a">관리자</span>
     <div class="step"><span class="loc">매치</span> 경기 스케줄(대진표)을 자동 생성하고, 경기 진행·결과를 기록합니다.</div>
     <div class="step">통계 확인과 대진표 이미지 저장이 가능합니다. (워치앱으로 경기 종료를 원격 기록할 수도 있습니다.)</div>
-    <figure class="shot"><img src="manual-img/admin-match.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ph"><span class="big">📷</span><div>여기에 <b>매치 진행 화면</b> 캡처</div><code>manual-img/admin-match.png</code></div><figcaption>매치 스케줄 · 진행</figcaption></figure>
+    <figure class="shot"><img src="manual-img/admin-match.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>매치 진행 화면</b> 캡처</div><code>manual-img/admin-match.png</code></div><figcaption>매치 스케줄 · 진행</figcaption></figure>
   </div>
 
   <div class="sec admin">
@@ -246,14 +245,14 @@
     <span class="who a">관리자</span>
     <div class="step"><span class="loc">출결 기록</span> 모임 상세의 벌금 패널에서 지각·노쇼 벌금을 <b>확정·발송</b>합니다.</div>
     <div class="step"><span class="loc">공지</span> 공지를 작성해 <b>대상(전체/직접/회비 자격자/이번 모임 참여자)</b>을 골라 발송합니다.</div>
-    <figure class="shot"><img src="manual-img/admin-announce.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ph"><span class="big">📷</span><div>여기에 <b>벌금/공지 화면</b> 캡처</div><code>manual-img/admin-announce.png</code></div><figcaption>벌금 확정 · 공지 발송</figcaption></figure>
+    <figure class="shot"><img src="manual-img/admin-announce.png" alt="" onerror="this.closest('figure').style.display='none'"><div class="ph"><span class="big">📷</span><div>여기에 <b>벌금/공지 화면</b> 캡처</div><code>manual-img/admin-announce.png</code></div><figcaption>벌금 확정 · 공지 발송</figcaption></figure>
   </div>
 
   <!-- 스크린샷 체크리스트 -->
   <div class="pagebreak"></div>
   <div class="check">
-    <h3>📋 스크린샷 촬영 체크리스트</h3>
-    <p style="font-size:13px;color:var(--slate500);margin-bottom:12px">아래 파일명으로 캡처를 저장해 <code>manual-img</code> 폴더에 넣으세요.</p>
+    <h3>📋 (선택) 스크린샷 체크리스트</h3>
+    <p style="font-size:13px;color:var(--slate500);margin-bottom:12px">사진을 넣고 싶을 때만 — 아래 파일명으로 캡처를 저장해 <code>manual-img</code> 폴더에 넣으면 자동으로 들어갑니다. 안 넣어도 설명서는 완성본입니다.</p>
     <table>
       <tr><td>login.png</td><td>회원 앱 로그인/가입 첫 화면</td></tr>
       <tr><td>home.png</td><td>회원 홈 화면 (다음 모임 카드)</td></tr>
