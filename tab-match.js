@@ -1,3 +1,97 @@
+// ─── 매치판 큰 팀 배지 (조끼색 + 팀글자) ───────────────────────────────────────
+const MatchBoardTeam = ({ name }) => {
+    const idx = String(name).charCodeAt(0) - 65;
+    return (
+        <div style={{textAlign:'center',minWidth:0}}>
+            <div className={getTeamBadge(idx)}
+                style={{width:'clamp(78px,21vw,150px)',height:'clamp(78px,21vw,150px)',borderRadius:'28px',color:'white',fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'clamp(2.6rem,9vw,5rem)',lineHeight:1,boxShadow:'0 8px 20px rgba(0,0,0,0.12)',margin:'0 auto'}}>
+                {name}
+            </div>
+            <p style={{marginTop:'8px',fontWeight:900,color:'#475569',fontSize:'clamp(0.85rem,2.4vw,1.4rem)'}}>{getTeamColorName(idx)} 조끼</p>
+        </div>
+    );
+};
+
+// ─── 매치판 크게 보기 (패드 풀스크린 · 한 라운드씩) ─────────────────────────────
+const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose }) => {
+    const total = sessions.length;
+    const clampIdx = (n) => Math.min(Math.max(n, 0), Math.max(total - 1, 0));
+    const [idx, setIdx] = React.useState(() => clampIdx(startIndex || 0));
+    React.useEffect(() => {
+        const prev = document.body.style.overscrollBehavior;
+        document.body.style.overscrollBehavior = 'none';
+        return () => { document.body.style.overscrollBehavior = prev; };
+    }, []);
+    const session = sessions[idx] || { matches: [], resting: [] };
+    const go = (d) => setIdx(i => clampIdx(i + d));
+    const fieldLabel = (fi) => (fieldNames[fi] || `${fi + 1}구장`);
+    const btnBase = {height:'clamp(54px,8vw,70px)',borderRadius:'18px',border:'none',fontWeight:900,fontSize:'clamp(1rem,3vw,1.4rem)'};
+
+    return (
+        <div className="fixed inset-0 z-50 flex flex-col" style={{background:'#f8fafc',overscrollBehavior:'none',fontFamily:"'Esamanru', sans-serif"}}>
+            {/* 상단 바 */}
+            <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'max(14px, env(safe-area-inset-top)) 16px 14px',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px'}}>
+                <div style={{minWidth:0}}>
+                    <p style={{color:'#64748b',fontSize:'0.8rem',fontWeight:900}}>{dateLabel} 매치판</p>
+                    <p style={{color:'#0f172a',fontWeight:900,letterSpacing:'0.02em',lineHeight:1.05,fontSize:'clamp(1.8rem,5vw,2.8rem)'}}>
+                        <span style={{color:'#0d9488'}}>{idx + 1}</span> <span style={{color:'#94a3b8',fontSize:'0.6em'}}>/ {total} 라운드</span>
+                    </p>
+                    {session.time && <p style={{color:'#475569',fontWeight:900,fontSize:'clamp(1rem,3vw,1.5rem)',marginTop:'2px'}}>⏱ {session.time}</p>}
+                </div>
+                <button onClick={onClose} style={{width:'48px',height:'48px',borderRadius:'14px',background:'#f1f5f9',color:'#64748b',border:'none',fontSize:'22px',fontWeight:900,flexShrink:0}}>✕</button>
+            </div>
+            {/* 진행 바 */}
+            <div style={{height:'5px',background:'#e2e8f0',flexShrink:0}}>
+                <div style={{height:'100%',background:'#0d9488',transition:'width .4s',width:`${total ? Math.round((idx + 1) / total * 100) : 0}%`}}/>
+            </div>
+            {/* 본문 */}
+            <div className="overflow-y-auto flex-1" style={{padding:'clamp(12px,3vw,28px)',display:'flex',flexDirection:'column',gap:'clamp(12px,2.5vw,22px)'}}>
+                {session.matches.length === 0 ? (
+                    <div style={{margin:'auto',textAlign:'center',color:'#94a3b8'}}>
+                        <p style={{fontSize:'3rem'}}>🏁</p>
+                        <p style={{fontWeight:900,fontSize:'1.2rem'}}>이 라운드에 경기가 없습니다</p>
+                    </div>
+                ) : session.matches.map((m, mi) => {
+                    const [t1, t2] = m.match;
+                    return (
+                        <div key={mi} style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'24px',padding:'clamp(12px,2.5vw,22px)',boxShadow:'0 4px 14px rgba(0,0,0,0.04)'}}>
+                            <p style={{textAlign:'center',color:'#64748b',fontWeight:900,fontSize:'clamp(0.9rem,2.5vw,1.3rem)',marginBottom:'clamp(8px,1.5vw,14px)'}}>{fieldLabel(m.fieldIdx)}</p>
+                            <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'clamp(10px,3vw,28px)'}}>
+                                <MatchBoardTeam name={t1}/>
+                                <span style={{color:'#cbd5e1',fontWeight:900,fontSize:'clamp(1.4rem,4vw,2.4rem)',flexShrink:0}}>VS</span>
+                                <MatchBoardTeam name={t2}/>
+                            </div>
+                        </div>
+                    );
+                })}
+                {/* 휴식 팀 — 조끼색 배지로 표시 */}
+                {session.resting && session.resting.length > 0 && (
+                    <div style={{background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'20px',padding:'clamp(10px,2vw,18px)'}}>
+                        <p style={{textAlign:'center',color:'#d97706',fontWeight:900,fontSize:'clamp(0.85rem,2.2vw,1.2rem)',marginBottom:'10px'}}>😴 이번 라운드 휴식</p>
+                        <div style={{display:'flex',flexWrap:'wrap',gap:'10px',justifyContent:'center'}}>
+                            {session.resting.map((r, ri) => {
+                                const ridx = String(r).charCodeAt(0) - 65;
+                                return (
+                                    <div key={ri} style={{display:'flex',alignItems:'center',gap:'8px',background:'white',borderRadius:'14px',padding:'8px 14px',border:'1px solid #fde68a'}}>
+                                        <span className={getTeamBadge(ridx)} style={{width:'clamp(34px,7vw,48px)',height:'clamp(34px,7vw,48px)',borderRadius:'12px',color:'white',fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'clamp(1.1rem,3vw,1.6rem)'}}>{r}</span>
+                                        <span style={{fontWeight:900,color:'#92400e',fontSize:'clamp(0.85rem,2.2vw,1.2rem)'}}>{getTeamColorName(ridx)}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+            </div>
+            {/* 하단 네비 */}
+            <div style={{flexShrink:0,padding:'12px 16px max(12px, env(safe-area-inset-bottom))',background:'white',borderTop:'1px solid #e2e8f0',display:'flex',gap:'10px',alignItems:'center'}}>
+                <button onClick={() => go(-1)} disabled={idx <= 0} style={{...btnBase,flex:1,background:idx <= 0 ? '#f1f5f9' : '#e2e8f0',color:idx <= 0 ? '#cbd5e1' : '#475569'}}>← 이전</button>
+                <button onClick={() => setIdx(clampIdx(startIndex || 0))} style={{...btnBase,flexShrink:0,padding:'0 16px',background:'#ccfbf1',color:'#0d9488',fontSize:'clamp(0.8rem,2.2vw,1.1rem)'}}>현재</button>
+                <button onClick={() => go(1)} disabled={idx >= total - 1} style={{...btnBase,flex:1,background:idx >= total - 1 ? '#f1f5f9' : '#0d9488',color:idx >= total - 1 ? '#cbd5e1' : 'white'}}>다음 →</button>
+            </div>
+        </div>
+    );
+};
+
 // ─── 매치 탭 ──────────────────────────────────────────────────────────────────
 const TabMatch = ({
     isAdminMode, isMatchPanelOpen, setIsMatchPanelOpen,
@@ -11,7 +105,14 @@ const TabMatch = ({
     matchSaveSchedule, matchHandleCapture, matchGenerateTable,
     matchHandleNextMatch, matchHandlePrevMatch, matchHandleToggleComplete, matchHandlePresetSelect, matchToggleSubCourt,
     splitTime, setIsLoadMatchModalOpen, setIsPresetModalOpen,
-}) => (
+}) => {
+    const [boardOpen, setBoardOpen] = React.useState(false);
+    window.useMoidaBack?.(boardOpen, () => setBoardOpen(false));
+    const boardSessions = (scheduleData?.schedule?.list?.length ? scheduleData.schedule.list : (localSchedule.list || []));
+    const boardFieldNames = (scheduleData?.config?.fieldNames) || matchConfig?.fieldNames || [];
+    const boardCurrent = (scheduleData?.currentMatchIndex ?? localMatchIndex ?? 0);
+    const boardDate = scheduleData?.meetingDate || matchConfig?.meetingDate || '';
+    return (
     <div className="animate-in">
         {/* 관리자 패널 토글 버튼 */}
         {isAdminMode && (
@@ -304,6 +405,13 @@ const TabMatch = ({
                             </div>
                         </div>
 
+                        {/* 패드 크게 보기 진입 */}
+                        <button onClick={() => setBoardOpen(true)}
+                            className="w-full mb-4 py-3.5 rounded-2xl font-black text-sm text-white flex items-center justify-center gap-2 active:scale-95 transition-all"
+                            style={{background:'linear-gradient(135deg,#0f766e,#0d9488)',boxShadow:'0 8px 20px -6px rgba(13,148,136,0.5)'}}>
+                            📺 매치판 크게 보기
+                        </button>
+
                         {/* ── 내 경기 뷰 ── */}
                         {matchViewMode==='my' && (
                             <div>
@@ -476,6 +584,11 @@ const TabMatch = ({
                 );
             })()
         )}
+        {boardOpen && boardSessions.length > 0 && (
+            <MatchBoardModal sessions={boardSessions} fieldNames={boardFieldNames}
+                startIndex={boardCurrent} dateLabel={boardDate} onClose={() => setBoardOpen(false)} />
+        )}
     </div>
-);
+    );
+};
 // ─────────────────────────────────────────────────────────────────────────────
