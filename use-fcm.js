@@ -41,7 +41,7 @@ function useFCM({ memberData, showToast }) {
     };
 
     useEffect(() => {
-        if (!memberData?.memberId || Notification.permission !== 'granted') return;
+        if (!memberData?.memberId || !('Notification' in window) || Notification.permission !== 'granted') return;
         (async () => {
             try {
                 const swReg = await navigator.serviceWorker.ready;
