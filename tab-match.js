@@ -14,17 +14,21 @@ const MatchBoardTeam = ({ name }) => {
 };
 
 // ─── 매치판 크게 보기 (패드 풀스크린 · 한 라운드씩 · 스크롤 없음 · 가로 자동 배치) ──
-const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose }) => {
+const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
+    isAdmin, currentIndex, completedMatches, onPrev, onNext, onToggleComplete }) => {
     const total = sessions.length;
     const clampIdx = (n) => Math.min(Math.max(n, 0), Math.max(total - 1, 0));
-    const [idx, setIdx] = React.useState(() => clampIdx(startIndex || 0));
+    const [browseIdx, setBrowseIdx] = React.useState(() => clampIdx(startIndex || 0));
     React.useEffect(() => {
         const prev = document.body.style.overscrollBehavior;
         document.body.style.overscrollBehavior = 'none';
         return () => { document.body.style.overscrollBehavior = prev; };
     }, []);
+    // 관리자: 실제 진행 라운드(currentIndex)를 따라가며 이동·종료 제어 / 회원: 자유 탐색(browseIdx)
+    const allDone = isAdmin && currentIndex >= total;
+    const idx = isAdmin ? clampIdx(currentIndex) : browseIdx;
     const session = sessions[idx] || { matches: [], resting: [] };
-    const go = (d) => setIdx(i => clampIdx(i + d));
+    const isCurDone = isAdmin && !allDone && session.id != null && completedMatches?.has(session.id);
     const fieldLabel = (fi) => (fieldNames[fi] || `${fi + 1}구장`);
     const navBtn = {height:'clamp(48px,9vmin,66px)',borderRadius:'16px',border:'none',fontWeight:900,fontSize:'clamp(0.95rem,2.6vmin,1.35rem)'};
 
@@ -36,9 +40,12 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose 
             <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'max(10px, env(safe-area-inset-top)) 16px 10px',flexShrink:0,display:'flex',alignItems:'center',gap:'12px'}}>
                 <div style={{minWidth:0,flex:1,display:'flex',alignItems:'baseline',gap:'12px',flexWrap:'wrap'}}>
                     <p style={{color:'#0f172a',fontWeight:900,lineHeight:1,fontSize:'clamp(1.4rem,4vmin,2.4rem)'}}>
-                        <span style={{color:'#0d9488'}}>{idx + 1}</span><span style={{color:'#94a3b8',fontSize:'0.6em'}}> / {total} 라운드</span>
+                        {allDone
+                            ? <span style={{color:'#10b981'}}>✓ 모든 경기 종료</span>
+                            : <><span style={{color:'#0d9488'}}>{idx + 1}</span><span style={{color:'#94a3b8',fontSize:'0.6em'}}> / {total} 라운드</span></>}
                     </p>
-                    {session.time && <p style={{color:'#475569',fontWeight:900,fontSize:'clamp(0.9rem,2.6vmin,1.4rem)'}}>⏱ {session.time}</p>}
+                    {!allDone && session.time && <p style={{color:'#475569',fontWeight:900,fontSize:'clamp(0.9rem,2.6vmin,1.4rem)'}}>⏱ {session.time}</p>}
+                    {isCurDone && <span style={{background:'#d1fae5',color:'#059669',fontWeight:900,fontSize:'clamp(0.7rem,1.8vmin,1rem)',padding:'2px 10px',borderRadius:'999px'}}>✓ 종료됨</span>}
                     <p style={{color:'#94a3b8',fontWeight:900,fontSize:'clamp(0.7rem,1.8vmin,1rem)'}}>{dateLabel} 매치판</p>
                 </div>
                 <button onClick={onClose} style={{width:'clamp(40px,7vmin,52px)',height:'clamp(40px,7vmin,52px)',borderRadius:'14px',background:'#f1f5f9',color:'#64748b',border:'none',fontSize:'clamp(18px,3.5vmin,24px)',fontWeight:900,flexShrink:0}}>✕</button>
@@ -51,7 +58,13 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose 
             <div style={{flex:'1 1 0%',minHeight:0,overflow:'hidden',display:'flex',flexDirection:'column',padding:'clamp(10px,2vmin,22px)',gap:'clamp(8px,1.5vmin,16px)'}}>
                 {/* 코트 — 가로로 펼침, 화면 폭에 맞춰 자동 줄바꿈 */}
                 <div style={{flex:'1 1 0%',minHeight:0,overflow:'hidden',display:'flex',flexWrap:'wrap',gap:'clamp(10px,2vmin,20px)',alignContent:'center',justifyContent:'center'}}>
-                    {session.matches.length === 0 ? (
+                    {allDone ? (
+                        <div style={{margin:'auto',textAlign:'center'}}>
+                            <p style={{fontSize:'clamp(3rem,12vmin,6rem)'}}>🏁</p>
+                            <p style={{fontWeight:900,fontSize:'clamp(1.2rem,4vmin,2.2rem)',color:'#0f172a'}}>모든 경기가 종료되었습니다</p>
+                            <p style={{fontWeight:900,fontSize:'clamp(0.85rem,2.4vmin,1.3rem)',color:'#94a3b8',marginTop:'6px'}}>수고하셨습니다!</p>
+                        </div>
+                    ) : session.matches.length === 0 ? (
                         <div style={{margin:'auto',textAlign:'center',color:'#94a3b8'}}>
                             <p style={{fontSize:'3rem'}}>🏁</p>
                             <p style={{fontWeight:900,fontSize:'1.2rem'}}>이 라운드에 경기가 없습니다</p>
@@ -71,7 +84,7 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose 
                     })}
                 </div>
                 {/* 휴식 팀 — 조끼색 배지 (얇은 줄) */}
-                {session.resting && session.resting.length > 0 && (
+                {!allDone && session.resting && session.resting.length > 0 && (
                     <div style={{flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',flexWrap:'wrap',gap:'10px',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'16px',padding:'clamp(6px,1.2vmin,12px) 14px'}}>
                         <span style={{color:'#d97706',fontWeight:900,fontSize:'clamp(0.8rem,2vmin,1.15rem)'}}>😴 휴식</span>
                         {session.resting.map((r, ri) => {
@@ -88,9 +101,18 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose 
             </div>
             {/* 하단 네비 — 항상 보임 */}
             <div style={{flexShrink:0,padding:'10px 16px max(10px, env(safe-area-inset-bottom))',background:'white',borderTop:'1px solid #e2e8f0',display:'flex',gap:'10px',alignItems:'center'}}>
-                <button onClick={() => go(-1)} disabled={idx <= 0} style={{...navBtn,flex:1,background:idx <= 0 ? '#f1f5f9' : '#e2e8f0',color:idx <= 0 ? '#cbd5e1' : '#475569'}}>← 이전</button>
-                <button onClick={() => setIdx(clampIdx(startIndex || 0))} style={{...navBtn,flexShrink:0,padding:'0 16px',background:'#ccfbf1',color:'#0d9488',fontSize:'clamp(0.8rem,2vmin,1.1rem)'}}>현재</button>
-                <button onClick={() => go(1)} disabled={idx >= total - 1} style={{...navBtn,flex:1,background:idx >= total - 1 ? '#f1f5f9' : '#0d9488',color:idx >= total - 1 ? '#cbd5e1' : 'white'}}>다음 →</button>
+                {isAdmin ? (<>
+                    <button onClick={onPrev} disabled={currentIndex <= 0} style={{...navBtn,flex:1,background:currentIndex <= 0 ? '#f1f5f9' : '#e2e8f0',color:currentIndex <= 0 ? '#cbd5e1' : '#475569'}}>← 이전</button>
+                    {!allDone && (isCurDone
+                        ? <button onClick={() => onToggleComplete(session.id)} style={{...navBtn,flex:1,background:'#e2e8f0',color:'#475569'}}>종료 취소</button>
+                        : <button onClick={() => onToggleComplete(session.id)} style={{...navBtn,flex:1,background:'#10b981',color:'white'}}>종료</button>
+                    )}
+                    <button onClick={onNext} disabled={currentIndex >= total} style={{...navBtn,flex:1,background:currentIndex >= total ? '#f1f5f9' : '#0d9488',color:currentIndex >= total ? '#cbd5e1' : 'white'}}>다음 →</button>
+                </>) : (<>
+                    <button onClick={() => setBrowseIdx(i => clampIdx(i - 1))} disabled={idx <= 0} style={{...navBtn,flex:1,background:idx <= 0 ? '#f1f5f9' : '#e2e8f0',color:idx <= 0 ? '#cbd5e1' : '#475569'}}>← 이전</button>
+                    <button onClick={() => setBrowseIdx(clampIdx(startIndex || 0))} style={{...navBtn,flexShrink:0,padding:'0 16px',background:'#ccfbf1',color:'#0d9488',fontSize:'clamp(0.8rem,2vmin,1.1rem)'}}>현재</button>
+                    <button onClick={() => setBrowseIdx(i => clampIdx(i + 1))} disabled={idx >= total - 1} style={{...navBtn,flex:1,background:idx >= total - 1 ? '#f1f5f9' : '#0d9488',color:idx >= total - 1 ? '#cbd5e1' : 'white'}}>다음 →</button>
+                </>)}
             </div>
         </div>
     );
@@ -112,8 +134,12 @@ const TabMatch = ({
 }) => {
     const [boardOpen, setBoardOpen] = React.useState(false);
     window.useMoidaBack?.(boardOpen, () => setBoardOpen(false));
-    const boardSessions = (scheduleData?.schedule?.list?.length ? scheduleData.schedule.list : (localSchedule.list || []));
-    const boardFieldNames = (scheduleData?.config?.fieldNames) || matchConfig?.fieldNames || [];
+    const boardSessions = isAdminMode
+        ? (localSchedule.list || [])
+        : ((scheduleData?.schedule?.list?.length ? scheduleData.schedule.list : (localSchedule.list || [])));
+    const boardFieldNames = isAdminMode
+        ? (matchConfig?.fieldNames || scheduleData?.config?.fieldNames || [])
+        : (scheduleData?.config?.fieldNames || matchConfig?.fieldNames || []);
     const boardCurrent = (scheduleData?.currentMatchIndex ?? localMatchIndex ?? 0);
     const boardDate = scheduleData?.meetingDate || matchConfig?.meetingDate || '';
     return (
@@ -590,7 +616,9 @@ const TabMatch = ({
         )}
         {boardOpen && boardSessions.length > 0 && (
             <MatchBoardModal sessions={boardSessions} fieldNames={boardFieldNames}
-                startIndex={boardCurrent} dateLabel={boardDate} onClose={() => setBoardOpen(false)} />
+                startIndex={boardCurrent} dateLabel={boardDate} onClose={() => setBoardOpen(false)}
+                isAdmin={isAdminMode} currentIndex={localMatchIndex} completedMatches={localCompletedMatches}
+                onPrev={matchHandlePrevMatch} onNext={matchHandleNextMatch} onToggleComplete={matchHandleToggleComplete} />
         )}
     </div>
     );
