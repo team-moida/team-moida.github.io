@@ -11,7 +11,9 @@
     <link rel="apple-touch-icon" href="icon.png">
     <script>(function(){if(localStorage.getItem('moida_theme')==='dark')document.documentElement.classList.add('dark');})();</script>
     <!-- TWA 네이티브 FCM 토큰 캡처: index.html에서 먼저 localStorage에 저장 → member.html use-fcm.js가 로그인 후 Firestore 저장 -->
-    <script>(function(){try{var p=new URLSearchParams(location.search);var nt=p.get('nativeToken');if(nt){localStorage.setItem('pendingNativeToken',nt);p.delete('nativeToken');var s=p.toString();history.replaceState(null,'',location.pathname+(s?'?'+s:'')+location.hash);}}catch(e){}})();</script>
+    <script>(function(){try{var p=new URLSearchParams(location.search);var nt=p.get('nativeToken');if(nt){localStorage.setItem('pendingNativeToken',nt);sessionStorage.setItem('ntSeen','1');p.delete('nativeToken');var s=p.toString();history.replaceState(null,'',location.pathname+(s?'?'+s:'')+location.hash);}}catch(e){}})();</script>
+    <!-- [임시 진단] 네이티브 토큰 수신 여부 색깔 띠 (확인 후 제거) -->
+    <script>window.addEventListener('DOMContentLoaded',function(){try{var pend=localStorage.getItem('pendingNativeToken');var seen=sessionStorage.getItem('ntSeen');var d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;font:bold 13px sans-serif;padding:8px;text-align:center;color:#fff;';if(seen){d.style.background='#16a34a';d.textContent='이번 실행에서 네이티브 토큰 받음 ✓ (앱 모드)';}else if(pend){d.style.background='#ca8a04';d.textContent='저장 대기 토큰 있음(이번 실행엔 없음) — 로그인 후 회원홈 들어가면 저장됨';}else{d.style.background='#dc2626';d.textContent='네이티브 토큰 없음 ✗ — 크롬 바로가기이거나 앱이 토큰 미전달';}document.body.appendChild(d);}catch(e){}});</script>
     <link rel="stylesheet" href="index.css">
     <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
