@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.team_moida",
+        "sha256_cert_fingerprints": ["FA:E1:A1:FC:62:98:0C:92:42:07:D7:F8:2C:C3:AA:D2:F1:A6:1B:E9:70:3E:57:4F:6D:55:D1:FB:2A:17:27:32"]
+      }
+    }]
