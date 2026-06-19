@@ -67,9 +67,9 @@ function useFCM({ memberData, showToast }) {
                     const body  = payload.data?.body  || '';
                     swReg.showNotification(title, {
                         body,
-                        icon:  '/moida/icon.png',
-                        badge: '/moida/icon.png',
-                        data:  { url: 'https://nakdo0415-crypto.github.io/moida/member.html' },
+                        icon:  '/icon.png',
+                        badge: '/icon.png',
+                        data:  { url: 'https://team-moida.github.io/member.html' },
                     });
                 });
             } catch(e) { console.warn('FCM onMessage 설정 실패:', e); }

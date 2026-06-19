@@ -95,13 +95,13 @@ exports.sendPushNotification = onDocumentCreated(
             notification: {
               title,
               body,
-              icon: 'https://nakdo0415-crypto.github.io/moida/icon.png',
-              badge: 'https://nakdo0415-crypto.github.io/moida/icon.png',
-              data: { url: 'https://nakdo0415-crypto.github.io/moida/member.html' },
+              icon: 'https://team-moida.github.io/icon.png',
+              badge: 'https://team-moida.github.io/icon.png',
+              data: { url: 'https://team-moida.github.io/member.html' },
               tag: 'moida',
               renotify: true,
             },
-            fcmOptions: { link: "https://nakdo0415-crypto.github.io/moida/member.html" },
+            fcmOptions: { link: "https://team-moida.github.io/member.html" },
           },
         });
         console.log(`[FCM web] 대상: ${chunk.length}, 성공: ${res.successCount}, 실패: ${res.failureCount}`);

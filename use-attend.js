@@ -64,7 +64,7 @@ function useAttend({ isAdminMode, memberData, meetingSettings, tmSessionData, ac
             const container = document.getElementById('attend-qr-canvas');
             if (!container) return;
             container.innerHTML = '';
-            const qrUrl = `https://nakdo0415-crypto.github.io/moida/member.html?token=${currentQRToken}&date=${meetingSettings.date}`;
+            const qrUrl = `https://team-moida.github.io/member.html?token=${currentQRToken}&date=${meetingSettings.date}`;
             new QRCode(container, { text:qrUrl, width:220, height:220, colorDark:'#0f172a', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M });
         }, 100);
     }, [isQRGenModalOpen, currentQRToken, meetingSettings?.date]);

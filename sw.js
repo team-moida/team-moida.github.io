@@ -21,10 +21,10 @@ messaging.onBackgroundMessage(() => {});
 // 알림 클릭 시 앱으로 이동
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    const url = event.notification.data?.url || 'https://nakdo0415-crypto.github.io/moida/member.html';
+    const url = event.notification.data?.url || 'https://team-moida.github.io/member.html';
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
-            const existing = clientList.find(c => c.url.includes('/moida/member'));
+            const existing = clientList.find(c => c.url.includes('/member'));
             if (existing && 'focus' in existing) return existing.focus();
             return clients.openWindow(url);
         })
@@ -32,16 +32,16 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ── 기존 캐시 로직 ──────────────────────────────────────
-const CACHE_NAME = 'moida-v55';
+const CACHE_NAME = 'moida-v56';
 const CACHE_URLS = [
-    '/moida/index.html',
-    '/moida/attendance.html',
-    '/moida/roster.html',
-    '/moida/team-maker.html',
-    '/moida/match.html',
-    '/moida/member.html',
-    '/moida/icon.png',
-    '/moida/manifest.json',
+    '/index.html',
+    '/attendance.html',
+    '/roster.html',
+    '/team-maker.html',
+    '/match.html',
+    '/member.html',
+    '/icon.png',
+    '/manifest.json',
 ];
 
 self.addEventListener('install', event => {
