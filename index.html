@@ -257,6 +257,24 @@
     <script src="firebase-init.js"></script>
     <script src="handlers-kakao.js"></script>
     <script>
+        // [네이티브 토큰] index.html에서 직접 Firestore 저장 (로그인 상태면) — member.html 안 거쳐도 저장됨
+        (function(){
+            try {
+                var pend = localStorage.getItem('pendingNativeToken');
+                var md = JSON.parse(localStorage.getItem('moida_member_data') || 'null');
+                if (pend && md && md.memberId) {
+                    getCol('fcm_tokens').doc(md.memberId).set(
+                        { nativeToken: pend, nativeTokenUpdatedAt: new Date().toISOString() },
+                        { merge: true }
+                    ).then(function(){
+                        localStorage.removeItem('pendingNativeToken');
+                        try { sessionStorage.setItem('ntSaved','1'); } catch(e){}
+                        console.log('[네이티브토큰] index.html에서 저장 완료');
+                    }).catch(function(e){ console.warn('[네이티브토큰] 저장 실패', e); });
+                }
+            } catch(e) {}
+        })();
+
         const _isKakaoTalk = /KAKAOTALK/i.test(navigator.userAgent);
         const _isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
         if (_isKakaoTalk) {
