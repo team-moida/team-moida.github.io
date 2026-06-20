@@ -497,6 +497,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
     const [copied, setCopied] = useState('');
     const [sel, setSel] = useState('monthly');
     const [report, setReport] = useState(null);
+    const [monthStatus, setMonthStatus] = useState(null);   // 관리자가 회원관리에서 직접 처리한 이번 달 회비 상태(paid/rest)
     const [submitting, setSubmitting] = useState(false);
     const [popupOff, setPopupOff] = useState(false);
     const [confirmType, setConfirmType] = useState(null);   // 토스/카카오 송금 후 복귀 시 '신고할까요?' 확인
@@ -525,6 +526,17 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
     useEffect(() => {
         if (!memberId) { setReport(null); return; }
         const unsub = getCol('dues_reports').doc(`${targetMonth}_${memberId}`).onSnapshot(d => setReport(d.exists ? d.data() : null));
+        return () => unsub();
+    }, [memberId, targetMonth]);
+
+    // 관리자가 회원관리에서 직접 처리한 회비/휴식도 반영(회원 신고 기록이 없어도 중복 신고 방지):
+    // monthly_checks 의 이번 달 문서에서 본인 상태(paid/rest)를 읽어온다.
+    useEffect(() => {
+        if (!memberId) { setMonthStatus(null); return; }
+        const unsub = getMonthlyCol().doc(targetMonth).onSnapshot(d => {
+            const st = (d.exists && d.data().statuses) || {};
+            setMonthStatus(st[memberId] || null);
+        });
         return () => unsub();
     }, [memberId, targetMonth]);
 
@@ -692,11 +704,16 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
                 <div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3">
                     <p className="text-sm font-black text-white">✓ {ms.type}납 회원 · 만료 {ms.endDateFormatted}</p>
                     <p className="text-[11px] text-white/75 mt-0.5">남은 휴식 면제 {ms.remainingRest}회</p>
-                    {report && (report.status==='pending'||report.status==='confirmed')
-                        ? <p className="text-[11px] text-white/80 mt-1">{report.status==='pending'?'⏳ 휴식 신청 확인 대기 중':'✓ 휴식 처리됨'}</p>
+                    {monthStatus==='rest' || (report && (report.status==='pending'||report.status==='confirmed'))
+                        ? <p className="text-[11px] text-white/80 mt-1">{(report && report.status==='pending')?'⏳ 휴식 신청 확인 대기 중':'✓ 휴식 처리됨'}</p>
                         : <button onClick={()=>submitReport('rest')} disabled={submitting} className="mt-2 px-3 py-1.5 rounded-lg bg-white/25 text-white font-black text-xs active:scale-95 transition-all">{submitting?'처리 중...':`이번 달 쉬어요 (${feeFor('rest')===0?'면제':wonFmt(feeFor('rest'))+'원'})`}</button>}
                 </div>
             );
+        } else if (monthStatus === 'paid') {
+            // 관리자가 회원관리에서 직접 납부 처리 → 신고 기록이 없어도 완료로 표시(중복 신고 차단)
+            dues = (<div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3"><p className="text-sm font-black text-white">✓ {targetMonLabel} 회비 완료</p></div>);
+        } else if (monthStatus === 'rest') {
+            dues = (<div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3"><p className="text-sm font-black text-white">✓ {targetMonLabel} 휴식 처리됨</p></div>);
         } else if (report && report.status==='confirmed') {
             dues = (<div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3"><p className="text-sm font-black text-white">✓ {targetMonLabel} 회비 완료</p></div>);
         } else if (report && report.status==='pending') {
