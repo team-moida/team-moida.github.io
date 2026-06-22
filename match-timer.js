@@ -11,7 +11,7 @@
 const MoidaTimer = (function () {
     const LEAD = 10; // 시작 10초 여유 (이 동안 교체 타이머 정지)
 
-    // ── 오디오(호루라기 비슷한 삐) ─ 파일 없이 WebAudio로 즉석 생성 ──
+    // ── 오디오 ── 기본은 WebAudio 삐. whistle.mp3가 있으면 그 호루라기 소리를 사용(없으면 자동 폴백).
     let audioCtx = null;
     function ensureAudio() {
         try {
@@ -19,6 +19,29 @@ const MoidaTimer = (function () {
             if (audioCtx.state === 'suspended') audioCtx.resume();
         } catch (e) { audioCtx = null; }
         return audioCtx;
+    }
+    // 호루라기 음원: 같은 폴더의 whistle.mp3 (있을 때만). 한 번만 로드/디코드.
+    let whistleBuf = null, whistleTried = false;
+    function loadWhistle() {
+        const ctx = ensureAudio();
+        if (!ctx || whistleTried) return;
+        whistleTried = true;
+        fetch('whistle.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject())
+            .then(buf => ctx.decodeAudioData(buf))
+            .then(decoded => { whistleBuf = decoded; })
+            .catch(() => { whistleBuf = null; }); // 파일 없으면 삐 소리 폴백 유지
+    }
+    function playWhistle(count) {
+        const ctx = ensureAudio();
+        if (!ctx || !whistleBuf) return false;
+        let t = ctx.currentTime + 0.02;
+        const gap = whistleBuf.duration + 0.08;
+        for (let i = 0; i < count; i++) {
+            const src = ctx.createBufferSource();
+            src.buffer = whistleBuf; src.connect(ctx.destination); src.start(t);
+            t += gap;
+        }
+        return true;
     }
     function beeps(count, durMs, freq) {
         const ctx = ensureAudio();
@@ -38,10 +61,11 @@ const MoidaTimer = (function () {
             t = end + gap;
         }
     }
-    function vibrate(pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {} }
-    function alertPre() { beeps(2, 130, 2600); vibrate([0, 250, 150, 250]); }
-    function alertSub() { beeps(3, 180, 2600); vibrate([0, 400, 150, 400, 150, 400]); }
-    function alertEnd() { beeps(1, 800, 1750); vibrate([0, 800]); }
+    function vibrate(pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {} } // iOS는 미지원(무시됨)
+    // 교체 10초전: 소리 2회 + 진동 2회 / 교체: 소리 3회 + 진동 3회 / 게임종료: 길게 1회
+    function alertPre() { if (!playWhistle(2)) beeps(2, 130, 2600); vibrate([0, 250, 150, 250]); }
+    function alertSub() { if (!playWhistle(3)) beeps(3, 180, 2600); vibrate([0, 400, 150, 400, 150, 400]); }
+    function alertEnd() { if (!playWhistle(1)) beeps(1, 800, 1750); vibrate([0, 800]); }
 
     // ── 모듈 단일 상태 ──
     const LS_GAME = 'moida_timer_gameMin', LS_SUB = 'moida_timer_subSec';
@@ -53,6 +77,21 @@ const MoidaTimer = (function () {
         lastSubMark: 0, lastPreMark: 0, roundEnded: false,
         intervalId: null, listeners: new Set(),
     };
+
+    // ── 화면 꺼짐 방지 (Wake Lock) ── 타이머 도는 동안 화면을 켜둬 알림이 끊기지 않게.
+    //    iOS 16.4+/안드로이드/PC 크롬 지원(HTTPS·사용자 동작 필요 — 시작 버튼에서 호출). 미지원 기기는 무시됨.
+    let wakeLock = null;
+    async function requestWake() {
+        try { if ('wakeLock' in navigator && document.visibilityState === 'visible') wakeLock = await navigator.wakeLock.request('screen'); } catch (e) { wakeLock = null; }
+    }
+    function releaseWake() { try { if (wakeLock) { wakeLock.release(); wakeLock = null; } } catch (e) {} }
+    try {
+        document.addEventListener('visibilitychange', () => {
+            // 화면 복귀 시 타이머가 돌고 있으면 락 재획득 + 오디오 재개
+            if (document.visibilityState === 'visible' && store.running) { if (!wakeLock) requestWake(); ensureAudio(); }
+        });
+    } catch (e) {}
+
     const gameSec = () => store.gameMin * 60;
     const elapsed = () => Math.floor((store.accumMs + (store.running ? (Date.now() - store.startedAt) : 0)) / 1000);
     const notify = () => store.listeners.forEach(fn => { try { fn(); } catch (e) {} });
@@ -97,17 +136,21 @@ const MoidaTimer = (function () {
     return {
         start() {
             ensureAudio(); // 사용자 동작 시점 → iOS 오디오 잠금 해제
+            loadWhistle();  // 같은 동작에서 호루라기 음원 로드(잠금 해제 상태에서 디코드)
             if (store.running) return;
             store.startedAt = Date.now(); store.running = true;
+            requestWake();  // 화면 꺼짐 방지 (사용자 동작 컨텍스트)
             startLoop(); notify();
         },
         pause() {
             if (store.running) { store.accumMs += Date.now() - store.startedAt; store.running = false; }
+            releaseWake();
             stopLoop(); notify();
         },
         reset() {
             store.running = false; store.accumMs = 0;
             store.lastSubMark = 0; store.lastPreMark = 0; store.roundEnded = false;
+            releaseWake();
             stopLoop(); notify();
         },
         setGameMin(v) {
