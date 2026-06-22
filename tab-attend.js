@@ -545,23 +545,17 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
                     <div id="penalty-capture-area" style={{ position: 'fixed', left: '-9999px', top: 0, width: '380px' }} className={`p-5 ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
                         <p className={`font-black text-base ${darkMode ? 'text-white' : 'text-slate-800'}`}>지각 · 노쇼 명단</p>
                         <p className="text-[11px] text-slate-400 mb-3">{fmtMeetingDate(m.date)} · {m.start}~{m.end}{m.location ? ` · ${m.location}` : ''}</p>
-                        <div className="flex items-center gap-2 mb-3">
-                            {lateCount > 0 && <span className="bg-amber-50 text-amber-600" style={{ display: 'inline-table', borderRadius: '12px' }}><span style={{ display: 'table-cell', verticalAlign: 'middle', textAlign: 'center', height: '30px', padding: '0 14px', fontWeight: 900, fontSize: '12px', whiteSpace: 'nowrap' }}>지각 {lateCount}</span></span>}
-                            {noShowCount > 0 && <span className="bg-rose-50 text-rose-500" style={{ display: 'inline-table', borderRadius: '12px' }}><span style={{ display: 'table-cell', verticalAlign: 'middle', textAlign: 'center', height: '30px', padding: '0 14px', fontWeight: 900, fontSize: '12px', whiteSpace: 'nowrap' }}>노쇼 {noShowCount}</span></span>}
-                        </div>
+                        <p className="font-black" style={{ fontSize: '13px', marginBottom: '12px' }}>
+                            {lateCount > 0 && <span className="text-amber-600">지각 {lateCount}</span>}
+                            {lateCount > 0 && noShowCount > 0 && <span className="text-slate-300">{'   ·   '}</span>}
+                            {noShowCount > 0 && <span className="text-rose-500">노쇼 {noShowCount}</span>}
+                        </p>
                         <div className="space-y-1.5">
                             {penaltyRecords.map((r, i) => (
-                                <div key={i} style={{ display: 'table', width: '100%', borderRadius: '12px', background: darkMode ? '#0f172a' : '#f8fafc' }}>
-                                    <div style={{ display: 'table-row' }}>
-                                        <div style={{ display: 'table-cell', verticalAlign: 'middle', padding: '12px 6px 12px 14px' }}>
-                                            <span className="font-black text-sm text-slate-700" style={{ wordBreak: 'break-all' }}>{r.name}</span>
-                                            {r.reason && <span className="font-black text-rose-400" style={{ fontSize: '11px', marginLeft: '6px' }}>· {r.reason}</span>}
-                                        </div>
-                                        <div style={{ display: 'table-cell', verticalAlign: 'middle', textAlign: 'right', whiteSpace: 'nowrap', padding: '12px 14px 12px 6px' }}>
-                                            {r.checkInTime && r.checkInTime !== '미출석' && <span className="font-black text-slate-400" style={{ fontSize: '10px', marginRight: '8px', verticalAlign: 'middle' }}>{r.checkInTime}</span>}
-                                            <span className={stColor(r.status)} style={{ display: 'inline-table', borderRadius: '8px', verticalAlign: 'middle' }}><span style={{ display: 'table-cell', verticalAlign: 'middle', textAlign: 'center', height: '24px', padding: '0 10px', fontWeight: 900, fontSize: '11px', whiteSpace: 'nowrap' }}>{r.status}</span></span>
-                                        </div>
-                                    </div>
+                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 14px', borderRadius: '12px', background: darkMode ? '#0f172a' : '#f8fafc' }}>
+                                    <span className="font-black text-sm text-slate-700" style={{ flex: 1, minWidth: 0, lineHeight: '20px', wordBreak: 'break-all' }}>{r.name}{r.reason ? <span className="font-black text-rose-400" style={{ fontSize: '11px', marginLeft: '6px' }}>· {r.reason}</span> : null}</span>
+                                    {r.checkInTime && r.checkInTime !== '미출석' && <span className="font-black text-slate-400" style={{ fontSize: '11px', lineHeight: '20px' }}>{r.checkInTime}</span>}
+                                    <span className="font-black" style={{ fontSize: '12px', lineHeight: '20px', whiteSpace: 'nowrap', color: r.status === '지각' ? '#d97706' : '#f43f5e' }}>{r.status}</span>
                                 </div>
                             ))}
                         </div>
