@@ -460,7 +460,7 @@ function makeAttendHandlers(ctx) {
             await Promise.all(items.map(it => getCol('notifications').add({
                 title: '벌금 납부 안내',
                 body: `${mDate} 모임 ${PENALTY_LABEL[it.type] || '벌금'} ${it.amount.toLocaleString()}원 납부 부탁드립니다. 앱 회비 탭에서 납부할 수 있어요.`,
-                category: '벌금', type: 'penalty', pushOnly: true,
+                category: '벌금', type: 'penalty',
                 targetMemberIds: [it.memberId],
                 sentAt: now, sentBy: '관리자',
             })));

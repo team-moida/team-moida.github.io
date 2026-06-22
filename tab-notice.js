@@ -27,7 +27,12 @@ const NoticeBadge = ({ category }) => {
     return <span className={`shrink-0 text-[10px] font-black px-2 py-0.5 rounded-lg ${cls}`}>{cat}</span>;
 };
 
-const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDeleteOne, onDeleteMany, onNavigateMeeting }) => {
+// 연결된 모임이 종료됐는지 ([완료] 배지용). 모임이 삭제됐거나 못 찾으면 false(오판 방지).
+const NoticeDoneBadge = () => (
+    <span className="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-lg bg-slate-200 text-slate-500">완료</span>
+);
+
+const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDeleteOne, onDeleteMany, onNavigateMeeting, meetings }) => {
     const { useState, useEffect } = React;
     const [selectedId, setSelectedId] = useState(null);   // 상세 보기 대상 (null이면 목록)
     const [selectMode, setSelectMode] = useState(false);  // 선택 삭제 모드
@@ -35,6 +40,12 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
     const [showGuide, setShowGuide] = useState(false);    // '알림 설정 안내' 고정 항목 펼침
 
     const list = announcements || [];
+    // 모임 연결 공지(linkMeetingId)인데 그 모임이 종료됐으면 '완료'로 표시
+    const isAnnDone = (a) => {
+        if (!a || !a.linkMeetingId || !meetings) return false;
+        const mt = meetings.find(m => m.id === a.linkMeetingId);
+        return mt ? isMeetingEnded(mt) : false;
+    };
 
     // 상세로 보던 공지가 삭제되면(목록에서 사라지면) 자동으로 목록으로 복귀
     useEffect(() => {
@@ -66,18 +77,21 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                     <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                             <NoticeBadge category={selected.category} />
+                            {isAnnDone(selected) && <NoticeDoneBadge />}
                             <h2 className="font-black text-lg text-slate-800 min-w-0">{selected.title}</h2>
                         </div>
                         <span className="text-[11px] text-slate-400 whitespace-nowrap flex-shrink-0 mt-1">{fmtNoticeDate(selected.sentAt)}</span>
                     </div>
                     <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{selected.body}</p>
                     {selected.sentBy && <p className="text-xs text-slate-400 mt-4">{selected.sentBy}</p>}
-                    {selected.linkMeetingId && onNavigateMeeting && (
-                        <button onClick={() => onNavigateMeeting(selected)}
-                            className="w-full mt-4 py-2.5 rounded-xl bg-teal-500 text-white font-black text-sm active:scale-95 transition-all flex items-center justify-center gap-1.5">
-                            신청하러 가기 <Icon.ChevronRight size={16}/>
-                        </button>
-                    )}
+                    {selected.linkMeetingId && (isAnnDone(selected)
+                        ? <p className="w-full mt-4 py-2.5 rounded-xl bg-slate-100 text-slate-400 font-black text-sm text-center">종료된 모임입니다</p>
+                        : (onNavigateMeeting && (
+                            <button onClick={() => onNavigateMeeting(selected)}
+                                className="w-full mt-4 py-2.5 rounded-xl bg-teal-500 text-white font-black text-sm active:scale-95 transition-all flex items-center justify-center gap-1.5">
+                                신청하러 가기 <Icon.ChevronRight size={16}/>
+                            </button>
+                        )))}
                     {isAdminMode && (
                         <div className="flex gap-2 mt-5 pt-4 border-t border-slate-100">
                             <button onClick={() => onEdit(selected)} className="flex-1 py-2.5 rounded-xl bg-blue-50 text-blue-500 font-black text-sm active:scale-95 transition-all">수정</button>
@@ -172,6 +186,7 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                                     <div className="flex items-center justify-between gap-2">
                                         <div className="flex items-center gap-1.5 min-w-0">
                                             <NoticeBadge category={a.category} />
+                                            {isAnnDone(a) && <NoticeDoneBadge />}
                                             <p className="font-black text-sm text-slate-800 truncate">{a.title}</p>
                                         </div>
                                         <span className="text-[10px] text-slate-400 whitespace-nowrap flex-shrink-0">{fmtNoticeDate(a.sentAt)}</span>

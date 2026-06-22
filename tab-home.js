@@ -149,9 +149,15 @@ const fmtAnnDate = (iso) => {
 // 홈 콘텐츠 맨 위(헤더 아래 첫 카드)에서 최신 공지부터 5초마다 위로 슬라이드업하며 교체.
 // 1개면 고정, 0개면 빈 띠 유지(숨기지 않음) — 눌러서 게시판 진입(관리자는 거기서 작성).
 // announcements는 use-fcm.js 기준 최신순 + type:'test' 제외됨. 클릭 시 공지 게시판으로 이동.
-const AnnounceTicker = ({ announcements, onOpen, onTabChange }) => {
+const AnnounceTicker = ({ announcements, onOpen, onTabChange, meetings }) => {
     const [idx, setIdx] = React.useState(0);
     const list = announcements || [];
+    // 모임 연결 공지인데 그 모임이 종료됐으면 '완료' 배지
+    const isAnnDone = (a) => {
+        if (!a || !a.linkMeetingId || !meetings) return false;
+        const mt = meetings.find(m => m.id === a.linkMeetingId);
+        return mt ? isMeetingEnded(mt) : false;
+    };
     React.useEffect(() => {
         if (list.length <= 1) return;
         const t = setInterval(() => setIdx(i => (i + 1) % list.length), 5000);
@@ -180,6 +186,7 @@ const AnnounceTicker = ({ announcements, onOpen, onTabChange }) => {
                 <div key={safeIdx} className="flex-1 min-w-0 flex items-center justify-between gap-2 moida-ticker-up">
                     <div className="flex items-center gap-1.5 min-w-0">
                         <NoticeBadge category={a.category} />
+                        {isAnnDone(a) && <span className="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-lg bg-slate-200 text-slate-500">완료</span>}
                         <span className="font-black text-sm text-slate-700 truncate">{a.title}</span>
                     </div>
                     <span className="text-[10px] text-slate-400 whitespace-nowrap flex-shrink-0">{fmtAnnDate(a.sentAt)}</span>
@@ -1065,7 +1072,7 @@ const TabHome = ({
     return (
     <div className="animate-in space-y-3">
         {/* 공지 순환 띠 (맨 위, 항상 표시) */}
-        <AnnounceTicker announcements={announcements} onOpen={onOpenAnnouncements} onTabChange={onTabChange} />
+        <AnnounceTicker announcements={announcements} meetings={meetings} onOpen={onOpenAnnouncements} onTabChange={onTabChange} />
 
         {/* 회비 납부 신고 (관리자 전용 · 대기 신고가 있을 때만 — 홈에서 한눈에 확정/삭제) */}
         {isAdminMode && <DuesReportsHomeCard duesReports={duesReports} onConfirm={onConfirmDuesReport} onReject={onRejectDuesReport} onGoDuesTab={onGoDuesTab} />}

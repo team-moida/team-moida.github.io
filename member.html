@@ -714,6 +714,7 @@ function App() {
                 {tab === 'notice' && (
                     <TabNotice
                         announcements={announcements} isAdminMode={isAdminMode}
+                        meetings={meetings}
                         onBack={()=>setTab('home')}
                         onAdd={()=>setAnnouncementModal({open:true,mode:'add',data:null})}
                         onEdit={(a)=>setAnnouncementModal({open:true,mode:'edit',data:a})}

@@ -3,14 +3,18 @@ function useFCM({ memberData, showToast }) {
 
     const [announcements, setAnnouncements] = useState([]);
     useEffect(() => {
+        const myId = memberData?.memberId;
         const unsub = getCol('notifications').orderBy('sentAt', 'desc').limit(20).onSnapshot(snap => {
             const list = [];
             snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
             // 테스트(type:'test')·푸시전용(pushOnly, 예: 회비 신고 알림)은 공지 목록에 표시하지 않음
-            setAnnouncements(list.filter(a => a.type !== 'test' && !a.pushOnly));
+            // 대상 지정 공지(targetMemberIds)는 대상 회원에게만 표시 — 전체 공지는 targetMemberIds 없음
+            setAnnouncements(list.filter(a => a.type !== 'test' && !a.pushOnly && (
+                !a.targetMemberIds || a.targetMemberIds.length === 0 || (myId && a.targetMemberIds.includes(myId))
+            )));
         }, () => {});
         return () => unsub();
-    }, []);
+    }, [memberData?.memberId]);
 
 
     const VAPID_KEY = 'BMuOxkIP0Xm912P0lVDUP8KUFR2y2FD-Acxgal5lNYemqWaldDon6kr9c_KrLEqKRFuumPCenIYnwEn0z_1WuXU';
