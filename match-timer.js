@@ -180,7 +180,7 @@ function useMatchTimer() {
 }
 
 const _mtFmt = (s) => { s = s < 0 ? 0 : s; return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
-const _mtBtn = { width: 'clamp(40px,7vmin,54px)', height: 'clamp(40px,7vmin,54px)', borderRadius: '14px', border: 'none', fontWeight: 900, fontSize: 'clamp(15px,3vmin,22px)', flexShrink: 0 };
+const _mtBtn = { width: 'clamp(40px,7vmin,54px)', height: 'clamp(40px,7vmin,54px)', borderRadius: '14px', border: 'none', fontWeight: 900, fontSize: 'clamp(15px,3vmin,22px)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' };
 
 // 설정 드롭다운 (게임 시간 ±1분 / 교체 시간 ±30초)
 function MatchTimerSettings({ t, onClose }) {
@@ -228,9 +228,9 @@ function MatchTimerBar({ isAdmin = true }) {
             </div>
             {isAdmin ? (
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 'clamp(8px,2vmin,16px)' }}>
-                    <button onClick={() => t.running ? MoidaTimer.pause() : MoidaTimer.start()} style={{ ..._mtBtn, background: t.running ? '#f59e0b' : '#10b981', color: 'white' }}>{t.running ? '⏸' : '▶'}</button>
-                    <button onClick={() => MoidaTimer.reset()} style={{ ..._mtBtn, background: '#e2e8f0', color: '#475569' }}>↻</button>
-                    <button onClick={() => setSetOpen(v => !v)} style={{ ..._mtBtn, background: '#f1f5f9', color: '#64748b' }}>⚙</button>
+                    <button onClick={() => t.running ? MoidaTimer.pause() : MoidaTimer.start()} aria-label={t.running ? '정지' : '재생'} style={{ ..._mtBtn, background: t.running ? '#f59e0b' : '#10b981', color: 'white' }}>{t.running ? <Icon.Pause size={26}/> : <Icon.Play size={26}/>}</button>
+                    <button onClick={() => MoidaTimer.reset()} aria-label="리셋" style={{ ..._mtBtn, background: '#e2e8f0', color: '#475569' }}><Icon.RotateCcw size={26}/></button>
+                    <button onClick={() => setSetOpen(v => !v)} aria-label="설정" style={{ ..._mtBtn, background: '#f1f5f9', color: '#64748b' }}><Icon.Settings size={26}/></button>
                 </div>
             ) : (
                 <span style={{ color: '#cbd5e1', fontWeight: 900, fontSize: 'clamp(0.58rem,1.5vmin,0.85rem)' }}>보기 전용</span>
