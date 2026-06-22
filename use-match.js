@@ -87,7 +87,7 @@ function useMatch({ isAdminMode, meetingSettings, confirmedDrafts }) {
         const teams = latest.teams.map((_,i) => getTeamName(i));
         const matchupCounts = {}, totalMatches = {};
         teams.forEach(t => { matchupCounts[t] = {}; teams.forEach(o => { if(t!==o) matchupCounts[t][o]=0; }); totalMatches[t]=0; });
-        localSchedule.list.forEach(session => { session.matches.forEach(m => { const[t1,t2]=m.match; matchupCounts[t1][t2]++; matchupCounts[t2][t1]++; totalMatches[t1]++; totalMatches[t2]++; }); });
+        localSchedule.list.forEach(session => { session.matches.forEach(m => { const[t1,t2]=m.match; if(!matchupCounts[t1]||!matchupCounts[t2])return; matchupCounts[t1][t2]++; matchupCounts[t2][t1]++; totalMatches[t1]++; totalMatches[t2]++; }); });
         return {matchupCounts, totalMatches, teams};
     }, [localSchedule, confirmedDrafts, meetingSettings?.date, meetingSettings?.meetingType]);
 
