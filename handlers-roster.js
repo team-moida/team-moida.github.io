@@ -83,6 +83,18 @@ function makeRosterHandlers(ctx) {
 
     const processAction = async (actionType) => {
         if (!billingMember || !targetMonth) return;
+        const nm = billingMember.name || '회원';
+        const confirmMap = {
+            monthly_paid:        ['월납 납부 처리', `${nm}님을 이번 달 '월납 납부'로 처리할까요?`],
+            start_half:          ['반년납 시작', `${nm}님을 반년납으로 전환할까요?`],
+            start_full:          ['1년납 시작', `${nm}님을 1년납으로 전환할까요?`],
+            rest:                ['휴식 처리', `${nm}님을 이번 달 '휴식'으로 처리할까요?`],
+            cancel_rest:         ['휴식 취소', `${nm}님의 이번 달 휴식을 취소할까요?`],
+            special_rest:        ['특별휴식', `${nm}님을 특별휴식으로 처리할까요?`],
+            cancel_special_rest: ['특별휴식 해제', `${nm}님의 특별휴식을 해제할까요?`],
+            clear:               ['상태 초기화', `${nm}님의 이번 달 회비 상태를 초기화할까요? 납부·휴식 기록이 지워집니다.`],
+        };
+        const run = async () => {
         try {
             const batch = db.batch();
             const monthRef = getMonthlyCol().doc(targetMonth);
@@ -146,6 +158,9 @@ function makeRosterHandlers(ctx) {
             setBillingMember(null);
             showAlert('성공', '상태가 반영되었습니다.');
         } catch(e) { console.error(e); showAlert('오류', '처리 실패'); }
+        };
+        const conf = confirmMap[actionType];
+        if (conf) showConfirm(conf[0], conf[1], run); else run();
     };
 
     const confirmDuesReport = async (report) => {
