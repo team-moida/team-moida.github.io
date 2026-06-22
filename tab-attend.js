@@ -546,8 +546,8 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
                         <p className={`font-black text-base ${darkMode ? 'text-white' : 'text-slate-800'}`}>지각 · 노쇼 명단</p>
                         <p className="text-[11px] text-slate-400 mb-3">{fmtMeetingDate(m.date)} · {m.start}~{m.end}{m.location ? ` · ${m.location}` : ''}</p>
                         <div className="flex items-center gap-2 mb-3">
-                            {lateCount > 0 && <span className="font-black bg-amber-50 text-amber-600" style={{ display: 'inline-block', fontSize: '12px', height: '28px', lineHeight: '28px', padding: '0 12px', borderRadius: '12px' }}>지각 {lateCount}</span>}
-                            {noShowCount > 0 && <span className="font-black bg-rose-50 text-rose-500" style={{ display: 'inline-block', fontSize: '12px', height: '28px', lineHeight: '28px', padding: '0 12px', borderRadius: '12px' }}>노쇼 {noShowCount}</span>}
+                            {lateCount > 0 && <span className="bg-amber-50 text-amber-600" style={{ display: 'inline-table', borderRadius: '12px' }}><span style={{ display: 'table-cell', verticalAlign: 'middle', textAlign: 'center', height: '30px', padding: '0 14px', fontWeight: 900, fontSize: '12px', whiteSpace: 'nowrap' }}>지각 {lateCount}</span></span>}
+                            {noShowCount > 0 && <span className="bg-rose-50 text-rose-500" style={{ display: 'inline-table', borderRadius: '12px' }}><span style={{ display: 'table-cell', verticalAlign: 'middle', textAlign: 'center', height: '30px', padding: '0 14px', fontWeight: 900, fontSize: '12px', whiteSpace: 'nowrap' }}>노쇼 {noShowCount}</span></span>}
                         </div>
                         <div className="space-y-1.5">
                             {penaltyRecords.map((r, i) => (
@@ -558,8 +558,8 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
                                             {r.reason && <span className="font-black text-rose-400" style={{ fontSize: '11px', marginLeft: '6px' }}>· {r.reason}</span>}
                                         </div>
                                         <div style={{ display: 'table-cell', verticalAlign: 'middle', textAlign: 'right', whiteSpace: 'nowrap', padding: '12px 14px 12px 6px' }}>
-                                            {r.checkInTime && r.checkInTime !== '미출석' && <span className="font-black text-slate-400" style={{ fontSize: '10px', marginRight: '8px' }}>{r.checkInTime}</span>}
-                                            <span className={stColor(r.status)} style={{ display: 'inline-block', fontWeight: 900, fontSize: '11px', height: '22px', lineHeight: '22px', padding: '0 10px', borderRadius: '8px' }}>{r.status}</span>
+                                            {r.checkInTime && r.checkInTime !== '미출석' && <span className="font-black text-slate-400" style={{ fontSize: '10px', marginRight: '8px', verticalAlign: 'middle' }}>{r.checkInTime}</span>}
+                                            <span className={stColor(r.status)} style={{ display: 'inline-table', borderRadius: '8px', verticalAlign: 'middle' }}><span style={{ display: 'table-cell', verticalAlign: 'middle', textAlign: 'center', height: '24px', padding: '0 10px', fontWeight: 900, fontSize: '11px', whiteSpace: 'nowrap' }}>{r.status}</span></span>
                                         </div>
                                     </div>
                                 </div>
