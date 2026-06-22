@@ -390,7 +390,10 @@ const NextMeetingCard = ({
             className={`w-full rounded-3xl p-5 text-left text-white active:scale-98 transition-all${showOverlay ? ' blur-sm' : ''}`}
             style={{ background: cfg.accent, boxShadow:`0 10px 28px -8px ${cfg.accent}59` }}>
             <div className="flex items-center justify-between gap-2 mb-2.5">
-                <p className="text-xs font-black uppercase tracking-widest text-white/80">{cfg.label}</p>
+                <div className="flex items-center gap-1.5 min-w-0">
+                    <p className="text-xs font-black uppercase tracking-widest text-white/80">{cfg.label}</p>
+                    {meeting.isTest && <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-lg bg-white/30 text-white flex-shrink-0"><Icon.Beaker size={11}/>테스트</span>}
+                </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                     {isAdminMode && kind === 'self' && onGenerateQR && (
                         <span role="button" onClick={(e)=>{ e.stopPropagation(); onGenerateQR(meeting); }}
