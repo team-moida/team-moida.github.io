@@ -902,25 +902,25 @@ function App() {
             </div>
 
             {!attend.isKioskOpen && <div className="tab-bar fixed bottom-0 left-0 right-0 z-50 pb-safe">
-                <div className="flex items-center h-16 max-w-sm mx-auto px-2">
+                <div className="flex items-center h-24 max-w-sm mx-auto px-2">
                     {[
-                        {key:'home',    label:'홈',   icon:<Icon.Home size={20}/>},
-                        {key:'meeting', label:'모임', icon:<Icon.Calendar size={20}/>},
-                        {key:'dues',    label:'회비', icon:<Icon.CreditCard size={20}/>},
-                        {key:'rules',   label:'회칙', icon:<Icon.ShieldCheck size={20}/>},
-                        ...(isAdminMode ? [{key:'roster', label:'명단', icon:<Icon.List size={20}/>}] : []),
+                        {key:'home',    label:'홈',   icon:<Icon.Home size={30}/>},
+                        {key:'meeting', label:'모임', icon:<Icon.Calendar size={30}/>},
+                        {key:'dues',    label:'회비', icon:<Icon.CreditCard size={30}/>},
+                        {key:'rules',   label:'회칙', icon:<Icon.ShieldCheck size={30}/>},
+                        ...(isAdminMode ? [{key:'roster', label:'명단', icon:<Icon.List size={30}/>}] : []),
                     ].map(({key,label,icon})=>(
                         <button key={key} onClick={()=>{ if (key === 'meeting') setViewMeetingId(null); setTab(key); }}
-                            className={`flex flex-col items-center justify-center flex-1 h-12 rounded-xl transition-all ${tab===key?'bg-teal-100 text-teal-500':'text-slate-400'}`}>
+                            className={`flex flex-col items-center justify-center flex-1 h-[72px] rounded-2xl transition-all ${tab===key?'bg-teal-100 text-teal-500':'text-slate-400'}`}>
                             {icon}
-                            <span className={`text-[9px] font-black mt-0.5 ${tab===key?'text-teal-500':'text-slate-400'}`}>{label}</span>
+                            <span className={`text-[14px] font-black mt-1 ${tab===key?'text-teal-500':'text-slate-400'}`}>{label}</span>
                         </button>
                     ))}
                 </div>
             </div>}
 
             {toast.show && (
-                <div className={`fixed bottom-20 left-1/2 -translate-x-1/2 px-5 py-3 rounded-full text-sm font-black shadow-xl z-50 whitespace-nowrap transition-all ${toast.type==='error'?'bg-red-500 text-white':toast.type==='success'?'bg-emerald-500 text-white':'bg-slate-700 text-white'}`}>
+                <div className={`fixed bottom-28 left-1/2 -translate-x-1/2 px-5 py-3 rounded-full text-sm font-black shadow-xl z-50 whitespace-nowrap transition-all ${toast.type==='error'?'bg-red-500 text-white':toast.type==='success'?'bg-emerald-500 text-white':'bg-slate-700 text-white'}`}>
                     {toast.msg}
                 </div>
             )}
