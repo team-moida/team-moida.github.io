@@ -543,21 +543,18 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
                 )}
                 {hist && penaltyRecords.length > 0 && (
                     <div id="penalty-capture-area" style={{ position: 'fixed', left: '-9999px', top: 0, width: '380px' }} className={`p-5 ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
-                        <p className={`font-black text-base text-center ${darkMode ? 'text-white' : 'text-slate-800'}`}>지각 · 노쇼 명단</p>
-                        <p className="text-[11px] text-slate-400 mb-3 text-center">{fmtMeetingDate(m.date)} · {m.start}~{m.end}{m.location ? ` · ${m.location}` : ''}</p>
-                        <div className="flex items-center justify-center gap-2 mb-3">
+                        <p className={`font-black text-base ${darkMode ? 'text-white' : 'text-slate-800'}`}>지각 · 노쇼 명단</p>
+                        <p className="text-[11px] text-slate-400 mb-3">{fmtMeetingDate(m.date)} · {m.start}~{m.end}{m.location ? ` · ${m.location}` : ''}</p>
+                        <div className="flex items-center gap-2 mb-3">
                             {lateCount > 0 && <span className="text-xs font-black px-3 py-1.5 rounded-xl bg-amber-50 text-amber-600">지각 {lateCount}</span>}
                             {noShowCount > 0 && <span className="text-xs font-black px-3 py-1.5 rounded-xl bg-rose-50 text-rose-500">노쇼 {noShowCount}</span>}
                         </div>
                         <div className="space-y-1.5">
                             {penaltyRecords.map((r, i) => (
-                                <div key={i} className="flex items-center justify-center gap-3 px-3 py-2.5 rounded-xl bg-slate-50">
-                                    <div className="text-center">
-                                        <span className="font-black text-sm text-slate-700 break-words block">{r.name}</span>
-                                        {r.reason && <span className="text-[10px] text-rose-400 font-black break-words block">사유: {r.reason}</span>}
-                                    </div>
-                                    {r.checkInTime && r.checkInTime !== '미출석' && <span className="text-[10px] font-black text-slate-400 shrink-0">{r.checkInTime}</span>}
-                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg shrink-0 ${stColor(r.status)}`}>{r.status}</span>
+                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', minHeight: '46px', padding: '8px 14px', borderRadius: '12px', background: darkMode ? '#0f172a' : '#f8fafc' }}>
+                                    <span className="font-black text-sm text-slate-700 break-words" style={{ flex: 1, lineHeight: 1.4 }}>{r.name}{r.reason ? <span className="text-rose-400 font-black">{`  ·  ${r.reason}`}</span> : null}</span>
+                                    {r.checkInTime && r.checkInTime !== '미출석' && <span className="text-[10px] font-black text-slate-400" style={{ whiteSpace: 'nowrap' }}>{r.checkInTime}</span>}
+                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${stColor(r.status)}`} style={{ whiteSpace: 'nowrap' }}>{r.status}</span>
                                 </div>
                             ))}
                         </div>
