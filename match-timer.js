@@ -171,16 +171,16 @@ function MatchTimerBar({ isAdmin = true }) {
     const timeColor = t.ended ? '#10b981' : (t.subImminent ? '#f59e0b' : '#0f172a');
     return (
         <div style={{ position: 'relative', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(6px,1.4vmin,12px)' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(2px,1vmin,12px)' }}>
-                {/* 남은 시간 (위, 크게) */}
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-                    <span style={{ color: timeColor, fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(3rem,14vmin,7.5rem)' }}>{_mtFmt(t.roundRemaining)}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(4px,1.6vmin,16px)' }}>
+                {/* 남은 시간 (위, 크게) — 라벨이 시간 위 */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(1px,0.5vmin,5px)' }}>
                     <span style={{ color: '#94a3b8', fontWeight: 900, fontSize: 'clamp(0.72rem,2.1vmin,1.3rem)' }}>남은 시간</span>
+                    <span style={{ color: timeColor, fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(3rem,14vmin,7.5rem)' }}>{_mtFmt(t.roundRemaining)}</span>
                 </div>
-                {/* 교체까지 (아래) */}
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                    <span style={{ color: t.subImminent ? '#f59e0b' : '#475569', fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(1.8rem,8vmin,4rem)' }}>{_mtFmt(t.subRemaining)}</span>
+                {/* 교체까지 (아래) — 라벨이 시간 위 */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(1px,0.5vmin,5px)' }}>
                     <span style={{ color: '#94a3b8', fontWeight: 900, fontSize: 'clamp(0.72rem,2.1vmin,1.3rem)' }}>교체까지</span>
+                    <span style={{ color: t.subImminent ? '#f59e0b' : '#475569', fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(1.8rem,8vmin,4rem)' }}>{_mtFmt(t.subRemaining)}</span>
                 </div>
             </div>
             {isAdmin ? (
