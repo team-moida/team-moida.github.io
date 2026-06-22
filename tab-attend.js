@@ -1283,8 +1283,8 @@ const TabAttend = ({
                             )}
                         </div>
 
-                        {/* 팀별 카드 뷰 */}
-                        {attendGroupedTeams.length > 0 ? (
+                        {/* 출석 현황 = 평범한 명단 (팀별 카드는 키오스크와 중복되어 비활성화 → 되돌리려면 아래 false 를 attendGroupedTeams.length > 0 로) */}
+                        {false ? (
                             <div>
                                 {attendGroupedTeams.map((group) => (
                                     <div key={group.teamName} className="mb-4">
