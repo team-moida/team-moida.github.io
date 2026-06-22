@@ -44,8 +44,8 @@ const KioskModal = ({
                     <p style={{color:'#1e293b',fontSize:'1.5rem',fontWeight:900,marginTop:'4px',letterSpacing:'0.05em'}}><KioskClock /></p>
                 </div>
                 <button onClick={() => setIsKioskOpen(false)}
-                    style={{width:'40px',height:'40px',borderRadius:'12px',background:'#f1f5f9',color:'#64748b',display:'flex',alignItems:'center',justifyContent:'center',border:'none',cursor:'pointer',fontSize:'20px',fontWeight:900}}>
-                    ✕
+                    style={{width:'40px',height:'40px',borderRadius:'12px',background:'#f1f5f9',color:'#64748b',display:'flex',alignItems:'center',justifyContent:'center',border:'none',cursor:'pointer',fontWeight:900}}>
+                    <Icon.X size={20}/>
                 </button>
             </div>
             {/* 출석 진행 바 */}
@@ -134,14 +134,14 @@ const KioskModal = ({
                     ) : (
                         /* 인원은 선정됐지만 팀편성 전 → 안내만 띄우고 출석 체크는 막음 */
                         <div className="text-center" style={{paddingTop:'80px',color:'#475569'}}>
-                            <p style={{fontSize:'3rem',marginBottom:'16px'}}>👥</p>
+                            <div style={{display:'flex',justifyContent:'center',marginBottom:'16px'}}><Icon.Users size={48} className="text-slate-400"/></div>
                             <p style={{fontWeight:900,fontSize:'1.1rem',color:'#64748b'}}>팀편성 후 이용할 수 있습니다</p>
                             <p style={{fontSize:'0.875rem',color:'#94a3b8',marginTop:'8px'}}>팀을 먼저 편성한 뒤 키오스크 출석을 진행하세요</p>
                         </div>
                     )
                 ) : (
                     <div className="text-center" style={{paddingTop:'80px',color:'#475569'}}>
-                        <p style={{fontSize:'3rem',marginBottom:'16px'}}>📋</p>
+                        <div style={{display:'flex',justifyContent:'center',marginBottom:'16px'}}><Icon.Clipboard size={48} className="text-slate-400"/></div>
                         <p style={{fontWeight:900,fontSize:'1.1rem',color:'#64748b'}}>선정된 인원이 없습니다</p>
                     </div>
                 )}
@@ -330,13 +330,13 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
                 <>
                     {penaltyUnpaid > 0 && (
                         <div className="mb-2 rounded-2xl px-3 py-2.5 bg-rose-50 border border-rose-200">
-                            <p className="text-xs font-black text-rose-600">⚠️ 미납 벌금 {penaltyUnpaid}건 ({penaltyTotal.toLocaleString()}원)</p>
+                            <p className="text-xs font-black text-rose-600 flex items-center gap-1"><Icon.AlertTriangle size={12} className="flex-shrink-0"/>미납 벌금 {penaltyUnpaid}건 ({penaltyTotal.toLocaleString()}원)</p>
                             <p className="text-[11px] text-rose-400 mt-0.5">회비 탭에서 벌금을 납부해야 신청할 수 있어요</p>
                         </div>
                     )}
                     {duesUnpaid && (
                         <div className="mb-2 rounded-2xl px-3 py-2.5 bg-rose-50 border border-rose-200">
-                            <p className="text-xs font-black text-rose-600">⚠️ 회비 미납 상태예요</p>
+                            <p className="text-xs font-black text-rose-600 flex items-center gap-1"><Icon.AlertTriangle size={12} className="flex-shrink-0"/>회비 미납 상태예요</p>
                             <p className="text-[11px] text-rose-400 mt-0.5">홈 탭에서 회비를 납부해 주세요{duesBlock ? ' · 납부해야 신청할 수 있어요' : ''}</p>
                         </div>
                     )}
@@ -356,7 +356,7 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
             {isOpen && myRegistration?.status === 'confirmed' && (
                 <div>
                     <div className="bg-teal-50 border border-teal-200 rounded-2xl p-3 mb-3 text-center">
-                        <p className="font-black text-teal-500">참가 확정 ✓</p>
+                        <p className="font-black text-teal-500 flex items-center justify-center gap-1">참가 확정 <Icon.Check size={15}/></p>
                     </div>
                     <button onClick={handleCancel}
                         className="w-full py-2.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm active:scale-95">
@@ -385,7 +385,7 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
                         {myRegistration?.status === 'noshow' && <p className="text-xs text-red-500 font-black mt-1">노쇼 처리됨 · 벌금 {((myRegistration.noShowFine||0)/10000).toLocaleString()}만원</p>}
                         {(isFirstComeFirstServed || isMatch) && myRegistration?.status === 'waiting' && <p className="text-xs text-amber-500 font-black mt-1">대기 {myWaitingPosition}번</p>}
                         {!myRegistration && <p className="text-xs text-slate-300 mt-1">미신청</p>}
-                        {myRegistration?.status === 'confirmed' && !absentType && <p className="text-xs text-teal-500 font-black mt-1">참가 확정 ✓</p>}
+                        {myRegistration?.status === 'confirmed' && !absentType && <p className="text-xs text-teal-500 font-black mt-1 flex items-center justify-center gap-1">참가 확정 <Icon.Check size={12}/></p>}
                     </div>
                     {myRegistration?.status === 'confirmed' && absentType && (
                         absentConfirm ? (
@@ -408,7 +408,7 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
                         ) : (
                             <div>
                                 <div className="bg-teal-50 border border-teal-200 rounded-2xl p-3 mb-2 text-center">
-                                    <p className="font-black text-teal-500">참가 확정 ✓</p>
+                                    <p className="font-black text-teal-500 flex items-center justify-center gap-1">참가 확정 <Icon.Check size={15}/></p>
                                 </div>
                                 <button onClick={() => isPreview ? alert('미리보기에서는 불참 신청이 되지 않아요.') : setAbsentConfirm(true)}
                                     className={`w-full py-2.5 rounded-2xl font-black text-sm active:scale-95 ${absentBtnCls}`}>
@@ -480,7 +480,7 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
     return (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-6" onClick={onClose}>
             <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] overflow-y-auto relative" onClick={e => e.stopPropagation()} style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
-                <button onClick={onClose} className="absolute top-4 right-4 z-10 w-8 h-8 rounded-xl bg-slate-100 text-slate-500 active:scale-95 font-black">✕</button>
+                <button onClick={onClose} className="absolute top-4 right-4 z-10 w-8 h-8 rounded-xl bg-slate-100 text-slate-500 active:scale-95 font-black flex items-center justify-center"><Icon.X size={16}/></button>
                 <div id="record-capture-area">
                 <div className="flex items-start justify-between gap-2 mb-3 pr-10">
                     <div className="min-w-0">
@@ -489,7 +489,7 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
                             {kind === 'match' && m.opponentName && <span className="text-[11px] font-black text-indigo-500 truncate">vs {m.opponentName}</span>}
                         </div>
                         <p className="font-black text-slate-800 mt-1">{fmtMeetingDate(m.date)} · {m.start}~{m.end}</p>
-                        {m.location && <p className="text-[11px] text-slate-400 truncate">📍 {m.location}</p>}
+                        {m.location && <p className="text-[11px] text-slate-400 truncate flex items-center gap-1"><Icon.MapPin size={11} className="flex-shrink-0"/><span className="truncate">{m.location}</span></p>}
                         {m.managerName && <p className="text-[11px] text-slate-400">담당 {m.managerName}</p>}
                     </div>
                 </div>
@@ -516,18 +516,18 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
                     </>
                 ) : (
                     <div className="text-center text-slate-400 py-6">
-                        <p className="text-2xl mb-1">📋</p>
+                        <div className="flex justify-center mb-1"><Icon.Clipboard size={28} className="text-slate-300"/></div>
                         <p className="text-xs font-black">저장된 출석 기록이 없습니다</p>
                         {kind === 'match' && <p className="text-[11px] mt-1">매칭 모임은 출석 기록을 저장하지 않습니다</p>}
                     </div>
                 )}
                 </div>
                 {hist && (
-                    <button onClick={captureRecord} className="w-full mt-3 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-black text-sm active:scale-95 transition-all">📷 지각·노쇼 포함 출석 기록 이미지 저장</button>
+                    <button onClick={captureRecord} className="w-full mt-3 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-black text-sm active:scale-95 transition-all flex items-center justify-center gap-1.5"><Icon.Camera size={14}/>지각·노쇼 포함 출석 기록 이미지 저장</button>
                 )}
                 {onFinalizePenalty && kind === 'self' && hist && penTargets.length > 0 && (
                     <div className="mt-4 pt-3 border-t border-slate-100">
-                        <p className="text-xs font-black text-slate-500 mb-2">💸 벌금 부과 {penFinalized && <span className="text-emerald-500">· ✅ 발송됨</span>}</p>
+                        <p className="text-xs font-black text-slate-500 mb-2 flex items-center gap-1"><Icon.Banknote size={13}/>벌금 부과 {penFinalized && <span className="text-emerald-500 inline-flex items-center gap-1">· <Icon.CheckCircle size={12}/>발송됨</span>}</p>
                         {penFinalized ? (
                             <p className="text-[11px] text-slate-400">{new Date(hist.penaltyFinalizedAt).toLocaleDateString('ko-KR')} 납부 안내가 발송되었습니다.</p>
                         ) : (
@@ -562,9 +562,9 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
                 {(onEdit || onDelete) && (
                     <div className="flex gap-2 mt-4 pt-3 border-t border-slate-100">
                         {onEdit && <button onClick={() => { onEdit(m); onClose(); }}
-                            className="flex-1 py-2.5 rounded-xl bg-blue-50 text-blue-600 font-black text-sm active:scale-95 transition-all">✏️ 수정</button>}
+                            className="flex-1 py-2.5 rounded-xl bg-blue-50 text-blue-600 font-black text-sm active:scale-95 transition-all flex items-center justify-center gap-1"><Icon.Edit size={14}/>수정</button>}
                         {onDelete && <button onClick={() => { onDelete(m, hist); onClose(); }}
-                            className="flex-1 py-2.5 rounded-xl bg-rose-50 text-rose-500 font-black text-sm active:scale-95 transition-all">🗑 삭제</button>}
+                            className="flex-1 py-2.5 rounded-xl bg-rose-50 text-rose-500 font-black text-sm active:scale-95 transition-all flex items-center justify-center gap-1"><Icon.Trash size={14}/>삭제</button>}
                     </div>
                 )}
             </div>
@@ -663,7 +663,7 @@ const MeetingListScreen = ({
                         {!isManageOpen && (
                             <>
                                 <button onClick={() => setPendingAction('recurring')}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-xl font-black text-[11px] active:scale-95 transition-all">🔁 정기</button>
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-xl font-black text-[11px] active:scale-95 transition-all"><Icon.Refresh size={13}/> 정기</button>
                                 <button onClick={() => setPendingAction('add')}
                                     className="flex items-center gap-1 px-3 py-1.5 bg-teal-500 text-white rounded-xl font-black text-[11px] active:scale-95 transition-all shadow-sm"><Icon.Plus size={13}/> 추가</button>
                             </>
@@ -671,18 +671,18 @@ const MeetingListScreen = ({
                         <button onClick={() => setIsManageOpen(o => !o)}
                             className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 rounded-xl transition-all active:scale-95"
                             style={isManageOpen ? {background:'linear-gradient(135deg,#14b8a6,#0d9488)',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
-                            ⚙️ {isManageOpen ? '관리 ON' : '관리'}
+                            <Icon.Settings size={13}/>{isManageOpen ? '관리 ON' : '관리'}
                         </button>
                         {!isManageOpen && (
                             <button onClick={() => setTestOpen(o => !o)}
-                                className="flex items-center gap-1 text-[11px] font-black px-2.5 py-1.5 rounded-xl bg-amber-50 text-amber-600 active:scale-95 transition-all">🧪</button>
+                                className="flex items-center gap-1 text-[11px] font-black px-2.5 py-1.5 rounded-xl bg-amber-50 text-amber-600 active:scale-95 transition-all"><Icon.Beaker size={14}/></button>
                         )}
                     </div>
                 </div>
             )}
             {isAdminMode && !isManageOpen && testOpen && (
                 <div className="rounded-2xl p-3 border border-amber-200 bg-amber-50/50">
-                    <p className="text-[11px] font-black text-amber-700 mb-1">🧪 테스트 모임</p>
+                    <p className="text-[11px] font-black text-amber-700 mb-1 flex items-center gap-1"><Icon.Beaker size={12}/>테스트 모임</p>
                     <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">버튼 한 번으로 현재 시각 기준 모임 + 나 포함 랜덤 인원으로 팀편성·매치표까지 자동 생성합니다. [테스트 삭제]를 누르면 기록이 남지 않습니다.</p>
                     <div className="flex gap-2">
                         <button onClick={onCreateTestMeeting} className="flex-1 py-2 rounded-xl bg-amber-500 text-white font-black text-xs active:scale-95 transition-all">생성</button>
@@ -808,7 +808,7 @@ const MeetingDetailHeader = ({ meeting, onBack }) => {
                     {dayInfo && dayInfo.type !== 'past' && dayInfo.label && <span className="text-[10px] font-black text-slate-400 shrink-0">{dayInfo.label}</span>}
                 </div>
                 <p className="font-black text-slate-800 truncate mt-0.5">{fmtMeetingDate(meeting.date)} · {meeting.start}~{meeting.end}</p>
-                {meeting.location && <p className="text-[11px] text-slate-400 truncate">📍 {meeting.location}</p>}
+                {meeting.location && <p className="text-[11px] text-slate-400 truncate flex items-center gap-1"><Icon.MapPin size={11} className="flex-shrink-0"/><span className="truncate">{meeting.location}</span></p>}
             </div>
         </div>
     );
@@ -952,7 +952,7 @@ const TabAttend = ({
                             <button onClick={attendHandleEndMeeting}
                                 disabled={attendIsPending || !isMeetingOver || attendHistory.some(h => h.date === meetingSettings?.date)}
                                 className={`px-3 py-2 rounded-xl font-black text-xs transition-all disabled:opacity-30 ${attendHistory.some(h => h.date === meetingSettings?.date) ? 'bg-emerald-50 text-emerald-500' : isMeetingOver ? 'bg-rose-500 text-white active:scale-95' : 'bg-slate-100 text-slate-300'}`}>
-                                {attendHistory.some(h => h.date === meetingSettings?.date) ? '저장 완료 ✓' : '모임 종료'}
+                                {attendHistory.some(h => h.date === meetingSettings?.date) ? <span className="inline-flex items-center justify-center gap-1">저장 완료 <Icon.Check size={12}/></span> : '모임 종료'}
                             </button>
                         </>
                     )}
@@ -975,7 +975,7 @@ const TabAttend = ({
                                         <button onClick={attendHandleEndMeeting}
                                             disabled={attendIsPending || !isMeetingOver || attendHistory.some(h => h.date === meetingSettings?.date)}
                                             className={`px-3 py-2 rounded-xl font-black text-xs transition-all disabled:opacity-30 ${attendHistory.some(h => h.date === meetingSettings?.date) ? 'bg-emerald-50 text-emerald-500' : isMeetingOver ? 'bg-rose-500 text-white active:scale-95' : 'bg-slate-100 text-slate-300'}`}>
-                                            {attendHistory.some(h => h.date === meetingSettings?.date) ? '저장 완료 ✓' : '모임 종료'}
+                                            {attendHistory.some(h => h.date === meetingSettings?.date) ? <span className="inline-flex items-center justify-center gap-1">저장 완료 <Icon.Check size={12}/></span> : '모임 종료'}
                                         </button>
                                     )}
                                 </div>
@@ -1025,7 +1025,7 @@ const TabAttend = ({
                                                 <span className="text-sm font-black text-slate-700">{selectedMeeting.location || '미지정'}</span>
                                                 {selectedMeeting.locationLat && (
                                                     <a href={`https://map.kakao.com/link/map/${encodeURIComponent(selectedMeeting.location||'위치')},${selectedMeeting.locationLat},${selectedMeeting.locationLng}`}
-                                                       target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-500 font-black underline ml-2 whitespace-nowrap">지도 →</a>
+                                                       target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-500 font-black underline ml-2 whitespace-nowrap inline-flex items-center gap-0.5">지도 <Icon.ChevronRight size={11}/></a>
                                                 )}
                                             </div>
                                         </div>
@@ -1106,7 +1106,7 @@ const TabAttend = ({
                                     <div>
                                         {selectedMeeting.isRegistrationEnabled && (
                                             <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-2xl mb-3 text-xs font-black text-amber-600">
-                                                ⚠️ 선착순 신청 진행 중 — 수동 편집 시 신청 카운터와 어긋날 수 있습니다
+                                                <Icon.AlertTriangle size={14} className="flex-shrink-0"/>선착순 신청 진행 중 — 수동 편집 시 신청 카운터와 어긋날 수 있습니다
                                             </div>
                                         )}
                                         <div className="flex items-center justify-between mb-3 px-1 gap-2">
@@ -1197,7 +1197,7 @@ const TabAttend = ({
                                                 <button onClick={() => setIsKioskOpen(true)}
                                                     className="px-3 py-1.5 rounded-xl text-xs font-black text-white flex items-center gap-1"
                                                     style={{background:'linear-gradient(135deg,#f97316,#ea580c)'}}>
-                                                    📋 키오스크
+                                                    <Icon.Clipboard size={13}/> 키오스크
                                                 </button>
                                             )}
                                         </div>
@@ -1226,7 +1226,7 @@ const TabAttend = ({
                                 </div>
                                 <div className="text-right">
                                     <p className="text-xs text-slate-400">{meetingSettings?.start}~{meetingSettings?.end}</p>
-                                    {meetingSettings?.location&&<p className="text-xs font-black text-slate-600 mt-0.5">📍 {meetingSettings.location}</p>}
+                                    {meetingSettings?.location&&<p className="text-xs font-black text-slate-600 mt-0.5 flex items-center justify-end gap-1"><Icon.MapPin size={12} className="flex-shrink-0"/><span className="truncate">{meetingSettings.location}</span></p>}
                                 </div>
                             </div>
                             <div className="flex gap-2 text-center">
@@ -1291,9 +1291,9 @@ const TabAttend = ({
                                                             {p.gender==='여성'&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg">W</span>}
                                                             {p.isGuest&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-slate-800 text-white rounded-lg">G</span>}
                                                         </div>
-                                                        {p.status==='노쇼'?<p className="text-[10px] text-red-600 font-black mt-0.5">✗ 노쇼{p.noShowReason ? (' · ' + p.noShowReason) : ''}</p>:p.checkedIn?<p className={`text-[10px] font-black mt-0.5 ${p.status==='지각'?'text-yellow-600':'text-emerald-600'}`}>{p.status==='지각'?'⚠️ 지각':'✓ 정상'} · {p.checkInTime}</p>:null}
+                                                        {p.status==='노쇼'?<p className="text-[10px] text-red-600 font-black mt-0.5 flex items-center gap-1"><Icon.X size={11} className="flex-shrink-0"/>노쇼{p.noShowReason ? (' · ' + p.noShowReason) : ''}</p>:p.checkedIn?<p className={`text-[10px] font-black mt-0.5 flex items-center gap-1 ${p.status==='지각'?'text-yellow-600':'text-emerald-600'}`}>{p.status==='지각'?<><Icon.AlertTriangle size={11} className="flex-shrink-0"/>지각</>:<><Icon.Check size={11} className="flex-shrink-0"/>정상</>} · {p.checkInTime}</p>:null}
                                                     </div>
-                                                    {p.status==='노쇼'?<span className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-black">✗</span>:p.checkedIn?<span className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0"><Icon.Check size={12} className="text-white"/></span>:<span className="text-xs font-black text-slate-300 flex-shrink-0">체크인 →</span>}
+                                                    {p.status==='노쇼'?<span className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 text-white"><Icon.X size={13}/></span>:p.checkedIn?<span className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0"><Icon.Check size={12} className="text-white"/></span>:<span className="text-xs font-black text-slate-300 flex-shrink-0 inline-flex items-center gap-0.5">체크인 <Icon.ChevronRight size={12}/></span>}
                                                 </button>
                                             ))}
                                         </div>
@@ -1313,15 +1313,15 @@ const TabAttend = ({
                                                 {p.gender==='여성'&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg">W</span>}
                                                 {p.isGuest&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-slate-800 text-white rounded-lg">G</span>}
                                             </div>
-                                            {p.status==='노쇼'?<p className="text-[10px] text-red-600 font-black mt-0.5">✗ 노쇼{p.noShowReason ? (' · ' + p.noShowReason) : ''}</p>:p.checkedIn?<p className={`text-[10px] font-black mt-0.5 ${p.status==='지각'?'text-yellow-600':'text-emerald-600'}`}>{p.status==='지각'?'⚠️ 지각':'✓ 정상'} · {p.checkInTime}</p>:null}
+                                            {p.status==='노쇼'?<p className="text-[10px] text-red-600 font-black mt-0.5 flex items-center gap-1"><Icon.X size={11} className="flex-shrink-0"/>노쇼{p.noShowReason ? (' · ' + p.noShowReason) : ''}</p>:p.checkedIn?<p className={`text-[10px] font-black mt-0.5 flex items-center gap-1 ${p.status==='지각'?'text-yellow-600':'text-emerald-600'}`}>{p.status==='지각'?<><Icon.AlertTriangle size={11} className="flex-shrink-0"/>지각</>:<><Icon.Check size={11} className="flex-shrink-0"/>정상</>} · {p.checkInTime}</p>:null}
                                         </div>
-                                        {p.status==='노쇼'?<span className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-black">✗</span>:p.checkedIn?<span className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0"><Icon.Check size={12} className="text-white"/></span>:<span className="text-xs font-black text-slate-300 flex-shrink-0">체크인 →</span>}
+                                        {p.status==='노쇼'?<span className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 text-white"><Icon.X size={13}/></span>:p.checkedIn?<span className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0"><Icon.Check size={12} className="text-white"/></span>:<span className="text-xs font-black text-slate-300 flex-shrink-0 inline-flex items-center gap-0.5">체크인 <Icon.ChevronRight size={12}/></span>}
                                     </button>
                                 ))}
                             </div>
                         ) : (
                             <div className="text-center py-12 text-slate-300">
-                                <p className="text-4xl mb-3">📋</p>
+                                <div className="flex justify-center mb-3"><Icon.Clipboard size={40} className="text-slate-300"/></div>
                                 <p className="font-black">선정된 인원이 없습니다</p>
                                 <p className="text-xs mt-1">선정 탭에서 인원을 추가하세요</p>
                             </div>
@@ -1346,7 +1346,7 @@ const TabAttend = ({
                     <div>
                         <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 px-1">출결 기록</p>
                         {attendHistory.length === 0
-                            ? <div className="text-center py-12 text-slate-300"><p className="text-4xl mb-3">📚</p><p className="font-black">기록이 없습니다</p></div>
+                            ? <div className="text-center py-12 text-slate-300"><div className="flex justify-center mb-3"><Icon.Book size={40} className="text-slate-300"/></div><p className="font-black">기록이 없습니다</p></div>
                             : attendHistory.map(h => (
                                 <button key={h.id} onClick={()=>{setSelectedHistoryDetail(h);setHistorySortKey('time');setHistorySortOrder('asc');}}
                                     className="w-full flex items-center justify-between p-4 card border-slate-100 rounded-2xl mb-2 text-left hover:border-teal-200 transition-all">
@@ -1397,7 +1397,7 @@ const TabAttend = ({
                             {[['time','시간순'],['status','상태순']].map(([k,l]) => (
                                 <button key={k} onClick={()=>{if(historySortKey===k&&k==='status')setHistorySortOrder(o=>o==='asc'?'desc':'asc');setHistorySortKey(k);}}
                                     className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${historySortKey===k?'bg-teal-500 text-white':'card border-slate-200 text-slate-500'}`}>
-                                    {l}{historySortKey===k&&k==='status'&&(historySortOrder==='asc'?'↑':'↓')}
+                                    <span className="inline-flex items-center gap-0.5">{l}{historySortKey===k&&k==='status'&&(historySortOrder==='asc'?<Icon.ArrowUp size={11}/>:<Icon.ArrowDown size={11}/>)}</span>
                                 </button>
                             ))}
                         </div>
@@ -1465,13 +1465,13 @@ const TabAttend = ({
         {showCheckin && qrStatus !== 'idle' && (
             <div className={`rounded-3xl p-5 text-center border ${qrStatus==='success'?'bg-emerald-50 border-emerald-200':qrStatus==='processing'?'card border-slate-100':'bg-red-50 border-red-200'}`}>
                 {qrStatus==='processing' && <><div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p className="font-black text-slate-500">QR 확인 중...</p></>}
-                {qrStatus==='success' && <><p className="text-3xl mb-2">🎉</p><p className="font-black text-emerald-400 whitespace-pre-line">{qrMessage}</p></>}
+                {qrStatus==='success' && <><div className="flex justify-center mb-2"><Icon.CheckCircle size={36} className="text-emerald-400"/></div><p className="font-black text-emerald-400 whitespace-pre-line">{qrMessage}</p></>}
                 {qrStatus==='error' && (
                     <>
-                        <p className="text-3xl mb-2">⚠️</p>
+                        <div className="flex justify-center mb-2"><Icon.AlertTriangle size={36} className="text-red-400"/></div>
                         <p className="font-black text-red-400 whitespace-pre-line">{qrMessage}</p>
-                        <button onClick={()=>{setQrStatus('idle');setIsQRScannerOpen(true);}} className="mt-3 text-xs text-violet-600 font-black px-5 py-2.5 rounded-xl bg-violet-50 border border-violet-200 block mx-auto">
-                            📷 다시 스캔하기
+                        <button onClick={()=>{setQrStatus('idle');setIsQRScannerOpen(true);}} className="mt-3 text-xs text-violet-600 font-black px-5 py-2.5 rounded-xl bg-violet-50 border border-violet-200 flex items-center justify-center gap-1 mx-auto">
+                            <Icon.Camera size={13}/>다시 스캔하기
                         </button>
                     </>
                 )}
@@ -1524,7 +1524,7 @@ const TabAttend = ({
                         {distance !== null && (
                             <div className="mb-4 px-2">
                                 <div className="flex justify-between text-[10px] font-black mb-1.5">
-                                    <span className="text-emerald-400">✓ 인정 범위 내</span>
+                                    <span className="text-emerald-400 inline-flex items-center gap-0.5"><Icon.Check size={11}/>인정 범위 내</span>
                                     <span className="text-slate-400">{distance}m / {meetingSettings?.locationRadius||100}m</span>
                                 </div>
                                 <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
@@ -1535,14 +1535,14 @@ const TabAttend = ({
                         )}
                         <button onClick={handleGPSAttend} disabled={isCheckingIn}
                             className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-base shadow-lg disabled:opacity-50">
-                            {isCheckingIn ? '출석 처리 중...' : '✓ 출석 체크'}
+                            {isCheckingIn ? '출석 처리 중...' : <span className="inline-flex items-center justify-center gap-1"><Icon.Check size={16}/>출석 체크</span>}
                         </button>
                     </div>
                 )}
 
                 {gpsStatus==='outside' && (
                     <div className="text-center">
-                        <p className="text-3xl mb-2">🚶</p>
+                        <div className="flex justify-center mb-2"><Icon.Walk size={36} className="text-yellow-500"/></div>
                         <p className="font-black text-yellow-500 text-lg mb-3">아직 멀리 있습니다</p>
                         {distance !== null && (
                             <div className="mb-4 px-2">
@@ -1557,15 +1557,15 @@ const TabAttend = ({
                                 <p className="text-[10px] text-slate-400 mt-1.5">{Math.max(0, distance-(meetingSettings?.locationRadius||100))}m 더 이동하면 출석 가능</p>
                             </div>
                         )}
-                        <button onClick={handleGPSCheckIn} className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">
-                            🔄 다시 확인
+                        <button onClick={handleGPSCheckIn} className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm flex items-center justify-center gap-1.5">
+                            <Icon.Refresh size={14}/>다시 확인
                         </button>
                     </div>
                 )}
 
                 {gpsStatus==='no_location' && (
                     <div className="text-center">
-                        <p className="text-3xl mb-2">⚙️</p>
+                        <div className="flex justify-center mb-2"><Icon.Settings size={36} className="text-slate-400"/></div>
                         <p className="font-black text-slate-500 mb-1">장소 미설정</p>
                         <p className="text-slate-500 text-xs">관리자가 모임 장소 GPS를 설정하지 않았습니다.<br/>{meetingSettings?.enableQR ? 'QR 출석을 이용해주세요.' : '관리자에게 문의해주세요.'}</p>
                     </div>
@@ -1573,7 +1573,7 @@ const TabAttend = ({
 
                 {gpsStatus==='error' && (
                     <div className="text-center">
-                        <p className="text-3xl mb-2">⚠️</p>
+                        <div className="flex justify-center mb-2"><Icon.AlertTriangle size={36} className="text-red-400"/></div>
                         <p className="font-black text-red-400 mb-3">위치 확인 실패</p>
                         <button onClick={()=>setGpsStatus('idle')} className="px-5 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-black text-sm">다시 시도</button>
                     </div>
