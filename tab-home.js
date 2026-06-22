@@ -122,7 +122,7 @@ const NotifSetupGuide = ({ notifPermission, memberData }) => {
                         <button onClick={dismiss} className="text-[11px] font-black text-slate-400 active:scale-95">다음에 안 보기</button>
                         <button onClick={sendTest} disabled={testState!=='idle'}
                             className={`text-xs font-black px-3 py-1.5 rounded-xl active:scale-95 transition-all ${testState==='idle'?'bg-teal-500 text-white':'bg-slate-100 text-slate-400'}`}>
-                            {testState==='sending' ? '보내는 중…' : testState==='sent' ? '보냈어요 ✓' : '알림 테스트'}
+                            {testState==='sending' ? '보내는 중…' : testState==='sent' ? <span className="inline-flex items-center gap-1">보냈어요 <Icon.Check size={13}/></span> : '알림 테스트'}
                         </button>
                     </div>
                     {testState==='sent' && (
@@ -212,13 +212,13 @@ const fmtMeetingDate = (ds) => {
 //  · 좌표가 없거나(관리자 GPS 미지정) 조회 실패 시 조용히 숨김 → 카드 깔끔 유지.
 // 기상청 PTY(강수형태) → [이모지, 한글]
 const PTY_MAP = {
-    0: ['☀️', '맑음'],
-    1: ['🌧️', '비'],
-    2: ['🌨️', '비/눈'],
-    3: ['🌨️', '눈'],
-    5: ['🌦️', '빗방울'],
-    6: ['🌦️', '빗방울·눈날림'],
-    7: ['🌨️', '눈날림'],
+    0: [Icon.Sun, '맑음'],
+    1: [Icon.CloudRain, '비'],
+    2: [Icon.CloudSnow, '비/눈'],
+    3: [Icon.CloudSnow, '눈'],
+    5: [Icon.CloudDrizzle, '빗방울'],
+    6: [Icon.CloudDrizzle, '빗방울·눈날림'],
+    7: [Icon.CloudSnow, '눈날림'],
 };
 // WGS84 위경도 → 기상청 격자 좌표 변환 (LCC 투영)
 function latLngToKmaGrid(lat, lng) {
@@ -330,7 +330,7 @@ const MeetingWeather = ({ lat, lng, isAdminMode }) => {
             </div>
         );
     }
-    const [icon, label] = PTY_MAP[wx.pty] || PTY_MAP[0];
+    const [WxIcon, label] = PTY_MAP[wx.pty] || PTY_MAP[0];
     const r = (v) => (v == null || isNaN(Number(v))) ? '–' : Math.round(Number(v));
     return (
         <div className="mt-3">
@@ -338,7 +338,7 @@ const MeetingWeather = ({ lat, lng, isAdminMode }) => {
                 <p className="text-xs font-black text-white/70 mb-1.5 truncate">{addr}</p>
             )}
             <div className="flex items-center gap-3">
-            <span className="text-3xl leading-none flex-shrink-0">{icon}</span>
+            <WxIcon size={34} className="text-white flex-shrink-0"/>
             <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-1.5 min-w-0">
                     <span className="text-[10px] font-black text-white/70 flex-shrink-0">지금</span>
@@ -690,7 +690,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
         return (
             <button onClick={openEdit} className="w-full card rounded-3xl p-4 text-left border-emerald-100 active:scale-98 transition-all">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0 text-lg">💳</div>
+                    <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0"><Icon.CreditCard size={20} className="text-emerald-500"/></div>
                     <div className="flex-1 min-w-0">
                         <p className="font-black text-sm text-emerald-600">회비 계좌 등록하기</p>
                         <p className="text-xs text-slate-400 mt-0.5">계좌·송금 링크를 등록하면 회원이 홈에서 바로 회비를 보낼 수 있어요</p>
@@ -709,28 +709,28 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
         } else if (ms && ms.active && ms.remaining > 1) {
             dues = (
                 <div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3">
-                    <p className="text-sm font-black text-white">✓ {ms.type}납 회원 · 만료 {ms.endDateFormatted}</p>
+                    <p className="text-sm font-black text-white flex items-center gap-1.5"><Icon.Check size={15} className="flex-shrink-0"/>{ms.type}납 회원 · 만료 {ms.endDateFormatted}</p>
                     <p className="text-[11px] text-white/75 mt-0.5">남은 휴식 면제 {ms.remainingRest}회</p>
                     {monthStatus==='rest' || (report && (report.status==='pending'||report.status==='confirmed'))
-                        ? <p className="text-[11px] text-white/80 mt-1">{(report && report.status==='pending')?'⏳ 휴식 신청 확인 대기 중':'✓ 휴식 처리됨'}</p>
+                        ? <p className="text-[11px] text-white/80 mt-1 flex items-center gap-1">{(report && report.status==='pending')?<><Icon.Hourglass size={12} className="flex-shrink-0"/>휴식 신청 확인 대기 중</>:<><Icon.Check size={12} className="flex-shrink-0"/>휴식 처리됨</>}</p>
                         : <button onClick={()=>submitReport('rest')} disabled={submitting} className="mt-2 px-3 py-1.5 rounded-lg bg-white/25 text-white font-black text-xs active:scale-95 transition-all">{submitting?'처리 중...':`이번 달 쉬어요 (${feeFor('rest')===0?'면제':wonFmt(feeFor('rest'))+'원'})`}</button>}
                 </div>
             );
         } else if (monthStatus === 'paid') {
             // 관리자가 회원관리에서 직접 납부 처리 → 신고 기록이 없어도 완료로 표시(중복 신고 차단)
-            dues = (<div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3"><p className="text-sm font-black text-white">✓ {targetMonLabel} 회비 완료</p></div>);
+            dues = (<div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3"><p className="text-sm font-black text-white flex items-center gap-1.5"><Icon.Check size={15} className="flex-shrink-0"/>{targetMonLabel} 회비 완료</p></div>);
         } else if (monthStatus === 'rest') {
-            dues = (<div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3"><p className="text-sm font-black text-white">✓ {targetMonLabel} 휴식 처리됨</p></div>);
+            dues = (<div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3"><p className="text-sm font-black text-white flex items-center gap-1.5"><Icon.Check size={15} className="flex-shrink-0"/>{targetMonLabel} 휴식 처리됨</p></div>);
         } else if (report && report.status==='confirmed') {
-            dues = (<div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3"><p className="text-sm font-black text-white">✓ {targetMonLabel} 회비 완료</p></div>);
+            dues = (<div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3"><p className="text-sm font-black text-white flex items-center gap-1.5"><Icon.Check size={15} className="flex-shrink-0"/>{targetMonLabel} 회비 완료</p></div>);
         } else if (report && report.status==='pending') {
-            dues = (<div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3"><p className="text-sm font-black text-white">⏳ {targetMonLabel} 회비 확인 대기 중</p><p className="text-[11px] text-white/80 mt-0.5">{DUES_LABELS[report.payType]||''} {wonFmt(report.amount)}원 · 관리자 확인 후 완료돼요</p></div>);
+            dues = (<div className="bg-white/15 rounded-2xl px-3 py-2.5 mb-3"><p className="text-sm font-black text-white flex items-center gap-1.5"><Icon.Hourglass size={14} className="flex-shrink-0"/>{targetMonLabel} 회비 확인 대기 중</p><p className="text-[11px] text-white/80 mt-0.5">{DUES_LABELS[report.payType]||''} {wonFmt(report.amount)}원 · 관리자 확인 후 완료돼요</p></div>);
         } else {
             showPayPrompt = true;
             const isRenew = ms && ms.active && ms.remaining <= 1;
             dues = (
                 <div className="bg-white/15 rounded-2xl px-3 py-3 mb-3">
-                    <p className="text-sm font-black text-white mb-2">{isRenew ? `⚠️ ${ms.type}납 곧 만료 (${ms.endDateFormatted}) · 갱신해 주세요` : `${targetMonLabel} 회비를 납부해 주세요`}</p>
+                    <p className="text-sm font-black text-white mb-2 flex items-center gap-1.5">{isRenew ? <><Icon.AlertTriangle size={15} className="flex-shrink-0"/>{ms.type}납 곧 만료 ({ms.endDateFormatted}) · 갱신해 주세요</> : <span>{targetMonLabel} 회비를 납부해 주세요</span>}</p>
                     <div className="grid grid-cols-2 gap-1.5">
                         {['monthly','rest','half_year','full_year'].map(k => (
                             <button key={k} onClick={()=>setSel(k)} className={`py-2 rounded-xl font-black text-xs transition-all ${sel===k?'bg-white text-emerald-700':'bg-white/20 text-white'}`}>{DUES_LABELS[k]} · {feeFor(k)===0?'면제':wonFmt(feeFor(k))+'원'}</button>
@@ -754,7 +754,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
         return (
             <>
             <button onClick={onGoDues} className="w-full rounded-2xl px-4 py-3 text-left text-white active:scale-98 transition-all flex items-center gap-3" style={{ background:'linear-gradient(135deg,#10b981,#059669)', boxShadow:'0 8px 22px -8px rgba(5,150,105,0.5)' }}>
-                <span className="text-2xl leading-none flex-shrink-0">💳</span>
+                <Icon.CreditCard size={24} className="text-white flex-shrink-0"/>
                 <div className="flex-1 min-w-0">
                     <p className="font-black text-sm leading-tight truncate">{isRenew ? `${ms.type}납 갱신 시기예요` : `${targetMonLabel} 회비 납부 시기예요`}</p>
                     <p className="text-[11px] text-white/80 mt-0.5 truncate">눌러서 회비 탭에서 납부하기</p>
@@ -764,7 +764,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
             {showPopup && (
                 <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6" onClick={dismissPopup}>
                     <div className="bg-white rounded-3xl p-6 w-full max-w-xs text-center shadow-2xl" onClick={e=>e.stopPropagation()}>
-                        <div className="text-4xl mb-2">💳</div>
+                        <div className="flex justify-center mb-2"><Icon.CreditCard size={36} className="text-emerald-500"/></div>
                         <p className="font-black text-lg text-slate-800">{targetMonLabel} 회비 납부</p>
                         <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">곧 {targetMonLabel}이 시작돼요.<br/>잊지 말고 회비를 납부해 주세요!</p>
                         <button onClick={()=>{ dismissPopup(); onGoDues && onGoDues(); }} className="mt-4 w-full py-3 rounded-2xl bg-emerald-500 text-white font-black text-sm active:scale-95 transition-all">납부하러 가기</button>
@@ -797,7 +797,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
         <div className="rounded-3xl p-5 text-white" style={{ background:'linear-gradient(135deg,#10b981,#059669)', boxShadow:'0 10px 28px -8px rgba(5,150,105,0.45)' }}>
             <div className="flex items-start justify-between gap-2 mb-3">
                 <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-2xl leading-none flex-shrink-0">💳</span>
+                    <Icon.CreditCard size={24} className="text-white flex-shrink-0"/>
                     <div className="min-w-0">
                         <p className="text-[11px] font-black uppercase tracking-widest text-white/80">회비 납부</p>
                         <p className="font-black text-lg leading-tight truncate">{acc.bank||'모임 계좌'}{acc.holder?` · ${acc.holder}`:''}</p>
@@ -836,7 +836,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
         {confirmType && (!report || report.status !== 'confirmed') && (
             <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6" onClick={()=>setConfirmType(null)}>
                 <div className="bg-white rounded-3xl p-6 w-full max-w-xs text-center shadow-2xl" onClick={e=>e.stopPropagation()}>
-                    <div className="text-4xl mb-2">💸</div>
+                    <div className="flex justify-center mb-2"><Icon.Banknote size={36} className="text-rose-500"/></div>
                     <p className="font-black text-lg text-slate-800">송금 마치셨어요?</p>
                     <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">{DUES_LABELS[confirmType]||''} {wonFmt(feeFor(confirmType))}원 납부로 신고할게요.<br/>아직 안 보냈으면 '아직요'를 누르세요.</p>
                     <div className="flex gap-2 mt-4">
@@ -921,9 +921,9 @@ const PenaltyPayCard = ({ isAdminMode, memberName, memberInfo, managers = [], mo
         if (isAdminMode || myList.length === 0) return null;
         return (
             <button onClick={onGoDues} className="w-full flex items-center gap-2 px-4 py-3 rounded-2xl bg-rose-500 text-white active:scale-98 transition-all shadow-sm">
-                <span className="text-base">💸</span>
+                <Icon.Banknote size={16} className="text-white flex-shrink-0"/>
                 <span className="flex-1 text-left font-black text-sm truncate">미납 벌금 {myList.length}건 · {fmtWon(myTotal)}</span>
-                <span className="text-xs font-black shrink-0">납부하기 ›</span>
+                <span className="text-xs font-black shrink-0 inline-flex items-center gap-0.5">납부하기 <Icon.ChevronRight size={13}/></span>
             </button>
         );
     }
@@ -935,7 +935,7 @@ const PenaltyPayCard = ({ isAdminMode, memberName, memberInfo, managers = [], mo
     return (
         <div className="card rounded-3xl p-5 border-2 border-rose-100">
             <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg">💸</span>
+                <Icon.Banknote size={18} className="text-rose-500 flex-shrink-0"/>
                 <h3 className="font-black text-slate-800">지각 · 노쇼 벌금</h3>
             </div>
             {showMember && (
@@ -1004,7 +1004,7 @@ const DuesReportsHomeCard = ({ duesReports, onConfirm, onReject, onGoDuesTab }) 
         <div className="rounded-3xl p-4 border-2 border-amber-300 bg-amber-50">
             <div className="flex items-center justify-between gap-2 mb-2.5">
                 <p className="font-black text-sm text-amber-700 flex items-center gap-1.5">
-                    <span className="text-base">🔔</span> 회비 납부 신고 {pend.length}건
+                    <Icon.Bell size={16} className="text-amber-600 flex-shrink-0"/> 회비 납부 신고 {pend.length}건
                 </p>
                 {onGoDuesTab && (
                     <button onClick={onGoDuesTab} className="text-[11px] font-black text-amber-600 bg-amber-100 px-2.5 py-1 rounded-lg active:scale-95 transition-all shrink-0">회비 탭에서 보기</button>
@@ -1106,7 +1106,7 @@ const TabHome = ({
         {/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone && (
             <div className="card rounded-3xl p-4 border-orange-100">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0 text-lg">📲</div>
+                    <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0"><Icon.Smartphone size={20} className="text-orange-500"/></div>
                     <div className="flex-1">
                         <p className="font-black text-sm text-orange-500">iPhone 알림 받으려면</p>
                         <p className="text-xs text-slate-400 mt-0.5">Safari → 공유 버튼 → "홈 화면에 추가" 후 앱에서 실행하세요</p>
