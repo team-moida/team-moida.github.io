@@ -546,8 +546,8 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
                         <p className={`font-black text-base ${darkMode ? 'text-white' : 'text-slate-800'}`}>지각 · 노쇼 명단</p>
                         <p className="text-[11px] text-slate-400 mb-3">{fmtMeetingDate(m.date)} · {m.start}~{m.end}{m.location ? ` · ${m.location}` : ''}</p>
                         <div className="flex items-center gap-2 mb-3">
-                            {lateCount > 0 && <span className="text-xs font-black px-3 py-1.5 rounded-xl bg-amber-50 text-amber-600">지각 {lateCount}</span>}
-                            {noShowCount > 0 && <span className="text-xs font-black px-3 py-1.5 rounded-xl bg-rose-50 text-rose-500">노쇼 {noShowCount}</span>}
+                            {lateCount > 0 && <span className="font-black bg-amber-50 text-amber-600" style={{ display: 'inline-block', fontSize: '12px', height: '28px', lineHeight: '28px', padding: '0 12px', borderRadius: '12px' }}>지각 {lateCount}</span>}
+                            {noShowCount > 0 && <span className="font-black bg-rose-50 text-rose-500" style={{ display: 'inline-block', fontSize: '12px', height: '28px', lineHeight: '28px', padding: '0 12px', borderRadius: '12px' }}>노쇼 {noShowCount}</span>}
                         </div>
                         <div className="space-y-1.5">
                             {penaltyRecords.map((r, i) => (
@@ -559,7 +559,7 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
                                         </div>
                                         <div style={{ display: 'table-cell', verticalAlign: 'middle', textAlign: 'right', whiteSpace: 'nowrap', padding: '12px 14px 12px 6px' }}>
                                             {r.checkInTime && r.checkInTime !== '미출석' && <span className="font-black text-slate-400" style={{ fontSize: '10px', marginRight: '8px' }}>{r.checkInTime}</span>}
-                                            <span className={stColor(r.status)} style={{ display: 'inline-block', fontWeight: 900, fontSize: '10px', padding: '3px 8px', borderRadius: '8px' }}>{r.status}</span>
+                                            <span className={stColor(r.status)} style={{ display: 'inline-block', fontWeight: 900, fontSize: '11px', height: '22px', lineHeight: '22px', padding: '0 10px', borderRadius: '8px' }}>{r.status}</span>
                                         </div>
                                     </div>
                                 </div>
