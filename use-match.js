@@ -7,7 +7,7 @@ function useMatch({ isAdminMode, meetingSettings, confirmedDrafts }) {
     const [matchAdminView, setMatchAdminView] = useState('setup');
     const [matchConfig, setMatchConfig] = useState({
         meetingDate:'', courtCount:3, matchDuration:12, breakDuration:3, subIntervalSec:180,
-        startTime:'08:00', endTime:'10:00',
+        startTime:'08:00', endTime:'10:00', location:'',
         fieldNames:['1구장','2구장','3구장'], fieldTypes:['6vs6','6vs6','6vs6'],
         strictCourtSize:false
     });

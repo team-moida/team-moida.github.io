@@ -133,8 +133,18 @@ const TabMatch = ({
     matchSaveSchedule, matchHandleCapture, matchGenerateTable,
     matchHandleNextMatch, matchHandlePrevMatch, matchHandleToggleComplete, matchHandlePresetSelect, matchToggleSubCourt,
     splitTime, setIsLoadMatchModalOpen, setIsPresetModalOpen,
+    meetings,
 }) => {
     const [boardOpen, setBoardOpen] = React.useState(false);
+    const [selectedMeetingId, setSelectedMeetingId] = React.useState('');
+    // 모임 선택 시 그 모임의 날짜·시간·장소를 매치 설정에 자동 채움
+    const pickMeeting = (mid) => {
+        setSelectedMeetingId(mid);
+        const mt = (meetings || []).find(m => m.id === mid);
+        if (mt) setMatchConfig(p => ({ ...p, meetingDate: mt.date || p.meetingDate, startTime: mt.start || p.startTime, endTime: mt.end || p.endTime, location: mt.location || '' }));
+    };
+    // 매치표 만들 대상 = 아직 종료 안 된 모임(가까운 날짜 먼저)
+    const pickableMeetings = (meetings || []).filter(m => m && m.date && !isMeetingEnded(m)).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
     window.useMoidaBack?.(boardOpen, () => setBoardOpen(false));
     const boardSessions = isAdminMode
         ? (localSchedule.list || [])
@@ -186,6 +196,16 @@ const TabMatch = ({
                         <div className="card border-slate-100 rounded-3xl p-4">
                             <p className="text-[10px] font-black text-teal-500 uppercase tracking-widest mb-3">기본 설정</p>
                             <div className="space-y-3">
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-400 mb-1">모임 선택</p>
+                                    <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-black text-sm" value={selectedMeetingId} onChange={e => pickMeeting(e.target.value)}>
+                                        <option value="">직접 입력</option>
+                                        {pickableMeetings.map(m => (
+                                            <option key={m.id} value={m.id}>{fmtMeetingDate(m.date)} {(m.meetingType==='match'?'매칭':'정기')} · {m.location||'장소 미정'}</option>
+                                        ))}
+                                    </select>
+                                    {matchConfig.location && <p className="text-[11px] font-black text-teal-600 mt-1.5">📍 {matchConfig.location}</p>}
+                                </div>
                                 <div>
                                     <p className="text-[10px] font-black text-slate-400 mb-1">모임 날짜</p>
                                     <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-black text-sm text-center" style={{userSelect:'text'}}
