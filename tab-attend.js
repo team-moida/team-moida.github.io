@@ -441,6 +441,7 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
     const records = (hist?.records || []).slice().sort((a, b) => (a.timestamp || '99:99').localeCompare(b.timestamp || '99:99'));
     const lateCount = records.filter(r => r.status === '지각').length;
     const noShowCount = records.filter(r => r.status === '노쇼').length;
+    const penaltyRecords = records.filter(r => r.status === '지각' || r.status === '노쇼');
     // ── 출석 기록 이미지로 저장 (지각·노쇼 포함) ──
     const captureRecord = async () => {
         const el = document.getElementById('record-capture-area');
@@ -449,6 +450,18 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
             const canvas = await window.html2canvas(el, { scale: 2, backgroundColor: darkMode ? '#1e293b' : '#ffffff', useCORS: true });
             const link = document.createElement('a');
             link.download = `모이다_출석기록_${m.date}.jpg`;
+            link.href = canvas.toDataURL('image/jpeg', 0.92);
+            link.click();
+        } catch (e) { /* 캡쳐 실패는 무시 */ }
+    };
+    // ── 지각·노쇼만 따로 이미지로 저장 (화면 밖 전용 레이아웃 → 이름 잘림 없음) ──
+    const capturePenalty = async () => {
+        const el = document.getElementById('penalty-capture-area');
+        if (!el || !window.html2canvas) return;
+        try {
+            const canvas = await window.html2canvas(el, { scale: 2, backgroundColor: darkMode ? '#1e293b' : '#ffffff', useCORS: true });
+            const link = document.createElement('a');
+            link.download = `모이다_지각노쇼_${m.date}.jpg`;
             link.href = canvas.toDataURL('image/jpeg', 0.92);
             link.click();
         } catch (e) { /* 캡쳐 실패는 무시 */ }
@@ -504,8 +517,8 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
                             {records.map((r, i) => (
                                 <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 min-w-0">
                                     <div className="flex-1 min-w-0">
-                                        <span className="font-black text-sm text-slate-700 truncate block">{r.name}</span>
-                                        {r.reason && <span className="text-[10px] text-rose-400 font-black truncate block">사유: {r.reason}</span>}
+                                        <span className="font-black text-sm text-slate-700 break-words block">{r.name}</span>
+                                        {r.reason && <span className="text-[10px] text-rose-400 font-black break-words block">사유: {r.reason}</span>}
                                     </div>
                                     {r.team && r.team !== '-' && <span className="text-[10px] font-black text-slate-400 shrink-0">{r.team}</span>}
                                     {r.checkInTime && r.checkInTime !== '미출석' && <span className="text-[10px] font-black text-slate-400 shrink-0">{r.checkInTime}</span>}
@@ -524,6 +537,31 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
                 </div>
                 {hist && (
                     <button onClick={captureRecord} className="w-full mt-3 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-black text-sm active:scale-95 transition-all flex items-center justify-center gap-1.5"><Icon.Camera size={14}/>지각·노쇼 포함 출석 기록 이미지 저장</button>
+                )}
+                {hist && penaltyRecords.length > 0 && (
+                    <button onClick={capturePenalty} className="w-full mt-2 py-2.5 rounded-xl bg-amber-50 text-amber-600 font-black text-sm active:scale-95 transition-all flex items-center justify-center gap-1.5"><Icon.Camera size={14}/>지각·노쇼만 이미지 저장</button>
+                )}
+                {hist && penaltyRecords.length > 0 && (
+                    <div id="penalty-capture-area" style={{ position: 'fixed', left: '-9999px', top: 0, width: '380px' }} className={`p-5 ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+                        <p className={`font-black text-base ${darkMode ? 'text-white' : 'text-slate-800'}`}>지각 · 노쇼 명단</p>
+                        <p className="text-[11px] text-slate-400 mb-3">{fmtMeetingDate(m.date)} · {m.start}~{m.end}{m.location ? ` · ${m.location}` : ''}</p>
+                        <div className="flex items-center gap-2 mb-3">
+                            {lateCount > 0 && <span className="text-xs font-black px-3 py-1.5 rounded-xl bg-amber-50 text-amber-600">지각 {lateCount}</span>}
+                            {noShowCount > 0 && <span className="text-xs font-black px-3 py-1.5 rounded-xl bg-rose-50 text-rose-500">노쇼 {noShowCount}</span>}
+                        </div>
+                        <div className="space-y-1.5">
+                            {penaltyRecords.map((r, i) => (
+                                <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50">
+                                    <div className="flex-1">
+                                        <span className="font-black text-sm text-slate-700 break-words block">{r.name}</span>
+                                        {r.reason && <span className="text-[10px] text-rose-400 font-black break-words block">사유: {r.reason}</span>}
+                                    </div>
+                                    {r.checkInTime && r.checkInTime !== '미출석' && <span className="text-[10px] font-black text-slate-400 shrink-0">{r.checkInTime}</span>}
+                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg shrink-0 ${stColor(r.status)}`}>{r.status}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 )}
                 {onFinalizePenalty && kind === 'self' && hist && penTargets.length > 0 && (
                     <div className="mt-4 pt-3 border-t border-slate-100">
