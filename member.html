@@ -657,23 +657,23 @@ function App() {
         <div className="min-h-screen content-pb text-slate-800">
             {testMode && (
                 <div style={{background:'#fbbf24',position:'sticky',top:0,zIndex:50}} className="text-amber-900 text-xs font-black text-center py-2 px-4">
-                    🧪 테스트 모드 — GPS·QR 시간·거리 제한이 해제된 상태입니다.
+                    <Icon.Beaker size={13} style={{display:'inline',verticalAlign:'-2px',marginRight:'4px'}}/>테스트 모드 — GPS·QR 시간·거리 제한이 해제된 상태입니다.
                 </div>
             )}
             {adminModeLabel && (
                 <div style={{position:'sticky',top:0,zIndex:55}} className="bg-indigo-600 text-white text-[11px] font-black text-center py-2 px-4">
-                    ⚙️ {adminModeLabel}에 들어와 있습니다 · 다른 탭으로 이동하면 해제됩니다
+                    <Icon.Settings size={13} style={{display:'inline',verticalAlign:'-2px',marginRight:'4px'}}/>{adminModeLabel}에 들어와 있습니다 · 다른 탭으로 이동하면 해제됩니다
                 </div>
             )}
             {inTestPreview && (
                 <div style={{position:'sticky',top:0,zIndex:56}} className="bg-rose-600 text-white text-[11px] font-black flex items-center justify-center gap-2 py-2 px-4">
-                    🔧 테스트(회원) 화면 보는 중
+                    <span className="inline-flex items-center gap-1"><Icon.Wrench size={13}/>테스트(회원) 화면 보는 중</span>
                     <button onClick={exitTestPreview} className="px-2 py-0.5 rounded-md bg-white/25 hover:bg-white/35 underline">관리자로 복귀</button>
                 </div>
             )}
             {testExists && !inTestPreview && (
                 <div style={{position:'sticky',top:0,zIndex:56}} className="bg-amber-500 text-white text-[11px] font-black flex items-center justify-center gap-2 py-2 px-4">
-                    🔧 테스트 계정·기록이 남아 있어요
+                    <span className="inline-flex items-center gap-1"><Icon.Wrench size={13}/>테스트 계정·기록이 남아 있어요</span>
                     <button onClick={cleanupTestData} className="px-2 py-0.5 rounded-md bg-white/25 hover:bg-white/35 underline">정리</button>
                 </div>
             )}

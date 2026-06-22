@@ -57,7 +57,7 @@ const TabTeam = ({
                 <button onClick={() => setIsTeamPanelOpen(v => !v)}
                     className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 rounded-xl transition-all active:scale-95"
                     style={isTeamPanelOpen ? {background:'linear-gradient(135deg,#14b8a6,#0d9488)',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
-                    ⚙️ {isTeamPanelOpen ? '편성 모드 ON' : '편성 관리'}
+                    <Icon.Settings size={13}/>{isTeamPanelOpen ? '편성 모드 ON' : '편성 관리'}
                 </button>
             </div>
         )}
@@ -158,7 +158,7 @@ const TabTeam = ({
                                     {editMeetingDate && (
                                         <div className="rounded-xl p-3 mb-3 bg-blue-50 border border-blue-100 flex items-center justify-between">
                                             <p className="font-black text-slate-800 text-sm">{editMeetingDate} 팀 편성</p>
-                                            {editIsConfirmed && <span className="text-[10px] font-black px-2 py-0.5 bg-emerald-100 text-emerald-600 rounded-lg">✓ 확정됨</span>}
+                                            {editIsConfirmed && <span className="text-[10px] font-black px-2 py-0.5 bg-emerald-100 text-emerald-600 rounded-lg inline-flex items-center gap-1"><Icon.Check size={11}/>확정됨</span>}
                                         </div>
                                     )}
                                     <div id="tm-capture-area" className="grid grid-cols-2 gap-2 mb-3">
@@ -180,7 +180,7 @@ const TabTeam = ({
                                                     </div>
                                                     {selectedMemberTM && selectedMemberTM.teamIdx !== teamIdx && (
                                                         <button onClick={e => {e.stopPropagation(); tmMoveToTeam(teamIdx);}}
-                                                            className="text-[9px] font-black text-teal-600 bg-teal-50 border border-teal-300 px-1.5 py-0.5 rounded-lg shrink-0">↓여기로</button>
+                                                            className="text-[9px] font-black text-teal-600 bg-teal-50 border border-teal-300 px-1.5 py-0.5 rounded-lg shrink-0 inline-flex items-center gap-0.5"><Icon.ArrowDown size={10}/>여기로</button>
                                                     )}
                                                 </div>
                                                 {(()=>{
@@ -224,15 +224,15 @@ const TabTeam = ({
                                     {selectedMemberTM && (
                                         <div style={{position:'fixed',bottom:'80px',left:'50%',transform:'translateX(-50%)',zIndex:50}}
                                              className="flex items-center gap-2 bg-teal-500 text-white px-4 py-2.5 rounded-full shadow-xl text-xs font-black whitespace-nowrap">
-                                            <span>✋ {editTeams[selectedMemberTM.teamIdx]?.members[selectedMemberTM.memberIdx]?.name} 선택됨</span>
-                                            <button onClick={() => setSelectedMemberTM(null)} className="ml-1 text-teal-200 hover:text-white font-black">✕</button>
+                                            <span className="inline-flex items-center gap-1"><Icon.Hand size={13}/>{editTeams[selectedMemberTM.teamIdx]?.members[selectedMemberTM.memberIdx]?.name} 선택됨</span>
+                                            <button onClick={() => setSelectedMemberTM(null)} className="ml-1 text-teal-200 hover:text-white font-black inline-flex items-center"><Icon.X size={13}/></button>
                                         </div>
                                     )}
                                     {selectedTeamTM !== null && (
                                         <div style={{position:'fixed',bottom:'80px',left:'50%',transform:'translateX(-50%)',zIndex:50}}
                                              className="flex items-center gap-2 bg-violet-500 text-white px-4 py-2.5 rounded-full shadow-xl text-xs font-black whitespace-nowrap">
                                             <span>{getTeamName(selectedTeamTM)}팀 선택 · 교체할 팀 이름 탭</span>
-                                            <button onClick={() => setSelectedTeamTM(null)} className="ml-1 text-violet-200 hover:text-white font-black">✕</button>
+                                            <button onClick={() => setSelectedTeamTM(null)} className="ml-1 text-violet-200 hover:text-white font-black inline-flex items-center"><Icon.X size={13}/></button>
                                         </div>
                                     )}
                                     {tmUnassigned.length > 0 && (
@@ -255,7 +255,7 @@ const TabTeam = ({
                                         </div>
                                         <button onClick={tmConfirm} disabled={editIsConfirmed}
                                             className={`w-full py-3.5 rounded-xl font-black text-sm shadow-lg ${editIsConfirmed?'bg-emerald-500 text-white opacity-70':'bg-teal-500 text-white'}`}>
-                                            {editIsConfirmed ? '✓ 확정됨' : '확정하기'}
+                                            {editIsConfirmed ? <span className="inline-flex items-center justify-center gap-1"><Icon.Check size={14}/>확정됨</span> : '확정하기'}
                                         </button>
                                     </div>
                                     <p className="text-[10px] text-slate-400 text-center mt-2">팀원 탭 → 선택 후 교체 / ↓여기로 탭 · PC는 드래그</p>
@@ -269,7 +269,7 @@ const TabTeam = ({
                 {teamMakerTab === 'storage' && (
                     <div>
                         <div className="flex gap-2 mb-3">
-                            {[['confirmed','✓ 확정',confirmedDrafts.length],['draft','💾 임시',savedDrafts.length]].map(([v,l,cnt]) => (
+                            {[['confirmed',<><Icon.Check size={12}/>확정</>,confirmedDrafts.length],['draft',<><Icon.Save size={12}/>임시</>,savedDrafts.length]].map(([v,l,cnt]) => (
                                 <button key={v} onClick={() => { setTeamStorageSubTab(v); setDraftSelectMode(false); setSelectedDraftIds([]); }}
                                     className={`flex-1 py-2 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 ${teamStorageSubTab===v?'bg-teal-500 text-white shadow':'bg-slate-100 text-slate-500'}`}>
                                     {l} <span className={`text-[9px] px-1.5 py-0.5 rounded font-black ${teamStorageSubTab===v?'bg-white/20 text-white':'bg-slate-200 text-slate-400'}`}>{cnt}</span>

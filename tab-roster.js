@@ -102,7 +102,7 @@ const TabRoster = ({
                     if (!pend.length) return null;
                     return (
                         <div className="mb-3 rounded-2xl p-3 bg-amber-50 border border-amber-200">
-                            <p className="text-sm font-black text-amber-700 mb-2">🔔 회비 납부 신고 {pend.length}건 · 확인하고 확정해 주세요</p>
+                            <p className="text-sm font-black text-amber-700 mb-2 flex items-center gap-1.5"><Icon.Bell size={14} className="flex-shrink-0"/>회비 납부 신고 {pend.length}건 · 확인하고 확정해 주세요</p>
                             <div className="space-y-1.5">
                                 {pend.map(r => (
                                     <div key={r.memberId+'_'+r.month} className="flex items-center gap-2 bg-white rounded-xl px-3 py-2">
@@ -157,7 +157,7 @@ const TabRoster = ({
                                               </>
                                             : <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg ${cfg.color}`}>{cfg.label}</span>
                                         }
-                                        {duesReports[m.id]?.status==='pending' && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-lg bg-amber-100 text-amber-700">📩 {DUES_LABELS[duesReports[m.id].payType]||'신고'} {wonFmt(duesReports[m.id].amount)}</span>}
+                                        {duesReports[m.id]?.status==='pending' && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-lg bg-amber-100 text-amber-700 inline-flex items-center gap-1"><Icon.Mail size={10} className="flex-shrink-0"/>{DUES_LABELS[duesReports[m.id].payType]||'신고'} {wonFmt(duesReports[m.id].amount)}</span>}
                                     </div>
                                     {info?.active&&<p className="text-[10px] text-slate-400 mt-0.5">만료: {info.endDateFormatted} · 잔여휴식 {info.remainingRest}회</p>}
                                     {payDate&&<p className="text-[10px] text-slate-400 mt-0.5">납부일: {payDate}</p>}
