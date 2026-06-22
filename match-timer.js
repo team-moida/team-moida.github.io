@@ -62,10 +62,10 @@ const MoidaTimer = (function () {
         }
     }
     function vibrate(pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {} } // iOS는 미지원(무시됨)
-    // 교체 10초전: 소리 2회 + 진동 2회 / 교체: 소리 3회 + 진동 3회 / 게임종료: 길게 1회
-    function alertPre() { if (!playWhistle(2)) beeps(2, 130, 2600); vibrate([0, 250, 150, 250]); }
-    function alertSub() { if (!playWhistle(3)) beeps(3, 180, 2600); vibrate([0, 400, 150, 400, 150, 400]); }
-    function alertEnd() { if (!playWhistle(1)) beeps(1, 800, 1750); vibrate([0, 800]); }
+    // 교체 10초전: 1회 / 교체: 2회 / 게임종료: 3회 (소리·진동 동일 횟수)
+    function alertPre() { if (!playWhistle(1)) beeps(1, 150, 2600); vibrate([0, 250]); }
+    function alertSub() { if (!playWhistle(2)) beeps(2, 180, 2600); vibrate([0, 300, 150, 300]); }
+    function alertEnd() { if (!playWhistle(3)) beeps(3, 250, 1750); vibrate([0, 400, 150, 400, 150, 400]); }
 
     // ── 모듈 단일 상태 ──
     const LS_GAME = 'moida_timer_gameMin', LS_SUB = 'moida_timer_subSec';
