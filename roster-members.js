@@ -195,7 +195,7 @@ function DeleteMemberModal({ deletingMember, setDeletingMember, handleDeleteMemb
             <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={e=>e.stopPropagation()}>
                 <h2 className="text-xl font-black text-red-600 mb-1">회원 완전 삭제</h2>
                 <p className="text-sm text-slate-500 mb-1">{deletingMember.name}</p>
-                <p className="text-xs text-red-500 font-black mb-4">⚠ 이 작업은 되돌릴 수 없습니다.</p>
+                <p className="text-xs text-red-500 font-black mb-4 flex items-center justify-center gap-1"><Icon.AlertTriangle size={12} className="flex-shrink-0"/>이 작업은 되돌릴 수 없습니다.</p>
                 <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-4">
                     <p className="text-xs text-slate-600">Firestore에서 회원 정보가 영구 삭제됩니다.<br/>출석 기록은 그대로 남습니다.</p>
                 </div>
@@ -236,7 +236,7 @@ function ResignModal({ resigningMember, setResigningMember, resignForm, setResig
                     </div>
                     <button onClick={()=>setResignForm(p=>({...p,isForced:!p.isForced}))}
                         className={`w-full py-2.5 rounded-xl font-black text-xs border transition-all ${resignForm.isForced?'bg-red-500 text-white border-red-500':'bg-white border-slate-200 text-slate-500'}`}>
-                        {resignForm.isForced?'✓ 강제 탈퇴':'강제 탈퇴'}
+                        {resignForm.isForced?<span className="inline-flex items-center justify-center gap-1"><Icon.Check size={13}/>강제 탈퇴</span>:'강제 탈퇴'}
                     </button>
                 </div>
                 <div className="flex gap-2 mt-5">

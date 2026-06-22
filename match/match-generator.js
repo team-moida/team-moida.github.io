@@ -58,7 +58,7 @@ function SetupTab({config, setConfig, confirmedData, presets, selectedPresetId, 
     return (
         <div>
             <button onClick={onLoadOpen} className="w-full py-4 bg-white border border-slate-200 rounded-3xl shadow-sm flex items-center justify-center gap-2 mb-5 active:scale-95 transition-all">
-                <span className="text-2xl">📂</span>
+                <Icon.Folder size={20} className="text-slate-500"/>
                 <p className="font-black text-slate-700">과거 기록 불러오기</p>
             </button>
 
@@ -165,7 +165,7 @@ function SetupTab({config, setConfig, confirmedData, presets, selectedPresetId, 
 
             {confirmedData && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-4">
-                    <p className="text-xs font-black text-emerald-600">✓ 확정된 팀 편성: {confirmedData.meetingDate}</p>
+                    <p className="text-xs font-black text-emerald-600 flex items-center gap-1"><Icon.Check size={13} className="flex-shrink-0"/>확정된 팀 편성: {confirmedData.meetingDate}</p>
                     <p className="text-xs text-emerald-500 mt-0.5">{confirmedData.teams?.length}팀 · {confirmedData.teams?.reduce((s,t)=>s+t.members.length,0)}명</p>
                 </div>
             )}

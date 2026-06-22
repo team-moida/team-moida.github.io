@@ -122,7 +122,7 @@ function ResultsTab({ teams, isConfirmed, displayedMeetingDate, isPastMeeting, s
 
             {isConfirmed && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 mb-4 text-center">
-                    <p className="text-emerald-600 font-black text-sm">✓ 확정됨 · 출결 시스템에 반영되었습니다</p>
+                    <p className="text-emerald-600 font-black text-sm flex items-center justify-center gap-1"><Icon.Check size={13}/>확정됨 · 출결 시스템에 반영되었습니다</p>
                 </div>
             )}
 
@@ -145,7 +145,7 @@ function ResultsTab({ teams, isConfirmed, displayedMeetingDate, isPastMeeting, s
                             </div>
                             {selectedMember && selectedMember.teamIdx !== teamIdx && !isPastMeeting && (
                                 <button onClick={e => { e.stopPropagation(); handleMoveToTeam(teamIdx); }}
-                                    className="text-[9px] font-black text-teal-600 bg-teal-50 border border-teal-300 px-1.5 py-0.5 rounded-lg active:scale-95 shrink-0">↓여기로</button>
+                                    className="text-[9px] font-black text-teal-600 bg-teal-50 border border-teal-300 px-1.5 py-0.5 rounded-lg active:scale-95 shrink-0 inline-flex items-center gap-0.5"><Icon.ArrowDown size={10}/>여기로</button>
                             )}
                         </div>
                         {(() => {
@@ -194,10 +194,10 @@ function ResultsTab({ teams, isConfirmed, displayedMeetingDate, isPastMeeting, s
             {selectedMember && !isPastMeeting && (
                 <div style={{ position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', zIndex: 50 }}
                      className="flex items-center gap-2 bg-teal-500 text-white px-4 py-2.5 rounded-full shadow-xl text-xs font-black whitespace-nowrap animate-zoom-in">
-                    <span>✋ {teams[selectedMember.teamIdx]?.members[selectedMember.memberIdx]?.name} 선택됨</span>
+                    <span className="inline-flex items-center gap-1"><Icon.Hand size={13}/>{teams[selectedMember.teamIdx]?.members[selectedMember.memberIdx]?.name} 선택됨</span>
                     <span className="text-teal-200">·</span>
                     <span className="text-teal-100 font-medium">교체할 팀원 탭 또는 팀의 ↓여기로 탭</span>
-                    <button onClick={() => setSelectedMember(null)} className="ml-1 text-teal-200 hover:text-white text-sm font-black">✕</button>
+                    <button onClick={() => setSelectedMember(null)} className="ml-1 text-teal-200 hover:text-white text-sm font-black inline-flex items-center"><Icon.X size={13}/></button>
                 </div>
             )}
             {selectedTeam !== null && !isPastMeeting && (
@@ -206,7 +206,7 @@ function ResultsTab({ teams, isConfirmed, displayedMeetingDate, isPastMeeting, s
                     <span>{getTeamName(selectedTeam)}팀 선택됨</span>
                     <span className="text-violet-200">·</span>
                     <span className="text-violet-100 font-medium">교체할 팀 이름 탭</span>
-                    <button onClick={() => setSelectedTeam(null)} className="ml-1 text-violet-200 hover:text-white text-sm font-black">✕</button>
+                    <button onClick={() => setSelectedTeam(null)} className="ml-1 text-violet-200 hover:text-white text-sm font-black inline-flex items-center"><Icon.X size={13}/></button>
                 </div>
             )}
 
@@ -222,7 +222,7 @@ function ResultsTab({ teams, isConfirmed, displayedMeetingDate, isPastMeeting, s
             )}
 
             {isPastMeeting ? (
-                <button onClick={onGoStorage} className="w-full py-3.5 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">← 목록으로</button>
+                <button onClick={onGoStorage} className="w-full py-3.5 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm inline-flex items-center justify-center gap-1"><Icon.ChevronLeft size={14}/>목록으로</button>
             ) : (
                 <div className="space-y-2">
                     <div className="flex gap-2">
@@ -232,7 +232,7 @@ function ResultsTab({ teams, isConfirmed, displayedMeetingDate, isPastMeeting, s
                     </div>
                     <button onClick={onConfirm} disabled={isConfirmed}
                         className={`w-full py-3.5 rounded-2xl font-black text-sm shadow-lg ${isConfirmed ? 'bg-emerald-500 text-white opacity-70' : 'bg-teal-500 text-white'}`}>
-                        {isConfirmed ? '✓ 확정됨' : '확정하기'}
+                        {isConfirmed ? <span className="inline-flex items-center justify-center gap-1"><Icon.Check size={14}/>확정됨</span> : '확정하기'}
                     </button>
                 </div>
             )}

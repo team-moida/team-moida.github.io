@@ -251,12 +251,12 @@ function App() {
                                     <p className="text-[10px] text-slate-400 mt-0.5">{schedule.list[currentMatchIndex]?.time}</p>
                                 </div>
                             ) : (
-                                <p className="text-sm font-black text-emerald-500">✓ 모든 경기 종료</p>
+                                <p className="text-sm font-black text-emerald-500 flex items-center gap-1"><Icon.Check size={14}/>모든 경기 종료</p>
                             )}
                         </div>
                         <button onClick={handleNextMatch} disabled={currentMatchIndex>=schedule.list.length}
                             style={{minWidth:130}} className="py-3 px-6 bg-teal-500 text-white rounded-2xl font-black text-sm disabled:opacity-30 active:scale-95 transition-all shadow-lg">
-                            {currentMatchIndex>=schedule.list.length?'종료':'다음 매치 →'}
+                            {currentMatchIndex>=schedule.list.length?'종료':<span className="inline-flex items-center justify-center gap-1">다음 매치 <Icon.ChevronRight size={14}/></span>}
                         </button>
                     </div>
                 </div>
