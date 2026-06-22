@@ -85,22 +85,22 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                         );
                     })}
                     </div>
+                    {/* 휴식 팀 — 타이머·코트와 같은 가운데 묶음에 포함 (세로모드에서도 중앙) */}
+                    {!allDone && session.resting && session.resting.length > 0 && (
+                        <div style={{flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',flexWrap:'wrap',gap:'10px',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'16px',padding:'clamp(6px,1.2vmin,12px) 14px'}}>
+                            <span style={{color:'#d97706',fontWeight:900,fontSize:'clamp(0.8rem,2vmin,1.15rem)'}}>😴 휴식</span>
+                            {session.resting.map((r, ri) => {
+                                const ridx = String(r).charCodeAt(0) - 65;
+                                return (
+                                    <div key={ri} style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                                        <span className={getTeamBadge(ridx)} style={{width:'clamp(28px,5vmin,44px)',height:'clamp(28px,5vmin,44px)',borderRadius:'10px',color:'white',fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'clamp(0.95rem,2.4vmin,1.45rem)'}}>{r}</span>
+                                        <span style={{fontWeight:900,color:'#92400e',fontSize:'clamp(0.78rem,1.9vmin,1.15rem)'}}>{getTeamColorName(ridx)}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
-                {/* 휴식 팀 — 조끼색 배지 (얇은 줄) */}
-                {!allDone && session.resting && session.resting.length > 0 && (
-                    <div style={{flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',flexWrap:'wrap',gap:'10px',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'16px',padding:'clamp(6px,1.2vmin,12px) 14px'}}>
-                        <span style={{color:'#d97706',fontWeight:900,fontSize:'clamp(0.8rem,2vmin,1.15rem)'}}>😴 휴식</span>
-                        {session.resting.map((r, ri) => {
-                            const ridx = String(r).charCodeAt(0) - 65;
-                            return (
-                                <div key={ri} style={{display:'flex',alignItems:'center',gap:'6px'}}>
-                                    <span className={getTeamBadge(ridx)} style={{width:'clamp(28px,5vmin,44px)',height:'clamp(28px,5vmin,44px)',borderRadius:'10px',color:'white',fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'clamp(0.95rem,2.4vmin,1.45rem)'}}>{r}</span>
-                                    <span style={{fontWeight:900,color:'#92400e',fontSize:'clamp(0.78rem,1.9vmin,1.15rem)'}}>{getTeamColorName(ridx)}</span>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
             </div>
             {/* 하단 네비 — 항상 보임 */}
             <div style={{flexShrink:0,padding:'10px 16px max(10px, env(safe-area-inset-bottom))',background:'white',borderTop:'1px solid #e2e8f0',display:'flex',gap:'10px',alignItems:'center'}}>
