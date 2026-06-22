@@ -904,18 +904,21 @@ function App() {
             {!attend.isKioskOpen && <div className="tab-bar fixed bottom-0 left-0 right-0 z-50 pb-safe">
                 <div className="flex items-center gap-2 h-24 max-w-sm mx-auto px-3">
                     {[
-                        {key:'home',    label:'홈',   icon:<Icon.Home size={30}/>},
-                        {key:'meeting', label:'모임', icon:<Icon.Calendar size={30}/>},
-                        {key:'dues',    label:'회비', icon:<Icon.CreditCard size={30}/>},
-                        {key:'rules',   label:'회칙', icon:<Icon.ShieldCheck size={30}/>},
-                        ...(isAdminMode ? [{key:'roster', label:'명단', icon:<Icon.List size={30}/>}] : []),
-                    ].map(({key,label,icon})=>(
-                        <button key={key} onClick={()=>{ if (key === 'meeting') setViewMeetingId(null); setTab(key); }}
-                            className={`flex flex-col items-center justify-center flex-1 h-[72px] rounded-2xl transition-all ${tab===key?'text-[#1A151D]':'text-slate-400'}`}>
-                            {icon}
-                            <span className={`text-[11px] font-black mt-1 ${tab===key?'text-[#1A151D]':'text-slate-400'}`}>{label}</span>
-                        </button>
-                    ))}
+                        {key:'home',    label:'홈',   Comp:Icon.Home},
+                        {key:'meeting', label:'모임', Comp:Icon.Calendar},
+                        {key:'dues',    label:'회비', Comp:Icon.CreditCard},
+                        {key:'rules',   label:'회칙', Comp:Icon.ShieldCheck},
+                        ...(isAdminMode ? [{key:'roster', label:'명단', Comp:Icon.List}] : []),
+                    ].map(({key,label,Comp})=>{
+                        const active = tab===key;
+                        return (
+                            <button key={key} onClick={()=>{ if (key === 'meeting') setViewMeetingId(null); setTab(key); }}
+                                className={`flex flex-col items-center justify-center flex-1 h-[72px] transition-all ${active?'text-[#1A151D]':'text-slate-400'}`}>
+                                <Comp size={30} active={active}/>
+                                <span className={`text-[11px] font-black mt-1 ${active?'text-[#1A151D]':'text-slate-400'}`}>{label}</span>
+                            </button>
+                        );
+                    })}
                 </div>
             </div>}
 
