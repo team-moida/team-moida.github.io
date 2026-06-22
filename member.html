@@ -904,19 +904,18 @@ function App() {
             {!attend.isKioskOpen && <div className="tab-bar fixed bottom-0 left-0 right-0 z-50 pb-safe">
                 <div className="flex items-center gap-1 h-24 w-full px-2">
                     {[
-                        {key:'home',    label:'홈',   Comp:Icon.Home,        CompOn:Icon.HomeFill},
-                        {key:'meeting', label:'모임', Comp:Icon.Calendar,    CompOn:Icon.CalendarFill},
-                        {key:'dues',    label:'회비', Comp:Icon.CreditCard,  CompOn:Icon.CreditCardFill},
-                        {key:'rules',   label:'회칙', Comp:Icon.ShieldCheck, CompOn:Icon.ShieldFill},
-                        ...(isAdminMode ? [{key:'roster', label:'명단', Comp:Icon.List, CompOn:Icon.ListFill}] : []),
-                    ].map(({key,label,Comp,CompOn})=>{
+                        {key:'home',    label:'홈',   Comp:Icon.Home},
+                        {key:'meeting', label:'모임', Comp:Icon.Calendar},
+                        {key:'dues',    label:'회비', Comp:Icon.CreditCard},
+                        {key:'rules',   label:'회칙', Comp:Icon.ShieldCheck},
+                        ...(isAdminMode ? [{key:'roster', label:'명단', Comp:Icon.List}] : []),
+                    ].map(({key,label,Comp})=>{
                         const active = tab===key;
-                        const I = active ? CompOn : Comp;
                         return (
                             <button key={key} onClick={()=>{ if (key === 'meeting') setViewMeetingId(null); setTab(key); }}
-                                className={`flex flex-col items-center justify-center flex-1 h-[72px] transition-all ${active?'text-[#1A151D]':'text-slate-400'}`}>
-                                <I size={30}/>
-                                <span className={`text-[11px] font-black mt-1 ${active?'text-[#1A151D]':'text-slate-400'}`}>{label}</span>
+                                className={`flex flex-col items-center justify-center flex-1 h-[72px] transition-all ${active?'text-teal-500':'text-slate-400'}`}>
+                                <Comp size={30}/>
+                                <span className={`text-[11px] font-black mt-1 ${active?'text-teal-500':'text-slate-400'}`}>{label}</span>
                             </button>
                         );
                     })}
