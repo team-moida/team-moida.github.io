@@ -164,7 +164,8 @@ function MatchTimerSettings({ t, onClose }) {
 }
 
 // 매치판 크게 보기 상단에 들어가는 컴팩트 타이머 바
-function MatchTimerBar() {
+// isAdmin=true 운영진: 조작 가능 / false 회원: 보기 전용(컨트롤 숨김)
+function MatchTimerBar({ isAdmin = true }) {
     const t = useMatchTimer();
     const [setOpen, setSetOpen] = React.useState(false);
     const timeColor = t.ended ? '#10b981' : (t.subImminent ? '#f59e0b' : '#0f172a');
@@ -179,10 +180,16 @@ function MatchTimerBar() {
                 <span style={{ color: '#94a3b8', fontWeight: 900, fontSize: 'clamp(0.58rem,1.5vmin,0.85rem)' }}>교체까지</span>
             </div>
             <div style={{ flex: 1 }} />
-            <button onClick={() => t.running ? MoidaTimer.pause() : MoidaTimer.start()} style={{ ..._mtBtn, background: t.running ? '#f59e0b' : '#10b981', color: 'white' }}>{t.running ? '⏸' : '▶'}</button>
-            <button onClick={() => MoidaTimer.reset()} style={{ ..._mtBtn, background: '#e2e8f0', color: '#475569' }}>↻</button>
-            <button onClick={() => setSetOpen(v => !v)} style={{ ..._mtBtn, background: '#f1f5f9', color: '#64748b' }}>⚙</button>
-            {setOpen && <MatchTimerSettings t={t} onClose={() => setSetOpen(false)} />}
+            {isAdmin ? (
+                <React.Fragment>
+                    <button onClick={() => t.running ? MoidaTimer.pause() : MoidaTimer.start()} style={{ ..._mtBtn, background: t.running ? '#f59e0b' : '#10b981', color: 'white' }}>{t.running ? '⏸' : '▶'}</button>
+                    <button onClick={() => MoidaTimer.reset()} style={{ ..._mtBtn, background: '#e2e8f0', color: '#475569' }}>↻</button>
+                    <button onClick={() => setSetOpen(v => !v)} style={{ ..._mtBtn, background: '#f1f5f9', color: '#64748b' }}>⚙</button>
+                    {setOpen && <MatchTimerSettings t={t} onClose={() => setSetOpen(false)} />}
+                </React.Fragment>
+            ) : (
+                <span style={{ color: '#cbd5e1', fontWeight: 900, fontSize: 'clamp(0.58rem,1.5vmin,0.85rem)' }}>보기 전용</span>
+            )}
         </div>
     );
 }
