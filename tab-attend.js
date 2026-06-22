@@ -551,10 +551,17 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
                         </div>
                         <div className="space-y-1.5">
                             {penaltyRecords.map((r, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', minHeight: '46px', padding: '8px 14px', borderRadius: '12px', background: darkMode ? '#0f172a' : '#f8fafc' }}>
-                                    <span className="font-black text-sm text-slate-700 break-words" style={{ flex: 1, lineHeight: 1.4 }}>{r.name}{r.reason ? <span className="text-rose-400 font-black">{`  ·  ${r.reason}`}</span> : null}</span>
-                                    {r.checkInTime && r.checkInTime !== '미출석' && <span className="text-[10px] font-black text-slate-400" style={{ whiteSpace: 'nowrap' }}>{r.checkInTime}</span>}
-                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${stColor(r.status)}`} style={{ whiteSpace: 'nowrap' }}>{r.status}</span>
+                                <div key={i} style={{ display: 'table', width: '100%', borderRadius: '12px', background: darkMode ? '#0f172a' : '#f8fafc' }}>
+                                    <div style={{ display: 'table-row' }}>
+                                        <div style={{ display: 'table-cell', verticalAlign: 'middle', padding: '12px 6px 12px 14px' }}>
+                                            <span className="font-black text-sm text-slate-700" style={{ wordBreak: 'break-all' }}>{r.name}</span>
+                                            {r.reason && <span className="font-black text-rose-400" style={{ fontSize: '11px', marginLeft: '6px' }}>· {r.reason}</span>}
+                                        </div>
+                                        <div style={{ display: 'table-cell', verticalAlign: 'middle', textAlign: 'right', whiteSpace: 'nowrap', padding: '12px 14px 12px 6px' }}>
+                                            {r.checkInTime && r.checkInTime !== '미출석' && <span className="font-black text-slate-400" style={{ fontSize: '10px', marginRight: '8px' }}>{r.checkInTime}</span>}
+                                            <span className={stColor(r.status)} style={{ display: 'inline-block', fontWeight: 900, fontSize: '10px', padding: '3px 8px', borderRadius: '8px' }}>{r.status}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
