@@ -8,7 +8,6 @@ const MatchBoardTeam = ({ name }) => {
                 style={{width:'clamp(48px,12vmin,140px)',height:'clamp(48px,12vmin,140px)',borderRadius:'clamp(14px,2.4vmin,26px)',color:'white',fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'clamp(1.8rem,7vmin,4.4rem)',lineHeight:1,boxShadow:'0 6px 16px rgba(0,0,0,0.12)',margin:'0 auto'}}>
                 {name}
             </div>
-            <p style={{marginTop:'clamp(4px,1vmin,10px)',fontWeight:900,color:'#475569',fontSize:'clamp(0.72rem,2vmin,1.3rem)',whiteSpace:'nowrap'}}>{getTeamColorName(idx)} 조끼</p>
         </div>
     );
 };
@@ -73,32 +72,30 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                         </div>
                     ) : session.matches.map((m, mi) => {
                         const [t1, t2] = m.match;
-                        const hasRest = mi === session.matches.length - 1 && session.resting && session.resting.length > 0;
                         return (
-                            <div key={mi} style={{flex: hasRest ? '1 1 clamp(280px,42%,760px)' : '1 1 clamp(210px,28%,440px)',maxWidth: hasRest ? '860px' : '560px',background:'white',border:'1px solid #e2e8f0',borderRadius:'clamp(16px,2.4vmin,26px)',padding:'clamp(10px,2vmin,22px)',boxShadow:'0 4px 14px rgba(0,0,0,0.05)',display:'flex',flexDirection:'column',justifyContent:'center'}}>
+                            <div key={mi} style={{flex:'1 1 clamp(210px,28%,440px)',maxWidth:'560px',background:'white',border:'1px solid #e2e8f0',borderRadius:'clamp(16px,2.4vmin,26px)',padding:'clamp(10px,2vmin,22px)',boxShadow:'0 4px 14px rgba(0,0,0,0.05)',display:'flex',flexDirection:'column',justifyContent:'center'}}>
                                 <p style={{textAlign:'center',color:'#64748b',fontWeight:900,fontSize:'clamp(0.85rem,2.2vmin,1.3rem)',marginBottom:'clamp(8px,1.5vmin,16px)'}}>{fieldLabel(m.fieldIdx)}</p>
-                                <div style={{display:'flex',alignItems:'center',justifyContent:'center',flexWrap:'wrap',gap:'clamp(8px,2vmin,24px)'}}>
+                                <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'clamp(8px,2vmin,24px)'}}>
                                     <MatchBoardTeam name={t1}/>
                                     <span style={{color:'#cbd5e1',fontWeight:900,fontSize:'clamp(1.2rem,3.5vmin,2.2rem)',flexShrink:0}}>VS</span>
                                     <MatchBoardTeam name={t2}/>
-                                    {hasRest && (
-                                        <div style={{display:'flex',alignItems:'center',gap:'clamp(8px,2vmin,18px)',paddingLeft:'clamp(8px,2vmin,22px)',marginLeft:'clamp(2px,0.6vmin,8px)',borderLeft:'2px dashed #fcd34d'}}>
-                                            {session.resting.map((r, ri) => {
-                                                const ridx = String(r).charCodeAt(0) - 65;
-                                                return (
-                                                    <div key={ri} style={{textAlign:'center',opacity:0.9}}>
-                                                        <div className={getTeamBadge(ridx)} style={{width:'clamp(40px,9vmin,104px)',height:'clamp(40px,9vmin,104px)',borderRadius:'clamp(12px,2vmin,22px)',color:'white',fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'clamp(1.4rem,5.2vmin,3.2rem)',lineHeight:1,margin:'0 auto'}}>{r}</div>
-                                                        <p style={{marginTop:'clamp(3px,0.8vmin,8px)',fontWeight:900,color:'#d97706',fontSize:'clamp(0.6rem,1.7vmin,1.05rem)',whiteSpace:'nowrap'}}>😴 휴식</p>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         );
                     })}
                     </div>
+                    {/* 휴식 팀 — 코트 아래(가운데 묶음 안), 조끼 이름 없이 배지만 */}
+                    {!allDone && session.resting && session.resting.length > 0 && (
+                        <div style={{flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',flexWrap:'wrap',gap:'10px',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'16px',padding:'clamp(6px,1.2vmin,12px) 14px'}}>
+                            <span style={{color:'#d97706',fontWeight:900,fontSize:'clamp(0.8rem,2vmin,1.15rem)'}}>😴 휴식</span>
+                            {session.resting.map((r, ri) => {
+                                const ridx = String(r).charCodeAt(0) - 65;
+                                return (
+                                    <span key={ri} className={getTeamBadge(ridx)} style={{width:'clamp(28px,5vmin,44px)',height:'clamp(28px,5vmin,44px)',borderRadius:'10px',color:'white',fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'clamp(0.95rem,2.4vmin,1.45rem)'}}>{r}</span>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             </div>
             {/* 하단 네비 — 항상 보임 */}
