@@ -629,8 +629,10 @@ const MeetingListScreen = ({
     activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers, showAlert,
     pendingEditMeeting, onPendingEditHandled,
     attendHistory, darkMode, onDeleteRecord, generateAttendQRCode, onFinalizePenalty,
+    onCreateTestMeeting, onDeleteTestMeeting,
 }) => {
     const [isManageOpen, setIsManageOpen] = React.useState(false);
+    const [testOpen, setTestOpen] = React.useState(false);
     const [listView, setListView] = React.useState('upcoming'); // upcoming | ended(기록)
     const [pendingAction, setPendingAction] = React.useState(null); // 'add' | 'recurring' — 카드 화면에서 모달 바로 열기
     const [embeddedEdit, setEmbeddedEdit] = React.useState(null); // 기록 탭에서 [수정] → 카드 위에 수정 폼
@@ -663,6 +665,20 @@ const MeetingListScreen = ({
                             style={isManageOpen ? {background:'linear-gradient(135deg,#14b8a6,#0d9488)',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
                             ⚙️ {isManageOpen ? '관리 ON' : '관리'}
                         </button>
+                        {!isManageOpen && (
+                            <button onClick={() => setTestOpen(o => !o)}
+                                className="flex items-center gap-1 text-[11px] font-black px-2.5 py-1.5 rounded-xl bg-amber-50 text-amber-600 active:scale-95 transition-all">🧪</button>
+                        )}
+                    </div>
+                </div>
+            )}
+            {isAdminMode && !isManageOpen && testOpen && (
+                <div className="rounded-2xl p-3 border border-amber-200 bg-amber-50/50">
+                    <p className="text-[11px] font-black text-amber-700 mb-1">🧪 테스트 모임</p>
+                    <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">버튼 한 번으로 현재 시각 기준 모임 + 나 포함 랜덤 인원으로 팀편성·매치표까지 자동 생성합니다. [테스트 삭제]를 누르면 기록이 남지 않습니다.</p>
+                    <div className="flex gap-2">
+                        <button onClick={onCreateTestMeeting} className="flex-1 py-2 rounded-xl bg-amber-500 text-white font-black text-xs active:scale-95 transition-all">생성</button>
+                        <button onClick={onDeleteTestMeeting} className="flex-1 py-2 rounded-xl bg-rose-50 text-rose-500 font-black text-xs active:scale-95 transition-all border border-rose-200">테스트 삭제(흔적 없이)</button>
                     </div>
                 </div>
             )}

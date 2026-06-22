@@ -72,6 +72,7 @@ Firestore: settings/club_rules { content, updatedAt, updatedBy }
 회원 화면 모달 전체 → modals.js
 회원용 출석 / 체크인 → tab-attend.js, handlers-attend.js, use-attend.js
 모임 탭 (모임 카드 목록 → 카드 누르면 모임 상세: 출석/대진/매치) → tab-attend.js(MeetingListScreen·MeetingDetailHeader·TabAttend) + member.html(viewMeetingId 라우팅, effectiveMeeting 컨텍스트). 팀/매치 데이터는 보고 있는 모임(meetingId) 기준
+🧪 테스트 모임 (관리자, 모임 탭 관리영역 🧪 버튼) → test-meeting.js(createTestMeeting/deleteTestMeeting). 빈 날짜+현재시각으로 모임 생성 + 나 포함 랜덤 ~18명(weekly_session, checkedIn) + 팀편성(team_drafts isConfirmed) + 매치표(match_schedules) 자동, 전부 isTest:true 태깅. 삭제=meetings·weekly_session·team_drafts·match_schedules·history·registrations에서 isTest 문서 일괄 삭제(흔적 없음). 현재모임 mirror·watch_control은 안 건드림. UI 버튼=tab-attend.js MeetingListScreen, 핸들러 전달=member.html
 모임 탭 '기록'(관리자 전용, 예정/기록 토글 → 정기/매칭 분리, 종료된 모임 목록·출석기록 상세) → tab-attend.js(MeetingRecordsView·RecordDetailModal·isMeetingEnded). 종료 판정: 정기=status 'done' / 매칭='지난 날짜'(computeMeetingDay past). 예정 목록·홈은 종료 모임 제외
 
 출석 관리  (attendance.html)
