@@ -428,7 +428,7 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
 const isMeetingEnded = (m) => !!m && (m.status === 'done' || computeMeetingDay(m.date, m.start)?.type === 'past');
 
 // ─── 종료 모임 출석 기록 상세 (저장된 attendHistory 기록을 그대로 표시) ──────────
-const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalty }) => {
+const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalty, darkMode }) => {
     const { meeting: m, hist } = detail;
     window.useMoidaBack && window.useMoidaBack(true, onClose); // 뒤로가기로 기록 상세 닫기
 
@@ -439,6 +439,20 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
         : s === '노쇼' ? 'bg-rose-100 text-rose-500'
         : 'bg-slate-100 text-slate-400';
     const records = (hist?.records || []).slice().sort((a, b) => (a.timestamp || '99:99').localeCompare(b.timestamp || '99:99'));
+    const lateCount = records.filter(r => r.status === '지각').length;
+    const noShowCount = records.filter(r => r.status === '노쇼').length;
+    // ── 출석 기록 이미지로 저장 (지각·노쇼 포함) ──
+    const captureRecord = async () => {
+        const el = document.getElementById('record-capture-area');
+        if (!el || !window.html2canvas) return;
+        try {
+            const canvas = await window.html2canvas(el, { scale: 2, backgroundColor: darkMode ? '#1e293b' : '#ffffff', useCORS: true });
+            const link = document.createElement('a');
+            link.download = `모이다_출석기록_${m.date}.jpg`;
+            link.href = canvas.toDataURL('image/jpeg', 0.92);
+            link.click();
+        } catch (e) { /* 캡쳐 실패는 무시 */ }
+    };
     // ── 벌금 부과 (관리자 전용, 정기 모임만) ──
     const penTargets = records.filter(r => r.type === '정규' && r.memberId && (r.status === '지각' || r.status === '노쇼'));
     const [penOverrides, setPenOverrides] = React.useState({}); // memberId -> 'none'|'late'|'noshow'
@@ -465,8 +479,10 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
     };
     return (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-6" onClick={onClose}>
-            <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()} style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
-                <div className="flex items-start justify-between gap-2 mb-3">
+            <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] overflow-y-auto relative" onClick={e => e.stopPropagation()} style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
+                <button onClick={onClose} className="absolute top-4 right-4 z-10 w-8 h-8 rounded-xl bg-slate-100 text-slate-500 active:scale-95 font-black">✕</button>
+                <div id="record-capture-area">
+                <div className="flex items-start justify-between gap-2 mb-3 pr-10">
                     <div className="min-w-0">
                         <div className="flex items-center gap-1.5 min-w-0">
                             <span className="text-[10px] font-black px-2 py-0.5 rounded-lg text-white shrink-0" style={{ background: cfg.accent }}>{cfg.label}</span>
@@ -476,12 +492,13 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
                         {m.location && <p className="text-[11px] text-slate-400 truncate">📍 {m.location}</p>}
                         {m.managerName && <p className="text-[11px] text-slate-400">담당 {m.managerName}</p>}
                     </div>
-                    <button onClick={onClose} className="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 shrink-0 active:scale-95 font-black">✕</button>
                 </div>
                 {hist ? (
                     <>
-                        <div className="flex items-center gap-2 mb-3">
+                        <div className="flex items-center gap-2 mb-3 flex-wrap">
                             <span className="text-xs font-black px-3 py-1.5 rounded-xl bg-teal-50 text-teal-600">출석 {hist.present ?? '-'} / 전체 {hist.total ?? records.length}명</span>
+                            {lateCount > 0 && <span className="text-xs font-black px-3 py-1.5 rounded-xl bg-amber-50 text-amber-600">지각 {lateCount}</span>}
+                            {noShowCount > 0 && <span className="text-xs font-black px-3 py-1.5 rounded-xl bg-rose-50 text-rose-500">노쇼 {noShowCount}</span>}
                         </div>
                         <div className="space-y-1.5">
                             {records.map((r, i) => (
@@ -503,6 +520,10 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
                         <p className="text-xs font-black">저장된 출석 기록이 없습니다</p>
                         {kind === 'match' && <p className="text-[11px] mt-1">매칭 모임은 출석 기록을 저장하지 않습니다</p>}
                     </div>
+                )}
+                </div>
+                {hist && (
+                    <button onClick={captureRecord} className="w-full mt-3 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-black text-sm active:scale-95 transition-all">📷 지각·노쇼 포함 출석 기록 이미지 저장</button>
                 )}
                 {onFinalizePenalty && kind === 'self' && hist && penTargets.length > 0 && (
                     <div className="mt-4 pt-3 border-t border-slate-100">
@@ -596,7 +617,7 @@ const MeetingRecordsView = ({ meetings, attendHistory, darkMode, onEdit, onDelet
                     </button>
                 );
             })}
-            {detail && <RecordDetailModal detail={detail} onClose={() => setDetail(null)} onEdit={onEdit} onDelete={onDelete} onFinalizePenalty={onFinalizePenalty} />}
+            {detail && <RecordDetailModal detail={detail} onClose={() => setDetail(null)} onEdit={onEdit} onDelete={onDelete} onFinalizePenalty={onFinalizePenalty} darkMode={darkMode} />}
         </div>
     );
 };

@@ -45,6 +45,7 @@ const TabRoster = ({
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className="font-black text-slate-800">{m.name}</span>
                                     {m.gender==='여성'&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg">W</span>}
+                                    {m.kakaoId&&<span title="카카오 연동" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:22,height:22,background:'#FEE500',borderRadius:6}}><svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M9 1C4.582 1 1 3.896 1 7.444c0 2.292 1.522 4.305 3.824 5.441L3.9 16.1a.3.3 0 0 0 .438.327L8.1 14.04c.296.03.597.046.9.046 4.418 0 8-2.896 8-6.442C17 3.896 13.418 1 9 1z" fill="#3C1E1E"/></svg></span>}
                                     {ADMIN_ROLES.includes(m.role)&&<span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg ${getRoleBadgeClass(m.role)}`}>{m.role}</span>}
                                     {m.coupleId&&<span className="text-[10px] font-black text-teal-500 flex items-center gap-0.5"><Icon.Heart size={9}/>{allMembers.find(p=>p.id===m.coupleId)?.name||'?'}</span>}
                                 </div>
