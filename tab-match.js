@@ -14,10 +14,13 @@ const MatchBoardTeam = ({ name }) => {
 
 // ─── 매치판 크게 보기 (패드 풀스크린 · 한 라운드씩 · 스크롤 없음 · 가로 자동 배치) ──
 const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
-    isAdmin, currentIndex, completedMatches, onPrev, onNext, onToggleComplete }) => {
+    isAdmin, currentIndex, completedMatches, onPrev, onNext, onToggleComplete, onAutoAdvance }) => {
     const total = sessions.length;
     const clampIdx = (n) => Math.min(Math.max(n, 0), Math.max(total - 1, 0));
     const [browseIdx, setBrowseIdx] = React.useState(() => clampIdx(startIndex || 0));
+    const tmr = useMatchTimer(); // 타이머 종료 감지용 (자동 진행)
+    const [autoAdvance, setAutoAdvance] = React.useState(() => localStorage.getItem('moida_timer_autoadv') !== '0'); // 기본 켜짐
+    const endedRef = React.useRef(false);
     React.useEffect(() => {
         const prev = document.body.style.overscrollBehavior;
         document.body.style.overscrollBehavior = 'none';
@@ -30,6 +33,17 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
     const isCurDone = isAdmin && !allDone && session.id != null && completedMatches?.has(session.id);
     const fieldLabel = (fi) => (fieldNames[fi] || `${fi + 1}구장`);
     const navBtn = {height:'clamp(48px,9vmin,66px)',borderRadius:'16px',border:'none',fontWeight:900,fontSize:'clamp(0.95rem,2.6vmin,1.35rem)'};
+
+    // 자동 진행: 타이머가 끝나는 순간(켜져있고 관리자) 현재 라운드 '종료' + 다음 라운드로 넘기고 타이머 리셋(다음 라운드 대기).
+    // 종료→true 상승 에지에서 1회만 실행. onAutoAdvance가 종료표시+인덱스+1을 한 번에 처리.
+    React.useEffect(() => {
+        if (isAdmin && autoAdvance && tmr.ended && !endedRef.current && !allDone) {
+            const sid = (sessions[clampIdx(currentIndex)] || {}).id;
+            if (onAutoAdvance) onAutoAdvance(sid);
+            MoidaTimer.reset();
+        }
+        endedRef.current = tmr.ended;
+    }, [tmr.ended, isAdmin, autoAdvance, allDone]);
 
     return (
         <div className="fixed inset-0 z-[60] flex flex-col"
@@ -46,6 +60,13 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                     {!allDone && session.time && <p style={{color:'#475569',fontWeight:900,fontSize:'clamp(0.9rem,2.6vmin,1.4rem)'}}>⏱ {session.time}</p>}
                     {isCurDone && <span style={{background:'#d1fae5',color:'#059669',fontWeight:900,fontSize:'clamp(0.7rem,1.8vmin,1rem)',padding:'2px 10px',borderRadius:'999px'}}>✓ 종료됨</span>}
                     <p style={{color:'#94a3b8',fontWeight:900,fontSize:'clamp(0.7rem,1.8vmin,1rem)'}}>{dateLabel} 매치판</p>
+                    {isAdmin && (
+                        <button onClick={() => { const v=!autoAdvance; setAutoAdvance(v); try{localStorage.setItem('moida_timer_autoadv', v?'1':'0');}catch(e){} }}
+                            style={{border:'none',borderRadius:'999px',fontWeight:900,fontSize:'clamp(0.68rem,1.7vmin,0.95rem)',padding:'4px 12px',flexShrink:0,
+                                background:autoAdvance?'#0d9488':'#e2e8f0',color:autoAdvance?'white':'#64748b'}}>
+                            {autoAdvance ? '⚡ 타이머 끝나면 자동 다음' : '자동 다음 꺼짐'}
+                        </button>
+                    )}
                 </div>
                 <button onClick={onClose} style={{width:'clamp(40px,7vmin,52px)',height:'clamp(40px,7vmin,52px)',borderRadius:'14px',background:'#f1f5f9',color:'#64748b',border:'none',fontSize:'clamp(18px,3.5vmin,24px)',fontWeight:900,flexShrink:0}}>✕</button>
             </div>
@@ -128,7 +149,7 @@ const TabMatch = ({
     scheduleData, matchViewMode, setMatchViewMode,
     myTeamInfo,
     matchSaveSchedule, matchHandleCapture, matchGenerateTable,
-    matchHandleNextMatch, matchHandlePrevMatch, matchHandleToggleComplete, matchHandlePresetSelect, matchToggleSubCourt,
+    matchHandleNextMatch, matchHandlePrevMatch, matchHandleToggleComplete, matchHandleAutoAdvance, matchHandlePresetSelect, matchToggleSubCourt,
     splitTime, setIsLoadMatchModalOpen, setIsPresetModalOpen,
     meetings,
 }) => {
@@ -637,7 +658,7 @@ const TabMatch = ({
             <MatchBoardModal sessions={boardSessions} fieldNames={boardFieldNames}
                 startIndex={boardCurrent} dateLabel={boardDate} onClose={() => setBoardOpen(false)}
                 isAdmin={isAdminMode} currentIndex={localMatchIndex} completedMatches={localCompletedMatches}
-                onPrev={matchHandlePrevMatch} onNext={matchHandleNextMatch} onToggleComplete={matchHandleToggleComplete} />
+                onPrev={matchHandlePrevMatch} onNext={matchHandleNextMatch} onToggleComplete={matchHandleToggleComplete} onAutoAdvance={matchHandleAutoAdvance} />
         )}
     </div>
     );

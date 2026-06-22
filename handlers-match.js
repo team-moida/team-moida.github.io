@@ -142,6 +142,18 @@ function makeMatchHandlers(ctx) {
         syncMatchState(newCompleted, localMatchIndex);
     };
 
+    // 타이머 종료 시 자동 진행: 현재 라운드 '종료' 표시 + 다음 라운드로 한 번에 처리.
+    // (종료/다음 핸들러를 따로 연달아 부르면 두 번째 sync가 stale 상태로 첫 sync를 덮어써 종료표시가 사라짐 → 한 번에 sync)
+    const matchHandleAutoAdvance = (sessionId) => {
+        if (localMatchIndex >= localSchedule.list.length) return;
+        const newCompleted = new Set(localCompletedMatches);
+        if (sessionId != null) newCompleted.add(sessionId);
+        const newIndex = localMatchIndex + 1;
+        setLocalCompletedMatches(newCompleted);
+        setLocalMatchIndex(newIndex);
+        syncMatchState(newCompleted, newIndex);
+    };
+
     const matchHandleCapture = async () => {
         setMatchIsCapturing(true);
         await new Promise(r => setTimeout(r, 300));
@@ -182,7 +194,7 @@ function makeMatchHandlers(ctx) {
 
     return {
         splitTime, matchGenerateTable, matchSaveSchedule,
-        matchHandleNextMatch, matchHandlePrevMatch, matchHandleToggleComplete,
+        matchHandleNextMatch, matchHandlePrevMatch, matchHandleToggleComplete, matchHandleAutoAdvance,
         matchHandleCapture, matchHandlePresetSelect, matchToggleSubCourt, matchSavePreset
     };
 }

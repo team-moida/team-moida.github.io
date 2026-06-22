@@ -607,7 +607,7 @@ function App() {
     });
 
     const { splitTime, matchGenerateTable, matchSaveSchedule,
-            matchHandleNextMatch, matchHandlePrevMatch, matchHandleToggleComplete,
+            matchHandleNextMatch, matchHandlePrevMatch, matchHandleToggleComplete, matchHandleAutoAdvance,
             matchHandleCapture, matchHandlePresetSelect, matchToggleSubCourt,
             matchSavePreset } = makeMatchHandlers({
         meetingSettings: effectiveSelfMeeting,
@@ -801,7 +801,7 @@ function App() {
                         matchSaveSchedule={matchSaveSchedule} matchHandleCapture={matchHandleCapture}
                         matchGenerateTable={matchGenerateTable}
                         matchHandleNextMatch={matchHandleNextMatch} matchHandlePrevMatch={matchHandlePrevMatch}
-                        matchHandleToggleComplete={matchHandleToggleComplete}
+                        matchHandleToggleComplete={matchHandleToggleComplete} matchHandleAutoAdvance={matchHandleAutoAdvance}
                         matchHandlePresetSelect={matchHandlePresetSelect} matchToggleSubCourt={matchToggleSubCourt}
                         splitTime={splitTime} setIsLoadMatchModalOpen={match.setIsLoadMatchModalOpen}
                         setIsPresetModalOpen={match.setIsPresetModalOpen}
