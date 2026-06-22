@@ -614,6 +614,14 @@ const MeetingRecordsView = ({ meetings, attendHistory, darkMode, onEdit, onDelet
                         <p className="font-black text-slate-800" style={darkMode ? { color: '#f1f5f9' } : {}}>{fmtMeetingDate(m.date)} · {m.start}~{m.end}</p>
                         {kind === 'match' && m.opponentName && <p className="text-xs font-black text-indigo-500 mt-0.5 truncate">vs {m.opponentName}</p>}
                         {m.location && <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1 min-w-0"><Icon.MapPin size={12} className="shrink-0" /><span className="truncate">{m.location}</span></p>}
+                        {(onEdit || onDelete) && (
+                            <div className="flex items-center justify-end gap-1.5 mt-2.5 pt-2.5 border-t" style={{borderColor: darkMode ? '#334155' : '#f1f5f9'}}>
+                                {onEdit && <span role="button" onClick={(e)=>{ e.stopPropagation(); onEdit(m); }}
+                                    className="flex items-center gap-1 text-[11px] font-black px-2.5 py-1 rounded-lg bg-blue-50 text-blue-600 active:scale-95 cursor-pointer"><Icon.Edit size={12}/> 수정</span>}
+                                {onDelete && <span role="button" onClick={(e)=>{ e.stopPropagation(); onDelete(m, hist); }}
+                                    className="flex items-center gap-1 text-[11px] font-black px-2.5 py-1 rounded-lg bg-rose-50 text-rose-500 active:scale-95 cursor-pointer"><Icon.Trash size={12}/> 삭제</span>}
+                            </div>
+                        )}
                     </button>
                 );
             })}
