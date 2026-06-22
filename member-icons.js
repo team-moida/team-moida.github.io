@@ -2,6 +2,27 @@
 // 모든 선(stroke) 아이콘의 두께 기준 — 통일감을 위해 한 곳에서 관리. 이 값만 바꾸면 전체 두께가 같이 바뀐다.
 const ICON_STROKE = "2.25";
 const Icon = {
+    /* ── 하단 탭 선택 시 채움(Fill) 아이콘 — fill:currentColor + 안쪽 디테일 흰색 ── */
+    HomeFill: ({size=20,className=""}) => React.createElement('svg',{width:size,height:size,viewBox:"0 0 24 24",fill:"currentColor",className},
+        React.createElement('path',{d:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"}),
+        React.createElement('rect',{x:"9.5",y:"13",width:"5",height:"9",rx:"1",fill:"#fff"})),
+    CalendarFill: ({size=20,className=""}) => React.createElement('svg',{width:size,height:size,viewBox:"0 0 24 24",fill:"currentColor",className},
+        React.createElement('rect',{x:"3",y:"4",width:"18",height:"18",rx:"3"}),
+        React.createElement('rect',{x:"3",y:"8.5",width:"18",height:"2",fill:"#fff"}),
+        React.createElement('circle',{cx:"8",cy:"15",r:"1.3",fill:"#fff"}),
+        React.createElement('circle',{cx:"12",cy:"15",r:"1.3",fill:"#fff"}),
+        React.createElement('circle',{cx:"16",cy:"15",r:"1.3",fill:"#fff"})),
+    CreditCardFill: ({size=20,className=""}) => React.createElement('svg',{width:size,height:size,viewBox:"0 0 24 24",fill:"currentColor",className},
+        React.createElement('rect',{x:"2",y:"5",width:"20",height:"14",rx:"2.5"}),
+        React.createElement('rect',{x:"2",y:"9",width:"20",height:"2",fill:"#fff"})),
+    ShieldFill: ({size=20,className=""}) => React.createElement('svg',{width:size,height:size,viewBox:"0 0 24 24",fill:"currentColor",className},
+        React.createElement('path',{d:"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"}),
+        React.createElement('path',{d:"M8.5 12l2.3 2.3L15.5 9.7",fill:"none",stroke:"#fff",strokeWidth:"2.2",strokeLinecap:"round",strokeLinejoin:"round"})),
+    ListFill: ({size=20,className=""}) => React.createElement('svg',{width:size,height:size,viewBox:"0 0 24 24",fill:"currentColor",className},
+        React.createElement('rect',{x:"3",y:"3",width:"18",height:"18",rx:"3"}),
+        React.createElement('rect',{x:"7",y:"7.4",width:"10",height:"1.9",rx:"0.9",fill:"#fff"}),
+        React.createElement('rect',{x:"7",y:"11.1",width:"10",height:"1.9",rx:"0.9",fill:"#fff"}),
+        React.createElement('rect',{x:"7",y:"14.8",width:"10",height:"1.9",rx:"0.9",fill:"#fff"})),
     Home:         ({size=20,className="",active=false}) => React.createElement('svg',{width:size,height:size,viewBox:"0 0 24 24",fill:active?"currentColor":"none",stroke:"currentColor",strokeWidth:ICON_STROKE,strokeLinecap:"round",strokeLinejoin:"round",className},React.createElement('path',{d:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"}),React.createElement('polyline',{points:"9 22 9 12 15 12 15 22"})),
     Users:        ({size=20,className=""}) => React.createElement('svg',{width:size,height:size,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:ICON_STROKE,strokeLinecap:"round",strokeLinejoin:"round",className},React.createElement('path',{d:"M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"}),React.createElement('circle',{cx:"9",cy:"7",r:"4"}),React.createElement('path',{d:"M23 21v-2a4 4 0 0 0-3-3.87"}),React.createElement('path',{d:"M16 3.13a4 4 0 0 1 0 7.75"})),
     Calendar:     ({size=20,className="",active=false}) => React.createElement('svg',{width:size,height:size,viewBox:"0 0 24 24",fill:active?"currentColor":"none",stroke:"currentColor",strokeWidth:ICON_STROKE,strokeLinecap:"round",strokeLinejoin:"round",className},React.createElement('rect',{x:"3",y:"4",width:"18",height:"18",rx:"2"}),React.createElement('line',{x1:"16",y1:"2",x2:"16",y2:"6"}),React.createElement('line',{x1:"8",y1:"2",x2:"8",y2:"6"}),React.createElement('line',{x1:"3",y1:"10",x2:"21",y2:"10"})),
