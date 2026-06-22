@@ -165,9 +165,13 @@ async function createTestMeeting({ me, activeMembers, showAlert, showConfirm }) 
 
 async function deleteTestMeeting({ showAlert, showConfirm }) {
     showConfirm('🧪 테스트 모임 삭제',
-        '테스트로 만든 모든 기록(모임·참가자·팀편성·매치표)을 흔적 없이 삭제합니다. 실제 모임은 건드리지 않습니다.',
+        '테스트로 만든 모임 자체(모임·참가자·팀편성·매치표 + 현재모임 지정)를 완전히 삭제합니다. 실제 모임은 건드리지 않습니다.',
         async () => {
             try {
+                // 테스트 식별 정보(미러 정리용) — 마커에서 날짜/모임ID 확보
+                let testDate = null, testId = null;
+                try { const md = await getCol('settings').doc('test_meeting').get(); if (md.exists) { testDate = md.data().date || null; testId = md.data().testId || null; } } catch (_) {}
+
                 const cols = ['meetings', 'weekly_session', 'team_drafts', 'match_schedules', 'history', 'registrations'];
                 let total = 0;
                 for (const c of cols) {
@@ -181,8 +185,26 @@ async function deleteTestMeeting({ showAlert, showConfirm }) {
                     }
                     if (n > 0) await batch.commit();
                 }
+
+                // 안전망: isTest 태그가 없더라도 마커가 가리키는 모임 문서는 직접 삭제
+                if (testId) { await getCol('meetings').doc(testId).delete().catch(() => {}); }
+
+                // 현재모임 미러가 테스트 모임을 가리키면 비운다 → 홈의 '모임 종료' 잔상/명단없음 에러 제거.
+                // 실제 모임 보호: location이 '🧪 테스트 모임'이거나 테스트 날짜일 때만 (테스트는 빈 날짜를 써서 안전).
+                for (const mdoc of ['meeting_schedule_v2', 'meeting_schedule_match']) {
+                    try {
+                        const mref = getCol('settings').doc(mdoc);
+                        const ms = await mref.get();
+                        if (!ms.exists) continue;
+                        const d = ms.data() || {};
+                        if (d.location === '🧪 테스트 모임' || (testDate && d.date === testDate)) {
+                            await mref.set({ date: '', start: '', end: '', location: '', locationLat: null, locationLng: null, locationRadius: 100, maxLimit: 18, enableQR: false, managerId: '', managerName: '', meetingType: mdoc === 'meeting_schedule_match' ? 'match' : 'self' });
+                        }
+                    } catch (_) {}
+                }
+
                 await getCol('settings').doc('test_meeting').delete().catch(() => {});
-                showAlert('삭제 완료', total > 0 ? `테스트 기록 ${total}건을 삭제했습니다.` : '삭제할 테스트 기록이 없습니다.');
+                showAlert('삭제 완료', total > 0 ? `테스트 모임을 완전히 삭제했습니다 (${total}건).` : '삭제할 테스트 모임이 없습니다.');
             } catch (e) {
                 showAlert('오류', '테스트 삭제 실패: ' + (e?.message || e));
             }
