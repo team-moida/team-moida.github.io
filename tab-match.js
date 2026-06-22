@@ -49,31 +49,48 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
         <div className="fixed inset-0 z-[60] flex flex-col"
             style={{background:'#f8fafc',overscrollBehavior:'none',fontFamily:"'Esamanru', sans-serif",
                 paddingLeft:'env(safe-area-inset-left)',paddingRight:'env(safe-area-inset-right)'}}>
-            {/* 상단 바 (한 줄, 항상 고정) */}
-            <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'max(10px, env(safe-area-inset-top)) 16px 10px',flexShrink:0,display:'flex',alignItems:'center',gap:'12px'}}>
-                <div style={{minWidth:0,flex:1,display:'flex',alignItems:'baseline',gap:'12px',flexWrap:'wrap'}}>
-                    <p style={{color:'#0f172a',fontWeight:900,lineHeight:1,fontSize:'clamp(1.4rem,4vmin,2.4rem)'}}>
-                        {allDone
-                            ? <span style={{color:'#10b981',display:'inline-flex',alignItems:'center',gap:'6px'}}><Icon.Check size={20}/>모든 경기 종료</span>
-                            : <><span style={{color:'#0d9488'}}>{idx + 1}</span><span style={{color:'#94a3b8',fontSize:'0.6em'}}> / {total} 라운드</span></>}
-                    </p>
-                    {!allDone && session.time && <p style={{color:'#475569',fontWeight:900,fontSize:'clamp(0.9rem,2.6vmin,1.4rem)',display:'flex',alignItems:'center',gap:'6px'}}><Icon.Clock size={18}/>{session.time}</p>}
-                    {isCurDone && <span style={{background:'#d1fae5',color:'#059669',fontWeight:900,fontSize:'clamp(0.7rem,1.8vmin,1rem)',padding:'2px 10px',borderRadius:'999px',display:'inline-flex',alignItems:'center',gap:'4px'}}><Icon.Check size={13}/>종료됨</span>}
-                    <p style={{color:'#94a3b8',fontWeight:900,fontSize:'clamp(0.7rem,1.8vmin,1rem)'}}>{dateLabel} 매치판</p>
-                    {isAdmin && (
-                        <button onClick={() => { const v=!autoAdvance; setAutoAdvance(v); try{localStorage.setItem('moida_timer_autoadv', v?'1':'0');}catch(e){} }}
-                            style={{border:'none',borderRadius:'999px',fontWeight:900,fontSize:'clamp(0.68rem,1.7vmin,0.95rem)',padding:'4px 12px',flexShrink:0,
-                                background:autoAdvance?'#0d9488':'#e2e8f0',color:autoAdvance?'white':'#64748b'}}>
-                            {autoAdvance ? <span style={{display:'inline-flex',alignItems:'center',gap:'4px'}}><Icon.Zap size={14}/>타이머 끝나면 자동 다음</span> : '자동 다음 꺼짐'}
-                        </button>
+            {/* 상단 바 — 라운드 강조 + 날짜/시간 부제 */}
+            <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'max(12px, env(safe-area-inset-top)) 16px 12px',flexShrink:0,display:'flex',alignItems:'center',gap:'12px'}}>
+                <div style={{minWidth:0,flex:1}}>
+                    {allDone ? (
+                        <p style={{color:'#10b981',fontWeight:900,lineHeight:1,fontSize:'clamp(1.4rem,4vmin,2.4rem)',display:'inline-flex',alignItems:'center',gap:'8px',margin:0}}><Icon.Check size={22}/>모든 경기 종료</p>
+                    ) : (
+                        <div style={{display:'flex',alignItems:'baseline',gap:'8px',flexWrap:'wrap'}}>
+                            <span style={{color:'#0d9488',fontWeight:900,fontSize:'clamp(0.85rem,2vmin,1.1rem)',letterSpacing:'0.03em'}}>라운드</span>
+                            <span style={{color:'#0d9488',fontWeight:900,lineHeight:1,fontSize:'clamp(1.8rem,5vmin,3rem)'}}>{idx + 1}</span>
+                            <span style={{color:'#94a3b8',fontWeight:800,fontSize:'clamp(0.9rem,2.4vmin,1.4rem)'}}>/ {total}</span>
+                            {isCurDone && <span style={{background:'#d1fae5',color:'#059669',fontWeight:900,fontSize:'clamp(0.7rem,1.8vmin,1rem)',padding:'2px 10px',borderRadius:'999px',display:'inline-flex',alignItems:'center',gap:'4px'}}><Icon.Check size={13}/>종료됨</span>}
+                        </div>
                     )}
+                    <p style={{margin:'5px 0 0',color:'#94a3b8',fontWeight:700,fontSize:'clamp(0.72rem,1.9vmin,1.05rem)',display:'flex',alignItems:'center',gap:'5px'}}>
+                        <Icon.Clock size={14}/>{dateLabel} 매치판{!allDone && session.time ? ` · ${session.time}` : ''}
+                    </p>
                 </div>
                 <button onClick={onClose} style={{width:'clamp(40px,7vmin,52px)',height:'clamp(40px,7vmin,52px)',borderRadius:'14px',background:'#f1f5f9',color:'#64748b',border:'none',fontWeight:900,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon.X size={22}/></button>
             </div>
-            {/* 진행 바 */}
-            <div style={{height:'5px',background:'#e2e8f0',flexShrink:0}}>
-                <div style={{height:'100%',background:'#0d9488',transition:'width .4s',width:`${total ? Math.round((idx + 1) / total * 100) : 0}%`}}/>
-            </div>
+            {/* 라운드 세그먼트 — 완료(✓)/현재(강조)/예정 한눈에 */}
+            {!allDone && total > 0 && (
+                <div style={{background:'white',borderBottom:'1px solid #e2e8f0',flexShrink:0,padding:'10px 14px',display:'flex',gap:'6px',alignItems:'stretch'}}>
+                    {sessions.map((s, si) => {
+                        const done = completedMatches?.has(s.id);
+                        const cur = si === idx;
+                        return (
+                            <div key={si} style={{flex: cur ? '1.5' : '1',height:'clamp(28px,5vmin,40px)',borderRadius:'9px',display:'flex',alignItems:'center',justifyContent:'center',gap:'4px',fontWeight:900,fontSize:'clamp(0.72rem,1.9vmin,1.05rem)',background: cur ? '#0d9488' : (done ? '#ccfbf1' : '#eef2f6'),color: cur ? '#fff' : (done ? '#0d9488' : '#94a3b8'),boxShadow: cur ? '0 0 0 3px rgba(13,148,136,0.18)' : 'none'}}>
+                                {cur ? `라운드 ${si + 1}` : <>{si + 1}{done && <Icon.Check size={12}/>}</>}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+            {/* 관리자: 자동 다음 토글 (별도 줄) */}
+            {isAdmin && !allDone && (
+                <div style={{background:'white',borderBottom:'1px solid #e2e8f0',flexShrink:0,padding:'6px 14px',display:'flex',justifyContent:'flex-end'}}>
+                    <button onClick={() => { const v=!autoAdvance; setAutoAdvance(v); try{localStorage.setItem('moida_timer_autoadv', v?'1':'0');}catch(e){} }}
+                        style={{border:'none',borderRadius:'999px',fontWeight:800,fontSize:'clamp(0.66rem,1.7vmin,0.92rem)',padding:'4px 11px',display:'inline-flex',alignItems:'center',gap:'4px',background:autoAdvance?'#0d9488':'#e2e8f0',color:autoAdvance?'white':'#64748b'}}>
+                        {autoAdvance ? <><Icon.Zap size={13}/>타이머 끝나면 자동 다음</> : '자동 다음 꺼짐'}
+                    </button>
+                </div>
+            )}
             {/* 본문 (스크롤 없음 — 한 화면에 맞춰 배치) */}
             <div style={{flex:'1 1 0%',minHeight:0,overflow:'hidden',display:'flex',flexDirection:'column',padding:'clamp(10px,2vmin,22px)',gap:'clamp(8px,1.5vmin,16px)'}}>
                 {/* 타이머 + 코트 — 화면 가운데에 함께 표시 (회원은 타이머 보기 전용) */}
