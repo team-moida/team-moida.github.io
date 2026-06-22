@@ -33,7 +33,7 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
     const navBtn = {height:'clamp(48px,9vmin,66px)',borderRadius:'16px',border:'none',fontWeight:900,fontSize:'clamp(0.95rem,2.6vmin,1.35rem)'};
 
     return (
-        <div className="fixed inset-0 z-50 flex flex-col"
+        <div className="fixed inset-0 z-[60] flex flex-col"
             style={{background:'#f8fafc',overscrollBehavior:'none',fontFamily:"'Esamanru', sans-serif",
                 paddingLeft:'env(safe-area-inset-left)',paddingRight:'env(safe-area-inset-right)'}}>
             {/* 상단 바 (한 줄, 항상 고정) */}
