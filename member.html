@@ -913,8 +913,10 @@ function App() {
                         const active = tab===key;
                         return (
                             <button key={key} onClick={()=>{ if (key === 'meeting') setViewMeetingId(null); setTab(key); }}
-                                className={`flex flex-col items-center justify-center flex-1 h-[72px] transition-all ${active?'text-[#1A151D]':'text-slate-400'}`}>
-                                <Comp size={30} active={active}/>
+                                className="flex flex-col items-center justify-center flex-1 h-[72px] transition-all">
+                                <span className={`flex items-center justify-center rounded-2xl p-2 transition-all ${active?'bg-[#1A151D] text-white':'text-slate-400'}`}>
+                                    <Comp size={28}/>
+                                </span>
                                 <span className={`text-[11px] font-black mt-1 ${active?'text-[#1A151D]':'text-slate-400'}`}>{label}</span>
                             </button>
                         );
