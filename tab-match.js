@@ -50,16 +50,16 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                 </div>
                 <button onClick={onClose} style={{width:'clamp(40px,7vmin,52px)',height:'clamp(40px,7vmin,52px)',borderRadius:'14px',background:'#f1f5f9',color:'#64748b',border:'none',fontSize:'clamp(18px,3.5vmin,24px)',fontWeight:900,flexShrink:0}}>✕</button>
             </div>
-            {/* 경기 타이머 (워치 이식) — 회원은 보기만, 조작(시작/정지/리셋/설정)은 운영진만 */}
-            <MatchTimerBar isAdmin={isAdmin} />
             {/* 진행 바 */}
             <div style={{height:'5px',background:'#e2e8f0',flexShrink:0}}>
                 <div style={{height:'100%',background:'#0d9488',transition:'width .4s',width:`${total ? Math.round((idx + 1) / total * 100) : 0}%`}}/>
             </div>
             {/* 본문 (스크롤 없음 — 한 화면에 맞춰 배치) */}
             <div style={{flex:'1 1 0%',minHeight:0,overflow:'hidden',display:'flex',flexDirection:'column',padding:'clamp(10px,2vmin,22px)',gap:'clamp(8px,1.5vmin,16px)'}}>
-                {/* 코트 — 가로로 펼침, 화면 폭에 맞춰 자동 줄바꿈 */}
-                <div style={{flex:'1 1 0%',minHeight:0,overflow:'hidden',display:'flex',flexWrap:'wrap',gap:'clamp(10px,2vmin,20px)',alignContent:'center',justifyContent:'center'}}>
+                {/* 타이머 + 코트 — 화면 가운데에 함께 표시 (회원은 타이머 보기 전용) */}
+                <div style={{flex:'1 1 0%',minHeight:0,overflow:'hidden',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'clamp(10px,2.5vmin,26px)'}}>
+                    <MatchTimerBar isAdmin={isAdmin} />
+                    <div style={{width:'100%',display:'flex',flexWrap:'wrap',gap:'clamp(10px,2vmin,20px)',alignContent:'center',justifyContent:'center'}}>
                     {allDone ? (
                         <div style={{margin:'auto',textAlign:'center'}}>
                             <p style={{fontSize:'clamp(3rem,12vmin,6rem)'}}>🏁</p>
@@ -84,6 +84,7 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                             </div>
                         );
                     })}
+                    </div>
                 </div>
                 {/* 휴식 팀 — 조끼색 배지 (얇은 줄) */}
                 {!allDone && session.resting && session.resting.length > 0 && (

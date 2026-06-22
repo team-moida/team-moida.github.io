@@ -153,7 +153,7 @@ function MatchTimerSettings({ t, onClose }) {
         </div>
     );
     return (
-        <div style={{ position: 'absolute', top: '100%', right: '12px', marginTop: '6px', zIndex: 20, background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', boxShadow: '0 12px 30px rgba(0,0,0,0.18)', padding: '14px', width: 'min(86vw,300px)' }}>
+        <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', marginTop: '8px', zIndex: 20, background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', boxShadow: '0 12px 30px rgba(0,0,0,0.18)', padding: '14px', width: 'min(86vw,300px)' }}>
             <Row label="게임 시간" value={`${t.gameMin}분`} color="#0f172a"
                 onMinus={() => MoidaTimer.setGameMin(t.gameMin - 1)} onPlus={() => MoidaTimer.setGameMin(t.gameMin + 1)} />
             <Row label="교체 시간" value={_mtFmt(t.subSec)} color="#0d9488"
@@ -163,33 +163,34 @@ function MatchTimerSettings({ t, onClose }) {
     );
 }
 
-// 매치판 크게 보기 상단에 들어가는 컴팩트 타이머 바
+// 매치판 크게 보기 가운데(코트 위)에 들어가는 타이머 — 시간 가운데 정렬, 큰 표시
 // isAdmin=true 운영진: 조작 가능 / false 회원: 보기 전용(컨트롤 숨김)
 function MatchTimerBar({ isAdmin = true }) {
     const t = useMatchTimer();
     const [setOpen, setSetOpen] = React.useState(false);
     const timeColor = t.ended ? '#10b981' : (t.subImminent ? '#f59e0b' : '#0f172a');
     return (
-        <div style={{ position: 'relative', background: 'white', borderBottom: '1px solid #e2e8f0', flexShrink: 0, padding: 'clamp(6px,1.2vmin,12px) 16px', display: 'flex', alignItems: 'center', gap: 'clamp(8px,2vmin,18px)' }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', minWidth: 0 }}>
-                <span style={{ color: timeColor, fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(1.6rem,5.5vmin,3rem)' }}>{_mtFmt(t.roundRemaining)}</span>
-                <span style={{ color: '#94a3b8', fontWeight: 900, fontSize: 'clamp(0.58rem,1.5vmin,0.85rem)' }}>남은 시간</span>
+        <div style={{ position: 'relative', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(6px,1.4vmin,12px)' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', flexWrap: 'wrap', gap: 'clamp(12px,4vmin,40px)' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '7px' }}>
+                    <span style={{ color: timeColor, fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(2rem,7vmin,4rem)' }}>{_mtFmt(t.roundRemaining)}</span>
+                    <span style={{ color: '#94a3b8', fontWeight: 900, fontSize: 'clamp(0.62rem,1.7vmin,1rem)' }}>남은 시간</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                    <span style={{ color: t.subImminent ? '#f59e0b' : '#475569', fontWeight: 900, fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(1.2rem,4.2vmin,2.2rem)' }}>{_mtFmt(t.subRemaining)}</span>
+                    <span style={{ color: '#94a3b8', fontWeight: 900, fontSize: 'clamp(0.62rem,1.7vmin,1rem)' }}>교체까지</span>
+                </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
-                <span style={{ color: t.subImminent ? '#f59e0b' : '#475569', fontWeight: 900, fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(1rem,3.2vmin,1.7rem)' }}>{_mtFmt(t.subRemaining)}</span>
-                <span style={{ color: '#94a3b8', fontWeight: 900, fontSize: 'clamp(0.58rem,1.5vmin,0.85rem)' }}>교체까지</span>
-            </div>
-            <div style={{ flex: 1 }} />
             {isAdmin ? (
-                <React.Fragment>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 'clamp(8px,2vmin,16px)' }}>
                     <button onClick={() => t.running ? MoidaTimer.pause() : MoidaTimer.start()} style={{ ..._mtBtn, background: t.running ? '#f59e0b' : '#10b981', color: 'white' }}>{t.running ? '⏸' : '▶'}</button>
                     <button onClick={() => MoidaTimer.reset()} style={{ ..._mtBtn, background: '#e2e8f0', color: '#475569' }}>↻</button>
                     <button onClick={() => setSetOpen(v => !v)} style={{ ..._mtBtn, background: '#f1f5f9', color: '#64748b' }}>⚙</button>
-                    {setOpen && <MatchTimerSettings t={t} onClose={() => setSetOpen(false)} />}
-                </React.Fragment>
+                </div>
             ) : (
                 <span style={{ color: '#cbd5e1', fontWeight: 900, fontSize: 'clamp(0.58rem,1.5vmin,0.85rem)' }}>보기 전용</span>
             )}
+            {setOpen && isAdmin && <MatchTimerSettings t={t} onClose={() => setSetOpen(false)} />}
         </div>
     );
 }
