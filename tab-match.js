@@ -54,21 +54,21 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                 <div style={{minWidth:0,flex:1,display:'flex',alignItems:'baseline',gap:'12px',flexWrap:'wrap'}}>
                     <p style={{color:'#0f172a',fontWeight:900,lineHeight:1,fontSize:'clamp(1.4rem,4vmin,2.4rem)'}}>
                         {allDone
-                            ? <span style={{color:'#10b981'}}>✓ 모든 경기 종료</span>
+                            ? <span style={{color:'#10b981',display:'inline-flex',alignItems:'center',gap:'6px'}}><Icon.Check size={20}/>모든 경기 종료</span>
                             : <><span style={{color:'#0d9488'}}>{idx + 1}</span><span style={{color:'#94a3b8',fontSize:'0.6em'}}> / {total} 라운드</span></>}
                     </p>
-                    {!allDone && session.time && <p style={{color:'#475569',fontWeight:900,fontSize:'clamp(0.9rem,2.6vmin,1.4rem)'}}>⏱ {session.time}</p>}
-                    {isCurDone && <span style={{background:'#d1fae5',color:'#059669',fontWeight:900,fontSize:'clamp(0.7rem,1.8vmin,1rem)',padding:'2px 10px',borderRadius:'999px'}}>✓ 종료됨</span>}
+                    {!allDone && session.time && <p style={{color:'#475569',fontWeight:900,fontSize:'clamp(0.9rem,2.6vmin,1.4rem)',display:'flex',alignItems:'center',gap:'6px'}}><Icon.Clock size={18}/>{session.time}</p>}
+                    {isCurDone && <span style={{background:'#d1fae5',color:'#059669',fontWeight:900,fontSize:'clamp(0.7rem,1.8vmin,1rem)',padding:'2px 10px',borderRadius:'999px',display:'inline-flex',alignItems:'center',gap:'4px'}}><Icon.Check size={13}/>종료됨</span>}
                     <p style={{color:'#94a3b8',fontWeight:900,fontSize:'clamp(0.7rem,1.8vmin,1rem)'}}>{dateLabel} 매치판</p>
                     {isAdmin && (
                         <button onClick={() => { const v=!autoAdvance; setAutoAdvance(v); try{localStorage.setItem('moida_timer_autoadv', v?'1':'0');}catch(e){} }}
                             style={{border:'none',borderRadius:'999px',fontWeight:900,fontSize:'clamp(0.68rem,1.7vmin,0.95rem)',padding:'4px 12px',flexShrink:0,
                                 background:autoAdvance?'#0d9488':'#e2e8f0',color:autoAdvance?'white':'#64748b'}}>
-                            {autoAdvance ? '⚡ 타이머 끝나면 자동 다음' : '자동 다음 꺼짐'}
+                            {autoAdvance ? <span style={{display:'inline-flex',alignItems:'center',gap:'4px'}}><Icon.Zap size={14}/>타이머 끝나면 자동 다음</span> : '자동 다음 꺼짐'}
                         </button>
                     )}
                 </div>
-                <button onClick={onClose} style={{width:'clamp(40px,7vmin,52px)',height:'clamp(40px,7vmin,52px)',borderRadius:'14px',background:'#f1f5f9',color:'#64748b',border:'none',fontSize:'clamp(18px,3.5vmin,24px)',fontWeight:900,flexShrink:0}}>✕</button>
+                <button onClick={onClose} style={{width:'clamp(40px,7vmin,52px)',height:'clamp(40px,7vmin,52px)',borderRadius:'14px',background:'#f1f5f9',color:'#64748b',border:'none',fontWeight:900,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon.X size={22}/></button>
             </div>
             {/* 진행 바 */}
             <div style={{height:'5px',background:'#e2e8f0',flexShrink:0}}>
@@ -82,13 +82,13 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                     <div style={{width:'100%',display:'flex',flexWrap:'wrap',gap:'clamp(10px,2vmin,20px)',alignContent:'center',justifyContent:'center'}}>
                     {allDone ? (
                         <div style={{margin:'auto',textAlign:'center'}}>
-                            <p style={{fontSize:'clamp(3rem,12vmin,6rem)'}}>🏁</p>
+                            <div style={{display:'flex',justifyContent:'center'}}><Icon.Flag size={80} className="text-emerald-500"/></div>
                             <p style={{fontWeight:900,fontSize:'clamp(1.2rem,4vmin,2.2rem)',color:'#0f172a'}}>모든 경기가 종료되었습니다</p>
                             <p style={{fontWeight:900,fontSize:'clamp(0.85rem,2.4vmin,1.3rem)',color:'#94a3b8',marginTop:'6px'}}>수고하셨습니다!</p>
                         </div>
                     ) : session.matches.length === 0 ? (
                         <div style={{margin:'auto',textAlign:'center',color:'#94a3b8'}}>
-                            <p style={{fontSize:'3rem'}}>🏁</p>
+                            <div style={{display:'flex',justifyContent:'center'}}><Icon.Flag size={44} className="text-slate-400"/></div>
                             <p style={{fontWeight:900,fontSize:'1.2rem'}}>이 라운드에 경기가 없습니다</p>
                         </div>
                     ) : session.matches.map((m, mi) => {
@@ -108,7 +108,7 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                     {/* 휴식 팀 — 코트 아래(가운데 묶음 안), 조끼 이름 없이 배지만 */}
                     {!allDone && session.resting && session.resting.length > 0 && (
                         <div style={{flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',flexWrap:'wrap',gap:'10px',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'16px',padding:'clamp(6px,1.2vmin,12px) 14px'}}>
-                            <span style={{color:'#d97706',fontWeight:900,fontSize:'clamp(0.8rem,2vmin,1.15rem)'}}>😴 휴식</span>
+                            <span style={{color:'#d97706',fontWeight:900,fontSize:'clamp(0.8rem,2vmin,1.15rem)',display:'inline-flex',alignItems:'center',gap:'6px'}}><Icon.Coffee size={16}/>휴식</span>
                             {session.resting.map((r, ri) => {
                                 const ridx = String(r).charCodeAt(0) - 65;
                                 return (
@@ -122,16 +122,16 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
             {/* 하단 네비 — 항상 보임 */}
             <div style={{flexShrink:0,padding:'10px 16px max(10px, env(safe-area-inset-bottom))',background:'white',borderTop:'1px solid #e2e8f0',display:'flex',gap:'10px',alignItems:'center'}}>
                 {isAdmin ? (<>
-                    <button onClick={onPrev} disabled={currentIndex <= 0} style={{...navBtn,flex:1,background:currentIndex <= 0 ? '#f1f5f9' : '#e2e8f0',color:currentIndex <= 0 ? '#cbd5e1' : '#475569'}}>← 이전</button>
+                    <button onClick={onPrev} disabled={currentIndex <= 0} style={{...navBtn,flex:1,background:currentIndex <= 0 ? '#f1f5f9' : '#e2e8f0',color:currentIndex <= 0 ? '#cbd5e1' : '#475569'}}><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}><Icon.ChevronLeft size={16}/>이전</span></button>
                     {!allDone && (isCurDone
                         ? <button onClick={() => onToggleComplete(session.id)} style={{...navBtn,flex:1,background:'#e2e8f0',color:'#475569'}}>종료 취소</button>
                         : <button onClick={() => onToggleComplete(session.id)} style={{...navBtn,flex:1,background:'#10b981',color:'white'}}>종료</button>
                     )}
-                    <button onClick={onNext} disabled={currentIndex >= total} style={{...navBtn,flex:1,background:currentIndex >= total ? '#f1f5f9' : '#0d9488',color:currentIndex >= total ? '#cbd5e1' : 'white'}}>다음 →</button>
+                    <button onClick={onNext} disabled={currentIndex >= total} style={{...navBtn,flex:1,background:currentIndex >= total ? '#f1f5f9' : '#0d9488',color:currentIndex >= total ? '#cbd5e1' : 'white'}}><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}>다음<Icon.ChevronRight size={16}/></span></button>
                 </>) : (<>
-                    <button onClick={() => setBrowseIdx(i => clampIdx(i - 1))} disabled={idx <= 0} style={{...navBtn,flex:1,background:idx <= 0 ? '#f1f5f9' : '#e2e8f0',color:idx <= 0 ? '#cbd5e1' : '#475569'}}>← 이전</button>
+                    <button onClick={() => setBrowseIdx(i => clampIdx(i - 1))} disabled={idx <= 0} style={{...navBtn,flex:1,background:idx <= 0 ? '#f1f5f9' : '#e2e8f0',color:idx <= 0 ? '#cbd5e1' : '#475569'}}><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}><Icon.ChevronLeft size={16}/>이전</span></button>
                     <button onClick={() => setBrowseIdx(clampIdx(startIndex || 0))} style={{...navBtn,flexShrink:0,padding:'0 16px',background:'#ccfbf1',color:'#0d9488',fontSize:'clamp(0.8rem,2vmin,1.1rem)'}}>현재</button>
-                    <button onClick={() => setBrowseIdx(i => clampIdx(i + 1))} disabled={idx >= total - 1} style={{...navBtn,flex:1,background:idx >= total - 1 ? '#f1f5f9' : '#0d9488',color:idx >= total - 1 ? '#cbd5e1' : 'white'}}>다음 →</button>
+                    <button onClick={() => setBrowseIdx(i => clampIdx(i + 1))} disabled={idx >= total - 1} style={{...navBtn,flex:1,background:idx >= total - 1 ? '#f1f5f9' : '#0d9488',color:idx >= total - 1 ? '#cbd5e1' : 'white'}}><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}>다음<Icon.ChevronRight size={16}/></span></button>
                 </>)}
             </div>
         </div>
@@ -181,7 +181,7 @@ const TabMatch = ({
                 <button onClick={() => setIsMatchPanelOpen(v => !v)}
                     className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 rounded-xl transition-all active:scale-95"
                     style={isMatchPanelOpen ? {background:'linear-gradient(135deg,#14b8a6,#0d9488)',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
-                    ⚙️ {isMatchPanelOpen ? '매치 관리 ON' : '매치 관리'}
+                    <Icon.Settings size={13}/>{isMatchPanelOpen ? '매치 관리 ON' : '매치 관리'}
                 </button>
             </div>
         )}
@@ -222,7 +222,7 @@ const TabMatch = ({
                                             <option key={m.id} value={m.id}>{fmtMeetingDate(m.date)} {(m.meetingType==='match'?'매칭':'정기')} · {m.location||'장소 미정'}</option>
                                         ))}
                                     </select>
-                                    {matchConfig.location && <p className="text-[11px] font-black text-teal-600 mt-1.5">📍 {matchConfig.location}</p>}
+                                    {matchConfig.location && <p className="text-[11px] font-black text-teal-600 mt-1.5 flex items-center gap-1"><Icon.MapPin size={12} className="flex-shrink-0"/>{matchConfig.location}</p>}
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-black text-slate-400 mb-1">모임 날짜</p>
@@ -317,7 +317,7 @@ const TabMatch = ({
                             const latest = [...confirmedDrafts].sort((a,b) => (b.meetingDate||'').localeCompare(a.meetingDate||''))[0];
                             return latest ? (
                                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
-                                    <p className="text-xs font-black text-emerald-600">✓ 확정된 팀 편성: {latest.meetingDate}</p>
+                                    <p className="text-xs font-black text-emerald-600 flex items-center gap-1"><Icon.Check size={13} className="flex-shrink-0"/>확정된 팀 편성: {latest.meetingDate}</p>
                                     <p className="text-xs text-emerald-500 mt-0.5">{latest.teams?.length}팀 · {latest.teams?.reduce((s,t)=>s+t.members.length,0)}명</p>
                                 </div>
                             ) : null;
@@ -381,11 +381,11 @@ const TabMatch = ({
                                             <p className="text-center text-xs font-black text-slate-500 mb-2">
                                                 {localMatchIndex < localSchedule.list.length
                                                     ? `${localMatchIndex+1} / ${localSchedule.list.length} 라운드 · ${localSchedule.list[localMatchIndex]?.time}`
-                                                    : '✓ 모든 경기 종료'}
+                                                    : <span className="inline-flex items-center justify-center gap-1"><Icon.Check size={13}/>모든 경기 종료</span>}
                                             </p>
                                             <div className="flex gap-2">
                                                 <button onClick={matchHandlePrevMatch} disabled={localMatchIndex <= 0}
-                                                    className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-black text-xs disabled:opacity-30">← 이전</button>
+                                                    className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-black text-xs disabled:opacity-30"><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}><Icon.ChevronLeft size={16}/>이전</span></button>
                                                 {localMatchIndex < localSchedule.list.length && (
                                                     localCompletedMatches.has(localSchedule.list[localMatchIndex]?.id)
                                                         ? <button onClick={() => matchHandleToggleComplete(localSchedule.list[localMatchIndex].id)}
@@ -394,7 +394,7 @@ const TabMatch = ({
                                                             className="flex-1 py-2.5 rounded-xl bg-emerald-500 text-white font-black text-xs">종료</button>
                                                 )}
                                                 <button onClick={matchHandleNextMatch} disabled={localMatchIndex >= localSchedule.list.length}
-                                                    className="flex-1 py-2.5 rounded-xl bg-teal-500 text-white font-black text-xs disabled:opacity-30">다음 →</button>
+                                                    className="flex-1 py-2.5 rounded-xl bg-teal-500 text-white font-black text-xs disabled:opacity-30"><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}>다음<Icon.ChevronRight size={16}/></span></button>
                                             </div>
                                         </div>
                                     )}
@@ -479,7 +479,7 @@ const TabMatch = ({
                         <button onClick={() => setBoardOpen(true)}
                             className="w-full mb-4 py-3.5 rounded-2xl font-black text-sm text-white flex items-center justify-center gap-2 active:scale-95 transition-all"
                             style={{background:'linear-gradient(135deg,#0f766e,#0d9488)',boxShadow:'0 8px 20px -6px rgba(13,148,136,0.5)'}}>
-                            📺 매치판 크게 보기
+                            <Icon.Tv size={18}/>매치판 크게 보기
                         </button>
 
                         {/* ── 내 경기 뷰 ── */}
@@ -487,7 +487,7 @@ const TabMatch = ({
                             <div>
                                 {allDone ? (
                                     <div className="text-center py-16">
-                                        <div className="text-5xl mb-4">🏁</div>
+                                        <div className="flex justify-center mb-4"><Icon.Flag size={48} className="text-emerald-500"/></div>
                                         <p className="font-black text-slate-500 text-lg">모든 경기가 종료되었습니다</p>
                                         <p className="text-sm text-slate-400 mt-1">수고하셨습니다!</p>
                                     </div>
@@ -527,7 +527,7 @@ const TabMatch = ({
                                             if (isResting) {
                                                 return (
                                                     <div className="bg-amber-50 border border-amber-200 rounded-3xl p-8 text-center">
-                                                        <div className="text-5xl mb-3">😴</div>
+                                                        <div className="flex justify-center mb-3"><Icon.Coffee size={48} className="text-amber-500"/></div>
                                                         <p className="font-black text-amber-500 text-lg">이번 경기는 휴식입니다.</p>
                                                         <p className="text-amber-500 text-sm mt-1">다음 라운드를 기다려주세요</p>
                                                     </div>
@@ -572,7 +572,7 @@ const TabMatch = ({
                                                 <div className="card rounded-2xl border border-slate-100 p-4 mt-3">
                                                     <p className="text-[10px] font-black text-slate-400 mb-2">다음 라운드 ({cmi+2}/{sessions.length})</p>
                                                     {nxtResting ? (
-                                                        <p className="text-xs text-amber-500 font-black">😴 휴식</p>
+                                                        <p className="text-xs text-amber-500 font-black flex items-center gap-1"><Icon.Coffee size={13}/>휴식</p>
                                                     ) : nxtMatch && nxtOpp ? (
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-xs text-slate-400">vs</span>
@@ -594,11 +594,11 @@ const TabMatch = ({
                                 <p className="text-center text-xs font-black text-slate-500 mb-2">
                                     {localMatchIndex < localSchedule.list.length
                                         ? `${localMatchIndex+1} / ${localSchedule.list.length} 라운드 · ${localSchedule.list[localMatchIndex]?.time}`
-                                        : '✓ 모든 경기 종료'}
+                                        : <span className="inline-flex items-center justify-center gap-1"><Icon.Check size={13}/>모든 경기 종료</span>}
                                 </p>
                                 <div className="flex gap-2">
                                     <button onClick={matchHandlePrevMatch} disabled={localMatchIndex <= 0}
-                                        className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-black text-xs disabled:opacity-30">← 이전</button>
+                                        className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-black text-xs disabled:opacity-30"><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}><Icon.ChevronLeft size={16}/>이전</span></button>
                                     {localMatchIndex < localSchedule.list.length && (
                                         localCompletedMatches.has(localSchedule.list[localMatchIndex]?.id)
                                             ? <button onClick={() => matchHandleToggleComplete(localSchedule.list[localMatchIndex].id)}
@@ -607,7 +607,7 @@ const TabMatch = ({
                                                 className="flex-1 py-2.5 rounded-xl bg-emerald-500 text-white font-black text-xs">종료</button>
                                     )}
                                     <button onClick={matchHandleNextMatch} disabled={localMatchIndex >= localSchedule.list.length}
-                                        className="flex-1 py-2.5 rounded-xl bg-teal-500 text-white font-black text-xs disabled:opacity-30">다음 →</button>
+                                        className="flex-1 py-2.5 rounded-xl bg-teal-500 text-white font-black text-xs disabled:opacity-30"><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}>다음<Icon.ChevronRight size={16}/></span></button>
                                 </div>
                             </div>
                         )}
@@ -624,7 +624,7 @@ const TabMatch = ({
                                     return (
                                         <div key={si} className={`rounded-3xl p-4 border transition-all ${isCurrent?'border-teal-100 bg-teal-50':isDone||isPast?'border-slate-100 bg-slate-50 opacity-40':hasMyTeam?'border-teal-100 card':'card border-slate-100'}`}>
                                             <div className="flex items-center gap-2 mb-3">
-                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] flex-shrink-0 ${isCurrent?'bg-teal-500 text-white':isDone||isPast?'bg-emerald-400 text-white':'bg-slate-100 text-slate-500'}`}>{isDone||isPast?'✓':si+1}</div>
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] flex-shrink-0 ${isCurrent?'bg-teal-500 text-white':isDone||isPast?'bg-emerald-400 text-white':'bg-slate-100 text-slate-500'}`}>{isDone||isPast?<Icon.Check size={12}/>:si+1}</div>
                                                 <p className="text-xs font-black text-slate-400">{session.time}</p>
                                                 {isCurrent&&<span className="text-[9px] font-black text-teal-600 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-full">진행 중</span>}
                                                 {hasMyTeam&&!isCurrent&&!isDone&&<span className="text-[9px] font-black text-teal-500 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-full">내 경기</span>}
