@@ -28,18 +28,27 @@ function useMatch({ isAdminMode, meetingSettings, confirmedDrafts }) {
     useEffect(() => {
         if (!meetingSettings?.date) { setScheduleData(null); return; }
         const mid = getMeetingId(meetingSettings);
-        const unsub = getCol('match_schedules').orderBy('createdAt', 'desc').onSnapshot(snap => {
-            const found = snap.docs.map(d => ({id:d.id,...d.data()}))
-                .find(d => d.meetingId ? d.meetingId === mid : d.meetingDate === meetingSettings.date);
-            setScheduleData(found || null);
-        });
+        const altMid = meetingSettings.meetingType === 'match' ? meetingSettings.date : meetingSettings.date + '__match'; // 반대 종류 식별자
+        const byNew = (a, b) => (b.createdAt || '').localeCompare(a.createdAt || '');
+        // orderBy 제거 → createdAt 없는 옛 기록도 누락 없이 받고, 식별자 정확일치 → 없으면 같은 날짜로 보정(둘 다 최신순)
+        const unsub = getCol('match_schedules').onSnapshot(snap => {
+            const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const found = docs.filter(d => d.meetingId === mid).sort(byNew)[0]
+                || docs.filter(d => d.meetingDate === meetingSettings.date && d.meetingId !== altMid).sort(byNew)[0]
+                || null;
+            setScheduleData(found);
+        }, () => {});
         return () => unsub();
     }, [meetingSettings?.date, meetingSettings?.meetingType]);
 
     useEffect(() => {
         if (!isAdminMode) return;
         const u1 = getCol('court_presets').orderBy('createdAt').onSnapshot(snap => setPresets(snap.docs.map(d => ({id:d.id,...d.data()}))));
-        const u2 = getCol('match_schedules').orderBy('createdAt','desc').onSnapshot(snap => setSavedMatchSchedules(snap.docs.map(d => ({id:d.id,...d.data()}))));
+        const u2 = getCol('match_schedules').onSnapshot(snap => {
+            const list = snap.docs.map(d => ({id:d.id,...d.data()}));
+            list.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||'')); // createdAt 없는 옛 기록도 포함(맨 뒤로)
+            setSavedMatchSchedules(list);
+        }, () => {});
         return () => { u1(); u2(); };
     }, [isAdminMode]);
 
