@@ -911,9 +911,9 @@ function App() {
                         ...(isAdminMode ? [{key:'roster', label:'명단', icon:<Icon.List size={30}/>}] : []),
                     ].map(({key,label,icon})=>(
                         <button key={key} onClick={()=>{ if (key === 'meeting') setViewMeetingId(null); setTab(key); }}
-                            className={`flex flex-col items-center justify-center flex-1 h-[72px] rounded-2xl transition-all ${tab===key?'bg-teal-100 text-teal-500':'text-slate-400'}`}>
+                            className={`flex flex-col items-center justify-center flex-1 h-[72px] rounded-2xl transition-all ${tab===key?'text-[#1A151D]':'text-slate-400'}`}>
                             {icon}
-                            <span className={`text-[11px] font-black mt-1 ${tab===key?'text-teal-500':'text-slate-400'}`}>{label}</span>
+                            <span className={`text-[11px] font-black mt-1 ${tab===key?'text-[#1A151D]':'text-slate-400'}`}>{label}</span>
                         </button>
                     ))}
                 </div>
