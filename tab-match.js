@@ -50,6 +50,8 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                 </div>
                 <button onClick={onClose} style={{width:'clamp(40px,7vmin,52px)',height:'clamp(40px,7vmin,52px)',borderRadius:'14px',background:'#f1f5f9',color:'#64748b',border:'none',fontSize:'clamp(18px,3.5vmin,24px)',fontWeight:900,flexShrink:0}}>✕</button>
             </div>
+            {/* 경기 타이머 (워치 이식 — 게임잔여+교체까지, 시작/정지/리셋/설정) */}
+            <MatchTimerBar />
             {/* 진행 바 */}
             <div style={{height:'5px',background:'#e2e8f0',flexShrink:0}}>
                 <div style={{height:'100%',background:'#0d9488',transition:'width .4s',width:`${total ? Math.round((idx + 1) / total * 100) : 0}%`}}/>

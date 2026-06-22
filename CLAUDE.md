@@ -55,6 +55,7 @@ Firebase 초기화 (db, auth, getCol, APP_ID, STAFF_ROLES) → firebase-init.js
 매치 이미지 저장 → match/match-export.js
 매치 아이콘 / 구장 프리셋 → match/match-utils.js
 (member.html) 매치탭 → tab-match.js, handlers-match.js, use-match.js
+경기 타이머 (게임 카운트다운 + 교체 알림 — 워치 TimerService 이식) → match-timer.js (MoidaTimer 단일상태·useMatchTimer·MatchTimerBar). 매치판 크게 보기(tab-match.js MatchBoardModal) 상단에 표시. WebAudio 삐 + navigator.vibrate(iOS는 소리만). 워치<->앱 연동은 미구현
 
 회칙  (member.html 회칙탭)
 
