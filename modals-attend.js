@@ -54,7 +54,7 @@ const CheckInModal = ({ modal, setModal, handleCheckIn, handleUncheckIn }) => {
                 {modal.data.checkedIn
                     ? <div>
                         <div className="text-center mb-4">
-                            <p className="text-emerald-500 font-black text-xl">✓ 출석 완료</p>
+                            <p className="text-emerald-500 font-black text-xl flex items-center justify-center gap-1.5"><Icon.Check size={20}/>출석 완료</p>
                             <p className="text-slate-400 text-sm mt-1">{modal.data.checkInTime} · <span className={`font-black ${modal.data.status==='지각'?'text-orange-400':'text-emerald-500'}`}>{modal.data.status}</span></p>
                         </div>
                         {modal.data.teamIdx !== undefined && modal.data.jerseyNumber && (
@@ -148,8 +148,8 @@ const NotifModal = ({ isOpen, onClose, fcmTokenCount, notifTitle, setNotifTitle,
                 <div className="flex items-center justify-between mb-1">
                     <h2 className="text-xl font-black text-slate-800">공지 발송</h2>
                     {fcmTokenCount !== null && (
-                        <span className={`text-xs font-black px-2.5 py-1 rounded-full ${fcmTokenCount>0?'bg-emerald-50 text-emerald-500':'bg-slate-100 text-slate-400'}`}>
-                            📱 {fcmTokenCount}기기 등록
+                        <span className={`text-xs font-black px-2.5 py-1 rounded-full inline-flex items-center gap-1 ${fcmTokenCount>0?'bg-emerald-50 text-emerald-500':'bg-slate-100 text-slate-400'}`}>
+                            <Icon.Smartphone size={12}/>{fcmTokenCount}기기 등록
                         </span>
                     )}
                 </div>

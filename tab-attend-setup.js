@@ -81,7 +81,7 @@ const AttendSetupTab = ({
                             </span>
                             <a href={`https://map.kakao.com/link/map/${encodeURIComponent(meetingTimes.location||'위치')},${meetingTimes.locationLat},${meetingTimes.locationLng}`}
                                target="_blank" rel="noopener noreferrer"
-                               className="text-[10px] text-blue-500 font-black underline">지도 확인 →</a>
+                               className="text-[10px] text-blue-500 font-black underline inline-flex items-center gap-0.5">지도 확인 <Icon.ChevronRight size={10}/></a>
                             <button onClick={() => updateMeetingTimeSettings({...meetingTimes, locationLat:null, locationLng:null})}
                                 className="text-[10px] text-slate-300 hover:text-red-400 font-black ml-auto">좌표 삭제</button>
                         </div>

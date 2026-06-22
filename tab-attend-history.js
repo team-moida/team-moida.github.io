@@ -10,7 +10,7 @@ const AttendHistoryTab = ({
             <div>
                 <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 px-1">출결 기록</p>
                 {history.length === 0
-                    ? <div className="text-center py-16 text-slate-300"><p className="text-4xl mb-3">📚</p><p className="font-black">기록이 없습니다</p></div>
+                    ? <div className="text-center py-16 text-slate-300"><div className="flex justify-center mb-3"><Icon.Book size={40} className="text-slate-300"/></div><p className="font-black">기록이 없습니다</p></div>
                     : history.map(h => (
                         <button key={h.id} onClick={()=>{setSelectedHistoryDetail(h);setHistorySortKey('time');setHistorySortOrder('asc');}}
                             className="w-full flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl mb-2 text-left hover:border-teal-200 transition-all">
@@ -68,7 +68,7 @@ const AttendHistoryTab = ({
                 {[['time','시간순'],['status','상태순']].map(([k,l]) => (
                     <button key={k} onClick={()=>{if(historySortKey===k&&k==='status')setHistorySortOrder(o=>o==='asc'?'desc':'asc');setHistorySortKey(k);}}
                         className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${historySortKey===k?'bg-teal-500 text-white':'bg-white border border-slate-200 text-slate-500'}`}>
-                        {l} {historySortKey===k&&k==='status'&&(historySortOrder==='asc'?'↑':'↓')}
+                        <span className="inline-flex items-center gap-0.5">{l} {historySortKey===k&&k==='status'&&(historySortOrder==='asc'?<Icon.ArrowUp size={11}/>:<Icon.ArrowDown size={11}/>)}</span>
                     </button>
                 ))}
             </div>

@@ -34,8 +34,8 @@ const AttendMainTab = ({
                     await getSettingsCol().doc('meeting_schedule_v2').update(updated);
                     showAlert('지각 시간으로 전환', `시작: ${h}:${m}\n지금 출석하면 "지각" ⚠️`);
                 }}
-                    className="px-4 py-2 rounded-xl font-black text-sm bg-yellow-500 text-white shadow-lg shadow-yellow-500/40">
-                    ⏱️ 지각 시간 전환
+                    className="px-4 py-2 rounded-xl font-black text-sm bg-yellow-500 text-white shadow-lg shadow-yellow-500/40 flex items-center justify-center gap-1.5">
+                    <Icon.Clock size={14}/>지각 시간 전환
                 </button>
                 <button onClick={async ()=>{
                     const noShowList = activeList.filter(p => !p.checkedIn && p.status !== '노쇼');
@@ -50,8 +50,8 @@ const AttendMainTab = ({
                         showAlert('노쇼 처리', `미출석 ${noShowList.length}명이 노쇼로 처리됨 ✗`);
                     } catch(e) { showAlert('오류', '노쇼 처리 실패'); }
                 }}
-                    className="px-4 py-2 rounded-xl font-black text-sm bg-red-500 text-white shadow-lg shadow-red-500/40">
-                    ❌ 노쇼 시간 전환
+                    className="px-4 py-2 rounded-xl font-black text-sm bg-red-500 text-white shadow-lg shadow-red-500/40 flex items-center justify-center gap-1.5">
+                    <Icon.X size={14}/>노쇼 시간 전환
                 </button>
             </div>
         )}
@@ -65,7 +65,7 @@ const AttendMainTab = ({
                 </div>
                 <div className="text-right">
                     <p className="text-xs text-slate-400">{meetingTimes.start} ~ {meetingTimes.end}</p>
-                    {meetingTimes.location && <p className="text-xs font-black text-slate-600 mt-0.5">📍 {meetingTimes.location}</p>}
+                    {meetingTimes.location && <p className="text-xs font-black text-slate-600 mt-0.5 flex items-center justify-end gap-1"><Icon.MapPin size={12} className="flex-shrink-0"/><span className="truncate">{meetingTimes.location}</span></p>}
                     {meetingTimes.managerName && <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1"><Icon.User size={11}/>{meetingTimes.managerName}</p>}
                 </div>
             </div>
@@ -138,7 +138,7 @@ const AttendMainTab = ({
                                     className={`relative overflow-hidden rounded-xl aspect-square flex items-center justify-center transition-all ${getTeamBadgeColor(group.teamIdx)} ${p.status==='노쇼'?'opacity-50':p.checkedIn?'opacity-40':''}`}
                                     style={{containerType:'inline-size'}}>
                                     {/* 출석 완료 표시: 우상단 ✓ 배지 (흐릿 처리와 함께 구분) */}
-                                    {p.checkedIn&&<div style={{position:'absolute',top:'5%',right:'5%',width:'30cqw',height:'30cqw',maxWidth:'34px',maxHeight:'34px',minWidth:'16px',minHeight:'16px',borderRadius:'50%',background:'rgba(255,255,255,0.92)',color:'#10b981',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,lineHeight:1,fontSize:'clamp(12px,20cqw,22px)',pointerEvents:'none'}}>✓</div>}
+                                    {p.checkedIn&&<div style={{position:'absolute',top:'5%',right:'5%',width:'30cqw',height:'30cqw',maxWidth:'34px',maxHeight:'34px',minWidth:'16px',minHeight:'16px',borderRadius:'50%',background:'rgba(255,255,255,0.92)',color:'#10b981',display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none'}}><Icon.Check size={16}/></div>}
                                     {/* 조끼 번호 + W/G 뱃지 (좌상단) */}
                                     <div style={{position:'absolute',top:'4px',left:'6px',display:'flex',alignItems:'center',gap:'3px',pointerEvents:'none',userSelect:'none'}}>
                                         <span style={{fontSize:'clamp(14px,28cqw,66px)',fontWeight:'900',opacity:0.55,lineHeight:1}}>{p.jerseyNumber}</span>
@@ -168,20 +168,20 @@ const AttendMainTab = ({
                                             {p.isGuest&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-slate-800 text-white rounded-lg">G</span>}
                                         </div>
                                         {p.status === '노쇼' ? (
-                                            <p className="text-[10px] text-red-600 font-black mt-0.5">✗ 노쇼{p.noShowFine ? ` · ${p.noShowFine / 10000}만원` : ''}</p>
+                                            <p className="text-[10px] text-red-600 font-black mt-0.5 flex items-center gap-1"><Icon.X size={11} className="flex-shrink-0"/>노쇼{p.noShowFine ? ` · ${p.noShowFine / 10000}만원` : ''}</p>
                                         ) : p.checkedIn ? (
                                             p.status === '정상' ? (
-                                                <p className="text-[10px] text-emerald-600 font-black mt-0.5">✓ 정상 · {p.checkInTime}</p>
+                                                <p className="text-[10px] text-emerald-600 font-black mt-0.5 flex items-center gap-1"><Icon.Check size={11} className="flex-shrink-0"/>정상 · {p.checkInTime}</p>
                                             ) : (
-                                                <p className="text-[10px] text-yellow-600 font-black mt-0.5">⚠️ 지각 · {p.checkInTime}</p>
+                                                <p className="text-[10px] text-yellow-600 font-black mt-0.5 flex items-center gap-1"><Icon.AlertTriangle size={11} className="flex-shrink-0"/>지각 · {p.checkInTime}</p>
                                             )
                                         ) : null}
                                     </div>
                                     {p.status === '노쇼'
-                                        ? <span className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-black">✗</span>
+                                        ? <span className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 text-white"><Icon.X size={13}/></span>
                                         : p.checkedIn
                                             ? <span className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0"><Icon.Check size={12} className="text-white"/></span>
-                                            : <span className="text-xs font-black text-slate-300 flex-shrink-0">체크인 →</span>
+                                            : <span className="text-xs font-black text-slate-300 flex-shrink-0 inline-flex items-center gap-0.5">체크인 <Icon.ChevronRight size={12}/></span>
                                     }
                                 </button>
                             ))}
@@ -203,27 +203,27 @@ const AttendMainTab = ({
                                 {p.isGuest&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-slate-800 text-white rounded-lg">G</span>}
                             </div>
                             {p.status === '노쇼' ? (
-                                <p className="text-[10px] text-red-600 font-black mt-0.5">✗ 노쇼{p.noShowFine ? ` · ${p.noShowFine / 10000}만원` : ''}</p>
+                                <p className="text-[10px] text-red-600 font-black mt-0.5 flex items-center gap-1"><Icon.X size={11} className="flex-shrink-0"/>노쇼{p.noShowFine ? ` · ${p.noShowFine / 10000}만원` : ''}</p>
                             ) : p.checkedIn ? (
                                 p.status === '정상' ? (
-                                    <p className="text-[10px] text-emerald-600 font-black mt-0.5">✓ 정상 · {p.checkInTime}</p>
+                                    <p className="text-[10px] text-emerald-600 font-black mt-0.5 flex items-center gap-1"><Icon.Check size={11} className="flex-shrink-0"/>정상 · {p.checkInTime}</p>
                                 ) : (
-                                    <p className="text-[10px] text-yellow-600 font-black mt-0.5">⚠️ 지각 · {p.checkInTime}</p>
+                                    <p className="text-[10px] text-yellow-600 font-black mt-0.5 flex items-center gap-1"><Icon.AlertTriangle size={11} className="flex-shrink-0"/>지각 · {p.checkInTime}</p>
                                 )
                             ) : null}
                         </div>
                         {p.status === '노쇼'
-                            ? <span className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-black">✗</span>
+                            ? <span className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 text-white"><Icon.X size={13}/></span>
                             : p.checkedIn
                                 ? <span className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0"><Icon.Check size={12} className="text-white" /></span>
-                                : <span className="text-xs font-black text-slate-300 flex-shrink-0">체크인 →</span>
+                                : <span className="text-xs font-black text-slate-300 flex-shrink-0 inline-flex items-center gap-0.5">체크인 <Icon.ChevronRight size={12}/></span>
                         }
                     </button>
                 ))}
             </div>
         ) : (
             <div className="text-center py-16 text-slate-300">
-                <p className="text-4xl mb-3">📋</p>
+                <div className="flex justify-center mb-3"><Icon.Clipboard size={40} className="text-slate-300"/></div>
                 <p className="font-black">선정된 인원이 없습니다</p>
                 <p className="text-xs mt-1">선정 탭에서 인원을 추가하세요</p>
             </div>
@@ -247,7 +247,7 @@ const AttendMainTab = ({
             <div className="max-w-5xl mx-auto flex gap-2">
                 <button onClick={saveAndResetCurrent} disabled={isPending||activeList.length===0}
                     className="flex-1 py-3.5 bg-teal-500 text-white rounded-2xl font-black text-sm disabled:opacity-30">
-                    {isPending?'처리 중...':'기록 확정 →'}
+                    {isPending?'처리 중...':<span className="inline-flex items-center justify-center gap-1">기록 확정 <Icon.ChevronRight size={15}/></span>}
                 </button>
             </div>
         </div>
