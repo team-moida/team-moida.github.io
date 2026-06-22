@@ -543,16 +543,16 @@ const RecordDetailModal = ({ detail, onClose, onEdit, onDelete, onFinalizePenalt
                 )}
                 {hist && penaltyRecords.length > 0 && (
                     <div id="penalty-capture-area" style={{ position: 'fixed', left: '-9999px', top: 0, width: '380px' }} className={`p-5 ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
-                        <p className={`font-black text-base ${darkMode ? 'text-white' : 'text-slate-800'}`}>지각 · 노쇼 명단</p>
-                        <p className="text-[11px] text-slate-400 mb-3">{fmtMeetingDate(m.date)} · {m.start}~{m.end}{m.location ? ` · ${m.location}` : ''}</p>
-                        <div className="flex items-center gap-2 mb-3">
+                        <p className={`font-black text-base text-center ${darkMode ? 'text-white' : 'text-slate-800'}`}>지각 · 노쇼 명단</p>
+                        <p className="text-[11px] text-slate-400 mb-3 text-center">{fmtMeetingDate(m.date)} · {m.start}~{m.end}{m.location ? ` · ${m.location}` : ''}</p>
+                        <div className="flex items-center justify-center gap-2 mb-3">
                             {lateCount > 0 && <span className="text-xs font-black px-3 py-1.5 rounded-xl bg-amber-50 text-amber-600">지각 {lateCount}</span>}
                             {noShowCount > 0 && <span className="text-xs font-black px-3 py-1.5 rounded-xl bg-rose-50 text-rose-500">노쇼 {noShowCount}</span>}
                         </div>
                         <div className="space-y-1.5">
                             {penaltyRecords.map((r, i) => (
-                                <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50">
-                                    <div className="flex-1">
+                                <div key={i} className="flex items-center justify-center gap-3 px-3 py-2.5 rounded-xl bg-slate-50">
+                                    <div className="text-center">
                                         <span className="font-black text-sm text-slate-700 break-words block">{r.name}</span>
                                         {r.reason && <span className="text-[10px] text-rose-400 font-black break-words block">사유: {r.reason}</span>}
                                     </div>
