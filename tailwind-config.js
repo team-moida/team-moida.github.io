@@ -28,6 +28,18 @@ tailwind.config = {
     indigo: {  // 미래 accent 후보.
       50:'#eef2ff', 100:'#e0e7ff', 200:'#c7d2fe', 300:'#a5b4fc', 400:'#818cf8',
       500:'#6366f1', 600:'#4f46e5', 700:'#4338ca', 800:'#3730a3', 900:'#312e81', 950:'#1e1b4b'
+    },
+    // ── 조끼(팀 배지) 색 — 팔레트에서 분리한 전용 색 (DESIGN.md §7 조끼 고정 원칙).
+    // 값 = 현행 Tailwind 기본 hex 그대로 → 화면 무변화. 이후 red/blue/yellow/pink 팔레트를
+    // 바꿔도 조끼는 jersey-* 라서 영향 없음. 각 색의 shade는 getTeamBadge/getTeamCard/
+    // getTeamNumberColor가 실제 쓰는 번호만 등록(utils.js).
+    jersey: {
+      pink:   { 50:'#fdf2f8', 200:'#fbcfe8', 500:'#ec4899' },
+      sky:    { 50:'#f0f9ff', 200:'#bae6fd', 400:'#38bdf8' },
+      lime:   { 50:'#f7fee7', 200:'#d9f99d', 400:'#a3e635', 500:'#84cc16' },
+      yellow: { 50:'#fefce8', 200:'#fef08a', 400:'#facc15' },
+      blue:   { 50:'#eff6ff', 200:'#bfdbfe', 600:'#2563eb' },
+      red:    { 50:'#fef2f2', 200:'#fecaca', 500:'#ef4444' }
     }
   }}}
 };

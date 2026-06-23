@@ -10,9 +10,9 @@ const getRoleBadgeClass = (role) => {
 
 /* ── 팀 ── */
 const getTeamName = (idx) => String.fromCharCode(65+idx);
-const getTeamCard = (idx) => ['bg-pink-50 border-pink-200','bg-sky-50 border-sky-200','bg-lime-50 border-lime-200','bg-yellow-50 border-yellow-200','bg-blue-50 border-blue-200','bg-red-50 border-red-200'][idx]||'bg-slate-50 border-slate-200';
+const getTeamCard = (idx) => ['bg-jersey-pink-50 border-jersey-pink-200','bg-jersey-sky-50 border-jersey-sky-200','bg-jersey-lime-50 border-jersey-lime-200','bg-jersey-yellow-50 border-jersey-yellow-200','bg-jersey-blue-50 border-jersey-blue-200','bg-jersey-red-50 border-jersey-red-200'][idx]||'bg-slate-50 border-slate-200';
 const getTeamColorClass = getTeamCard;
-const getTeamBadge = (idx) => ['bg-pink-500 text-white','bg-sky-400 text-white','bg-lime-400 text-slate-800','bg-yellow-400 text-slate-800','bg-blue-600 text-white','bg-red-500 text-white'][idx]||'bg-slate-500 text-white';
+const getTeamBadge = (idx) => ['bg-jersey-pink-500 text-white','bg-jersey-sky-400 text-white','bg-jersey-lime-400 text-slate-800','bg-jersey-yellow-400 text-slate-800','bg-jersey-blue-600 text-white','bg-jersey-red-500 text-white'][idx]||'bg-slate-500 text-white';
 const getTeamBadgeColor = getTeamBadge;
 const getTeamColorName = (idx) => ['핑크','하늘','연두','노랑','파랑','빨강'][idx]||'';
 
@@ -50,7 +50,7 @@ const getPosColorClass = (pos) => {
     if (p.includes('골레이로')) return 'bg-purple-50 text-purple-600 border-purple-100';
     return 'bg-yellow-50 text-yellow-600 border-yellow-100';
 };
-const getTeamNumberColor = (index) => ['text-pink-500','text-sky-400','text-lime-500','text-yellow-400','text-blue-600','text-red-500'][index] || 'text-slate-300';
+const getTeamNumberColor = (index) => ['text-jersey-pink-500','text-jersey-sky-400','text-jersey-lime-500','text-jersey-yellow-400','text-jersey-blue-600','text-jersey-red-500'][index] || 'text-slate-300';
 
 /* ── 회비 날짜 계산 ── */
 const calculateEndDate = (startMonthStr, durationMonths) => {
