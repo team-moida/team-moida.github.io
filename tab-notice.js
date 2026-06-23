@@ -107,7 +107,7 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
     return (
         <div className="animate-in">
             {/* 상단: 홈 카드 스타일 hero (뒤로 + 제목) */}
-            <div className="rounded-3xl p-5 mb-4 text-white" style={{ background:'linear-gradient(135deg,#f59e0b,#f97316)', boxShadow:'0 10px 28px -8px rgba(249,115,22,0.45)' }}>
+            <div className="rounded-3xl p-5 mb-4 text-white" style={{ background:'linear-gradient(135deg,var(--c-warn),#f97316)', boxShadow:'0 10px 28px -8px rgba(249,115,22,0.45)' }}>
                 <button onClick={onBack} className="flex items-center gap-1 text-white/85 font-black text-xs mb-2 active:scale-95 transition-all">
                     <Icon.ChevronLeft size={16}/> 홈
                 </button>
