@@ -75,8 +75,8 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                         const done = completedMatches?.has(s.id);
                         const cur = si === idx;
                         return (
-                            <div key={si} style={{flex: cur ? '1.5' : '1',height:'clamp(28px,5vmin,40px)',borderRadius:'9px',display:'flex',alignItems:'center',justifyContent:'center',gap:'4px',fontWeight:900,fontSize:'clamp(0.72rem,1.9vmin,1.05rem)',background: cur ? '#0d9488' : (done ? '#ccfbf1' : '#eef2f6'),color: cur ? '#fff' : (done ? '#0d9488' : '#94a3b8'),boxShadow: cur ? '0 0 0 3px rgba(13,148,136,0.18)' : 'none'}}>
-                                {cur ? `라운드 ${si + 1}` : <>{si + 1}{done && <Icon.Check size={12}/>}</>}
+                            <div key={si} style={{flex: cur ? '1.9' : '1',height:'clamp(34px,5.8vmin,46px)',borderRadius:'9px',display:'flex',alignItems:'center',justifyContent:'center',gap:'4px',fontWeight:900,fontSize:'clamp(0.9rem,2.5vmin,1.35rem)',whiteSpace:'nowrap',background: cur ? '#0d9488' : (done ? '#ccfbf1' : '#eef2f6'),color: cur ? '#fff' : (done ? '#0d9488' : '#94a3b8'),boxShadow: cur ? '0 0 0 3px rgba(13,148,136,0.18)' : 'none'}}>
+                                {cur ? `라운드 ${si + 1}` : <>{si + 1}{done && <Icon.Check size={15}/>}</>}
                             </div>
                         );
                     })}
