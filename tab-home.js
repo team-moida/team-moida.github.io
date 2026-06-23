@@ -167,7 +167,7 @@ const AnnounceTicker = ({ announcements, onOpen, onTabChange, meetings }) => {
     // 공지 0개 — 빈 띠 유지. 눌러도 게시판으로 이동.
     if (list.length === 0) {
         return (
-            <button onClick={onOpen} className="w-full card rounded-2xl px-4 py-3 text-left active:scale-98 transition-all overflow-hidden">
+            <button onClick={onOpen} className="w-full text-left active:scale-98 transition-all overflow-hidden">
                 <div className="flex items-center gap-2.5">
                     <Icon.Bell size={15} className="text-slate-300 flex-shrink-0"/>
                     <span className="font-black text-sm text-slate-400">등록된 공지가 없습니다</span>
@@ -179,7 +179,7 @@ const AnnounceTicker = ({ announcements, onOpen, onTabChange, meetings }) => {
     const safeIdx = idx % list.length;
     const a = list[safeIdx];
     return (
-        <button onClick={onOpen} className="w-full card rounded-2xl px-4 py-3 text-left active:scale-98 transition-all overflow-hidden">
+        <button onClick={onOpen} className="w-full text-left active:scale-98 transition-all overflow-hidden">
             <div className="flex items-center gap-2.5">
                 <Icon.Bell size={15} className="text-teal-500 flex-shrink-0"/>
                 {/* key 변경 → moida-ticker-up 애니메이션 재생 (아래에서 위로 등장) */}
@@ -1067,9 +1067,6 @@ const TabHome = ({
         });
     return (
     <div className="animate-in space-y-3">
-        {/* 공지 순환 띠 (맨 위, 항상 표시) */}
-        <AnnounceTicker announcements={announcements} meetings={meetings} onOpen={onOpenAnnouncements} onTabChange={onTabChange} />
-
         {/* 회비 납부 신고 (관리자 전용 · 대기 신고가 있을 때만 — 홈에서 한눈에 확정/삭제) */}
         {isAdminMode && <DuesReportsHomeCard duesReports={duesReports} onConfirm={onConfirmDuesReport} onReject={onRejectDuesReport} onGoDuesTab={onGoDuesTab} />}
 

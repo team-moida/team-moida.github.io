@@ -3,7 +3,7 @@ function MemberHeader({
     myTeamInfo, myTeamIdx, handleLogout, toggleTheme, darkMode,
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
     unreadCount = 0, onOpenAnnouncements, canPreview, onEnterTestPreview,
-    onOpenProfile, isInPreview, onExitTestPreview
+    onOpenProfile, isInPreview, onExitTestPreview, children
 }) {
     const showOverlay = isAdminMode && isMeetingOver && !isMeetingEndSaved;
     // 종 클릭 → 전체 공지 모달 (2단계에서 실제 연결). 미연결 시 콘솔 로그만.
@@ -42,6 +42,7 @@ function MemberHeader({
                     <button onClick={handleLogout} className="p-2 rounded-lg bg-red-100 hover:bg-red-200 transition-all text-red-500" title="로그아웃"><Icon.LogOut size={15}/></button>
                 </div>
             </div>
+            {children && <div className="mt-3">{children}</div>}
         </div>
     );
 }

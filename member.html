@@ -690,7 +690,9 @@ function App() {
                 isMeetingEndSaved={attend.attendHistory?.some(h => h.date === displayMeetingSettings?.date) || false}
                 unreadCount={unreadCount} onOpenAnnouncements={openAnnouncements}
                 onOpenProfile={() => setIsProfileModalOpen(true)}
-            />
+            >
+                {tab === 'home' && <AnnounceTicker announcements={announcements} meetings={meetings} onOpen={openAnnouncements} onTabChange={navTab} />}
+            </MemberHeader>
             <div className="px-4 pt-4">
                 {tab === 'home' && (
                     <TabHome
