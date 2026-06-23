@@ -55,3 +55,16 @@ html.dark .text-teal-600{color:#2dd4bf!important}
 html.dark .text-teal-500{color:#2dd4bf!important}
 html.dark #loading-screen{background:var(--t-bg)!important}
 html.dark .shadow-sm{box-shadow:0 1px 3px rgba(0,0,0,.3)!important}
+
+/* ── 디자인 토큰 (현행값, ①단계: 정의만 — 아직 코드 미연결) ── */
+:root{
+  --c-accent:#14b8a6; --c-accent-deep:#0d9488;
+  --c-ink:#0f172a; --c-text:#475569; --c-sub:#94a3b8;
+  --c-bg:#f8fafc; --c-card:#ffffff; --c-border:#e2e8f0;
+  --c-success:#10b981; --c-warn:#f59e0b; --c-danger:#ef4444;
+  --r-sm:12px; --r-card:18px; --r-pill:999px; --sp-card:16px; --sp-gutter:16px;
+}
+html.dark{
+  --c-ink:#f1f5f9; --c-text:#cbd5e1; --c-sub:#94a3b8;
+  --c-bg:#0f172a; --c-card:#1e293b; --c-border:#334155;
+}
