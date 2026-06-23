@@ -357,7 +357,7 @@ const MeetingWeather = ({ lat, lng, isAdminMode }) => {
 // ─── 다음 모임 카드 (정기/매칭 종류별 색상 구분) ───────────────────────────────
 // 종류별 색상·라벨. 정기=teal, 매칭=indigo. (회원이 두 모임 다 참여할 때 한눈에 구분)
 const MEETING_KIND = {
-    self:  { label: '정기모임', accent: '#14b8a6', text: 'text-teal-500',   tint: '#f0fdfa' },
+    self:  { label: '정기모임', accent: '#183FB0', text: 'text-teal-500',   tint: '#eef2fb' },
     match: { label: '매칭모임', accent: '#6366f1', text: 'text-indigo-500', tint: '#eef2ff' },
 };
 // 미러가 아닌(더 나중) 모임의 D-day 라벨 — member.html meetingDayInfo와 동일 규칙.

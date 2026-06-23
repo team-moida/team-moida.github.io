@@ -22,7 +22,7 @@ select { appearance: none; }
 .content-pb { padding-bottom: calc(8rem + env(safe-area-inset-bottom)); }
 .qr-scan-line { animation: scanLine 2s ease-in-out infinite; }
 @keyframes scanLine { 0%{top:8px} 50%{top:calc(100% - 10px)} 100%{top:8px} }
-.member-header-bg{background:linear-gradient(160deg,#f0fdfa,#e6fffa)}
+.member-header-bg{background:linear-gradient(160deg,#eef2fb,#dbe3f6)}
 /* ── 페이지별 다크모드 ── */
 html.dark .card{background:var(--t-surface)!important;border-color:var(--t-border)!important}
 html.dark .tab-bar{background:rgba(15,23,42,.97)!important;border-color:var(--t-border)!important}
@@ -39,15 +39,15 @@ html.dark .bg-pink-100{background:#3d0a1e!important} html.dark .text-pink-600{co
 html.dark .bg-orange-50{background:#1a0800!important} html.dark .text-orange-400,html.dark .text-orange-500{color:#fb923c!important}
 /* ── 팀편성 드래그 ── */
 .tm-dragging{opacity:0.3;border:2px dashed #3b82f6!important;background:#eff6ff!important;transform:scale(0.96)}
-.tm-drop-target{border-color:#14b8a6!important;background:#f0fdfa!important;transform:scale(1.01)}
-.tm-drop-indicator{border:2px dashed #14b8a6;background:rgba(240,253,250,.5);transition:all .1s}
+.tm-drop-target{border-color:#183FB0!important;background:#eef2fb!important;transform:scale(1.01)}
+.tm-drop-indicator{border:2px dashed #183FB0;background:rgba(238,242,251,.5);transition:all .1s}
 .match-row{transition:all 0.2s ease;cursor:pointer}
 .match-row:active{background:#f1f5f9}
 .match-completed{opacity:0.45;background:#f8fafc}
 html.dark .match-row:active{background:#334155!important}
 html.dark .match-completed{background:var(--t-bg)!important}
-html.dark .tm-drop-target{background:#042f2e!important}
-html.dark .tm-drop-indicator{background:rgba(20,184,166,.1)!important;border-color:#2dd4bf!important}
+html.dark .tm-drop-target{background:#050d22!important}
+html.dark .tm-drop-indicator{background:rgba(24,63,176,.1)!important;border-color:#4f6ccb!important}
 html.dark .bg-blue-50{background:#0c1634!important}
 html.dark .border-blue-100{border-color:#1e3a5f!important}
 html.dark .bg-sky-50{background:#082f49!important} html.dark .border-sky-200{border-color:#0c4a6e!important}

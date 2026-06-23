@@ -5,7 +5,7 @@ body{font-family:'Esamanru',sans-serif!important;-webkit-tap-highlight-color:tra
 .custom-scrollbar::-webkit-scrollbar{width:5px}
 .custom-scrollbar::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
 select,input{transition:border-color 0.2s}
-select:focus,input:focus{border-color:#14b8a6!important}
+select:focus,input:focus{border-color:#183FB0!important}
 #qr-canvas-area canvas{margin:0 auto}
 html.dark .bg-slate-200\/70{background:rgba(71,85,105,.7)!important}
 html.dark .bg-lime-400,html.dark .bg-yellow-400{color:#1e293b!important}

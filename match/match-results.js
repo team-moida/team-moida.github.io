@@ -15,7 +15,7 @@ function ResultsTab({schedule, completedMatches, currentMatchIndex, config, onTo
                     return (
                         <div key={session.id} onClick={()=>onToggleComplete(session.id)}
                             className={`match-row mb-2 p-4 rounded-2xl border shadow-sm transition-all ${isCurrent?'bg-teal-50 border-teal-300':isPast||isDone?'match-completed border-slate-100':'bg-white border-slate-100'}`}
-                            style={isCurrent?{boxShadow:'0 0 0 2px #2dd4bf40'}:{}}>
+                            style={isCurrent?{boxShadow:'0 0 0 2px #4f6ccb40'}:{}}>
                             <div className="flex items-center gap-3 mb-3">
                                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 font-black text-[10px] ${isCurrent?'bg-teal-500 border-teal-500 text-white':isDone||isPast?'bg-emerald-500 border-emerald-500 text-white':'border-slate-300 text-slate-400'}`}>
                                     {isDone||isPast?<Icon.Check size={10} className="text-white"/>:si+1}

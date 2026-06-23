@@ -16,11 +16,11 @@ const AttendSetupTab = ({
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',maxWidth:'72rem',margin:'0 auto'}}>
                 <span style={{fontSize:10,fontWeight:900,color:'#94a3b8',textTransform:'uppercase',letterSpacing:'0.1em'}}>선정 인원</span>
                 <div style={{display:'flex',alignItems:'center',gap:8}}>
-                    <span style={{fontSize:15,fontWeight:900,color:activeParticipants.length>=(meetingTimes.maxLimit||18)?'#14b8a6':darkMode?'#f1f5f9':'#1e293b'}}>
+                    <span style={{fontSize:15,fontWeight:900,color:activeParticipants.length>=(meetingTimes.maxLimit||18)?'#183FB0':darkMode?'#f1f5f9':'#1e293b'}}>
                         {activeParticipants.length} / {meetingTimes.maxLimit||18}명
                     </span>
                     {activeParticipants.length>=(meetingTimes.maxLimit||18)&&(
-                        <span style={{fontSize:9,fontWeight:900,padding:'2px 8px',background:'#ccfbf1',color:'#0d9488',borderRadius:6}}>마감</span>
+                        <span style={{fontSize:9,fontWeight:900,padding:'2px 8px',background:'#dbe3f6',color:'#122E78',borderRadius:6}}>마감</span>
                     )}
                 </div>
             </div>

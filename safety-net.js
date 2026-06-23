@@ -24,7 +24,7 @@
         d.innerHTML = '<div style="font-size:42px">⚠️</div>'
             + '<div style="font-weight:900;font-size:18px">화면을 불러오지 못했어요</div>'
             + '<div style="font-size:13px;color:#64748b;max-width:340px;word-break:break-all">' + (lastErr || '네트워크 또는 호환성 문제') + '</div>'
-            + '<button onclick="location.reload()" style="margin-top:6px;padding:14px 28px;border:none;border-radius:14px;background:#0d9488;color:#fff;font-weight:900;font-size:15px">새로고침</button>';
+            + '<button onclick="location.reload()" style="margin-top:6px;padding:14px 28px;border:none;border-radius:14px;background:#122E78;color:#fff;font-weight:900;font-size:15px">새로고침</button>';
         document.body.appendChild(d);
         var iv = setInterval(function(){
             if (rendered()) { var f = document.getElementById('moida-fallback'); if (f) f.remove(); clearInterval(iv); }

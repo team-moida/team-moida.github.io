@@ -29,7 +29,7 @@ const TabRoster = ({
         {/* ── 명단 서브탭 ── */}
         {rosterSubTab === 'directory' && (
             <div>
-                <div className="rounded-2xl p-5 mb-4 text-white" style={{ background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
+                <div className="rounded-2xl p-5 mb-4 text-white" style={{ background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(18,46,120,0.45)' }}>
                     <p className="text-[11px] font-black uppercase tracking-widest text-white/80">활동 회원</p>
                     <p className="font-black text-3xl leading-tight mt-1">{activeMembers.length}<span className="text-base font-black text-white/80 ml-1">명</span></p>
                     <div className="flex items-center gap-4 mt-2 text-xs font-black text-white/85">

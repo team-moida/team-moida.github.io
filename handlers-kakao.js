@@ -250,12 +250,12 @@ function showGuideOS(os) {
     document.getElementById('step2-ios').style.display = isAnd ? 'none' : 'block';
     const tA = document.getElementById('tab-android');
     const tI = document.getElementById('tab-ios');
-    tA.style.background = isAnd ? '#14b8a6' : 'transparent';
+    tA.style.background = isAnd ? '#183FB0' : 'transparent';
     tA.style.color = isAnd ? 'white' : '#94a3b8';
-    tA.style.boxShadow = isAnd ? '0 2px 8px rgba(20,184,166,0.3)' : 'none';
-    tI.style.background = isAnd ? 'transparent' : '#14b8a6';
+    tA.style.boxShadow = isAnd ? '0 2px 8px rgba(24,63,176,0.3)' : 'none';
+    tI.style.background = isAnd ? 'transparent' : '#183FB0';
     tI.style.color = isAnd ? '#94a3b8' : 'white';
-    tI.style.boxShadow = isAnd ? 'none' : '0 2px 8px rgba(20,184,166,0.3)';
+    tI.style.boxShadow = isAnd ? 'none' : '0 2px 8px rgba(24,63,176,0.3)';
 }
 
 let toastTimer = null;

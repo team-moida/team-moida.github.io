@@ -92,7 +92,7 @@ const AttendMainTab = ({
                     </div>
                     <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
                         <div className="h-full rounded-full transition-all duration-700"
-                            style={{width:`${Math.round(checkedInCount/activeList.length*100)}%`,background:checkedInCount===0?'#e2e8f0':'linear-gradient(90deg,#14b8a6,#10b981)'}}/>
+                            style={{width:`${Math.round(checkedInCount/activeList.length*100)}%`,background:checkedInCount===0?'#e2e8f0':'linear-gradient(90deg,#183FB0,#10b981)'}}/>
                     </div>
                 </div>
             )}

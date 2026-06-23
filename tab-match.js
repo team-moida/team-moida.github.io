@@ -75,7 +75,7 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                         const done = completedMatches?.has(s.id);
                         const cur = si === idx;
                         return (
-                            <div key={si} style={{flex: cur ? '1.9' : '1',height:'clamp(34px,5.8vmin,46px)',borderRadius:'9px',display:'flex',alignItems:'center',justifyContent:'center',gap:'4px',fontWeight:900,fontSize:'clamp(0.9rem,2.5vmin,1.35rem)',whiteSpace:'nowrap',background: cur ? 'var(--c-accent-deep)' : (done ? '#ccfbf1' : '#eef2f6'),color: cur ? '#fff' : (done ? 'var(--c-accent-deep)' : 'var(--c-sub)'),boxShadow: cur ? '0 0 0 3px rgba(13,148,136,0.18)' : 'none'}}>
+                            <div key={si} style={{flex: cur ? '1.9' : '1',height:'clamp(34px,5.8vmin,46px)',borderRadius:'9px',display:'flex',alignItems:'center',justifyContent:'center',gap:'4px',fontWeight:900,fontSize:'clamp(0.9rem,2.5vmin,1.35rem)',whiteSpace:'nowrap',background: cur ? 'var(--c-accent-deep)' : (done ? '#dbe3f6' : '#eef2f6'),color: cur ? '#fff' : (done ? 'var(--c-accent-deep)' : 'var(--c-sub)'),boxShadow: cur ? '0 0 0 3px rgba(18,46,120,0.18)' : 'none'}}>
                                 {cur ? `라운드 ${si + 1}` : <>{si + 1}{done && <Icon.Check size={15}/>}</>}
                             </div>
                         );
@@ -147,7 +147,7 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                     <button onClick={onNext} disabled={currentIndex >= total} style={{...navBtn,flex:1,background:currentIndex >= total ? '#f1f5f9' : 'var(--c-accent-deep)',color:currentIndex >= total ? '#cbd5e1' : 'white'}}><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}>다음<Icon.ChevronRight size={16}/></span></button>
                 </>) : (<>
                     <button onClick={() => setBrowseIdx(i => clampIdx(i - 1))} disabled={idx <= 0} style={{...navBtn,flex:1,background:idx <= 0 ? '#f1f5f9' : 'var(--c-border)',color:idx <= 0 ? '#cbd5e1' : 'var(--c-text)'}}><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}><Icon.ChevronLeft size={16}/>이전</span></button>
-                    <button onClick={() => setBrowseIdx(clampIdx(startIndex || 0))} style={{...navBtn,flexShrink:0,padding:'0 16px',background:'#ccfbf1',color:'var(--c-accent-deep)',fontSize:'clamp(0.8rem,2vmin,1.1rem)'}}>현재</button>
+                    <button onClick={() => setBrowseIdx(clampIdx(startIndex || 0))} style={{...navBtn,flexShrink:0,padding:'0 16px',background:'#dbe3f6',color:'var(--c-accent-deep)',fontSize:'clamp(0.8rem,2vmin,1.1rem)'}}>현재</button>
                     <button onClick={() => setBrowseIdx(i => clampIdx(i + 1))} disabled={idx >= total - 1} style={{...navBtn,flex:1,background:idx >= total - 1 ? '#f1f5f9' : 'var(--c-accent-deep)',color:idx >= total - 1 ? '#cbd5e1' : 'white'}}><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}>다음<Icon.ChevronRight size={16}/></span></button>
                 </>)}
             </div>
@@ -366,7 +366,7 @@ const TabMatch = ({
                                             return (
                                                 <div key={session.id}
                                                     className={`match-row mb-2 p-3.5 rounded-2xl border shadow-sm transition-all ${isCurrent?'bg-teal-50 border-teal-300':isPast||isDone?'match-completed border-slate-100':'bg-white border-slate-100'}`}
-                                                    style={isCurrent?{boxShadow:'0 0 0 2px #2dd4bf40'}:{}}>
+                                                    style={isCurrent?{boxShadow:'0 0 0 2px #4f6ccb40'}:{}}>
                                                     <div className="flex items-center gap-2 mb-2">
                                                         <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 font-black text-[10px] ${isCurrent?'bg-teal-500 border-teal-500 text-white':isDone||isPast?'bg-emerald-500 border-emerald-500 text-white':'border-slate-300 text-slate-400'}`}>
                                                             {isDone||isPast?<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>:si+1}
@@ -481,7 +481,7 @@ const TabMatch = ({
                 return (
                     <div>
                         {/* 날짜 + 뷰 토글 */}
-                        <div className="rounded-2xl p-5 mb-4 text-white flex items-center justify-between gap-3" style={{ background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
+                        <div className="rounded-2xl p-5 mb-4 text-white flex items-center justify-between gap-3" style={{ background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(18,46,120,0.45)' }}>
                             <div className="min-w-0">
                                 <p className="text-[11px] font-black uppercase tracking-widest text-white/80">{scheduleData.meetingDate} 매치</p>
                                 <p className="font-black text-2xl leading-tight mt-1">총 {sessions.length}<span className="text-base font-black text-white/80 ml-1">라운드</span></p>
@@ -495,7 +495,7 @@ const TabMatch = ({
                         {/* 패드 크게 보기 진입 */}
                         <button onClick={() => setBoardOpen(true)}
                             className="w-full mb-4 py-3.5 rounded-2xl font-black text-sm text-white flex items-center justify-center gap-2 active:scale-95 transition-all"
-                            style={{background:'linear-gradient(135deg,#0f766e,var(--c-accent-deep))',boxShadow:'0 8px 20px -6px rgba(13,148,136,0.5)'}}>
+                            style={{background:'linear-gradient(135deg,#0f2660,var(--c-accent-deep))',boxShadow:'0 8px 20px -6px rgba(18,46,120,0.5)'}}>
                             <Icon.Tv size={18}/>매치판 크게 보기
                         </button>
 

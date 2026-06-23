@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#f0fdfa">
+    <meta name="theme-color" content="#eef2fb">
     <title>모이다 - OTP FC</title>
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
@@ -24,7 +24,7 @@
 
     <!-- 배경 앰비언트 글로우 -->
     <div aria-hidden="true" style="position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;">
-        <div style="position:absolute;top:-12%;left:50%;transform:translateX(-50%);width:560px;height:560px;border-radius:9999px;background:radial-gradient(circle, rgba(45,212,191,0.20), transparent 70%);"></div>
+        <div style="position:absolute;top:-12%;left:50%;transform:translateX(-50%);width:560px;height:560px;border-radius:9999px;background:radial-gradient(circle, rgba(79,108,203,0.20), transparent 70%);"></div>
     </div>
 
     <div class="w-full max-w-sm relative z-10">
@@ -32,8 +32,8 @@
         <!-- 로고 -->
         <div class="flex flex-col items-center mb-10">
             <div class="relative mb-5">
-                <div aria-hidden="true" class="absolute inset-0 rounded-full blur-2xl" style="background:radial-gradient(circle at 50% 40%, rgba(20,184,166,0.55), transparent 70%);"></div>
-                <div class="relative w-40 h-40 rounded-full flex items-center justify-center" style="background:var(--t-surface);box-shadow:0 24px 60px -16px rgba(20,184,166,0.5), 0 0 0 1px var(--t-border);">
+                <div aria-hidden="true" class="absolute inset-0 rounded-full blur-2xl" style="background:radial-gradient(circle at 50% 40%, rgba(24,63,176,0.55), transparent 70%);"></div>
+                <div class="relative w-40 h-40 rounded-full flex items-center justify-center" style="background:var(--t-surface);box-shadow:0 24px 60px -16px rgba(24,63,176,0.5), 0 0 0 1px var(--t-border);">
                     <img src="icon.png" alt="OTP FC" class="w-32 h-32 object-contain drop-shadow-lg"
                          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                     <div style="display:none" class="w-full h-full flex items-center justify-center text-6xl">⚽</div>
@@ -55,7 +55,7 @@
             <!-- 플랫폼 탭 -->
             <div style="display:flex;gap:6px;margin-bottom:14px;background:var(--t-s2);border-radius:16px;padding:4px;">
                 <button id="tab-android" onclick="showGuideOS('android')"
-                    style="flex:1;padding:10px;border-radius:12px;font-weight:900;font-size:14px;cursor:pointer;transition:all 0.2s;background:#14b8a6;color:white;box-shadow:0 2px 8px rgba(20,184,166,0.3);border:none;">
+                    style="flex:1;padding:10px;border-radius:12px;font-weight:900;font-size:14px;cursor:pointer;transition:all 0.2s;background:#183FB0;color:white;box-shadow:0 2px 8px rgba(24,63,176,0.3);border:none;">
                     🤖 Android
                 </button>
                 <button id="tab-ios" onclick="showGuideOS('ios')"
@@ -66,20 +66,20 @@
 
             <!-- STEP 1: 외부 브라우저로 열기 -->
             <div style="background:var(--t-surface);border:1.5px solid var(--t-border);border-radius:20px;padding:20px;margin-bottom:12px;">
-                <p style="font-size:10px;font-weight:900;color:#14b8a6;letter-spacing:0.15em;margin-bottom:14px;">STEP 1 &nbsp;·&nbsp; 외부 브라우저로 열기</p>
+                <p style="font-size:10px;font-weight:900;color:#183FB0;letter-spacing:0.15em;margin-bottom:14px;">STEP 1 &nbsp;·&nbsp; 외부 브라우저로 열기</p>
 
                 <div id="step1-android">
                     <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;">
                         <div style="width:28px;height:28px;min-width:28px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#16a34a;">1</div>
                         <div>
-                            <p style="font-size:14px;font-weight:700;color:var(--t-text);margin-bottom:2px;">화면 하단 <span style="color:#14b8a6;font-weight:900;">···</span> 버튼 탭</p>
+                            <p style="font-size:14px;font-weight:700;color:var(--t-text);margin-bottom:2px;">화면 하단 <span style="color:#183FB0;font-weight:900;">···</span> 버튼 탭</p>
                             <p style="font-size:12px;color:#94a3b8;">카카오톡 하단 메뉴 버튼을 누르세요</p>
                         </div>
                     </div>
                     <div style="display:flex;gap:12px;align-items:flex-start;">
                         <div style="width:28px;height:28px;min-width:28px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#16a34a;">2</div>
                         <div>
-                            <p style="font-size:14px;font-weight:700;color:var(--t-text);margin-bottom:2px;"><span style="color:#14b8a6;font-weight:900;">다른 브라우저로 열기</span> 선택</p>
+                            <p style="font-size:14px;font-weight:700;color:var(--t-text);margin-bottom:2px;"><span style="color:#183FB0;font-weight:900;">다른 브라우저로 열기</span> 선택</p>
                             <p style="font-size:12px;color:#94a3b8;">Chrome을 선택하세요</p>
                         </div>
                     </div>
@@ -89,14 +89,14 @@
                     <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;">
                         <div style="width:28px;height:28px;min-width:28px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#16a34a;">1</div>
                         <div>
-                            <p style="font-size:14px;font-weight:700;color:var(--t-text);margin-bottom:2px;">하단 우측 공유 버튼 <span style="color:#14b8a6;font-weight:900;">□↑</span> 탭</p>
+                            <p style="font-size:14px;font-weight:700;color:var(--t-text);margin-bottom:2px;">하단 우측 공유 버튼 <span style="color:#183FB0;font-weight:900;">□↑</span> 탭</p>
                             <p style="font-size:12px;color:#94a3b8;">카카오톡 하단 바의 공유 아이콘</p>
                         </div>
                     </div>
                     <div style="display:flex;gap:12px;align-items:flex-start;">
                         <div style="width:28px;height:28px;min-width:28px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#16a34a;">2</div>
                         <div>
-                            <p style="font-size:14px;font-weight:700;color:var(--t-text);margin-bottom:2px;"><span style="color:#14b8a6;font-weight:900;">Safari로 열기</span> 선택</p>
+                            <p style="font-size:14px;font-weight:700;color:var(--t-text);margin-bottom:2px;"><span style="color:#183FB0;font-weight:900;">Safari로 열기</span> 선택</p>
                             <p style="font-size:12px;color:#94a3b8;">Safari 앱에서 페이지가 열립니다</p>
                         </div>
                     </div>
@@ -193,7 +193,7 @@
                             onkeydown="if(event.key==='Enter')handleKakaoLink()">
                     </div>
                     <button onclick="handleKakaoLink()" id="link-btn"
-                        style="width:100%;padding:15px;background:#14b8a6;color:white;border-radius:14px;font-weight:900;font-size:15px;box-shadow:0 8px 20px -4px rgba(20,184,166,0.4);cursor:pointer;">
+                        style="width:100%;padding:15px;background:#183FB0;color:white;border-radius:14px;font-weight:900;font-size:15px;box-shadow:0 8px 20px -4px rgba(24,63,176,0.4);cursor:pointer;">
                         계정 연결
                     </button>
                     <button onclick="resetKakaoStep()"
@@ -228,7 +228,7 @@
                             onkeydown="if(event.key==='Enter')handleSignupSubmit()">
                     </div>
                     <button onclick="handleSignupSubmit()" id="signup-btn"
-                        style="width:100%;padding:15px;background:#14b8a6;color:white;border-radius:14px;font-weight:900;font-size:15px;box-shadow:0 8px 20px -4px rgba(20,184,166,0.4);cursor:pointer;">
+                        style="width:100%;padding:15px;background:#183FB0;color:white;border-radius:14px;font-weight:900;font-size:15px;box-shadow:0 8px 20px -4px rgba(24,63,176,0.4);cursor:pointer;">
                         가입 완료
                     </button>
                     <button onclick="resetKakaoStep()"

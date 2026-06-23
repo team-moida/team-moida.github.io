@@ -1024,7 +1024,7 @@ const TabAttend = ({
                                             <span style={{fontSize:15,fontWeight:900,color:selSessionList.length>=(selectedMeeting?.maxLimit||18)?'var(--c-accent)':darkMode?'#f1f5f9':'#1e293b'}}>
                                                 {selSessionList.length} / {selectedMeeting?.maxLimit||18}명
                                             </span>
-                                            {selSessionList.length>=(selectedMeeting?.maxLimit||18)&&<span style={{fontSize:9,fontWeight:900,padding:'2px 8px',background:'#ccfbf1',color:'var(--c-accent-deep)',borderRadius:6}}>마감</span>}
+                                            {selSessionList.length>=(selectedMeeting?.maxLimit||18)&&<span style={{fontSize:9,fontWeight:900,padding:'2px 8px',background:'#dbe3f6',color:'var(--c-accent-deep)',borderRadius:6}}>마감</span>}
                                         </div>
                                     </div>
                                 </div>
@@ -1519,7 +1519,7 @@ const TabAttend = ({
           <div className="flex gap-3">
             <button onClick={handleGPSCheckIn}
                 className="flex-1 min-w-0 rounded-2xl p-4 text-left text-white active:scale-98 transition-all flex flex-col justify-between"
-                style={{ minHeight:'188px', background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
+                style={{ minHeight:'188px', background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(18,46,120,0.45)' }}>
                 <Icon.MapPin size={60} className="text-white"/>
                 <div className="min-w-0">
                     <p className="text-[11px] font-black uppercase tracking-widest text-white/80">GPS 출석</p>
