@@ -19,7 +19,7 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
     const clampIdx = (n) => Math.min(Math.max(n, 0), Math.max(total - 1, 0));
     const [browseIdx, setBrowseIdx] = React.useState(() => clampIdx(startIndex || 0));
     const tmr = useMatchTimer(); // 타이머 종료 감지용 (자동 진행)
-    const [autoAdvance, setAutoAdvance] = React.useState(() => localStorage.getItem('moida_timer_autoadv') !== '0'); // 기본 켜짐
+    const autoAdvance = true; // 자동 진행 항상 ON (토글 제거)
     const endedRef = React.useRef(false);
     React.useEffect(() => {
         const prev = document.body.style.overscrollBehavior;
@@ -43,7 +43,7 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
             MoidaTimer.reset();
         }
         endedRef.current = tmr.ended;
-    }, [tmr.ended, isAdmin, autoAdvance, allDone]);
+    }, [tmr.ended, isAdmin, allDone]);
 
     return (
         <div className="fixed inset-0 z-[60] flex flex-col"
@@ -68,15 +68,6 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                 </div>
                 <button onClick={onClose} style={{width:'clamp(40px,7vmin,52px)',height:'clamp(40px,7vmin,52px)',borderRadius:'14px',background:'#f1f5f9',color:'#64748b',border:'none',fontWeight:900,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon.X size={22}/></button>
             </div>
-            {/* 관리자: 자동 다음 토글 (별도 줄) */}
-            {isAdmin && !allDone && (
-                <div style={{background:'white',borderBottom:'1px solid var(--c-border)',flexShrink:0,padding:'6px 14px',display:'flex',justifyContent:'flex-end'}}>
-                    <button onClick={() => { const v=!autoAdvance; setAutoAdvance(v); try{localStorage.setItem('moida_timer_autoadv', v?'1':'0');}catch(e){} }}
-                        style={{border:'none',borderRadius:'999px',fontWeight:800,fontSize:'clamp(0.66rem,1.7vmin,0.92rem)',padding:'4px 11px',display:'inline-flex',alignItems:'center',gap:'4px',background:autoAdvance?'var(--c-accent-deep)':'var(--c-border)',color:autoAdvance?'white':'#64748b'}}>
-                        {autoAdvance ? <><Icon.Zap size={13}/>타이머 끝나면 자동 다음</> : '자동 다음 꺼짐'}
-                    </button>
-                </div>
-            )}
             {/* 본문 (스크롤 없음 — 한 화면에 맞춰 배치) */}
             <div style={{flex:'1 1 0%',minHeight:0,overflow:'hidden',display:'flex',flexDirection:'column',padding:'clamp(10px,2vmin,22px)',gap:'clamp(8px,1.5vmin,16px)'}}>
                 {/* 타이머 + 코트 — 화면 가운데에 함께 표시 (회원은 타이머 보기 전용) */}
