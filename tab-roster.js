@@ -29,7 +29,7 @@ const TabRoster = ({
         {/* ── 명단 서브탭 ── */}
         {rosterSubTab === 'directory' && (
             <div>
-                <div className="rounded-3xl p-5 mb-4 text-white" style={{ background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
+                <div className="rounded-2xl p-5 mb-4 text-white" style={{ background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
                     <p className="text-[11px] font-black uppercase tracking-widest text-white/80">활동 회원</p>
                     <p className="font-black text-3xl leading-tight mt-1">{activeMembers.length}<span className="text-base font-black text-white/80 ml-1">명</span></p>
                     <div className="flex items-center gap-4 mt-2 text-xs font-black text-white/85">
@@ -40,7 +40,7 @@ const TabRoster = ({
                 </div>
                 <div className="space-y-2">
                     {[...activeMembers].sort((a,b)=>a.name.localeCompare(b.name)).map(m=>(
-                        <div key={m.id} className="card border-slate-100 rounded-3xl p-4 flex items-center gap-3">
+                        <div key={m.id} className="card border-slate-100 rounded-2xl p-4 flex items-center gap-3">
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className="font-black text-slate-800">{m.name}</span>
@@ -118,7 +118,7 @@ const TabRoster = ({
                         </div>
                     );
                 })()}
-                <div className="flex items-center justify-between mb-4 card rounded-3xl p-4">
+                <div className="flex items-center justify-between mb-4 card rounded-2xl p-4">
                     <button onClick={()=>moveMonth(-1)} className="p-2 rounded-xl bg-slate-100 text-slate-600"><Icon.ChevronLeft size={18}/></button>
                     <p className="font-black text-lg text-slate-800">{targetMonth.replace('-','년 ')}월</p>
                     <button onClick={()=>moveMonth(1)} className="p-2 rounded-xl bg-slate-100 text-slate-600"><Icon.ChevronRight size={18}/></button>
@@ -146,7 +146,7 @@ const TabRoster = ({
                         const payDate = monthlyPaymentDates[m.id];
                         return (
                             <button key={m.id} onClick={()=>handleBillingMemberClick(m)}
-                                className="w-full flex items-center gap-3 p-4 card border-slate-100 rounded-3xl text-left hover:border-teal-100 transition-all">
+                                className="w-full flex items-center gap-3 p-4 card border-slate-100 rounded-2xl text-left hover:border-teal-100 transition-all">
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <span className="font-black text-slate-800">{m.name}</span>

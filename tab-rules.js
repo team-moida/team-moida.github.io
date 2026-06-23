@@ -49,7 +49,7 @@ const TabRules = ({ isAdminMode, showAlert, memberName }) => {
 
     return (
         <div className="animate-in">
-            <div className="rounded-3xl p-5 mb-4 text-white flex items-center justify-between gap-3" style={{ background:'linear-gradient(135deg,#334155,#1e293b)', boxShadow:'0 10px 28px -8px rgba(30,41,59,0.5)' }}>
+            <div className="rounded-2xl p-5 mb-4 text-white flex items-center justify-between gap-3" style={{ background:'linear-gradient(135deg,#334155,#1e293b)', boxShadow:'0 10px 28px -8px rgba(30,41,59,0.5)' }}>
                 <div className="flex items-center gap-3 min-w-0">
                     <Icon.ShieldCheck size={28} className="text-white shrink-0"/>
                     <div className="min-w-0">
@@ -87,7 +87,7 @@ const TabRules = ({ isAdminMode, showAlert, memberName }) => {
                 </div>
             ) : content ? (
                 <div>
-                    <div className="card rounded-3xl p-5">
+                    <div className="card rounded-2xl p-5">
                         <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{content}</p>
                     </div>
                     {updatedAt && (
@@ -97,7 +97,7 @@ const TabRules = ({ isAdminMode, showAlert, memberName }) => {
                     )}
                 </div>
             ) : (
-                <div className="card rounded-3xl p-8 text-center text-slate-400">
+                <div className="card rounded-2xl p-8 text-center text-slate-400">
                     <div className="flex justify-center mb-2 opacity-25"><Icon.ShieldCheck size={36}/></div>
                     <p className="font-black text-sm">아직 회칙이 등록되지 않았습니다</p>
                     {isAdminMode && <p className="text-xs mt-1">우측 상단 편집 버튼으로 작성하세요</p>}

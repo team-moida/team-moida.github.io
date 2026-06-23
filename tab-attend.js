@@ -308,7 +308,7 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
     const absentBtnLabel = absentFine > 0 ? `불참 신청 (노쇼 · ${absentFine / 10000}만원 벌금)` : '불참 신청 (벌금 없음)';
 
     return (
-        <div className="card rounded-3xl p-5">
+        <div className="card rounded-2xl p-5">
             <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-black text-orange-500 uppercase tracking-widest">{isMatch ? '매칭 신청' : (isFirstComeFirstServed ? '선착순 신청' : '모임 신청')}</p>
                 {isMatch
@@ -627,7 +627,7 @@ const MeetingRecordsView = ({ meetings, attendHistory, darkMode, onEdit, onDelet
                 ))}
             </div>
             {ended.length === 0 ? (
-                <div className="card rounded-3xl p-8 text-center text-slate-400">
+                <div className="card rounded-2xl p-8 text-center text-slate-400">
                     <div className="flex justify-center mb-3 opacity-30"><Icon.Calendar size={36} /></div>
                     <p className="font-black text-sm">지난 {kindTab === 'match' ? '매칭' : '정기'} 모임 기록이 없습니다</p>
                 </div>
@@ -749,7 +749,7 @@ const MeetingListScreen = ({
                     <MeetingRecordsView meetings={meetings} attendHistory={attendHistory} darkMode={darkMode}
                         onEdit={(m) => setEmbeddedEdit(m)} onDelete={onDeleteRecord} onFinalizePenalty={onFinalizePenalty} />
                 ) : upcoming.length === 0 ? (
-                <div className="card rounded-3xl p-8 text-center text-slate-400">
+                <div className="card rounded-2xl p-8 text-center text-slate-400">
                     <div className="flex justify-center mb-3 opacity-30"><Icon.Calendar size={36}/></div>
                     <p className="font-black text-sm">예정된 모임이 없습니다</p>
                     {isAdminMode && <p className="text-xs mt-1">[모임 관리]에서 모임을 등록하세요</p>}
@@ -761,7 +761,7 @@ const MeetingListScreen = ({
                     const dayInfo = computeMeetingDay(m.date, m.start);
                     return (
                         <button key={m.id} onClick={() => onSelect(m)}
-                            className="w-full rounded-3xl p-5 text-left text-white active:scale-98 transition-all"
+                            className="w-full rounded-2xl p-5 text-left text-white active:scale-98 transition-all"
                             style={{ background: cfg.accent, boxShadow: `0 10px 28px -8px ${cfg.accent}59` }}>
                             <div className="flex items-center justify-between gap-2 mb-2.5">
                                 <div className="flex items-center gap-1.5 min-w-0">
@@ -1463,7 +1463,7 @@ const TabAttend = ({
 
         {/* 아직 차례가 오지 않은(다음다음) 모임 → 안내만 표시 */}
         {!isAdminMode && !isViewActive && (
-            <div className="card rounded-3xl p-6 text-center text-slate-400">
+            <div className="card rounded-2xl p-6 text-center text-slate-400">
                 <p className="text-3xl mb-2">⏳</p>
                 <p className="font-black text-sm text-slate-500">아직 차례가 오지 않은 모임입니다</p>
                 <p className="text-xs mt-1">이 모임이 가장 가까운 모임이 되면<br/>신청·출석 기능이 여기에 열립니다</p>
@@ -1490,7 +1490,7 @@ const TabAttend = ({
 
         {/* 현재 출석 상태 (관리자 패널 닫혔을 때만) */}
         {showCheckin && mySession?.checkedIn && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-5 text-center">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-center">
                 <div className="flex justify-center mb-2"><div className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center"><Icon.Check size={28} className="text-white"/></div></div>
                 <p className="font-black text-xl text-emerald-400">출석 완료!</p>
                 <p className="text-slate-400 text-sm mt-1">{mySession.checkInTime} · {mySession.status}</p>
@@ -1499,7 +1499,7 @@ const TabAttend = ({
 
         {/* QR 처리 결과 (관리자 패널 닫혔을 때만) */}
         {showCheckin && qrStatus !== 'idle' && (
-            <div className={`rounded-3xl p-5 text-center border ${qrStatus==='success'?'bg-emerald-50 border-emerald-200':qrStatus==='processing'?'card border-slate-100':'bg-red-50 border-red-200'}`}>
+            <div className={`rounded-2xl p-5 text-center border ${qrStatus==='success'?'bg-emerald-50 border-emerald-200':qrStatus==='processing'?'card border-slate-100':'bg-red-50 border-red-200'}`}>
                 {qrStatus==='processing' && <><div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p className="font-black text-slate-500">QR 확인 중...</p></>}
                 {qrStatus==='success' && <><div className="flex justify-center mb-2"><Icon.CheckCircle size={36} className="text-emerald-400"/></div><p className="font-black text-emerald-400 whitespace-pre-line">{qrMessage}</p></>}
                 {qrStatus==='error' && (
@@ -1518,7 +1518,7 @@ const TabAttend = ({
         {showCheckin && !mySession?.checkedIn && (
           <div className="flex gap-3">
             <button onClick={handleGPSCheckIn}
-                className="flex-1 min-w-0 rounded-3xl p-4 text-left text-white active:scale-98 transition-all flex flex-col justify-between"
+                className="flex-1 min-w-0 rounded-2xl p-4 text-left text-white active:scale-98 transition-all flex flex-col justify-between"
                 style={{ minHeight:'188px', background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
                 <Icon.MapPin size={60} className="text-white"/>
                 <div className="min-w-0">
@@ -1528,7 +1528,7 @@ const TabAttend = ({
             </button>
             {meetingSettings?.enableQR && (
                 <button onClick={()=>setIsQRScannerOpen(true)}
-                    className="flex-1 min-w-0 rounded-3xl p-4 text-left text-white active:scale-98 transition-all flex flex-col justify-between"
+                    className="flex-1 min-w-0 rounded-2xl p-4 text-left text-white active:scale-98 transition-all flex flex-col justify-between"
                     style={{ minHeight:'188px', background:'linear-gradient(135deg,#7c3aed,#a855f7)', boxShadow:'0 10px 28px -8px rgba(124,58,237,0.45)' }}>
                     <Icon.QrCode size={60} className="text-white"/>
                     <div className="min-w-0">
@@ -1542,7 +1542,7 @@ const TabAttend = ({
 
         {/* GPS 진행/결과 (위치 확인 누른 뒤에만) */}
         {showCheckin && !mySession?.checkedIn && gpsStatus!=='idle' && (
-            <div className="card rounded-3xl p-5">
+            <div className="card rounded-2xl p-5">
                 {gpsStatus==='checking' && (
                     <div className="text-center py-4">
                         <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
@@ -1621,7 +1621,7 @@ const TabAttend = ({
         {/* 직접 출석(키오스크) — 관리자 전용, 현재 모임 + 선정 인원 있을 때 */}
         {isAdminMode && isViewActive && attendActiveList.length > 0 && (
             <button onClick={() => setIsKioskOpen(true)}
-                className="w-full rounded-3xl p-4 text-white active:scale-98 transition-all flex items-center gap-3"
+                className="w-full rounded-2xl p-4 text-white active:scale-98 transition-all flex items-center gap-3"
                 style={{ minHeight:'96px', background:'linear-gradient(135deg,#f97316,#ea580c)', boxShadow:'0 10px 28px -8px rgba(234,88,12,0.45)' }}>
                 <Icon.CheckSq size={34} className="text-white shrink-0"/>
                 <div className="min-w-0 text-left flex-1">

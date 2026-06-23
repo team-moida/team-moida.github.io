@@ -100,7 +100,7 @@ const NotifSetupGuide = ({ notifPermission, memberData }) => {
     };
 
     return (
-        <div className="card rounded-3xl p-4 border-teal-100">
+        <div className="card rounded-2xl p-4 border-teal-100">
             {/* 헤더 — 항상 보임. 탭하면 펼침/접힘(기본 접힘) */}
             <button onClick={() => setExpanded(v => !v)} className="w-full flex items-center gap-3 text-left active:scale-98 transition-all">
                 <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -387,7 +387,7 @@ const NextMeetingCard = ({
     return (
         <div className="relative">
         <button onClick={()=>onTabChange('attend', kind, meeting.id || getMeetingId(meeting))}
-            className={`w-full rounded-3xl p-5 text-left text-white active:scale-98 transition-all${showOverlay ? ' blur-sm' : ''}`}
+            className={`w-full rounded-2xl p-5 text-left text-white active:scale-98 transition-all${showOverlay ? ' blur-sm' : ''}`}
             style={{ background: cfg.accent, boxShadow:`0 10px 28px -8px ${cfg.accent}59` }}>
             <div className="flex items-center justify-between gap-2 mb-2.5">
                 <div className="flex items-center gap-1.5 min-w-0">
@@ -483,7 +483,7 @@ const NextMeetingCard = ({
         </button>
         {/* 관리자: 모임 종료 시간이 지나면 카드 위에 '모임 종료' 버튼 (누르면 그날 출석 기록 저장) */}
         {showOverlay && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/40 rounded-3xl">
+            <div className="absolute inset-0 flex items-center justify-center bg-white/40 rounded-2xl">
                 <button onClick={onEndMeeting} className="bg-rose-500 text-white px-6 py-3 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg">모임 종료</button>
             </div>
         )}
@@ -648,7 +648,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
     // ── 편집 화면 (관리자) ──
     if (isEditing) {
         return (
-            <div className="card rounded-3xl p-5">
+            <div className="card rounded-2xl p-5">
                 <p className="font-black text-base text-slate-800 mb-3">모임 계좌 · 회비 설정</p>
                 {field('은행','bank','예) 카카오뱅크')}
                 {field('계좌번호','accountNo','예) 3333-01-1234567')}
@@ -691,7 +691,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
         if (mode === 'banner') return null;
         if (!isAdminMode) return null;
         return (
-            <button onClick={openEdit} className="w-full card rounded-3xl p-4 text-left border-emerald-100 active:scale-98 transition-all">
+            <button onClick={openEdit} className="w-full card rounded-2xl p-4 text-left border-emerald-100 active:scale-98 transition-all">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0"><Icon.CreditCard size={20} className="text-emerald-500"/></div>
                     <div className="flex-1 min-w-0">
@@ -797,7 +797,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
     // ── 계좌 표시 + 회비 납부 (회원·관리자 공통) ──
     return (
         <>
-        <div className="rounded-3xl p-5 text-white" style={{ background:'linear-gradient(135deg,var(--c-success),#059669)', boxShadow:'0 10px 28px -8px rgba(5,150,105,0.45)' }}>
+        <div className="rounded-2xl p-5 text-white" style={{ background:'linear-gradient(135deg,var(--c-success),#059669)', boxShadow:'0 10px 28px -8px rgba(5,150,105,0.45)' }}>
             <div className="flex items-start justify-between gap-2 mb-3">
                 <div className="flex items-center gap-3 min-w-0">
                     <Icon.CreditCard size={24} className="text-white flex-shrink-0"/>
@@ -929,7 +929,7 @@ const PenaltyPayCard = ({ isAdminMode, memberName, memberInfo, managers = [], mo
     if (!showMember && !showAdmin) return null;
 
     return (
-        <div className="card rounded-3xl p-5 border-2 border-rose-100">
+        <div className="card rounded-2xl p-5 border-2 border-rose-100">
             <div className="flex items-center gap-2 mb-3">
                 <Icon.Banknote size={18} className="text-rose-500 flex-shrink-0"/>
                 <h3 className="font-black text-slate-800">지각 · 노쇼 벌금</h3>
@@ -997,7 +997,7 @@ const DuesReportsHomeCard = ({ duesReports, onConfirm, onReject, onGoDuesTab }) 
     const pend = Object.values(duesReports || {}).filter(r => r && r.status === 'pending');
     if (!pend.length) return null;
     return (
-        <div className="rounded-3xl p-4 border-2 border-amber-300 bg-amber-50">
+        <div className="rounded-2xl p-4 border-2 border-amber-300 bg-amber-50">
             <div className="flex items-center justify-between gap-2 mb-2.5">
                 <p className="font-black text-sm text-amber-700 flex items-center gap-1.5">
                     <Icon.Bell size={16} className="text-amber-600 flex-shrink-0"/> 회비 납부 신고 {pend.length}건
@@ -1088,7 +1088,7 @@ const TabHome = ({
                 isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting}
                 onGenerateQR={generateAttendQRCode} onEditMeeting={onEditMeeting} onDeleteMeeting={onDeleteMeeting} />
         )) : (
-            <button onClick={()=>onTabChange('meeting-list')} className="w-full card rounded-3xl p-5 text-center active:scale-98 transition-all">
+            <button onClick={()=>onTabChange('meeting-list')} className="w-full card rounded-2xl p-5 text-center active:scale-98 transition-all">
                 <div className="text-slate-400 py-3">
                     <div className="flex justify-center mb-2 opacity-30"><Icon.Calendar size={32}/></div>
                     <p className="font-black text-sm">예정된 모임이 없습니다</p>
@@ -1100,7 +1100,7 @@ const TabHome = ({
 
         {/* iOS PWA 설치 안내 */}
         {/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone && (
-            <div className="card rounded-3xl p-4 border-orange-100">
+            <div className="card rounded-2xl p-4 border-orange-100">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0"><Icon.Smartphone size={20} className="text-orange-500"/></div>
                     <div className="flex-1">
@@ -1114,7 +1114,7 @@ const TabHome = ({
         <NotifSetupGuide notifPermission={notifPermission} memberData={memberData} />
         {/* 알림 허용 배너 */}
         {notifPermission === 'default' && (
-            <button onClick={registerFcmToken} className="w-full card rounded-3xl p-4 text-left border-teal-100 active:scale-98 transition-all">
+            <button onClick={registerFcmToken} className="w-full card rounded-2xl p-4 text-left border-teal-100 active:scale-98 transition-all">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center flex-shrink-0">
                         <Icon.Bell size={18} className="text-teal-500"/>

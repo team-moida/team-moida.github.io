@@ -228,7 +228,7 @@ const TabMatch = ({
                 {/* 설정 탭 */}
                 {matchAdminView === 'setup' && (
                     <div className="space-y-3">
-                        <div className="card border-slate-100 rounded-3xl p-4">
+                        <div className="card border-slate-100 rounded-2xl p-4">
                             <p className="text-[10px] font-black text-teal-500 uppercase tracking-widest mb-3">기본 설정</p>
                             <div className="space-y-3">
                                 <div>
@@ -278,7 +278,7 @@ const TabMatch = ({
                             </div>
                         </div>
 
-                        <div className="card border-slate-100 rounded-3xl p-4">
+                        <div className="card border-slate-100 rounded-2xl p-4">
                             <div className="flex items-center justify-between mb-3">
                                 <p className="text-[10px] font-black text-teal-500 uppercase tracking-widest">구장 프리셋</p>
                                 <button onClick={() => setIsPresetModalOpen(true)} className="text-xs font-black text-teal-500 bg-teal-50 px-2.5 py-1 rounded-lg">+ 추가</button>
@@ -481,7 +481,7 @@ const TabMatch = ({
                 return (
                     <div>
                         {/* 날짜 + 뷰 토글 */}
-                        <div className="rounded-3xl p-5 mb-4 text-white flex items-center justify-between gap-3" style={{ background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
+                        <div className="rounded-2xl p-5 mb-4 text-white flex items-center justify-between gap-3" style={{ background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
                             <div className="min-w-0">
                                 <p className="text-[11px] font-black uppercase tracking-widest text-white/80">{scheduleData.meetingDate} 매치</p>
                                 <p className="font-black text-2xl leading-tight mt-1">총 {sessions.length}<span className="text-base font-black text-white/80 ml-1">라운드</span></p>
@@ -543,7 +543,7 @@ const TabMatch = ({
                                             const myMatch = currentSession.matches.find(m=>m.match.includes(myTeam));
                                             if (isResting) {
                                                 return (
-                                                    <div className="bg-amber-50 border border-amber-200 rounded-3xl p-8 text-center">
+                                                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
                                                         <div className="flex justify-center mb-3"><Icon.Coffee size={48} className="text-amber-500"/></div>
                                                         <p className="font-black text-amber-500 text-lg">이번 경기는 휴식입니다.</p>
                                                         <p className="text-amber-500 text-sm mt-1">다음 라운드를 기다려주세요</p>
@@ -556,7 +556,7 @@ const TabMatch = ({
                                                 const oppIdx = opponent.charCodeAt(0)-65;
                                                 const fieldName = scheduleData.config?.fieldNames?.[myMatch.fieldIdx]||`${myMatch.fieldIdx+1}구장`;
                                                 return (
-                                                    <div className="bg-teal-50 border border-teal-100 rounded-3xl p-6 text-center">
+                                                    <div className="bg-teal-50 border border-teal-100 rounded-2xl p-6 text-center">
                                                         <p className="text-xs font-black text-teal-500 mb-4">다음 상대</p>
                                                         <div className="flex items-center justify-center gap-5 mb-5">
                                                             <div className="text-center">
@@ -639,7 +639,7 @@ const TabMatch = ({
                                     const isDone = localCompletedMatches.has(session.id);
                                     const isPast = si<localMatchIndex;
                                     return (
-                                        <div key={si} className={`rounded-3xl p-4 border transition-all ${isCurrent?'border-teal-100 bg-teal-50':isDone||isPast?'border-slate-100 bg-slate-50 opacity-40':hasMyTeam?'border-teal-100 card':'card border-slate-100'}`}>
+                                        <div key={si} className={`rounded-2xl p-4 border transition-all ${isCurrent?'border-teal-100 bg-teal-50':isDone||isPast?'border-slate-100 bg-slate-50 opacity-40':hasMyTeam?'border-teal-100 card':'card border-slate-100'}`}>
                                             <div className="flex items-center gap-2 mb-3">
                                                 <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] flex-shrink-0 ${isCurrent?'bg-teal-500 text-white':isDone||isPast?'bg-emerald-400 text-white':'bg-slate-100 text-slate-500'}`}>{isDone||isPast?<Icon.Check size={12}/>:si+1}</div>
                                                 <p className="text-xs font-black text-slate-400">{session.time}</p>

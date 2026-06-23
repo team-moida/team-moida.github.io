@@ -73,7 +73,7 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                         <Icon.ChevronLeft size={18}/> 목록
                     </button>
                 </div>
-                <div className="card rounded-3xl p-5">
+                <div className="card rounded-2xl p-5">
                     <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                             <NoticeBadge category={selected.category} />
@@ -107,7 +107,7 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
     return (
         <div className="animate-in">
             {/* 상단: 홈 카드 스타일 hero (뒤로 + 제목) */}
-            <div className="rounded-3xl p-5 mb-4 text-white" style={{ background:'linear-gradient(135deg,var(--c-warn),#f97316)', boxShadow:'0 10px 28px -8px rgba(249,115,22,0.45)' }}>
+            <div className="rounded-2xl p-5 mb-4 text-white" style={{ background:'linear-gradient(135deg,var(--c-warn),#f97316)', boxShadow:'0 10px 28px -8px rgba(249,115,22,0.45)' }}>
                 <button onClick={onBack} className="flex items-center gap-1 text-white/85 font-black text-xs mb-2 active:scale-95 transition-all">
                     <Icon.ChevronLeft size={16}/> 홈
                 </button>
@@ -122,7 +122,7 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
 
             {/* 알림 설정 안내 (고정) — 홈 배너와 같은 내용. 권한·기기 상태와 무관하게 항상 노출 */}
             {!selectMode && (
-                <div className="card rounded-3xl p-4 border-teal-100 mb-3">
+                <div className="card rounded-2xl p-4 border-teal-100 mb-3">
                     <button onClick={() => setShowGuide(v => !v)} className="w-full flex items-center gap-3 text-left active:scale-98 transition-all">
                         <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center flex-shrink-0">
                             <Icon.Bell size={18} className="text-teal-500"/>
@@ -166,7 +166,7 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
 
             {/* 목록 */}
             {list.length === 0 ? (
-                <div className="card rounded-3xl p-8 text-center text-slate-400">
+                <div className="card rounded-2xl p-8 text-center text-slate-400">
                     <div className="flex justify-center mb-2 opacity-30"><Icon.Bell size={32}/></div>
                     <p className="font-black text-sm">등록된 공지가 없습니다</p>
                 </div>
@@ -175,7 +175,7 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                     {list.map(a => (
                         <button key={a.id}
                             onClick={() => selectMode ? toggleCheck(a.id) : setSelectedId(a.id)}
-                            className="w-full card rounded-3xl p-4 text-left active:scale-98 transition-all">
+                            className="w-full card rounded-2xl p-4 text-left active:scale-98 transition-all">
                             <div className="flex items-center gap-3">
                                 {selectMode && (
                                     <span className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center border-2 transition-all ${checkedIds.includes(a.id) ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-300'}`}>
