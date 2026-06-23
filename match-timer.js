@@ -220,11 +220,6 @@ function MatchTimerBar({ isAdmin = true }) {
                     <span style={{ color: 'var(--c-sub)', fontWeight: 900, fontSize: 'clamp(0.72rem,2.1vmin,1.3rem)' }}>남은 시간</span>
                     <span style={{ color: timeColor, fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(3rem,14vmin,7.5rem)' }}>{_mtFmt(t.roundRemaining)}</span>
                 </div>
-                {/* 교체까지 (아래) — 라벨이 시간 위 */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(1px,0.5vmin,5px)' }}>
-                    <span style={{ color: 'var(--c-sub)', fontWeight: 900, fontSize: 'clamp(0.72rem,2.1vmin,1.3rem)' }}>교체까지</span>
-                    <span style={{ color: t.subImminent ? 'var(--c-warn)' : 'var(--c-text)', fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(1.8rem,8vmin,4rem)' }}>{_mtFmt(t.subRemaining)}</span>
-                </div>
             </div>
             {isAdmin ? (
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 'clamp(8px,2vmin,16px)' }}>

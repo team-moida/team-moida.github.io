@@ -68,20 +68,6 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                 </div>
                 <button onClick={onClose} style={{width:'clamp(40px,7vmin,52px)',height:'clamp(40px,7vmin,52px)',borderRadius:'14px',background:'#f1f5f9',color:'#64748b',border:'none',fontWeight:900,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon.X size={22}/></button>
             </div>
-            {/* 라운드 세그먼트 — 완료(✓)/현재(강조)/예정 한눈에 */}
-            {!allDone && total > 0 && (
-                <div style={{background:'white',borderBottom:'1px solid var(--c-border)',flexShrink:0,padding:'10px 14px',display:'flex',gap:'6px',alignItems:'stretch'}}>
-                    {sessions.map((s, si) => {
-                        const done = completedMatches?.has(s.id);
-                        const cur = si === idx;
-                        return (
-                            <div key={si} style={{flex: cur ? '1.9' : '1',height:'clamp(34px,5.8vmin,46px)',borderRadius:'9px',display:'flex',alignItems:'center',justifyContent:'center',gap:'4px',fontWeight:900,fontSize:'clamp(0.9rem,2.5vmin,1.35rem)',whiteSpace:'nowrap',background: cur ? 'var(--c-accent-deep)' : (done ? '#dbe3f6' : '#eef2f6'),color: cur ? '#fff' : (done ? 'var(--c-accent-deep)' : 'var(--c-sub)'),boxShadow: cur ? '0 0 0 3px rgba(18,46,120,0.18)' : 'none'}}>
-                                {cur ? `라운드 ${si + 1}` : <>{si + 1}{done && <Icon.Check size={15}/>}</>}
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
             {/* 관리자: 자동 다음 토글 (별도 줄) */}
             {isAdmin && !allDone && (
                 <div style={{background:'white',borderBottom:'1px solid var(--c-border)',flexShrink:0,padding:'6px 14px',display:'flex',justifyContent:'flex-end'}}>
