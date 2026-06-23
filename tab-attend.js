@@ -40,7 +40,7 @@ const KioskModal = ({
             <div style={{background:'white',borderBottom:'1px solid #e2e8f0',paddingLeft:'16px',paddingRight:'16px',paddingBottom:'14px',paddingTop:'max(14px, env(safe-area-inset-top))',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                 <div>
                     <p style={{color:'#1e293b',fontWeight:900,fontSize:'1rem'}}>직접 출석</p>
-                    <p style={{color:'#64748b',fontSize:'0.75rem',marginTop:'2px'}}>{meetingSettings?.date} · <span style={{color:'#0d9488',fontWeight:900}}>{attendCheckedInCount}명 출석</span> / {attendActiveList.length}명</p>
+                    <p style={{color:'#64748b',fontSize:'0.75rem',marginTop:'2px'}}>{meetingSettings?.date} · <span style={{color:'var(--c-accent-deep)',fontWeight:900}}>{attendCheckedInCount}명 출석</span> / {attendActiveList.length}명</p>
                     <p style={{color:'#1e293b',fontSize:'1.5rem',fontWeight:900,marginTop:'4px',letterSpacing:'0.05em'}}><KioskClock /></p>
                 </div>
                 <button onClick={() => setIsKioskOpen(false)}
@@ -51,7 +51,7 @@ const KioskModal = ({
             {/* 출석 진행 바 */}
             {attendActiveList.length > 0 && (
                 <div style={{height:'4px',background:'#e2e8f0',flexShrink:0}}>
-                    <div style={{height:'100%',background:'#10b981',transition:'width 0.7s',width:`${Math.round(attendCheckedInCount/attendActiveList.length*100)}%`}}/>
+                    <div style={{height:'100%',background:'var(--c-success)',transition:'width 0.7s',width:`${Math.round(attendCheckedInCount/attendActiveList.length*100)}%`}}/>
                 </div>
             )}
             {/* 본문 */}
@@ -136,7 +136,7 @@ const KioskModal = ({
                         <div className="text-center" style={{paddingTop:'80px',color:'#475569'}}>
                             <div style={{display:'flex',justifyContent:'center',marginBottom:'16px'}}><Icon.Users size={48} className="text-slate-400"/></div>
                             <p style={{fontWeight:900,fontSize:'1.1rem',color:'#64748b'}}>팀편성 후 이용할 수 있습니다</p>
-                            <p style={{fontSize:'0.875rem',color:'#94a3b8',marginTop:'8px'}}>팀을 먼저 편성한 뒤 키오스크 출석을 진행하세요</p>
+                            <p style={{fontSize:'0.875rem',color:'var(--c-sub)',marginTop:'8px'}}>팀을 먼저 편성한 뒤 키오스크 출석을 진행하세요</p>
                         </div>
                     )
                 ) : (
@@ -706,7 +706,7 @@ const MeetingListScreen = ({
                         )}
                         <button onClick={() => setIsManageOpen(o => !o)}
                             className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 rounded-xl transition-all active:scale-95"
-                            style={isManageOpen ? {background:'linear-gradient(135deg,#14b8a6,#0d9488)',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
+                            style={isManageOpen ? {background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
                             <Icon.Settings size={13}/>{isManageOpen ? '관리 ON' : '관리'}
                         </button>
                         {!isManageOpen && (
@@ -1019,12 +1019,12 @@ const TabAttend = ({
                                 {/* sticky 인원 카운터 */}
                                 <div style={{position:'sticky',top:0,zIndex:40,marginLeft:'-1rem',marginRight:'-1rem',marginBottom:16,padding:'10px 1rem',background:darkMode?'rgba(15,23,42,0.96)':'rgba(248,250,252,0.96)',backdropFilter:'blur(8px)',borderBottom:`1px solid ${darkMode?'#334155':'#e2e8f0'}`,boxShadow:'0 1px 6px rgba(0,0,0,0.06)'}}>
                                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                                        <span style={{fontSize:10,fontWeight:900,color:'#94a3b8',textTransform:'uppercase',letterSpacing:'0.1em'}}>선정 인원</span>
+                                        <span style={{fontSize:10,fontWeight:900,color:'var(--c-sub)',textTransform:'uppercase',letterSpacing:'0.1em'}}>선정 인원</span>
                                         <div style={{display:'flex',alignItems:'center',gap:8}}>
-                                            <span style={{fontSize:15,fontWeight:900,color:selSessionList.length>=(selectedMeeting?.maxLimit||18)?'#14b8a6':darkMode?'#f1f5f9':'#1e293b'}}>
+                                            <span style={{fontSize:15,fontWeight:900,color:selSessionList.length>=(selectedMeeting?.maxLimit||18)?'var(--c-accent)':darkMode?'#f1f5f9':'#1e293b'}}>
                                                 {selSessionList.length} / {selectedMeeting?.maxLimit||18}명
                                             </span>
-                                            {selSessionList.length>=(selectedMeeting?.maxLimit||18)&&<span style={{fontSize:9,fontWeight:900,padding:'2px 8px',background:'#ccfbf1',color:'#0d9488',borderRadius:6}}>마감</span>}
+                                            {selSessionList.length>=(selectedMeeting?.maxLimit||18)&&<span style={{fontSize:9,fontWeight:900,padding:'2px 8px',background:'#ccfbf1',color:'var(--c-accent-deep)',borderRadius:6}}>마감</span>}
                                         </div>
                                     </div>
                                 </div>
@@ -1277,7 +1277,7 @@ const TabAttend = ({
                                         <span className="text-[10px] font-black text-emerald-500">{attendCheckedInCount}/{attendActiveList.length} · {Math.round(attendCheckedInCount/attendActiveList.length*100)}%</span>
                                     </div>
                                     <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full rounded-full transition-all duration-700" style={{width:`${Math.round(attendCheckedInCount/attendActiveList.length*100)}%`,background:attendCheckedInCount===0?'#e2e8f0':'linear-gradient(90deg,#14b8a6,#10b981)'}}/>
+                                        <div className="h-full rounded-full transition-all duration-700" style={{width:`${Math.round(attendCheckedInCount/attendActiveList.length*100)}%`,background:attendCheckedInCount===0?'#e2e8f0':'linear-gradient(90deg,var(--c-accent),var(--c-success))'}}/>
                                     </div>
                                 </div>
                             )}
@@ -1519,7 +1519,7 @@ const TabAttend = ({
           <div className="flex gap-3">
             <button onClick={handleGPSCheckIn}
                 className="flex-1 min-w-0 rounded-3xl p-4 text-left text-white active:scale-98 transition-all flex flex-col justify-between"
-                style={{ minHeight:'188px', background:'linear-gradient(135deg,#14b8a6,#0d9488)', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
+                style={{ minHeight:'188px', background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
                 <Icon.MapPin size={60} className="text-white"/>
                 <div className="min-w-0">
                     <p className="text-[11px] font-black uppercase tracking-widest text-white/80">GPS 출석</p>
