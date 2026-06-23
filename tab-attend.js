@@ -1418,7 +1418,7 @@ const TabAttend = ({
                             <div className="flex items-center gap-2 mb-2">
                                 <Icon.MapPin size={12} className="text-slate-400"/>
                                 {isEditingHistoryLocation
-                                    ? <><input style={{userSelect:'text'}} className="flex-1 min-w-0 text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1" value={editHistoryLocationValue} onChange={e=>setEditHistoryLocationValue(e.target.value)}/>
+                                    ? <><input style={{userSelect:'text'}} className="flex-1 min-w-0 text-xs bg-slate-50 border border-slate-200 rounded-xl px-2 py-1" value={editHistoryLocationValue} onChange={e=>setEditHistoryLocationValue(e.target.value)}/>
                                         <button onClick={handleUpdateHistoryLocation} className="shrink-0 text-xs px-2 py-1 bg-teal-500 text-white rounded-lg">저장</button>
                                         <button onClick={()=>setIsEditingHistoryLocation(false)} className="shrink-0 text-xs px-2 py-1 bg-slate-100 text-slate-500 rounded-lg">취소</button></>
                                     : <><span className="text-xs text-slate-600 flex-1 min-w-0 truncate">{selectedHistoryDetail.location}</span>

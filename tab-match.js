@@ -251,10 +251,10 @@ const TabMatch = ({
                                         <div key={key}>
                                             <p className={`text-[10px] font-black mb-1 ${key==='endTime'?'text-rose-400':'text-slate-400'}`}>{label} 시간</p>
                                             <div className="flex gap-1">
-                                                <select className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-1 py-2 text-xs font-black" value={splitTime(matchConfig[key]).h} onChange={e => setMatchConfig(p => ({...p,[key]:`${e.target.value}:${splitTime(p[key]).m}`}))}>
+                                                <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-1 py-2 text-xs font-black" value={splitTime(matchConfig[key]).h} onChange={e => setMatchConfig(p => ({...p,[key]:`${e.target.value}:${splitTime(p[key]).m}`}))}>
                                                     {Array.from({length:24},(_,i)=>String(i).padStart(2,'0')).map(h=><option key={h} value={h}>{h}시</option>)}
                                                 </select>
-                                                <select className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-1 py-2 text-xs font-black" value={splitTime(matchConfig[key]).m} onChange={e => setMatchConfig(p => ({...p,[key]:`${splitTime(p[key]).h}:${e.target.value}`}))}>
+                                                <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-1 py-2 text-xs font-black" value={splitTime(matchConfig[key]).m} onChange={e => setMatchConfig(p => ({...p,[key]:`${splitTime(p[key]).h}:${e.target.value}`}))}>
                                                     {['00','10','20','30','40','50'].map(m=><option key={m} value={m}>{m}분</option>)}
                                                 </select>
                                             </div>
