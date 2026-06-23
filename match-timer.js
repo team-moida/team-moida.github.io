@@ -184,22 +184,22 @@ const _mtBtn = { width: 'clamp(40px,7vmin,54px)', height: 'clamp(40px,7vmin,54px
 
 // 설정 드롭다운 (게임 시간 ±1분 / 교체 시간 ±30초)
 function MatchTimerSettings({ t, onClose }) {
-    const adjBtn = { width: 'clamp(36px,6vmin,48px)', height: 'clamp(34px,5.5vmin,46px)', borderRadius: '12px', border: 'none', background: '#e2e8f0', color: '#334155', fontWeight: 900, fontSize: 'clamp(13px,2.4vmin,18px)' };
+    const adjBtn = { width: 'clamp(36px,6vmin,48px)', height: 'clamp(34px,5.5vmin,46px)', borderRadius: '12px', border: 'none', background: 'var(--c-border)', color: '#334155', fontWeight: 900, fontSize: 'clamp(13px,2.4vmin,18px)' };
     const Row = ({ label, value, onMinus, onPlus, color }) => (
         <div style={{ marginBottom: '10px' }}>
-            <p style={{ color: '#94a3b8', fontWeight: 900, fontSize: 'clamp(10px,1.8vmin,13px)', marginBottom: '5px' }}>{label}</p>
+            <p style={{ color: 'var(--c-sub)', fontWeight: 900, fontSize: 'clamp(10px,1.8vmin,13px)', marginBottom: '5px' }}>{label}</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <button onClick={onMinus} style={adjBtn}>−</button>
-                <span style={{ flex: 1, textAlign: 'center', color: color || '#0f172a', fontWeight: 900, fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(16px,3vmin,22px)' }}>{value}</span>
+                <span style={{ flex: 1, textAlign: 'center', color: color || 'var(--c-ink)', fontWeight: 900, fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(16px,3vmin,22px)' }}>{value}</span>
                 <button onClick={onPlus} style={adjBtn}>＋</button>
             </div>
         </div>
     );
     return (
-        <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', marginTop: '8px', zIndex: 20, background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', boxShadow: '0 12px 30px rgba(0,0,0,0.18)', padding: '14px', width: 'min(86vw,300px)' }}>
-            <Row label="게임 시간" value={`${t.gameMin}분`} color="#0f172a"
+        <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', marginTop: '8px', zIndex: 20, background: 'white', border: '1px solid var(--c-border)', borderRadius: '16px', boxShadow: '0 12px 30px rgba(0,0,0,0.18)', padding: '14px', width: 'min(86vw,300px)' }}>
+            <Row label="게임 시간" value={`${t.gameMin}분`} color="var(--c-ink)"
                 onMinus={() => MoidaTimer.setGameMin(t.gameMin - 1)} onPlus={() => MoidaTimer.setGameMin(t.gameMin + 1)} />
-            <Row label="교체 시간" value={_mtFmt(t.subSec)} color="#0d9488"
+            <Row label="교체 시간" value={_mtFmt(t.subSec)} color="var(--c-accent-deep)"
                 onMinus={() => MoidaTimer.setSubSec(t.subSec - 30)} onPlus={() => MoidaTimer.setSubSec(t.subSec + 30)} />
             <button onClick={onClose} style={{ width: '100%', marginTop: '4px', height: '38px', borderRadius: '12px', border: 'none', background: '#f1f5f9', color: '#64748b', fontWeight: 900, fontSize: '13px' }}>닫기</button>
         </div>
@@ -211,25 +211,25 @@ function MatchTimerSettings({ t, onClose }) {
 function MatchTimerBar({ isAdmin = true }) {
     const t = useMatchTimer();
     const [setOpen, setSetOpen] = React.useState(false);
-    const timeColor = t.ended ? '#10b981' : (t.subImminent ? '#f59e0b' : '#0f172a');
+    const timeColor = t.ended ? 'var(--c-success)' : (t.subImminent ? 'var(--c-warn)' : 'var(--c-ink)');
     return (
         <div style={{ position: 'relative', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(6px,1.4vmin,12px)' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(4px,1.6vmin,16px)' }}>
                 {/* 남은 시간 (위, 크게) — 라벨이 시간 위 */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(1px,0.5vmin,5px)' }}>
-                    <span style={{ color: '#94a3b8', fontWeight: 900, fontSize: 'clamp(0.72rem,2.1vmin,1.3rem)' }}>남은 시간</span>
+                    <span style={{ color: 'var(--c-sub)', fontWeight: 900, fontSize: 'clamp(0.72rem,2.1vmin,1.3rem)' }}>남은 시간</span>
                     <span style={{ color: timeColor, fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(3rem,14vmin,7.5rem)' }}>{_mtFmt(t.roundRemaining)}</span>
                 </div>
                 {/* 교체까지 (아래) — 라벨이 시간 위 */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(1px,0.5vmin,5px)' }}>
-                    <span style={{ color: '#94a3b8', fontWeight: 900, fontSize: 'clamp(0.72rem,2.1vmin,1.3rem)' }}>교체까지</span>
-                    <span style={{ color: t.subImminent ? '#f59e0b' : '#475569', fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(1.8rem,8vmin,4rem)' }}>{_mtFmt(t.subRemaining)}</span>
+                    <span style={{ color: 'var(--c-sub)', fontWeight: 900, fontSize: 'clamp(0.72rem,2.1vmin,1.3rem)' }}>교체까지</span>
+                    <span style={{ color: t.subImminent ? 'var(--c-warn)' : 'var(--c-text)', fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(1.8rem,8vmin,4rem)' }}>{_mtFmt(t.subRemaining)}</span>
                 </div>
             </div>
             {isAdmin ? (
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 'clamp(8px,2vmin,16px)' }}>
-                    <button onClick={() => t.running ? MoidaTimer.pause() : MoidaTimer.start()} aria-label={t.running ? '정지' : '재생'} style={{ ..._mtBtn, background: t.running ? '#f59e0b' : '#10b981', color: 'white' }}>{t.running ? <Icon.Pause size={26}/> : <Icon.Play size={26}/>}</button>
-                    <button onClick={() => MoidaTimer.reset()} aria-label="리셋" style={{ ..._mtBtn, background: '#e2e8f0', color: '#475569' }}><Icon.RotateCcw size={26}/></button>
+                    <button onClick={() => t.running ? MoidaTimer.pause() : MoidaTimer.start()} aria-label={t.running ? '정지' : '재생'} style={{ ..._mtBtn, background: t.running ? 'var(--c-warn)' : 'var(--c-success)', color: 'white' }}>{t.running ? <Icon.Pause size={26}/> : <Icon.Play size={26}/>}</button>
+                    <button onClick={() => MoidaTimer.reset()} aria-label="리셋" style={{ ..._mtBtn, background: 'var(--c-border)', color: 'var(--c-text)' }}><Icon.RotateCcw size={26}/></button>
                     <button onClick={() => setSetOpen(v => !v)} aria-label="설정" style={{ ..._mtBtn, background: '#f1f5f9', color: '#64748b' }}><Icon.Settings size={26}/></button>
                 </div>
             ) : (
