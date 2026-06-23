@@ -145,6 +145,8 @@ PC: 마우스·큰 화면 / 모바일: 터치·작은 화면 — 둘 다 고려
 - 그림자: 카드용 1종(0 4px 14px rgba(0,0,0,.05))만. 그 외 추가 금지.
 - 아이콘: member-icons.js 외곽선 세트 하나로 통일. size는 16/20/24/30 중에서.
 - 정렬: 위 "박스 내부 정렬 규칙" 따름. (여기서 다시 풀어 쓰지 말 것)
+- 토큰 주의: --c-ink/text/bg/card/border는 다크에서 값이 바뀜 → 라이트 고정 화면·darkMode 삼항엔
+  쓰지 말 것(상세 DESIGN.md). 안전 토큰=accent/accent-deep/sub/success/warn/danger.
 - 새 화면·박스 제작 시 위 기준을 따르고, 애매하면 DESIGN.md 참고.
 
 
