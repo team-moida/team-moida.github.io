@@ -29,6 +29,7 @@ tailwind.config = {
       50:'#eef2ff', 100:'#e0e7ff', 200:'#c7d2fe', 300:'#a5b4fc', 400:'#818cf8',
       500:'#6366f1', 600:'#4f46e5', 700:'#4338ca', 800:'#3730a3', 900:'#312e81', 950:'#1e1b4b'
     },
+    live: '#C2F94A',  // LIVE/진행중 포인트(라임). 조끼 jersey-lime·기본 lime과 별개 이름(격리). §8 소량 강조 전용.
     // ── 조끼(팀 배지) 색 — 팔레트에서 분리한 전용 색 (DESIGN.md §7 조끼 고정 원칙).
     // 값 = 현행 Tailwind 기본 hex 그대로 → 화면 무변화. 이후 red/blue/yellow/pink 팔레트를
     // 바꿔도 조끼는 jersey-* 라서 영향 없음. 각 색의 shade는 getTeamBadge/getTeamCard/

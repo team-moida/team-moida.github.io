@@ -372,7 +372,7 @@ const TabMatch = ({
                                                             {isDone||isPast?<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>:si+1}
                                                         </div>
                                                         <p className="font-black text-xs text-slate-600">{session.time}</p>
-                                                        {isCurrent && <span className="text-[9px] font-black text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full ml-auto">진행 중</span>}
+                                                        {isCurrent && <span className="text-[9px] font-black text-[#15171E] bg-live px-2 py-0.5 rounded-full ml-auto">진행 중</span>}
                                                     </div>
                                                     <div className="space-y-1.5 pl-8">
                                                         {session.matches.map((m,mi) => {
@@ -643,7 +643,7 @@ const TabMatch = ({
                                             <div className="flex items-center gap-2 mb-3">
                                                 <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] flex-shrink-0 ${isCurrent?'bg-teal-500 text-white':isDone||isPast?'bg-emerald-400 text-white':'bg-slate-100 text-slate-500'}`}>{isDone||isPast?<Icon.Check size={12}/>:si+1}</div>
                                                 <p className="text-xs font-black text-slate-400">{session.time}</p>
-                                                {isCurrent&&<span className="text-[9px] font-black text-teal-600 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-full">진행 중</span>}
+                                                {isCurrent&&<span className="text-[9px] font-black text-[#15171E] bg-live px-2 py-0.5 rounded-full">진행 중</span>}
                                                 {hasMyTeam&&!isCurrent&&!isDone&&<span className="text-[9px] font-black text-teal-500 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-full">내 경기</span>}
                                                 {isResting&&!isDone&&<span className="text-[9px] font-black text-amber-500 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">휴식</span>}
                                             </div>

@@ -21,7 +21,7 @@ function ResultsTab({schedule, completedMatches, currentMatchIndex, config, onTo
                                     {isDone||isPast?<Icon.Check size={10} className="text-white"/>:si+1}
                                 </div>
                                 <p className="font-black text-sm text-slate-600">{session.time}</p>
-                                {isCurrent&&<span className="text-[9px] font-black text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full ml-auto">진행 중</span>}
+                                {isCurrent&&<span className="text-[9px] font-black text-[#15171E] bg-live px-2 py-0.5 rounded-full ml-auto">진행 중</span>}
                             </div>
                             <div className="space-y-2 pl-9">
                                 {session.matches.map((m,mi)=>{
