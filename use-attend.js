@@ -70,14 +70,8 @@ function useAttend({ isAdminMode, memberData, meetingSettings, tmSessionData, ac
     }, [isQRGenModalOpen, currentQRToken, meetingSettings?.date]);
 
     const attendActiveParticipants = useMemo(() => {
-        const mDate = meetingSettings?.date || '';
-        const mid = meetingSettings ? getMeetingId(meetingSettings) : '';
         return tmSessionData
-            .filter(p => {
-                if (p.date !== mDate) return false;
-                if (p.meetingId) return p.meetingId === mid;
-                return !mid.endsWith('__match');
-            })
+            .filter(p => sessionMatchesMeeting(p, meetingSettings))
             .sort((a,b) => ms(a.createdAt) - ms(b.createdAt) || a.name.localeCompare(b.name));
     }, [tmSessionData, meetingSettings?.date, meetingSettings?.meetingType]);
 

@@ -338,7 +338,7 @@ function makeAttendHandlers(ctx) {
                     const sessionSnap = await getSessionCol().where('date', '==', todayStr).get();
                     const existingIds = new Set(sessionSnap.docs.map(d => d.data().memberId));
                     const toAdd = activeMemberList.filter(m => !existingIds.has(m.id));
-                    if (toAdd.length > 0) await Promise.all(toAdd.map(m => getSessionCol().add({memberId: m.id, name: m.name, gender: m.gender, level: m.level, date: todayStr, checkedIn: false, checkInTime: null, status: '미출석', isGuest: false, team: '', createdAt: new Date().toISOString()})));
+                    if (toAdd.length > 0) await Promise.all(toAdd.map(m => getSessionCol().add({memberId: m.id, name: m.name, gender: m.gender, level: m.level, date: todayStr, meetingId: getMeetingId({date: todayStr, meetingType: meetingSettings?.meetingType}), checkedIn: false, checkInTime: null, status: '미출석', isGuest: false, team: '', createdAt: new Date().toISOString()})));
                     showAlert('테스트 모드 활성화', `${toAdd.length}명 자동 선정됨\n\n시작: ${h}:${m} (12분 후)\n종료: ${endH}:${endM}\n3분 이내 체크인 → 정상\n3분 이후 → 지각${gpsMsg}`);
                 } catch(e) { showAlert('알림', '인원 자동 선정 실패'); }
             }, 500);

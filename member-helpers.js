@@ -55,6 +55,16 @@ const statusConfig = {
 
 /* ── 출석 헬퍼 ── */
 const getSessionCol  = () => getCol('weekly_session');
+// 세션(선정) 문서가 해당 모임 소속인지 판정. 빈 date(유령) 문서는 무조건 제외(가드).
+// 출석현황(use-attend)·명단 탭(tab-attend) 양쪽 공통 사용 — 한 곳만 고치면 양쪽 반영.
+const sessionMatchesMeeting = (p, meeting) => {
+    const mDate = meeting?.date || '';
+    const mid = meeting ? getMeetingId(meeting) : '';
+    if (!mDate || !p.date) return false;          // 기준/문서 date가 비면 무조건 제외(빈 date 매칭 차단)
+    if (p.date !== mDate) return false;
+    if (p.meetingId) return p.meetingId === mid;
+    return !mid.endsWith('__match');
+};
 const getHistoryCol  = () => getCol('history');
 const getSettingsCol = () => getCol('settings');
 const getQRCol       = () => getCol('qr_tokens');

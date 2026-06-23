@@ -948,12 +948,9 @@ const TabAttend = ({
 
     // 선택한 모임에 선정된 회원 명단(weekly_session)
     const selSessionList = React.useMemo(() => {
-        const _selMid = selectedMeeting ? getMeetingId(selectedMeeting) : null;
-        return (tmSessionData || []).filter(p => {
-            if (p.date !== selectedMeeting?.date) return false;
-            if (p.meetingId) return p.meetingId === _selMid;
-            return !_selMid || !_selMid.endsWith('__match');
-        }).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+        return (tmSessionData || [])
+            .filter(p => sessionMatchesMeeting(p, selectedMeeting))
+            .sort((a,b)=>(a.name||'').localeCompare(b.name||''));
     }, [tmSessionData, selectedMeeting?.date, selectedMeeting?.meetingType]);
 
     // 모임 당일(출석 시작) + 현재 모임이면 관리자는 들어왔을 때 출석 현황(명단)을 바로 표시.
