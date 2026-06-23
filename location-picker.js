@@ -93,7 +93,7 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
                 </button>
                 <div style={{ flex:1 }}>
                     <p style={{ fontWeight:700, fontSize:14, color:'var(--t-text)', margin:0 }}>장소 선택</p>
-                    <p style={{ fontSize:10, color:'#94a3b8', margin:0 }}>업체명·주소 검색 또는 지도를 직접 클릭하세요</p>
+                    <p style={{ fontSize:10, color:'var(--c-sub)', margin:0 }}>업체명·주소 검색 또는 지도를 직접 클릭하세요</p>
                 </div>
                 {locating && <div style={{ width:18, height:18, border:'2px solid #ec4899', borderTopColor:'transparent', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />}
             </div>
@@ -101,7 +101,7 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
                 <div style={{ display:'flex', gap:8 }}>
                     <input type="text" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter') doSearch(); }} placeholder="업체명 또는 주소 검색"
                         style={{ flex:1, background:'var(--t-surface)', border:'1px solid var(--t-border)', borderRadius:12, padding:'8px 12px', fontSize:12, fontFamily:'inherit', fontWeight:700, outline:'none', userSelect:'text', WebkitUserSelect:'text', color:'var(--t-text)' }} />
-                    <button onClick={doSearch} disabled={searching} style={{ padding:'8px 16px', background:searching?'#94a3b8':'var(--t-btn)', color:'#fff', border:'none', borderRadius:12, fontSize:12, fontWeight:700, cursor:searching?'default':'pointer', fontFamily:'inherit' }}>{searching?'...':'검색'}</button>
+                    <button onClick={doSearch} disabled={searching} style={{ padding:'8px 16px', background:searching?'var(--c-sub)':'var(--t-btn)', color:'#fff', border:'none', borderRadius:12, fontSize:12, fontWeight:700, cursor:searching?'default':'pointer', fontFamily:'inherit' }}>{searching?'...':'검색'}</button>
                     <button onClick={goCurrentLocation} style={{ padding:'8px 12px', background:'#fff0f6', border:'none', borderRadius:12, cursor:'pointer', display:'flex', alignItems:'center', color:'#ec4899' }}><Icon.MapPin size={16} /></button>
                 </div>
                 {results.length > 0 && (
@@ -109,11 +109,11 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
                         {results.map((place, i) => (
                             <button key={i} onClick={() => selectResult(place)} style={{ width:'100%', textAlign:'left', padding:'12px 16px', background:'none', border:'none', borderBottom:'1px solid var(--t-border)', cursor:'pointer', fontFamily:'inherit' }}>
                                 <p style={{ fontSize:13, fontWeight:700, color:'var(--t-text)', margin:0 }}>{place.place_name}</p>
-                                <p style={{ fontSize:10, color:'#94a3b8', margin:'2px 0 0' }}>{place.road_address_name||place.address_name||''}</p>
+                                <p style={{ fontSize:10, color:'var(--c-sub)', margin:'2px 0 0' }}>{place.road_address_name||place.address_name||''}</p>
                                 {place.category_name && <p style={{ fontSize:10, color:'#ec4899', margin:'2px 0 0' }}>{place.category_name}</p>}
                             </button>
                         ))}
-                        <button onClick={() => setResults([])} style={{ width:'100%', padding:'10px', background:'var(--t-s2)', border:'none', fontSize:11, color:'#94a3b8', cursor:'pointer', fontFamily:'inherit', fontWeight:700 }}>닫기</button>
+                        <button onClick={() => setResults([])} style={{ width:'100%', padding:'10px', background:'var(--t-s2)', border:'none', fontSize:11, color:'var(--c-sub)', cursor:'pointer', fontFamily:'inherit', fontWeight:700 }}>닫기</button>
                     </div>
                 )}
             </div>
@@ -122,13 +122,13 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
                 <div>
                     <div style={{ display:'flex', justifyContent:'space-between', margin:'0 0 4px 4px' }}>
                         <p style={{ fontSize:10, fontWeight:700, color:'#ec4899', textTransform:'uppercase', margin:0 }}>장소명</p>
-                        {geocodeFailed && <p style={{ fontSize:10, fontWeight:700, color:'#ef4444', margin:0 }}>⚠ 주소 자동 조회 실패 — 직접 입력해주세요</p>}
+                        {geocodeFailed && <p style={{ fontSize:10, fontWeight:700, color:'var(--c-danger)', margin:0 }}>⚠ 주소 자동 조회 실패 — 직접 입력해주세요</p>}
                     </div>
                     <input type="text" value={placeName} onChange={e=>{ setPlaceName(e.target.value); setGeocodeFailed(false); }} placeholder="장소명을 직접 수정할 수 있습니다"
                         style={{ width:'100%', background:'var(--t-s2)', border:'1px solid var(--t-border)', borderRadius:12, padding:'12px 16px', fontSize:14, fontFamily:'inherit', fontWeight:700, outline:'none', boxSizing:'border-box', userSelect:'text', WebkitUserSelect:'text', color:'var(--t-text)' }} />
                 </div>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'0 4px' }}>
-                    <span style={{ fontSize:10, color:'#94a3b8', fontFamily:'monospace' }}>{lat.toFixed(5)}, {lng.toFixed(5)}</span>
+                    <span style={{ fontSize:10, color:'var(--c-sub)', fontFamily:'monospace' }}>{lat.toFixed(5)}, {lng.toFixed(5)}</span>
                     <a href={`https://map.kakao.com/link/map/${encodeURIComponent(placeName||'위치')},${lat},${lng}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:10, color:'#3b82f6', fontWeight:700, textDecoration:'underline' }}>카카오맵 확인 →</a>
                 </div>
                 <button onClick={() => { if(!placeName.trim()){alert('장소명을 입력해주세요.');return;} onConfirm({name:placeName.trim(),lat,lng}); }}
