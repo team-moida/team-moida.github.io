@@ -112,3 +112,11 @@
 - ★ darkMode 변수로 색을 분기하는 삼항(darkMode?A:B) 안의 hex도 토큰으로 바꾸지 말 것.
   코드 분기 + 토큰 자동반전이 이중 적용되어 색이 뒤집힌다.
 - ${color}59 같은 hex-알파 문자열 결합에 쓰이는 색값도 토큰 금지(var()가 깨짐).
+
+## 10) teal 리테마 좌표 (미래 인디고 전환)
+- teal 색을 바꿀 땐 두 곳을 함께 고친다:
+  ① tailwind-config.js의 teal 값(라이트 팔레트),
+  ② common.css의 html.dark .text-teal-* / .bg-teal-* / .border-teal-* 다크 보정.
+  한쪽만 고치면 라이트/다크가 어긋난다.
+- Tailwind 클래스(bg-teal-500 등)는 var()로 못 바꾸므로, 이렇게 tailwind-config.js의
+  팔레트 값만 교체하는 방식으로 전환한다. config는 Tailwind CDN 로드 '다음'에 와야 한다.
