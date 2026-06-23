@@ -56,7 +56,7 @@ const TabTeam = ({
                 <p className="text-xs font-black text-slate-500 uppercase tracking-widest">팀 편성</p>
                 <button onClick={() => setIsTeamPanelOpen(v => !v)}
                     className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 rounded-xl transition-all active:scale-95"
-                    style={isTeamPanelOpen ? {background:'linear-gradient(135deg,#14b8a6,#0d9488)',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
+                    style={isTeamPanelOpen ? {background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
                     <Icon.Settings size={13}/>{isTeamPanelOpen ? '편성 모드 ON' : '편성 관리'}
                 </button>
             </div>
@@ -373,7 +373,7 @@ const TabTeam = ({
                                 <span className="shrink-0">⏳</span><span className="min-w-0">관리자 미리보기 — 회원에게는 {allowFromDisplay}부터 공개됩니다</span>
                             </div>
                         )}
-                        <div className="rounded-3xl p-5 mb-4 text-white" style={{ background:'linear-gradient(135deg,#14b8a6,#0d9488)', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
+                        <div className="rounded-3xl p-5 mb-4 text-white" style={{ background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
                             <p className="text-[11px] font-black uppercase tracking-widest text-white/80">{teamDraftData.meetingDate} 팀 편성</p>
                             <p className="font-black text-2xl leading-tight mt-1">{teamDraftData.teams.length}팀<span className="text-base font-black text-white/80 ml-1"> 편성 완료</span></p>
                         </div>
