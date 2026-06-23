@@ -47,22 +47,22 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
 
     return (
         <div className="fixed inset-0 z-[60] flex flex-col"
-            style={{background:'#f8fafc',overscrollBehavior:'none',fontFamily:"'Esamanru', sans-serif",
+            style={{background:'var(--c-bg)',overscrollBehavior:'none',fontFamily:"'Esamanru', sans-serif",
                 paddingLeft:'env(safe-area-inset-left)',paddingRight:'env(safe-area-inset-right)'}}>
             {/* 상단 바 — 라운드 강조 + 날짜/시간 부제 */}
-            <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'max(12px, env(safe-area-inset-top)) 16px 12px',flexShrink:0,display:'flex',alignItems:'center',gap:'12px'}}>
+            <div style={{background:'white',borderBottom:'1px solid var(--c-border)',padding:'max(12px, env(safe-area-inset-top)) 16px 12px',flexShrink:0,display:'flex',alignItems:'center',gap:'12px'}}>
                 <div style={{minWidth:0,flex:1}}>
                     {allDone ? (
-                        <p style={{color:'#10b981',fontWeight:900,lineHeight:1,fontSize:'clamp(1.4rem,4vmin,2.4rem)',display:'inline-flex',alignItems:'center',gap:'8px',margin:0}}><Icon.Check size={22}/>모든 경기 종료</p>
+                        <p style={{color:'var(--c-success)',fontWeight:900,lineHeight:1,fontSize:'clamp(1.4rem,4vmin,2.4rem)',display:'inline-flex',alignItems:'center',gap:'8px',margin:0}}><Icon.Check size={22}/>모든 경기 종료</p>
                     ) : (
                         <div style={{display:'flex',alignItems:'baseline',gap:'8px',flexWrap:'wrap'}}>
-                            <span style={{color:'#0d9488',fontWeight:900,fontSize:'clamp(0.85rem,2vmin,1.1rem)',letterSpacing:'0.03em'}}>라운드</span>
-                            <span style={{color:'#0d9488',fontWeight:900,lineHeight:1,fontSize:'clamp(1.8rem,5vmin,3rem)'}}>{idx + 1}</span>
-                            <span style={{color:'#94a3b8',fontWeight:800,fontSize:'clamp(0.9rem,2.4vmin,1.4rem)'}}>/ {total}</span>
+                            <span style={{color:'var(--c-accent-deep)',fontWeight:900,fontSize:'clamp(0.85rem,2vmin,1.1rem)',letterSpacing:'0.03em'}}>라운드</span>
+                            <span style={{color:'var(--c-accent-deep)',fontWeight:900,lineHeight:1,fontSize:'clamp(1.8rem,5vmin,3rem)'}}>{idx + 1}</span>
+                            <span style={{color:'var(--c-sub)',fontWeight:800,fontSize:'clamp(0.9rem,2.4vmin,1.4rem)'}}>/ {total}</span>
                             {isCurDone && <span style={{background:'#d1fae5',color:'#059669',fontWeight:900,fontSize:'clamp(0.7rem,1.8vmin,1rem)',padding:'2px 10px',borderRadius:'999px',display:'inline-flex',alignItems:'center',gap:'4px'}}><Icon.Check size={13}/>종료됨</span>}
                         </div>
                     )}
-                    <p style={{margin:'5px 0 0',color:'#94a3b8',fontWeight:700,fontSize:'clamp(0.72rem,1.9vmin,1.05rem)',display:'flex',alignItems:'center',gap:'5px'}}>
+                    <p style={{margin:'5px 0 0',color:'var(--c-sub)',fontWeight:700,fontSize:'clamp(0.72rem,1.9vmin,1.05rem)',display:'flex',alignItems:'center',gap:'5px'}}>
                         <Icon.Clock size={14}/>{dateLabel} 매치판{!allDone && session.time ? ` · ${session.time}` : ''}
                     </p>
                 </div>
@@ -70,12 +70,12 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
             </div>
             {/* 라운드 세그먼트 — 완료(✓)/현재(강조)/예정 한눈에 */}
             {!allDone && total > 0 && (
-                <div style={{background:'white',borderBottom:'1px solid #e2e8f0',flexShrink:0,padding:'10px 14px',display:'flex',gap:'6px',alignItems:'stretch'}}>
+                <div style={{background:'white',borderBottom:'1px solid var(--c-border)',flexShrink:0,padding:'10px 14px',display:'flex',gap:'6px',alignItems:'stretch'}}>
                     {sessions.map((s, si) => {
                         const done = completedMatches?.has(s.id);
                         const cur = si === idx;
                         return (
-                            <div key={si} style={{flex: cur ? '1.9' : '1',height:'clamp(34px,5.8vmin,46px)',borderRadius:'9px',display:'flex',alignItems:'center',justifyContent:'center',gap:'4px',fontWeight:900,fontSize:'clamp(0.9rem,2.5vmin,1.35rem)',whiteSpace:'nowrap',background: cur ? '#0d9488' : (done ? '#ccfbf1' : '#eef2f6'),color: cur ? '#fff' : (done ? '#0d9488' : '#94a3b8'),boxShadow: cur ? '0 0 0 3px rgba(13,148,136,0.18)' : 'none'}}>
+                            <div key={si} style={{flex: cur ? '1.9' : '1',height:'clamp(34px,5.8vmin,46px)',borderRadius:'9px',display:'flex',alignItems:'center',justifyContent:'center',gap:'4px',fontWeight:900,fontSize:'clamp(0.9rem,2.5vmin,1.35rem)',whiteSpace:'nowrap',background: cur ? 'var(--c-accent-deep)' : (done ? '#ccfbf1' : '#eef2f6'),color: cur ? '#fff' : (done ? 'var(--c-accent-deep)' : 'var(--c-sub)'),boxShadow: cur ? '0 0 0 3px rgba(13,148,136,0.18)' : 'none'}}>
                                 {cur ? `라운드 ${si + 1}` : <>{si + 1}{done && <Icon.Check size={15}/>}</>}
                             </div>
                         );
@@ -84,9 +84,9 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
             )}
             {/* 관리자: 자동 다음 토글 (별도 줄) */}
             {isAdmin && !allDone && (
-                <div style={{background:'white',borderBottom:'1px solid #e2e8f0',flexShrink:0,padding:'6px 14px',display:'flex',justifyContent:'flex-end'}}>
+                <div style={{background:'white',borderBottom:'1px solid var(--c-border)',flexShrink:0,padding:'6px 14px',display:'flex',justifyContent:'flex-end'}}>
                     <button onClick={() => { const v=!autoAdvance; setAutoAdvance(v); try{localStorage.setItem('moida_timer_autoadv', v?'1':'0');}catch(e){} }}
-                        style={{border:'none',borderRadius:'999px',fontWeight:800,fontSize:'clamp(0.66rem,1.7vmin,0.92rem)',padding:'4px 11px',display:'inline-flex',alignItems:'center',gap:'4px',background:autoAdvance?'#0d9488':'#e2e8f0',color:autoAdvance?'white':'#64748b'}}>
+                        style={{border:'none',borderRadius:'999px',fontWeight:800,fontSize:'clamp(0.66rem,1.7vmin,0.92rem)',padding:'4px 11px',display:'inline-flex',alignItems:'center',gap:'4px',background:autoAdvance?'var(--c-accent-deep)':'var(--c-border)',color:autoAdvance?'white':'#64748b'}}>
                         {autoAdvance ? <><Icon.Zap size={13}/>타이머 끝나면 자동 다음</> : '자동 다음 꺼짐'}
                     </button>
                 </div>
@@ -100,18 +100,18 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                     {allDone ? (
                         <div style={{margin:'auto',textAlign:'center'}}>
                             <div style={{display:'flex',justifyContent:'center'}}><Icon.Flag size={80} className="text-emerald-500"/></div>
-                            <p style={{fontWeight:900,fontSize:'clamp(1.2rem,4vmin,2.2rem)',color:'#0f172a'}}>모든 경기가 종료되었습니다</p>
-                            <p style={{fontWeight:900,fontSize:'clamp(0.85rem,2.4vmin,1.3rem)',color:'#94a3b8',marginTop:'6px'}}>수고하셨습니다!</p>
+                            <p style={{fontWeight:900,fontSize:'clamp(1.2rem,4vmin,2.2rem)',color:'var(--c-ink)'}}>모든 경기가 종료되었습니다</p>
+                            <p style={{fontWeight:900,fontSize:'clamp(0.85rem,2.4vmin,1.3rem)',color:'var(--c-sub)',marginTop:'6px'}}>수고하셨습니다!</p>
                         </div>
                     ) : session.matches.length === 0 ? (
-                        <div style={{margin:'auto',textAlign:'center',color:'#94a3b8'}}>
+                        <div style={{margin:'auto',textAlign:'center',color:'var(--c-sub)'}}>
                             <div style={{display:'flex',justifyContent:'center'}}><Icon.Flag size={44} className="text-slate-400"/></div>
                             <p style={{fontWeight:900,fontSize:'1.2rem'}}>이 라운드에 경기가 없습니다</p>
                         </div>
                     ) : session.matches.map((m, mi) => {
                         const [t1, t2] = m.match;
                         return (
-                            <div key={mi} style={{flex:'1 1 clamp(210px,28%,440px)',maxWidth:'560px',background:'white',border:'1px solid #e2e8f0',borderRadius:'clamp(16px,2.4vmin,26px)',padding:'clamp(10px,2vmin,22px)',boxShadow:'0 4px 14px rgba(0,0,0,0.05)',display:'flex',flexDirection:'column',justifyContent:'center'}}>
+                            <div key={mi} style={{flex:'1 1 clamp(210px,28%,440px)',maxWidth:'560px',background:'white',border:'1px solid var(--c-border)',borderRadius:'clamp(16px,2.4vmin,26px)',padding:'clamp(10px,2vmin,22px)',boxShadow:'0 4px 14px rgba(0,0,0,0.05)',display:'flex',flexDirection:'column',justifyContent:'center'}}>
                                 <p style={{textAlign:'center',color:'#64748b',fontWeight:900,fontSize:'clamp(0.85rem,2.2vmin,1.3rem)',marginBottom:'clamp(8px,1.5vmin,16px)'}}>{fieldLabel(m.fieldIdx)}</p>
                                 <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'clamp(8px,2vmin,24px)'}}>
                                     <MatchBoardTeam name={t1}/>
@@ -137,18 +137,18 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                 </div>
             </div>
             {/* 하단 네비 — 항상 보임 */}
-            <div style={{flexShrink:0,padding:'10px 16px max(10px, env(safe-area-inset-bottom))',background:'white',borderTop:'1px solid #e2e8f0',display:'flex',gap:'10px',alignItems:'center'}}>
+            <div style={{flexShrink:0,padding:'10px 16px max(10px, env(safe-area-inset-bottom))',background:'white',borderTop:'1px solid var(--c-border)',display:'flex',gap:'10px',alignItems:'center'}}>
                 {isAdmin ? (<>
-                    <button onClick={onPrev} disabled={currentIndex <= 0} style={{...navBtn,flex:1,background:currentIndex <= 0 ? '#f1f5f9' : '#e2e8f0',color:currentIndex <= 0 ? '#cbd5e1' : '#475569'}}><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}><Icon.ChevronLeft size={16}/>이전</span></button>
+                    <button onClick={onPrev} disabled={currentIndex <= 0} style={{...navBtn,flex:1,background:currentIndex <= 0 ? '#f1f5f9' : 'var(--c-border)',color:currentIndex <= 0 ? '#cbd5e1' : 'var(--c-text)'}}><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}><Icon.ChevronLeft size={16}/>이전</span></button>
                     {!allDone && (isCurDone
-                        ? <button onClick={() => onToggleComplete(session.id)} style={{...navBtn,flex:1,background:'#e2e8f0',color:'#475569'}}>종료 취소</button>
-                        : <button onClick={() => onToggleComplete(session.id)} style={{...navBtn,flex:1,background:'#10b981',color:'white'}}>종료</button>
+                        ? <button onClick={() => onToggleComplete(session.id)} style={{...navBtn,flex:1,background:'var(--c-border)',color:'var(--c-text)'}}>종료 취소</button>
+                        : <button onClick={() => onToggleComplete(session.id)} style={{...navBtn,flex:1,background:'var(--c-success)',color:'white'}}>종료</button>
                     )}
-                    <button onClick={onNext} disabled={currentIndex >= total} style={{...navBtn,flex:1,background:currentIndex >= total ? '#f1f5f9' : '#0d9488',color:currentIndex >= total ? '#cbd5e1' : 'white'}}><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}>다음<Icon.ChevronRight size={16}/></span></button>
+                    <button onClick={onNext} disabled={currentIndex >= total} style={{...navBtn,flex:1,background:currentIndex >= total ? '#f1f5f9' : 'var(--c-accent-deep)',color:currentIndex >= total ? '#cbd5e1' : 'white'}}><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}>다음<Icon.ChevronRight size={16}/></span></button>
                 </>) : (<>
-                    <button onClick={() => setBrowseIdx(i => clampIdx(i - 1))} disabled={idx <= 0} style={{...navBtn,flex:1,background:idx <= 0 ? '#f1f5f9' : '#e2e8f0',color:idx <= 0 ? '#cbd5e1' : '#475569'}}><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}><Icon.ChevronLeft size={16}/>이전</span></button>
-                    <button onClick={() => setBrowseIdx(clampIdx(startIndex || 0))} style={{...navBtn,flexShrink:0,padding:'0 16px',background:'#ccfbf1',color:'#0d9488',fontSize:'clamp(0.8rem,2vmin,1.1rem)'}}>현재</button>
-                    <button onClick={() => setBrowseIdx(i => clampIdx(i + 1))} disabled={idx >= total - 1} style={{...navBtn,flex:1,background:idx >= total - 1 ? '#f1f5f9' : '#0d9488',color:idx >= total - 1 ? '#cbd5e1' : 'white'}}><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}>다음<Icon.ChevronRight size={16}/></span></button>
+                    <button onClick={() => setBrowseIdx(i => clampIdx(i - 1))} disabled={idx <= 0} style={{...navBtn,flex:1,background:idx <= 0 ? '#f1f5f9' : 'var(--c-border)',color:idx <= 0 ? '#cbd5e1' : 'var(--c-text)'}}><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}><Icon.ChevronLeft size={16}/>이전</span></button>
+                    <button onClick={() => setBrowseIdx(clampIdx(startIndex || 0))} style={{...navBtn,flexShrink:0,padding:'0 16px',background:'#ccfbf1',color:'var(--c-accent-deep)',fontSize:'clamp(0.8rem,2vmin,1.1rem)'}}>현재</button>
+                    <button onClick={() => setBrowseIdx(i => clampIdx(i + 1))} disabled={idx >= total - 1} style={{...navBtn,flex:1,background:idx >= total - 1 ? '#f1f5f9' : 'var(--c-accent-deep)',color:idx >= total - 1 ? '#cbd5e1' : 'white'}}><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}>다음<Icon.ChevronRight size={16}/></span></button>
                 </>)}
             </div>
         </div>
@@ -197,7 +197,7 @@ const TabMatch = ({
                 <p className="text-xs font-black text-slate-500 uppercase tracking-widest">매치</p>
                 <button onClick={() => setIsMatchPanelOpen(v => !v)}
                     className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 rounded-xl transition-all active:scale-95"
-                    style={isMatchPanelOpen ? {background:'linear-gradient(135deg,#14b8a6,#0d9488)',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
+                    style={isMatchPanelOpen ? {background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
                     <Icon.Settings size={13}/>{isMatchPanelOpen ? '매치 관리 ON' : '매치 관리'}
                 </button>
             </div>
@@ -481,7 +481,7 @@ const TabMatch = ({
                 return (
                     <div>
                         {/* 날짜 + 뷰 토글 */}
-                        <div className="rounded-3xl p-5 mb-4 text-white flex items-center justify-between gap-3" style={{ background:'linear-gradient(135deg,#14b8a6,#0d9488)', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
+                        <div className="rounded-3xl p-5 mb-4 text-white flex items-center justify-between gap-3" style={{ background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(13,148,136,0.45)' }}>
                             <div className="min-w-0">
                                 <p className="text-[11px] font-black uppercase tracking-widest text-white/80">{scheduleData.meetingDate} 매치</p>
                                 <p className="font-black text-2xl leading-tight mt-1">총 {sessions.length}<span className="text-base font-black text-white/80 ml-1">라운드</span></p>
@@ -495,7 +495,7 @@ const TabMatch = ({
                         {/* 패드 크게 보기 진입 */}
                         <button onClick={() => setBoardOpen(true)}
                             className="w-full mb-4 py-3.5 rounded-2xl font-black text-sm text-white flex items-center justify-center gap-2 active:scale-95 transition-all"
-                            style={{background:'linear-gradient(135deg,#0f766e,#0d9488)',boxShadow:'0 8px 20px -6px rgba(13,148,136,0.5)'}}>
+                            style={{background:'linear-gradient(135deg,#0f766e,var(--c-accent-deep))',boxShadow:'0 8px 20px -6px rgba(13,148,136,0.5)'}}>
                             <Icon.Tv size={18}/>매치판 크게 보기
                         </button>
 
@@ -560,7 +560,7 @@ const TabMatch = ({
                                                         <p className="text-xs font-black text-teal-500 mb-4">다음 상대</p>
                                                         <div className="flex items-center justify-center gap-5 mb-5">
                                                             <div className="text-center">
-                                                                <div className={`w-16 h-16 rounded-2xl font-black text-2xl flex items-center justify-center text-white mb-1 ${getTeamBadge(myTeamIdx2)}`} style={{boxShadow:'0 0 0 3px #fff, 0 0 0 6px #14b8a6'}}>{myTeam}</div>
+                                                                <div className={`w-16 h-16 rounded-2xl font-black text-2xl flex items-center justify-center text-white mb-1 ${getTeamBadge(myTeamIdx2)}`} style={{boxShadow:'0 0 0 3px #fff, 0 0 0 6px var(--c-accent)'}}>{myTeam}</div>
                                                                 <p className="text-[10px] text-teal-500 font-black">우리 팀</p>
                                                             </div>
                                                             <span className="text-slate-300 font-black text-2xl">vs</span>
