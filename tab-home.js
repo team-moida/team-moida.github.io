@@ -381,12 +381,22 @@ const NextMeetingCard = ({
     meeting, kind, isActive, dayInfo, darkMode, isAdminMode, onTabChange,
     mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount,
     isMeetingOver, isMeetingEndSaved, onEndMeeting, onGenerateQR, onEditMeeting, onDeleteMeeting,
+    enableQR, onHomeGpsCheckIn,
 }) => {
     const cfg = MEETING_KIND[kind] || MEETING_KIND.self;
     const showOverlay = kind !== 'match' && isActive && isAdminMode && isMeetingOver && !isMeetingEndSaved;
     return (
         <div className="relative">
-        <button onClick={()=>onTabChange('attend', kind, meeting.id || getMeetingId(meeting))}
+        <button onClick={()=>{
+                // MVP-1: 정기 활성 카드를 탭하면 GPS 위치확인을 미리 실행해 출석 화면에 결과가 떠 있게 한다.
+                // (실제 출석 기록은 출석 화면에서 직접 눌러야 발생. QR 모임이면 위치권한 팝업을 피하려 자동 GPS 생략)
+                if (isActive && kind === 'self' && !mySession?.checkedIn
+                    && (dayInfo.type==='today' || dayInfo.type==='started')
+                    && !enableQR && onHomeGpsCheckIn) {
+                    onHomeGpsCheckIn();
+                }
+                onTabChange('attend', kind, meeting.id || getMeetingId(meeting));
+            }}
             className={`w-full rounded-2xl p-5 text-left text-white active:scale-98 transition-all${showOverlay ? ' blur-sm' : ''}`}
             style={{ background: cfg.accent, boxShadow:`0 10px 28px -8px ${cfg.accent}59` }}>
             <div className="flex items-center justify-between gap-2 mb-2.5">
@@ -1029,7 +1039,7 @@ const TabHome = ({
     memberName, announcements, onOpenAnnouncements,
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
     duesReports, onConfirmDuesReport, onRejectDuesReport, onGoDuesTab,
-    generateAttendQRCode, onEditMeeting, onDeleteMeeting,
+    generateAttendQRCode, onEditMeeting, onDeleteMeeting, onHomeGpsCheckIn,
 }) => {
     // 정기/매칭 다음 모임 분리 (회원이 둘 다 참여할 수 있어 종류별 카드로 표시)
     // 종료(done) + 지난 날짜 모임은 홈 '다음 모임'에서 제외 (끝난 모임은 기록 탭에서만)
@@ -1083,7 +1093,8 @@ const TabHome = ({
                 mySession={mySession} teamReady={teamReady} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                 allowFromDisplay={allowFromDisplay} participantCount={participantCount}
                 isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting}
-                onGenerateQR={generateAttendQRCode} onEditMeeting={onEditMeeting} onDeleteMeeting={onDeleteMeeting} />
+                onGenerateQR={generateAttendQRCode} onEditMeeting={onEditMeeting} onDeleteMeeting={onDeleteMeeting}
+                enableQR={meetingSettings?.enableQR} onHomeGpsCheckIn={onHomeGpsCheckIn} />
         )) : (
             <button onClick={()=>onTabChange('meeting-list')} className="w-full card rounded-2xl p-5 text-center active:scale-98 transition-all">
                 <div className="text-slate-400 py-3">

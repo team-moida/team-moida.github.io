@@ -712,6 +712,7 @@ function App() {
                         onConfirmDuesReport={confirmDuesReport} onRejectDuesReport={openDuesReject}
                         onGoDuesTab={() => { roster.setRosterSubTab('monthly'); navTab('roster'); }}
                         generateAttendQRCode={generateAttendQRCode}
+                        onHomeGpsCheckIn={handleGPSCheckIn}
                         onEditMeeting={(m) => { setPendingEditMeeting(m); navTab('meeting-list'); }}
                         onDeleteMeeting={handleDeleteMeeting}
                     />
