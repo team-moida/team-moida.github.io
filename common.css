@@ -29,7 +29,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 
 /* ── 다크모드 변수 ── */
 :root{--t-bg:#f8fafc;--t-surface:#ffffff;--t-s2:#f8fafc;--t-border:#e2e8f0;--t-text:#1e293b;--t-btn:#1e293b}
-html.dark{--t-bg:#0f172a;--t-surface:#1e293b;--t-s2:#0f172a;--t-border:#334155;--t-text:#f1f5f9;--t-btn:#14b8a6}
+html.dark{--t-bg:#0f172a;--t-surface:#1e293b;--t-s2:#0f172a;--t-border:#334155;--t-text:#f1f5f9;--t-btn:#183FB0}
 
 /* ── 다크모드 기본 스타일 ── */
 html.dark body{background:var(--t-bg)!important;color:var(--t-text)}
@@ -48,17 +48,17 @@ html.dark .text-slate-500,html.dark .text-slate-400{color:#94a3b8!important}
 html.dark .text-slate-300{color:#64748b!important}
 html.dark input,html.dark textarea{background:var(--t-surface)!important;border-color:var(--t-border)!important;color:var(--t-text)!important}
 html.dark select{background:var(--t-surface)!important;border-color:var(--t-border)!important;color:var(--t-text)!important}
-html.dark .bg-teal-50{background:#042f2e!important}
-html.dark .border-teal-100{border-color:#134e4a!important}
-html.dark .bg-teal-100{background:#134e4a!important}
-html.dark .text-teal-600{color:#2dd4bf!important}
-html.dark .text-teal-500{color:#2dd4bf!important}
+html.dark .bg-teal-50{background:#050d22!important}
+html.dark .border-teal-100{border-color:#081435!important}
+html.dark .bg-teal-100{background:#081435!important}
+html.dark .text-teal-600{color:#4f6ccb!important}
+html.dark .text-teal-500{color:#4f6ccb!important}
 html.dark #loading-screen{background:var(--t-bg)!important}
 html.dark .shadow-sm{box-shadow:0 1px 3px rgba(0,0,0,.3)!important}
 
 /* ── 디자인 토큰 (현행값, ①단계: 정의만 — 아직 코드 미연결) ── */
 :root{
-  --c-accent:#14b8a6; --c-accent-deep:#0d9488;
+  --c-accent:#183FB0; --c-accent-deep:#122E78;
   --c-ink:#0f172a; --c-text:#475569; --c-sub:#94a3b8;
   --c-bg:#f8fafc; --c-card:#ffffff; --c-border:#e2e8f0;
   --c-success:#10b981; --c-warn:#f59e0b; --c-danger:#ef4444;
