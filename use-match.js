@@ -52,14 +52,21 @@ function useMatch({ isAdminMode, meetingSettings, confirmedDrafts }) {
         return () => { u1(); u2(); };
     }, [isAdminMode]);
 
-    // scheduleData가 로드됐고 local 상태가 비어 있으면 자동 동기화
+    // scheduleData(지금 보는 매치표)에 local 상태·활성 포인터를 맞춘다.
+    // (B) 보는 모임(문서)이 바뀌면 활성 포인터도 그 문서로 따라가게 한다 → 라운드 넘김 저장 대상을
+    //     "지금 보는 매치표"로 통일(읽기=쓰기 같은 문서). 처음 한 번만 고정되던 문제 해소.
+    //   · 같은 문서면 재동기화 안 함(관리자가 넘긴 현재 라운드를 서버 에코가 되돌리지 않게).
+    //   · 작성 중(새로 만들고 미저장: 활성 포인터 없음 + 로컬에 표 있음)이면 덮어쓰기 금지(미저장 작업 보호).
     useEffect(() => {
-        if (!scheduleData || activeMatchScheduleId) return;
+        if (!scheduleData) return;
+        if (scheduleData.id === activeMatchScheduleId) return;
+        if (!activeMatchScheduleId && (localSchedule.list?.length > 0)) return;
+        const firstLoad = !activeMatchScheduleId;
         setLocalSchedule(scheduleData.schedule || {list:[], stats:{}});
         setLocalCompletedMatches(new Set(scheduleData.completedMatches || []));
         setLocalMatchIndex(scheduleData.currentMatchIndex ?? 0);
         if (scheduleData.id) setActiveMatchScheduleId(scheduleData.id);
-        setMatchAdminView('results');
+        if (firstLoad) setMatchAdminView('results');
     }, [scheduleData]);
 
     // 워치 "종료/취소"는 서버(Cloud Function processWatchCommand)가 직접 처리한다.
