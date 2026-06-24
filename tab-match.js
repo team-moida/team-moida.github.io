@@ -18,6 +18,7 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
     const total = sessions.length;
     const clampIdx = (n) => Math.min(Math.max(n, 0), Math.max(total - 1, 0));
     const [browseIdx, setBrowseIdx] = React.useState(() => clampIdx(startIndex || 0));
+    const [timerOpen, setTimerOpen] = React.useState(false); // 타이머 막대 펼침(기본 접힘) — 보기/숨기기만, 엔진은 항상 돎
     const tmr = useMatchTimer(); // 타이머 종료 감지용 (자동 진행)
     const autoAdvance = true; // 자동 진행 항상 ON (토글 제거)
     const endedRef = React.useRef(false);
@@ -66,13 +67,14 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                         <Icon.Clock size={14}/>{dateLabel} 매치판{!allDone && session.time ? ` · ${session.time}` : ''}
                     </p>
                 </div>
+                <button onClick={() => setTimerOpen(v => !v)} aria-label={timerOpen ? '타이머 숨기기' : '타이머 보기'} style={{width:'clamp(40px,7vmin,52px)',height:'clamp(40px,7vmin,52px)',borderRadius:'14px',background:timerOpen?'var(--c-accent-deep)':'#f1f5f9',color:timerOpen?'white':'#64748b',border:'none',fontWeight:900,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon.Clock size={22}/></button>
                 <button onClick={onClose} style={{width:'clamp(40px,7vmin,52px)',height:'clamp(40px,7vmin,52px)',borderRadius:'14px',background:'#f1f5f9',color:'#64748b',border:'none',fontWeight:900,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon.X size={22}/></button>
             </div>
             {/* 본문 (스크롤 없음 — 한 화면에 맞춰 배치) */}
             <div style={{flex:'1 1 0%',minHeight:0,overflow:'hidden',display:'flex',flexDirection:'column',padding:'clamp(10px,2vmin,22px)',gap:'clamp(8px,1.5vmin,16px)'}}>
                 {/* 타이머 + 코트 — 화면 가운데에 함께 표시 (회원은 타이머 보기 전용) */}
                 <div style={{flex:'1 1 0%',minHeight:0,overflow:'hidden',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'clamp(10px,2.5vmin,26px)'}}>
-                    <MatchTimerBar isAdmin={isAdmin} />
+                    {timerOpen && <MatchTimerBar isAdmin={isAdmin} />}
                     <div style={{width:'100%',display:'flex',flexWrap:'wrap',gap:'clamp(10px,2vmin,20px)',alignContent:'center',justifyContent:'center'}}>
                     {allDone ? (
                         <div style={{margin:'auto',textAlign:'center'}}>
