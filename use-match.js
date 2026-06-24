@@ -1,4 +1,4 @@
-function useMatch({ isAdminMode, meetingSettings, confirmedDrafts }) {
+function useMatch({ isAdminMode, meetingSettings, confirmedDrafts, isLiveView }) {
     const { useState, useEffect, useMemo } = React;
 
     const [scheduleData, setScheduleData] = useState(null);
@@ -82,6 +82,24 @@ function useMatch({ isAdminMode, meetingSettings, confirmedDrafts }) {
         if (!isAdminMode) return;
         setMatchConfig(p => ({...p, meetingDate: meetingSettings?.date || p.meetingDate}));
     }, [isAdminMode, meetingSettings?.date]);
+
+    // 짝1: 워치용 문서의 활성 매치표를 '지금 보는(현재 모임/미러) 매치표'로 맞춘다.
+    //   · 관리자일 때만(가드1), 살아있는 모임(미러)을 보고 있을 때만(가드2, isLiveView) 쓴다 → 회원 폰·지난 모임 구경 중엔 안 씀(워치 세션 보호).
+    //   · 매치표 문서가 바뀔 때(=scheduleData.id 변화)만 다시 가리킨다. 같은 문서 안의 라운드 진행은 syncMatchState가 처리.
+    //   · 라운드 목록은 저장 때와 같은 buildWatchRounds 재사용(중복 방지). merge로 기존 명령 필드는 보존.
+    useEffect(() => {
+        if (!isAdminMode || !isLiveView) return;
+        if (!scheduleData || !scheduleData.id) return;
+        const list = scheduleData.schedule?.list || [];
+        if (!list.length) return;
+        getCol('settings').doc('watch_control').set({
+            activeMatchScheduleId: scheduleData.id,
+            rounds: buildWatchRounds(list, new Set(scheduleData.completedMatches || []), scheduleData.config),
+            currentMatchIndex: scheduleData.currentMatchIndex ?? 0,
+            totalMatches: list.length,
+            subInterval: scheduleData.config?.subIntervalSec ?? 180,
+        }, { merge: true }).catch(() => {});
+    }, [isAdminMode, isLiveView, scheduleData?.id]);
 
     const matchStatsData = useMemo(() => {
         if (!localSchedule.list.length || !confirmedDrafts.length) return null;

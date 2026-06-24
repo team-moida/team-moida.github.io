@@ -235,7 +235,10 @@ function App() {
     const closeAttendModal = () => { setAttendModalOpen(false); setDismissedMeetingId(getMeetingId(meetingSettings)); };
     const roster = useRoster({ isAdminMode });
     const team = useTeam({ isAdminMode, meetingSettings: effectiveMeeting, allMembers: roster.allMembers });
-    const match = useMatch({ isAdminMode, meetingSettings: effectiveSelfMeeting, confirmedDrafts: team.confirmedDrafts });
+    // 짝1: 지금 보는 자기(self) 매치표가 '살아있는 모임(미러)' 것인지 — 워치용 활성 매치표를 그때만 갱신(지난/다른 모임 구경 중엔 안 건드림).
+    //   홈(보던 모임 없음)이면 미러 기준이라 항상 라이브. 모임 탭에서 self 모임을 볼 땐 그 날짜가 미러 날짜와 같을 때만 라이브(self는 날짜가 곧 식별자).
+    const isLiveSelfView = !viewMeeting || (viewKind === 'self' && !!meetingSettings?.date && viewMeeting.date === meetingSettings.date);
+    const match = useMatch({ isAdminMode, meetingSettings: effectiveSelfMeeting, confirmedDrafts: team.confirmedDrafts, isLiveView: isLiveSelfView });
     const { scheduleData, matchViewMode, setMatchViewMode } = match;
     const attend = useAttend({
         isAdminMode, memberData, meetingSettings: displayMeetingSettings,

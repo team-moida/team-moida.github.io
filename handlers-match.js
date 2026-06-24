@@ -1,3 +1,15 @@
+// 워치로 내려줄 간략 라운드 목록 (라운드번호/구장별 대진/전체시간/완료여부)
+// 저장·동기화·워치 활성표 갱신(짝1) 공용 — config(매치표 설정)를 인자로 받는다.
+const buildWatchRounds = (list, completedSet, config) => (list || []).map((s, i) => ({
+    n: i + 1, id: s.id, time: s.time || '',
+    matchDuration: (config && config.matchDuration) || 12,
+    matchups: (s.matches || []).map(m => {
+        const fname = (config && config.fieldNames && config.fieldNames[m.fieldIdx]) || `${m.fieldIdx + 1}구장`;
+        return `${fname} ${m.match[0]} vs ${m.match[1]}`;
+    }),
+    done: completedSet.has(s.id)
+}));
+
 function makeMatchHandlers(ctx) {
     const {
         meetingSettings,
@@ -10,17 +22,6 @@ function makeMatchHandlers(ctx) {
     } = ctx;
 
     const splitTime = (t) => { const p = (t || '08:00').split(':'); return {h: p[0] || '08', m: p[1] || '00'}; };
-
-    // 워치로 내려줄 간략 라운드 목록 (라운드번호/구장별 대진/전체시간/완료여부)
-    const buildWatchRounds = (list, completedSet) => (list || []).map((s, i) => ({
-        n: i + 1, id: s.id, time: s.time || '',
-        matchDuration: matchConfig.matchDuration || 12,
-        matchups: (s.matches || []).map(m => {
-            const fname = (matchConfig.fieldNames && matchConfig.fieldNames[m.fieldIdx]) || `${m.fieldIdx + 1}구장`;
-            return `${fname} ${m.match[0]} vs ${m.match[1]}`;
-        }),
-        done: completedSet.has(s.id)
-    }));
 
     const matchGenerateTable = () => {
         // 이 모임(보고 있는 모임)의 확정 편성만 사용 — 다른 날짜 모임의 편성을 가져오지 않는다
@@ -101,7 +102,7 @@ function makeMatchHandlers(ctx) {
             getCol('settings').doc('watch_control').set({
                 command: null, cmdId: null, currentMatchIndex: 0,
                 totalMatches: localSchedule.list.length,
-                rounds: buildWatchRounds(localSchedule.list, localCompletedMatches),
+                rounds: buildWatchRounds(localSchedule.list, localCompletedMatches, matchConfig),
                 subInterval: matchConfig.subIntervalSec ?? 180,
                 activeMatchScheduleId: docRef.id  // 서버(워치 명령 처리)가 갱신할 매치표 지정
             }).catch(() => {});
@@ -115,7 +116,7 @@ function makeMatchHandlers(ctx) {
         }
         getCol('settings').doc('watch_control').update({
             command: null, currentMatchIndex: newIndex, totalMatches: localSchedule.list.length,
-            rounds: buildWatchRounds(localSchedule.list, newCompleted),
+            rounds: buildWatchRounds(localSchedule.list, newCompleted, matchConfig),
             subInterval: matchConfig.subIntervalSec ?? 180,
             ...(activeMatchScheduleId ? { activeMatchScheduleId } : {})
         }).catch(() => {});
