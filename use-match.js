@@ -24,6 +24,10 @@ function useMatch({ isAdminMode, meetingSettings, confirmedDrafts, isLiveView })
     const [matchIsSaving, setMatchIsSaving] = useState(false);
     const [activeMatchScheduleId, setActiveMatchScheduleId] = useState(null);
     const [matchIsCapturing, setMatchIsCapturing] = useState(false);
+    // 짝2: 관리자가 마지막으로 손으로 라운드를 조작한 시각. 이 직후 4초 동안은 서버 라운드 따라가기를 멈춰
+    //      (옛 서버값이 로컬을 뒤로 튕기는 걸 방지). syncMatchState(저장)가 시각을 찍는다.
+    const lastManualOpRef = React.useRef(0);
+    const MANUAL_GUARD_MS = 4000;
 
     useEffect(() => {
         if (!meetingSettings?.date) { setScheduleData(null); return; }
@@ -76,6 +80,13 @@ function useMatch({ isAdminMode, meetingSettings, confirmedDrafts, isLiveView })
         if (!scheduleData || !activeMatchScheduleId) return;
         if (scheduleData.id !== activeMatchScheduleId) return;
         setLocalCompletedMatches(new Set(scheduleData.completedMatches || []));
+        // 짝2: 같은 매치표 문서일 때 서버 현재 라운드도 로컬에 반영(다를 때만).
+        //   · 단 관리자가 막 손으로 조작한 직후(4초)엔 건너뜀 → 옛 서버값이 로컬을 뒤로 안 튕김.
+        //   · 4초가 지나서도 서버≠로컬이면 사실상 외부(워치)가 넘긴 것 → 그때 따라감.
+        if (Date.now() - lastManualOpRef.current >= MANUAL_GUARD_MS) {
+            const sIdx = scheduleData.currentMatchIndex ?? 0;
+            setLocalMatchIndex(prev => (prev === sIdx ? prev : sIdx));
+        }
     }, [scheduleData, activeMatchScheduleId]);
 
     useEffect(() => {
@@ -131,6 +142,7 @@ function useMatch({ isAdminMode, meetingSettings, confirmedDrafts, isLiveView })
         presetForm, setPresetForm,
         matchIsSaving, setMatchIsSaving,
         activeMatchScheduleId, setActiveMatchScheduleId,
+        lastManualOpRef,
         matchIsCapturing, setMatchIsCapturing,
         matchStatsData,
         scheduleData, matchViewMode, setMatchViewMode,

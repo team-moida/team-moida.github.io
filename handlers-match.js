@@ -18,7 +18,7 @@ function makeMatchHandlers(ctx) {
         localMatchIndex, setLocalMatchIndex, activeMatchScheduleId, setActiveMatchScheduleId,
         setMatchIsSaving, setMatchIsCapturing, presets, presetToggles, setPresetToggles,
         selectedPresetId, setSelectedPresetId, presetForm, setPresetForm,
-        setIsPresetModalOpen, setMatchAdminView, showAlert
+        setIsPresetModalOpen, setMatchAdminView, showAlert, lastManualOpRef
     } = ctx;
 
     const splitTime = (t) => { const p = (t || '08:00').split(':'); return {h: p[0] || '08', m: p[1] || '00'}; };
@@ -111,6 +111,9 @@ function makeMatchHandlers(ctx) {
     };
 
     const syncMatchState = (newCompleted, newIndex) => {
+        // 짝2: 손 조작 직후 보호창 시작 — 이 시각 기준 4초 동안은 서버 라운드 따라가기를 멈춰
+        //      아직 서버에 반영 안 된 옛 값이 로컬을 뒤로 튕기지 않게 한다.
+        if (lastManualOpRef) lastManualOpRef.current = Date.now();
         if (activeMatchScheduleId) {
             getCol('match_schedules').doc(activeMatchScheduleId).update({ completedMatches: Array.from(newCompleted), currentMatchIndex: newIndex }).catch(() => {});
         }
