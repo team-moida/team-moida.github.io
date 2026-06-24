@@ -1,5 +1,5 @@
 // updated
-const { onDocumentCreated, onDocumentDeleted } = require("firebase-functions/v2/firestore");
+const { onDocumentCreated, onDocumentDeleted, onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const admin = require("firebase-admin");
@@ -679,5 +679,61 @@ exports.processWatchCommand = onDocumentCreated(
 
     await cmdRef.delete().catch(() => {});
     console.log(`[워치명령] round ${roundId} → done=${wantDone}`);
+  }
+);
+
+// ── 매치표 완료 → 현재 라운드 자동 넘김 ──────────────────────────────────────
+// 워치 경기기록은 매치표 문서의 completedMatches(완료 체크)만 직접 갱신하고 현재 라운드는 안 올린다.
+// 그래서 '완료 체크가 추가되는 순간'을 감지해, 그게 지금 현재 라운드면 currentMatchIndex 를 +1 한다.
+// → 워치/홈/매치 크게보기/회원화면이 모두 같은 문서를 보므로 홈 '현재 N라운드'에 반영된다.
+// 폰 종료(syncMatchState)는 한 write 에 completedMatches+currentMatchIndex 를 함께 올리므로,
+// after 시점엔 이미 다음 라운드가 현재 → '추가된 id == 현재 라운드 id' 가 아니어서 자동으로 건너뜀(이중 넘김 없음).
+exports.advanceRoundOnComplete = onDocumentUpdated(
+  `${DB_PATH}/match_schedules/{schedId}`,
+  async (event) => {
+    const before = event.data && event.data.before && event.data.before.data();
+    const after = event.data && event.data.after && event.data.after.data();
+    if (!before || !after) return;
+
+    // 1) 새로 '추가된' 완료 라운드 id 추출 (완료취소·무변화면 종료 → 번호 그대로)
+    const beforeSet = new Set((before.completedMatches || []).map((x) => String(x)));
+    const addedIds = (after.completedMatches || [])
+      .map((x) => String(x))
+      .filter((id) => !beforeSet.has(id));
+    if (!addedIds.length) return;
+
+    // 2) 현재 라운드 정보 (마지막 라운드 가드)
+    const list = (after.schedule && after.schedule.list) || [];
+    const curIdx = after.currentMatchIndex == null ? 0 : after.currentMatchIndex;
+    if (!list.length || curIdx >= list.length) return;
+    const curRoundId = list[curIdx] && list[curIdx].id != null ? String(list[curIdx].id) : null;
+    if (curRoundId == null) return;
+
+    // 3) 추가된 완료가 '현재 라운드'일 때만 +1
+    if (!addedIds.includes(curRoundId)) return;
+
+    // 4) 트랜잭션으로 최신 상태 재확인 후 한 칸만 (멱등: 다른 트리거가 이미 올렸으면 no-op)
+    const db = admin.firestore();
+    const schedRef = db.doc(`${DB_PATH}/match_schedules/${event.params.schedId}`);
+    try {
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(schedRef);
+        if (!snap.exists) return;
+        const d = snap.data();
+        const curList = (d.schedule && d.schedule.list) || [];
+        const idx = d.currentMatchIndex == null ? 0 : d.currentMatchIndex;
+        if (!curList.length || idx >= curList.length) return;
+        const nowRoundId = curList[idx] && curList[idx].id != null ? String(curList[idx].id) : null;
+        const completed = new Set((d.completedMatches || []).map((x) => String(x)));
+        // 여전히 '현재 라운드가 완료됨' 상태일 때만 넘김
+        if (nowRoundId != null && completed.has(nowRoundId)) {
+          tx.update(schedRef, { currentMatchIndex: idx + 1 });
+        }
+      });
+    } catch (e) {
+      console.error("[라운드자동넘김] 실패:", e);
+      throw e; // 실패 시 자동 재시도
+    }
+    console.log(`[라운드자동넘김] ${event.params.schedId} round ${curRoundId} 완료 → 현재 라운드 +1`);
   }
 );
