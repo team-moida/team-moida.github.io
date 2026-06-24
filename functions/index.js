@@ -596,27 +596,81 @@ exports.processWatchCommand = onDocumentCreated(
 
     try {
       await db.runTransaction(async (tx) => {
+        // ── 읽기 (트랜잭션은 모든 읽기를 쓰기보다 먼저 해야 함) ───────────
         const wcSnap = await tx.get(wcRef);
         if (!wcSnap.exists) return;
         const wc = wcSnap.data();
-        const scheduleId = wc.activeMatchScheduleId || null;
+        const activeId = wc.activeMatchScheduleId || null;
 
-        // 1) 매치표 문서의 completedMatches 갱신 (있을 때만)
-        if (scheduleId) {
-          const schedRef = db.doc(`${DB_PATH}/match_schedules/${scheduleId}`);
-          const schedSnap = await tx.get(schedRef);
-          if (schedSnap.exists) {
-            const set = new Set(schedSnap.data().completedMatches || []);
-            if (wantDone) set.add(roundId); else set.delete(roundId);
-            tx.update(schedRef, { completedMatches: Array.from(set) });
-          }
+        // (A) 활성 문서를 읽어 이 모임의 종류(정기/매칭)·식별자를 알아낸다(①번 방식).
+        let activeSnap = null;
+        if (activeId) {
+          const aSnap = await tx.get(db.doc(`${DB_PATH}/match_schedules/${activeId}`));
+          if (aSnap.exists) activeSnap = aSnap;
         }
 
-        // 2) watch_control.rounds 의 해당 라운드 done 플래그 갱신 (워치 화면 동기화)
+        // (B) 그 모임의 '가장 최신 매치표 문서'를 홈과 똑같은 규칙으로 찾는다(미러 기준).
+        //     target = 홈이 실제로 읽는 그 문서 → 여기에 +1 해야 홈에 반영된다.
+        let target = null;      // { ref, data }
+        let allowAdvance = true; // 미러로 정상 해결됐을 때만 라운드 +1 허용
+        if (activeSnap) {
+          const aMeetingId = String(activeSnap.data().meetingId || "");
+          const isMatch = aMeetingId.endsWith("__match");
+          const mirrorKey = isMatch ? "meeting_schedule_match" : "meeting_schedule_v2";
+          const mirrorSnap = await tx.get(db.doc(`${DB_PATH}/settings/${mirrorKey}`));
+          if (mirrorSnap.exists && mirrorSnap.data().date) {
+            const mDate = mirrorSnap.data().date;
+            const mid = isMatch ? mDate + "__match" : mDate;       // getMeetingId 규칙
+            const altMid = isMatch ? mDate : mDate + "__match";    // 반대 종류(보조 검색서 제외)
+            const matchCol = db.collection(`${DB_PATH}/match_schedules`);
+            let cands = (await tx.get(matchCol.where("meetingId", "==", mid)))
+              .docs.map((d) => ({ ref: d.ref, data: d.data() }));
+            if (!cands.length) { // 보조: 같은 날짜(반대 종류 제외) — 홈 폴백과 동일
+              cands = (await tx.get(matchCol.where("meetingDate", "==", mDate)))
+                .docs.map((d) => ({ ref: d.ref, data: d.data() }))
+                .filter((x) => x.data.meetingId !== altMid);
+            }
+            cands.sort((a, b) =>
+              String(b.data.createdAt || "").localeCompare(String(a.data.createdAt || "")));
+            if (cands.length) target = cands[0]; // createdAt 최신 = 홈이 보는 문서
+          }
+        }
+        // (C) 폴백: 미러/매치표 못 찾음 → 활성 문서 기준으로 '완료 표시만'(+1 건너뜀, 기존 동작 보존).
+        if (!target && activeSnap) {
+          target = { ref: activeSnap.ref, data: activeSnap.data() };
+          allowAdvance = false;
+        }
+
+        // ── 쓰기 ─────────────────────────────────────────────────────────
+        let advanceTo = null;
+        if (target) {
+          const tData = target.data;
+          const set = new Set(tData.completedMatches || []);
+          if (wantDone) set.add(roundId); else set.delete(roundId);
+          // 멱등·마지막 가드: 그 라운드가 '지금 현재 라운드'이고 완료 동작일 때만 +1.
+          if (allowAdvance && wantDone) {
+            const list = (tData.schedule && tData.schedule.list) || [];
+            const roundIndex = list.findIndex((s) => s && s.id === roundId);
+            const curIdx = tData.currentMatchIndex == null ? 0 : tData.currentMatchIndex;
+            if (roundIndex !== -1 && roundIndex === curIdx && curIdx < list.length) {
+              advanceTo = curIdx + 1;
+            }
+          }
+          const schedUpdate = { completedMatches: Array.from(set) };
+          if (advanceTo !== null) schedUpdate.currentMatchIndex = advanceTo;
+          tx.update(target.ref, schedUpdate);
+        }
+
+        // watch_control.rounds done 플래그 + (넘김 시) 현재 라운드 동기화 + 활성 포인터 자가 치유.
         const newRounds = (wc.rounds || []).map(
           (r) => (r && r.id === roundId ? { ...r, done: wantDone } : r)
         );
-        tx.update(wcRef, { rounds: newRounds });
+        const wcUpdate = { rounds: newRounds };
+        if (advanceTo !== null) wcUpdate.currentMatchIndex = advanceTo;
+        if (target && allowAdvance && target.ref.id !== activeId) {
+          wcUpdate.activeMatchScheduleId = target.ref.id; // 다음부터 최신 문서를 가리키게
+        }
+        tx.update(wcRef, wcUpdate);
       });
     } catch (e) {
       console.error("[워치명령] 처리 실패:", e);
