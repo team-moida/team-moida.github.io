@@ -10,6 +10,16 @@ const _tmTeamName = (i) => (typeof getTeamName === 'function' ? getTeamName(i) :
 const _tmLevelPts = (lvl) => (typeof getLevelPoints === 'function' ? getLevelPoints(lvl) : (parseInt(lvl) || 4));
 const _tmShuffle = (arr) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
+// 현재 위치 받기(8초 타임아웃). 권한 거부/실패/타임아웃이면 null 반환 — 절대 throw 안 함(폴백).
+// 관리자 테스트 모드(handlers-attend.js)의 검증된 패턴 재사용.
+async function _tmCurrentLocation() {
+    if (!navigator.geolocation) return null;
+    try {
+        const pos = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 8000 }));
+        return { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    } catch (_) { return null; }
+}
+
 // 매치 스케줄 생성 (handlers-match.js matchGenerateTable 규칙과 동일)
 function _tmGenerateSchedule(config, teamsArr) {
     const teams = teamsArr.map((_, i) => _tmTeamName(i));
@@ -107,13 +117,29 @@ async function createTestMeeting({ me, activeMembers, showAlert, showConfirm }) 
                 }
                 teams.forEach(t => { t.scoreSum = t.members.reduce((s, m) => s + _tmLevelPts(m.level || 4), 0); });
 
+                // 현재 위치(GPS) 자동 설정 — 실패/거부/타임아웃이면 좌표 비운 채 진행(폴백). 위치 없으면 QR로 테스트.
+                const loc = await _tmCurrentLocation();
+                const locLat = loc ? loc.lat : null, locLng = loc ? loc.lng : null;
+                const locName = loc ? '📍 테스트 현재위치' : '🧪 테스트 모임';
+
+                // 현재 미러(현재 모임) 백업 — 덮어쓰기 전에 보관. 단 미러가 이미 테스트면 백업 안 함(테스트를 백업하는 사고 방지).
+                let mirrorBackup = null;
+                try {
+                    const cur = await getCol('settings').doc('meeting_schedule_v2').get();
+                    if (cur.exists) {
+                        const cd = cur.data() || {};
+                        const curIsTest = cd.location === '🧪 테스트 모임' || cd.location === '📍 테스트 현재위치';
+                        if (!curIsTest) mirrorBackup = cd;
+                    }
+                } catch (_) {}
+
                 const nowIso = new Date().toISOString();
                 const batch = db.batch();
 
                 // 1) 모임 문서
                 batch.set(getCol('meetings').doc(meetingId), {
-                    date, meetingId, start, end, location: '🧪 테스트 모임',
-                    locationLat: null, locationLng: null, locationRadius: 100, enableQR: false,
+                    date, meetingId, start, end, location: locName,
+                    locationLat: locLat, locationLng: locLng, locationRadius: 100, enableQR: true,
                     meetingType: 'self', opponentName: '',
                     maxMale: 0, maxFemale: 0, confirmedMaleCount: 0, confirmedFemaleCount: 0, waitingMaleCount: 0, waitingFemaleCount: 0,
                     maxLimit: 24, managerId: me.id || '', managerName: me.name || '테스트', editPin: '',
@@ -122,11 +148,11 @@ async function createTestMeeting({ me, activeMembers, showAlert, showConfirm }) 
                     confirmedCount: chosen.length, waitingCount: 0, isTest: true,
                 });
 
-                // 2) 참가자(선정+출석체크 완료) — weekly_session
+                // 2) 참가자(선정·출석 전) — weekly_session. 전원 미출석 → 홈 카드에 '출석하기'가 떠 출석 테스트 가능.
                 chosen.forEach((m, idx) => {
                     batch.set(getCol('weekly_session').doc(`${meetingId}_${m.id}`), {
                         memberId: m.id, name: m.name, gender: m.gender, level: m.level,
-                        date, meetingId, checkedIn: true, checkInTime: start, status: 'active',
+                        date, meetingId, checkedIn: false, checkInTime: null, status: '미출석',
                         isGuest: false, team: null, createdAt: new Date(Date.now() + idx).toISOString(), isTest: true,
                     });
                 });
@@ -151,12 +177,21 @@ async function createTestMeeting({ me, activeMembers, showAlert, showConfirm }) 
                     label: `${date} 테스트 매치 (${schedule.list.length}라운드)`, isTest: true,
                 });
 
-                // 5) 삭제용 마커
-                batch.set(getCol('settings').doc('test_meeting'), { testId: meetingId, date, createdAt: nowIso });
+                // 5) 삭제용 마커 — 복원용으로 원래 미러(mirrorBackup)도 함께 보관
+                batch.set(getCol('settings').doc('test_meeting'), { testId: meetingId, date, createdAt: nowIso, mirrorBackup });
+
+                // 6) 현재 모임(미러)을 이 테스트 모임으로 설정 → 홈 isActive=true → 출석 영역 표시.
+                //    삭제 시 mirrorBackup으로 복원(단 그새 진짜 모임으로 바뀌었으면 복원 안 함).
+                batch.set(getCol('settings').doc('meeting_schedule_v2'), {
+                    date, meetingId, start, end, location: locName,
+                    locationLat: locLat, locationLng: locLng, locationRadius: 100, enableQR: true,
+                    meetingType: 'self', maxLimit: 24,
+                    managerId: me.id || '', managerName: me.name || '테스트', testMode: false,
+                });
 
                 await batch.commit();
                 showAlert('🧪 테스트 모임 생성 완료',
-                    `${date} ${start}~${end} · ${chosen.length}명 / ${teamCount}팀 / ${schedule.list.length}라운드\n\n모임 탭 목록에서 '🧪 테스트 모임'을 열면 출석·팀·매치를 볼 수 있어요.\n끝나면 [테스트 삭제]로 흔적 없이 지우세요.`);
+                    `${date} ${start}~${end} · ${chosen.length}명 / ${teamCount}팀 / ${schedule.list.length}라운드\n위치: ${loc ? '현재 위치 자동 설정됨' : '취득 실패 — QR로 테스트하세요'}\n\n홈 정기 카드의 '출석하기'로 GPS/QR 출석을 테스트할 수 있어요.\n끝나면 [테스트 삭제]로 흔적 없이 지우세요(현재 모임도 원복).`);
             } catch (e) {
                 showAlert('오류', '테스트 모임 생성 실패: ' + (e?.message || e));
             }
@@ -168,9 +203,9 @@ async function deleteTestMeeting({ showAlert, showConfirm }) {
         '테스트로 만든 모임 자체(모임·참가자·팀편성·매치표 + 현재모임 지정)를 완전히 삭제합니다. 실제 모임은 건드리지 않습니다.',
         async () => {
             try {
-                // 테스트 식별 정보(미러 정리용) — 마커에서 날짜/모임ID 확보
-                let testDate = null, testId = null;
-                try { const md = await getCol('settings').doc('test_meeting').get(); if (md.exists) { testDate = md.data().date || null; testId = md.data().testId || null; } } catch (_) {}
+                // 테스트 식별 정보(미러 정리용) — 마커에서 날짜/모임ID + 원래 미러 백업 확보
+                let testDate = null, testId = null, mirrorBackup = null;
+                try { const md = await getCol('settings').doc('test_meeting').get(); if (md.exists) { const mdd = md.data() || {}; testDate = mdd.date || null; testId = mdd.testId || null; mirrorBackup = mdd.mirrorBackup || null; } } catch (_) {}
 
                 const cols = ['meetings', 'weekly_session', 'team_drafts', 'match_schedules', 'history', 'registrations'];
                 let total = 0;
@@ -189,17 +224,21 @@ async function deleteTestMeeting({ showAlert, showConfirm }) {
                 // 안전망: isTest 태그가 없더라도 마커가 가리키는 모임 문서는 직접 삭제
                 if (testId) { await getCol('meetings').doc(testId).delete().catch(() => {}); }
 
-                // 현재모임 미러가 테스트 모임을 가리키면 비운다 → 홈의 '모임 종료' 잔상/명단없음 에러 제거.
-                // 실제 모임 보호: location이 '🧪 테스트 모임'이거나 테스트 날짜일 때만 (테스트는 빈 날짜를 써서 안전).
+                // 현재모임 미러가 아직 테스트 모임을 가리키면 원래대로 되돌린다.
+                //  - 자기 모임(v2): 생성 때 백업한 mirrorBackup으로 복원. 백업이 없으면(구버전) 안전하게 빈값 초기화로 폴백.
+                //  - 그새 진짜 모임으로 바뀌었으면(아래 가드 false) 건드리지 않음 → 최신 운영 데이터 보호.
+                //  - 매칭(match)은 테스트가 손대지 않으므로 기존 안전망(빈값 초기화)만 유지.
+                const _isTestMirror = (d) => d.location === '🧪 테스트 모임' || d.location === '📍 테스트 현재위치' || (testDate && d.date === testDate);
+                const _emptyMirror = (mdoc) => ({ date: '', start: '', end: '', location: '', locationLat: null, locationLng: null, locationRadius: 100, maxLimit: 18, enableQR: false, managerId: '', managerName: '', meetingType: mdoc === 'meeting_schedule_match' ? 'match' : 'self' });
                 for (const mdoc of ['meeting_schedule_v2', 'meeting_schedule_match']) {
                     try {
                         const mref = getCol('settings').doc(mdoc);
                         const ms = await mref.get();
                         if (!ms.exists) continue;
                         const d = ms.data() || {};
-                        if (d.location === '🧪 테스트 모임' || (testDate && d.date === testDate)) {
-                            await mref.set({ date: '', start: '', end: '', location: '', locationLat: null, locationLng: null, locationRadius: 100, maxLimit: 18, enableQR: false, managerId: '', managerName: '', meetingType: mdoc === 'meeting_schedule_match' ? 'match' : 'self' });
-                        }
+                        if (!_isTestMirror(d)) continue;
+                        if (mdoc === 'meeting_schedule_v2' && mirrorBackup) await mref.set(mirrorBackup);
+                        else await mref.set(_emptyMirror(mdoc));
                     } catch (_) {}
                 }
 
