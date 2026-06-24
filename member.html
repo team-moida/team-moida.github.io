@@ -414,6 +414,26 @@ function App() {
 
     const teamReady = useMemo(() => isAttendOpen(effectiveMeeting, nowTime, testMode), [effectiveMeeting, nowTime, testMode]);
 
+    // F-2a-1b 자동표시 — 홈에서 활성 정기·미출석·출석열림이면 풀스크린 출석창을 1회 자동으로 띄움(화면만, DB쓰기 0).
+    // 닫은 모임(dismissedMeetingId)·이미 열림(attendModalOpen)·출석완료(checkedIn)면 안 뜸 → 재오픈/루프 없음.
+    useEffect(() => {
+        if (tab !== 'home' || attendModalOpen) return;
+        if (activeMeetingKind !== 'self') return;
+        if (!mySession || mySession.checkedIn) return;
+        if (attend.isMeetingOver) return;
+        if (!isAttendOpen(meetingSettings, nowTime, testMode)) return;
+        const mid = getMeetingId(meetingSettings);
+        if (!mid || mid === dismissedMeetingId) return;
+        setAttendModalOpen(true);
+    }, [tab, activeMeetingKind, mySession, attend.isMeetingOver, nowTime, dismissedMeetingId, meetingSettings, testMode, attendModalOpen]);
+
+    // F-2a-1b 완료 자동닫힘 — 출석 완료되면 "출석 완료!"를 약 1.2초 보여주고 모달을 자동으로 닫음.
+    useEffect(() => {
+        if (!attendModalOpen || !mySession?.checkedIn) return;
+        const t = setTimeout(() => setAttendModalOpen(false), 1200);
+        return () => clearTimeout(t);
+    }, [attendModalOpen, mySession?.checkedIn]);
+
     const myTeamInfo = useMemo(() => {
         if (!team.teamDraftData?.teams || !memberData?.memberId) return null;
         for (let i = 0; i < team.teamDraftData.teams.length; i++) {
