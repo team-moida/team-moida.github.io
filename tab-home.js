@@ -379,7 +379,7 @@ const computeMeetingDay = (date, start) => {
 };
 const NextMeetingCard = ({
     meeting, kind, isActive, dayInfo, darkMode, isAdminMode, onTabChange,
-    mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount,
+    mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount, scheduleData,
     isMeetingOver, isMeetingEndSaved, onEndMeeting, onGenerateQR, onEditMeeting, onDeleteMeeting,
     onOpenAttendModal,
 }) => {
@@ -473,6 +473,53 @@ const NextMeetingCard = ({
                         <div className="flex items-center gap-1.5 text-sm font-black text-white min-w-0">
                             <Icon.Users size={16} className="flex-shrink-0 text-white/80"/><span className="truncate">참여 명단 {participantCount || 0}명</span>
                         </div>
+                    ) : mySession?.checkedIn ? (
+                        /* F-2b 1단계 — 출석 완료(정기) 시 내 조끼·번호 + 현재 라운드 내 경기 (화면만, 매치표·조끼색 읽기만) */
+                        !myTeamInfo ? (
+                            <div className="flex items-center gap-1.5 text-xs text-white/70">
+                                <Icon.Users size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">팀 편성 준비 중</span>
+                            </div>
+                        ) : (
+                            <div className="space-y-2.5">
+                                <div className="flex items-center gap-2.5">
+                                    <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-black flex-shrink-0 ${getTeamBadge(myTeamIdx)}`}>{myTeamInfo.jerseyNumber}</span>
+                                    <div className="min-w-0">
+                                        <p className="font-black text-base text-white leading-tight truncate">{myTeamInfo.teamName}팀 · {myTeamInfo.jerseyNumber}번</p>
+                                        <p className="text-xs text-white/75 leading-tight">{getTeamColorName(myTeamIdx)} 조끼</p>
+                                    </div>
+                                </div>
+                                {(() => {
+                                    const r = getMyCurrentRoundMatch(scheduleData, myTeamInfo.teamName);
+                                    if (!r) return (
+                                        <div className="flex items-center gap-1.5 text-xs text-white/70 px-3 py-2 rounded-xl" style={{background:'rgba(255,255,255,0.12)'}}>
+                                            <Icon.Calendar size={14} className="flex-shrink-0 opacity-70"/><span className="truncate">매치표 준비 중</span>
+                                        </div>
+                                    );
+                                    if (r.allDone) return (
+                                        <div className="flex items-center gap-1.5 text-sm font-black text-white px-3 py-2.5 rounded-xl" style={{background:'rgba(255,255,255,0.18)'}}>
+                                            <Icon.Check size={15} className="flex-shrink-0"/><span className="truncate">모든 경기 종료</span>
+                                        </div>
+                                    );
+                                    return (
+                                        <div className="px-3 py-2.5 rounded-xl" style={{background:'rgba(255,255,255,0.18)'}}>
+                                            <p className="text-[11px] font-black text-white/80 mb-1">현재 {r.roundNo}라운드 <span className="text-white/55">/ {r.total}</span></p>
+                                            {r.resting ? (
+                                                <span className="flex items-center gap-1.5 text-sm font-black text-white min-w-0"><Icon.Coffee size={15} className="flex-shrink-0"/><span className="truncate">이번 라운드는 쉼</span></span>
+                                            ) : r.opponent ? (
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <span className="flex items-center gap-1 text-sm font-black text-white flex-shrink-0"><Icon.MapPin size={14} className="opacity-80"/>{r.fieldName}</span>
+                                                    <span className="text-white/60 text-xs font-black flex-shrink-0">vs</span>
+                                                    <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-white text-xs font-black flex-shrink-0 ${getTeamBadge(r.oppIdx)}`}>{r.opponent}</span>
+                                                    <span className="text-xs text-white/70 truncate">{getTeamColorName(r.oppIdx)} 조끼</span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-sm text-white/70">경기 정보 없음</span>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        )
                     ) : teamReady && myTeamInfo ? (
                         <div className="flex items-center justify-between gap-2">
                             <span className="flex items-center gap-1.5 text-sm font-black text-white min-w-0">
@@ -1047,7 +1094,7 @@ const DuesReportsHomeCard = ({ duesReports, onConfirm, onReject, onGoDuesTab }) 
 const TabHome = ({
     notifPermission, registerFcmToken, onTabChange,
     meetingDayInfo, teamReady, allowFromDisplay,
-    myTeamInfo, myTeamIdx, memberData, memberInfo, meetings, participantCount,
+    myTeamInfo, myTeamIdx, memberData, memberInfo, meetings, participantCount, scheduleData,
     mySession, meetingSettings, meetingSettingsMatch, darkMode,
     memberName, announcements, onOpenAnnouncements,
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
@@ -1104,7 +1151,7 @@ const TabHome = ({
             <NextMeetingCard key={c.kind} meeting={c.meeting} kind={c.kind} isActive={c.isActive}
                 dayInfo={c.dayInfo} darkMode={darkMode} isAdminMode={isAdminMode} onTabChange={onTabChange}
                 mySession={mySession} teamReady={teamReady} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
-                allowFromDisplay={allowFromDisplay} participantCount={participantCount}
+                allowFromDisplay={allowFromDisplay} participantCount={participantCount} scheduleData={scheduleData}
                 isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting}
                 onGenerateQR={generateAttendQRCode} onEditMeeting={onEditMeeting} onDeleteMeeting={onDeleteMeeting}
                 onOpenAttendModal={onOpenAttendModal} />

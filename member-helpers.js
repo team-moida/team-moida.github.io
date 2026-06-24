@@ -109,3 +109,27 @@ const getNextSundayFromDate = (dateStr) => {
     d.setDate(d.getDate() + diff);
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 };
+
+/* ── 매치: 현재 라운드의 내 경기 뽑기 (홈 카드 F-2b · 매치탭 '내 경기'와 동일 규칙) ──
+   매치표(scheduleData) + 내 팀 글자(myTeam: 'A'/'B'…)를 넣으면 현재 라운드의 내 경기 정보를 반환.
+   현재 라운드 번호 = 서버 저장값(currentMatchIndex, 없으면 0 → 1라운드). 조끼색·매치표는 읽기만(변경 없음).
+   반환: null(매치표/팀 없음) | {allDone,total} | {roundNo,total,resting:true}
+        | {roundNo,total,resting:false,opponent,oppIdx,fieldName} | {roundNo,total,resting:false,opponent:null} */
+const getMyCurrentRoundMatch = (scheduleData, myTeam) => {
+    const sessions = scheduleData?.schedule?.list || [];
+    if (!sessions.length || !myTeam) return null;
+    const total = sessions.length;
+    const cmi = scheduleData.currentMatchIndex ?? 0;
+    if (cmi >= total) return { allDone: true, total };
+    const session = sessions[cmi];
+    if (!session) return { allDone: true, total };
+    const roundNo = cmi + 1;
+    if (session.resting?.includes(myTeam)) return { roundNo, total, resting: true };
+    const myMatch = (session.matches || []).find(m => m.match.includes(myTeam));
+    if (!myMatch) return { roundNo, total, resting: false, opponent: null };
+    const [t1, t2] = myMatch.match;
+    const opponent = t1 === myTeam ? t2 : t1;
+    const oppIdx = opponent.charCodeAt(0) - 65;
+    const fieldName = scheduleData.config?.fieldNames?.[myMatch.fieldIdx] || `${myMatch.fieldIdx + 1}구장`;
+    return { roundNo, total, resting: false, opponent, oppIdx, fieldName };
+};
