@@ -404,27 +404,9 @@ function App() {
     }, [meetingSettings, nowTime]);
 
     // 팀 공개 시각/여부 — 보고 있는 모임 기준 (홈에서는 보던 모임이 해제되어 현재 모임 기준)
-    const allowFromDisplay = useMemo(() => {
-        if (!effectiveMeeting?.date || !effectiveMeeting?.start) return null;
-        const [y,m,d] = effectiveMeeting.date.split('-').map(Number);
-        const [h,min] = effectiveMeeting.start.split(':').map(Number);
-        const af = new Date(y, m-1, d, h, min, 0);
-        af.setTime(af.getTime() - 70*60*1000);
-        return `${String(af.getHours()).padStart(2,'0')}:${String(af.getMinutes()).padStart(2,'0')}`;
-    }, [effectiveMeeting]);
+    const allowFromDisplay = useMemo(() => getAttendOpenTime(effectiveMeeting), [effectiveMeeting]);
 
-    const teamReady = useMemo(() => {
-        if (!effectiveMeeting?.date || !effectiveMeeting?.start) return false;
-        if (testMode) return true;
-        const di = computeMeetingDay(effectiveMeeting.date, effectiveMeeting.start);
-        if (!di) return false;
-        if (di.type === 'past') return true;
-        if (di.type === 'future') return false;
-        const [y,m,d] = effectiveMeeting.date.split('-').map(Number);
-        const [h,min] = effectiveMeeting.start.split(':').map(Number);
-        const allowFrom = new Date(y, m-1, d, h, min, 0).getTime() - 70*60*1000;
-        return nowTime.getTime() >= allowFrom;
-    }, [effectiveMeeting, nowTime, testMode]);
+    const teamReady = useMemo(() => isAttendOpen(effectiveMeeting, nowTime, testMode), [effectiveMeeting, nowTime, testMode]);
 
     const myTeamInfo = useMemo(() => {
         if (!team.teamDraftData?.teams || !memberData?.memberId) return null;

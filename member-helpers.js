@@ -65,6 +65,29 @@ const sessionMatchesMeeting = (p, meeting) => {
     if (p.meetingId) return p.meetingId === mid;
     return !mid.endsWith('__match');
 };
+// 출석 오픈(=팀 공개) 판정 — 모임시작 −70분. member.html teamReady/allowFromDisplay에서 추출(F-2a-0, 로직 0 변경).
+// computeMeetingDay(tab-home.js)는 호출 시점(렌더타임)엔 항상 정의됨(전 스크립트 공유 전역 렉시컬).
+const ATTEND_OPEN_LEAD_MIN = 70;
+const isAttendOpen = (meeting, now, testMode) => {
+    if (!meeting?.date || !meeting?.start) return false;
+    if (testMode) return true;
+    const di = computeMeetingDay(meeting.date, meeting.start);
+    if (!di) return false;
+    if (di.type === 'past') return true;
+    if (di.type === 'future') return false;
+    const [y,m,d] = meeting.date.split('-').map(Number);
+    const [h,min] = meeting.start.split(':').map(Number);
+    const allowFrom = new Date(y, m-1, d, h, min, 0).getTime() - ATTEND_OPEN_LEAD_MIN*60*1000;
+    return now.getTime() >= allowFrom;
+};
+const getAttendOpenTime = (meeting) => {
+    if (!meeting?.date || !meeting?.start) return null;
+    const [y,m,d] = meeting.date.split('-').map(Number);
+    const [h,min] = meeting.start.split(':').map(Number);
+    const af = new Date(y, m-1, d, h, min, 0);
+    af.setTime(af.getTime() - ATTEND_OPEN_LEAD_MIN*60*1000);
+    return `${String(af.getHours()).padStart(2,'0')}:${String(af.getMinutes()).padStart(2,'0')}`;
+};
 const getHistoryCol  = () => getCol('history');
 const getSettingsCol = () => getCol('settings');
 const getQRCol       = () => getCol('qr_tokens');
