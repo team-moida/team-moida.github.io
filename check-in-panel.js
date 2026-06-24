@@ -144,3 +144,38 @@ function CheckInPanel({
         </>
     );
 }
+
+// 출석 풀스크린 모달 — 홈 카드에서 CheckInPanel(GPS/QR)을 띄움(F-2a-1a). 매치판 모달과 같은 풀스크린 패턴.
+// z-[60] < QR스캐너(9999) → QR이 위에 뜸. 닫기 = X / 빈 본문영역 탭 / 뒤로가기(member.html useMoidaBack).
+function AttendModal({
+    onClose, meeting,
+    mySession, meetingSettings,
+    gpsStatus, distance, setGpsStatus,
+    handleGPSCheckIn, handleGPSAttend, isCheckingIn,
+    qrStatus, qrMessage, setQrStatus, setIsQRScannerOpen,
+}) {
+    return (
+        <div className="fixed inset-0 z-[60] flex flex-col bg-slate-50"
+            style={{paddingTop:'env(safe-area-inset-top)', paddingBottom:'env(safe-area-inset-bottom)'}}>
+            <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3 border-b border-slate-200 bg-white">
+                <div className="min-w-0">
+                    <p className="text-[11px] font-black uppercase tracking-widest text-teal-600">출석 체크</p>
+                    <p className="font-black text-lg text-slate-800 leading-tight mt-0.5 truncate">{fmtMeetingDate(meeting?.date)} · {meeting?.start}~{meeting?.end}</p>
+                    {meeting?.location && (
+                        <p className="text-sm text-slate-500 mt-0.5 flex items-center gap-1 min-w-0"><Icon.MapPin size={13} className="flex-shrink-0"/><span className="truncate">{meeting.location}</span></p>
+                    )}
+                </div>
+                <button onClick={onClose} className="p-2 rounded-xl bg-slate-100 text-slate-500 flex-shrink-0 active:scale-95" title="닫기"><Icon.X size={20}/></button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4" onClick={(e)=>{ if (e.target === e.currentTarget) onClose(); }}>
+                <CheckInPanel
+                    compact={false}
+                    mySession={mySession} meetingSettings={meetingSettings}
+                    gpsStatus={gpsStatus} distance={distance} setGpsStatus={setGpsStatus}
+                    handleGPSCheckIn={handleGPSCheckIn} handleGPSAttend={handleGPSAttend} isCheckingIn={isCheckingIn}
+                    qrStatus={qrStatus} qrMessage={qrMessage} setQrStatus={setQrStatus} setIsQRScannerOpen={setIsQRScannerOpen}
+                />
+            </div>
+        </div>
+    );
+}

@@ -381,21 +381,21 @@ const NextMeetingCard = ({
     meeting, kind, isActive, dayInfo, darkMode, isAdminMode, onTabChange,
     mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount,
     isMeetingOver, isMeetingEndSaved, onEndMeeting, onGenerateQR, onEditMeeting, onDeleteMeeting,
-    enableQR, onHomeGpsCheckIn,
+    onOpenAttendModal,
 }) => {
     const cfg = MEETING_KIND[kind] || MEETING_KIND.self;
     const showOverlay = kind !== 'match' && isActive && isAdminMode && isMeetingOver && !isMeetingEndSaved;
     return (
         <div className="relative">
         <button onClick={()=>{
-                // MVP-1: 정기 활성 카드를 탭하면 GPS 위치확인을 미리 실행해 출석 화면에 결과가 떠 있게 한다.
-                // (실제 출석 기록은 출석 화면에서 직접 눌러야 발생. QR 모임이면 위치권한 팝업을 피하려 자동 GPS 생략)
-                if (isActive && kind === 'self' && !mySession?.checkedIn
-                    && (dayInfo.type==='today' || dayInfo.type==='started')
-                    && !enableQR && onHomeGpsCheckIn) {
-                    onHomeGpsCheckIn();
+                // 정기 활성·미출석·출석열림(teamReady)·당일이면 풀스크린 출석 모달, 그 외엔 모임 화면으로 이동(F-2a-1a)
+                // ↑ 카드의 '출석하기' 행이 보이는 조건과 100% 동일(라벨↔동작 일치)
+                if (isActive && kind === 'self' && !mySession?.checkedIn && teamReady
+                    && (dayInfo.type==='today' || dayInfo.type==='started') && onOpenAttendModal) {
+                    onOpenAttendModal();
+                } else {
+                    onTabChange('attend', kind, meeting.id || getMeetingId(meeting));
                 }
-                onTabChange('attend', kind, meeting.id || getMeetingId(meeting));
             }}
             className={`w-full rounded-2xl p-5 text-left text-white active:scale-98 transition-all${showOverlay ? ' blur-sm' : ''}`}
             style={{ background: cfg.accent, boxShadow:`0 10px 28px -8px ${cfg.accent}59` }}>
@@ -444,12 +444,25 @@ const NextMeetingCard = ({
                             <span className="text-xs font-black text-white/70 flex-shrink-0">{mySession.checkInTime}</span>
                         </div>
                     ) : (dayInfo.type==='today' || dayInfo.type==='started') ? (
-                        <div className="flex items-center justify-between gap-2 -mx-1.5 px-3 py-2.5 rounded-xl" style={{background:'rgba(255,255,255,0.2)'}}>
-                            <span className="flex items-center gap-1.5 text-sm font-black text-white min-w-0">
-                                <Icon.CheckSq size={16} className="flex-shrink-0"/><span className="truncate">지금 출석 체크하기</span>
-                            </span>
-                            <Icon.ChevronRight size={16} className="text-white/80 flex-shrink-0"/>
-                        </div>
+                        (kind === 'self' && teamReady) ? (
+                            <div className="flex items-center justify-between gap-2 -mx-1.5 px-3 py-2.5 rounded-xl" style={{background:'rgba(255,255,255,0.2)'}}>
+                                <span className="flex items-center gap-1.5 text-sm font-black text-white min-w-0">
+                                    <Icon.CheckSq size={16} className="flex-shrink-0"/><span className="truncate">출석하기</span>
+                                </span>
+                                <Icon.ChevronRight size={16} className="text-white/80 flex-shrink-0"/>
+                            </div>
+                        ) : kind === 'self' ? (
+                            <div className="flex items-center gap-1.5 text-xs text-white/70">
+                                <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">{allowFromDisplay ? `${allowFromDisplay}부터 출석 가능` : '곧 출석이 열립니다'}</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-between gap-2 -mx-1.5 px-3 py-2.5 rounded-xl" style={{background:'rgba(255,255,255,0.2)'}}>
+                                <span className="flex items-center gap-1.5 text-sm font-black text-white min-w-0">
+                                    <Icon.CheckSq size={16} className="flex-shrink-0"/><span className="truncate">지금 출석 체크하기</span>
+                                </span>
+                                <Icon.ChevronRight size={16} className="text-white/80 flex-shrink-0"/>
+                            </div>
+                        )
                     ) : (
                         <div className="flex items-center gap-1.5 text-xs text-white/70">
                             <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">모임 당일에 출석 체크가 열립니다</span>
@@ -1039,7 +1052,7 @@ const TabHome = ({
     memberName, announcements, onOpenAnnouncements,
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
     duesReports, onConfirmDuesReport, onRejectDuesReport, onGoDuesTab,
-    generateAttendQRCode, onEditMeeting, onDeleteMeeting, onHomeGpsCheckIn,
+    generateAttendQRCode, onEditMeeting, onDeleteMeeting, onOpenAttendModal,
 }) => {
     // 정기/매칭 다음 모임 분리 (회원이 둘 다 참여할 수 있어 종류별 카드로 표시)
     // 종료(done) + 지난 날짜 모임은 홈 '다음 모임'에서 제외 (끝난 모임은 기록 탭에서만)
@@ -1094,7 +1107,7 @@ const TabHome = ({
                 allowFromDisplay={allowFromDisplay} participantCount={participantCount}
                 isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting}
                 onGenerateQR={generateAttendQRCode} onEditMeeting={onEditMeeting} onDeleteMeeting={onDeleteMeeting}
-                enableQR={meetingSettings?.enableQR} onHomeGpsCheckIn={onHomeGpsCheckIn} />
+                onOpenAttendModal={onOpenAttendModal} />
         )) : (
             <button onClick={()=>onTabChange('meeting-list')} className="w-full card rounded-2xl p-5 text-center active:scale-98 transition-all">
                 <div className="text-slate-400 py-3">

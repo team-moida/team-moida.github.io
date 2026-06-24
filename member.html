@@ -204,6 +204,8 @@ function App() {
     const [qrStatus, setQrStatus] = useState('idle');
     const [qrMessage, setQrMessage] = useState('');
     const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+    const [attendModalOpen, setAttendModalOpen] = useState(false);
+    const [dismissedMeetingId, setDismissedMeetingId] = useState(null); // F-2a-1b 자동표시 대비(이번엔 onClose 기록만)
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [lastScannedQR, setLastScannedQR] = useState({ token:null, date:null });
     const [nowTime, setNowTime] = useState(() => new Date());
@@ -228,6 +230,9 @@ function App() {
             setLastSeenAnnounce(newest);
         }
     };
+    // 출석 풀스크린 모달 열기/닫기 (홈 카드 '출석하기' → 열기, X/뒤로/빈영역 → 닫기). F-2a-1a
+    const openAttendModal = () => { setDismissedMeetingId(null); setAttendModalOpen(true); };
+    const closeAttendModal = () => { setAttendModalOpen(false); setDismissedMeetingId(getMeetingId(meetingSettings)); };
     const roster = useRoster({ isAdminMode });
     const team = useTeam({ isAdminMode, meetingSettings: effectiveMeeting, allMembers: roster.allMembers });
     const match = useMatch({ isAdminMode, meetingSettings: effectiveSelfMeeting, confirmedDrafts: team.confirmedDrafts });
@@ -255,6 +260,7 @@ function App() {
     // ── Android 뒤로가기: 오버레이(등록소) → 화면 히스토리(직전 탭/상세) → 홈 → 종료 ──
     // member.html 레벨 모달들도 같은 등록소에 등록 (자식 오버레이와 동일하게 LIFO 처리)
     useMoidaBack(isQRScannerOpen, () => setIsQRScannerOpen(false));
+    useMoidaBack(attendModalOpen, () => setAttendModalOpen(false));
     useMoidaBack(attend.isKioskOpen, () => attend.setIsKioskOpen(false));
     useMoidaBack(announcementModal.open, () => setAnnouncementModal(m => ({ ...m, open: false })));
     useMoidaBack(isProfileModalOpen, () => setIsProfileModalOpen(false));
@@ -695,7 +701,7 @@ function App() {
                         onConfirmDuesReport={confirmDuesReport} onRejectDuesReport={openDuesReject}
                         onGoDuesTab={() => { roster.setRosterSubTab('monthly'); navTab('roster'); }}
                         generateAttendQRCode={generateAttendQRCode}
-                        onHomeGpsCheckIn={handleGPSCheckIn}
+                        onOpenAttendModal={openAttendModal}
                         onEditMeeting={(m) => { setPendingEditMeeting(m); navTab('meeting-list'); }}
                         onDeleteMeeting={handleDeleteMeeting}
                     />
@@ -969,6 +975,16 @@ function App() {
                 isProfileModalOpen={isProfileModalOpen} setIsProfileModalOpen={setIsProfileModalOpen}
                 memberInfo={memberInfo} memberData={memberData} showAlert={showAlert}
             />
+            {/* 출석 풀스크린 모달 (홈 카드 '출석하기') — CheckInPanel(GPS/QR) F-2a-1a */}
+            {attendModalOpen && (
+                <AttendModal
+                    onClose={closeAttendModal} meeting={displayMeetingSettings}
+                    mySession={mySession} meetingSettings={displayMeetingSettings}
+                    gpsStatus={gpsStatus} distance={distance} setGpsStatus={setGpsStatus}
+                    handleGPSCheckIn={handleGPSCheckIn} handleGPSAttend={handleGPSAttend} isCheckingIn={isCheckingIn}
+                    qrStatus={qrStatus} qrMessage={qrMessage} setQrStatus={setQrStatus} setIsQRScannerOpen={setIsQRScannerOpen}
+                />
+            )}
             {/* 회비 신고 반려 사유 모달 (관리자) */}
             {duesReject && (
                 <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40" onClick={() => setDuesReject(null)}>
