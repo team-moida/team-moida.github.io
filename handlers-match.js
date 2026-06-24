@@ -135,11 +135,25 @@ function makeMatchHandlers(ctx) {
         syncMatchState(localCompletedMatches, newIndex);
     };
 
+    // 종료 = 그 라운드 완료 표시 + 다음 라운드로 한 번에 넘김(C). 규칙:
+    //  · 현재 라운드를 '완료'할 때만 넘김 → 완료+인덱스+1을 한 번에 저장(자동진행과 동일한 검증 경로).
+    //  · 마지막 라운드면 newIndex=length(=모든 경기 종료)까지만, 그 이상 안 넘어감.
+    //  · '종료 취소'(완료 해제)나 현재 라운드가 아닌 토글이면 완료 상태만 바꾸고 라운드 번호는 그대로.
     const matchHandleToggleComplete = (sessionId) => {
+        const isCompleting = !localCompletedMatches.has(sessionId);
+        const isCurrent = localSchedule.list[localMatchIndex]?.id === sessionId;
         const newCompleted = new Set(localCompletedMatches);
-        newCompleted.has(sessionId) ? newCompleted.delete(sessionId) : newCompleted.add(sessionId);
-        setLocalCompletedMatches(newCompleted);
-        syncMatchState(newCompleted, localMatchIndex);
+        if (isCompleting && isCurrent && localMatchIndex < localSchedule.list.length) {
+            newCompleted.add(sessionId);
+            const newIndex = localMatchIndex + 1;
+            setLocalCompletedMatches(newCompleted);
+            setLocalMatchIndex(newIndex);
+            syncMatchState(newCompleted, newIndex);
+        } else {
+            newCompleted.has(sessionId) ? newCompleted.delete(sessionId) : newCompleted.add(sessionId);
+            setLocalCompletedMatches(newCompleted);
+            syncMatchState(newCompleted, localMatchIndex);
+        }
     };
 
     // 타이머 종료 시 자동 진행: 현재 라운드 '종료' 표시 + 다음 라운드로 한 번에 처리.

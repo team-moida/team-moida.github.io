@@ -22,6 +22,15 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
     const tmr = useMatchTimer(); // 타이머 종료 감지용 (자동 진행)
     const autoAdvance = true; // 자동 진행 항상 ON (토글 제거)
     const endedRef = React.useRef(false);
+    // 타이머 이중 넘김 가드(C): 타이머가 '도는 중'으로 바뀐 순간의 라운드 번호를 기억해 둔다.
+    // 손으로 '종료'를 눌러 이미 다음 라운드로 넘어갔으면(번호가 달라졌으면) 타이머 종료 시 자동 넘김을 건너뛴다.
+    // match-timer.js(엔진)는 안 건드리고, 화면 쪽에서 인덱스 비교만 한다.
+    const timerStartIdxRef = React.useRef(currentIndex);
+    const prevRunningRef = React.useRef(false);
+    React.useEffect(() => {
+        if (tmr.running && !prevRunningRef.current) timerStartIdxRef.current = currentIndex;
+        prevRunningRef.current = tmr.running;
+    }, [tmr.running, currentIndex]);
     React.useEffect(() => {
         const prev = document.body.style.overscrollBehavior;
         document.body.style.overscrollBehavior = 'none';
@@ -38,7 +47,8 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
     // 자동 진행: 타이머가 끝나는 순간(켜져있고 관리자) 현재 라운드 '종료' + 다음 라운드로 넘기고 타이머 리셋(다음 라운드 대기).
     // 종료→true 상승 에지에서 1회만 실행. onAutoAdvance가 종료표시+인덱스+1을 한 번에 처리.
     React.useEffect(() => {
-        if (isAdmin && autoAdvance && tmr.ended && !endedRef.current && !allDone) {
+        if (isAdmin && autoAdvance && tmr.ended && !endedRef.current && !allDone
+            && currentIndex === timerStartIdxRef.current) {   // 손 종료로 이미 넘어간 라운드면 자동 넘김 스킵
             const sid = (sessions[clampIdx(currentIndex)] || {}).id;
             if (onAutoAdvance) onAutoAdvance(sid);
             MoidaTimer.reset();
