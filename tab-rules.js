@@ -47,6 +47,22 @@ const TabRules = ({ isAdminMode, showAlert, memberName }) => {
         return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
     };
 
+    // 회칙 본문 렌더: "제N조 ..." 줄은 라임 배지 + 볼드 제목, 그 외는 본문 (구조 없으면 그대로 본문)
+    const renderRules = (text) => {
+        const lines = (text || '').split('\n');
+        return lines.map((line, i) => {
+            const m = line.match(/^\s*(제\s*\d+\s*조)\s*(.*)$/);
+            if (m) return (
+                <div key={i} className="flex items-baseline gap-2 mt-5 first:mt-0">
+                    <span className="shrink-0 text-[11px] font-black px-2 py-0.5 rounded-lg bg-live text-[#15171E]">{m[1].replace(/\s+/g,'')}</span>
+                    {m[2] && <span className="font-black text-[15px] text-slate-800 leading-snug">{m[2]}</span>}
+                </div>
+            );
+            if (line.trim() === '') return <div key={i} className="h-2"/>;
+            return <p key={i} className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap mt-1">{line}</p>;
+        });
+    };
+
     return (
         <div className="animate-in">
             <div className="rounded-2xl p-5 mb-4 text-white flex items-center justify-between gap-3" style={{ background:'linear-gradient(135deg,#334155,#1e293b)', boxShadow:'0 10px 28px -8px rgba(30,41,59,0.5)' }}>
@@ -88,7 +104,7 @@ const TabRules = ({ isAdminMode, showAlert, memberName }) => {
             ) : content ? (
                 <div>
                     <div className="card rounded-2xl p-5">
-                        <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{content}</p>
+                        {renderRules(content)}
                     </div>
                     {updatedAt && (
                         <p className="text-[10px] text-slate-400 mt-2 text-right">
