@@ -14,7 +14,7 @@ const MatchBoardTeam = ({ name, size, font }) => {
 
 // ─── 매치판 크게 보기 (패드 풀스크린 · 한 라운드씩 · 스크롤 없음 · 가로 자동 배치) ──
 const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
-    isAdmin, currentIndex, completedMatches, onPrev, onNext, onToggleComplete, onAutoAdvance }) => {
+    isAdmin, currentIndex, completedMatches, onPrev, onNext, onToggleComplete, onAutoAdvance, myTeamInfo, mode = 'mine' }) => {
     const total = sessions.length;
     const clampIdx = (n) => Math.min(Math.max(n, 0), Math.max(total - 1, 0));
     const [browseIdx, setBrowseIdx] = React.useState(() => clampIdx(startIndex || 0));
@@ -47,10 +47,14 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
         return () => { mq.removeEventListener ? mq.removeEventListener('change', on) : mq.removeListener(on); };
     }, []);
     // 관리자: 실제 진행 라운드(currentIndex)를 따라가며 이동·종료 제어 / 회원: 자유 탐색(browseIdx)
-    const allDone = isAdmin && currentIndex >= total;
-    const idx = isAdmin ? clampIdx(currentIndex) : browseIdx;
+    const wantMine = mode === 'mine';     // 'mine'=내 팀만 크게 / 'all'=구장별 전체 대진
+    const ctrl = isAdmin && !wantMine;    // 라이브 컨트롤(전체 대진 + 라운드 종료/자동진행) = 관리자 & 전체 모드
+    const myTeam = myTeamInfo?.teamName || null;
+    const myTeamIdx = myTeamInfo?.teamIdx ?? 0;
+    const allDone = ctrl && currentIndex >= total;
+    const idx = ctrl ? clampIdx(currentIndex) : browseIdx;
     const session = sessions[idx] || { matches: [], resting: [] };
-    const isCurDone = isAdmin && !allDone && session.id != null && completedMatches?.has(session.id);
+    const isCurDone = ctrl && !allDone && session.id != null && completedMatches?.has(session.id);
     const fieldLabel = (fi) => (fieldNames[fi] || `${fi + 1}구장`);
     const navBtn = {height:'clamp(48px,9vmin,66px)',borderRadius:'16px',border:'none',fontWeight:900,fontSize:'clamp(0.95rem,2.6vmin,1.35rem)'};
     // 배지/글자 크기 — 방향별로 크게. 세로는 카드 가로폭, 가로는 세로높이가 여유 → 각각 vw/vmin 기준으로 큼직하게.
@@ -60,14 +64,14 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
     // 자동 진행: 타이머가 끝나는 순간(켜져있고 관리자) 현재 라운드 '종료' + 다음 라운드로 넘기고 타이머 리셋(다음 라운드 대기).
     // 종료→true 상승 에지에서 1회만 실행. onAutoAdvance가 종료표시+인덱스+1을 한 번에 처리.
     React.useEffect(() => {
-        if (isAdmin && autoAdvance && tmr.ended && !endedRef.current && !allDone
+        if (ctrl && autoAdvance && tmr.ended && !endedRef.current && !allDone
             && currentIndex === timerStartIdxRef.current) {   // 손 종료로 이미 넘어간 라운드면 자동 넘김 스킵
             const sid = (sessions[clampIdx(currentIndex)] || {}).id;
             if (onAutoAdvance) onAutoAdvance(sid);
             MoidaTimer.reset();
         }
         endedRef.current = tmr.ended;
-    }, [tmr.ended, isAdmin, allDone]);
+    }, [tmr.ended, ctrl, allDone]);
 
     return (
         <div className="fixed inset-0 z-[60] flex flex-col"
@@ -98,6 +102,52 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                 {/* 타이머 + 코트 — 화면 가운데에 함께 표시 (회원은 타이머 보기 전용) */}
                 <div style={{flex:'1 1 0%',minHeight:0,overflow:'hidden',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'clamp(10px,2.5vmin,26px)'}}>
                     {timerOpen && <MatchTimerBar isAdmin={isAdmin} />}
+                    {wantMine ? (
+                      !myTeam ? (
+                        <div style={{margin:'auto',textAlign:'center',color:'var(--c-sub)'}}>
+                            <div style={{display:'flex',justifyContent:'center'}}><Icon.Users size={48} className="text-slate-400"/></div>
+                            <p style={{fontWeight:900,fontSize:'clamp(1.1rem,3vmin,1.8rem)',marginTop:'8px'}}>배정된 팀이 없습니다</p>
+                        </div>
+                      ) : (() => {
+                        const isRestingMine = session.resting?.includes(myTeam);
+                        const myMatch = session.matches.find(mm => mm.match.includes(myTeam));
+                        if (isRestingMine) return (
+                            <div style={{flex:'1 1 0%',minHeight:0,width:'100%',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'clamp(12px,3vmin,28px)',textAlign:'center'}}>
+                                <div className={getTeamBadge(myTeamIdx)} style={{width:'clamp(96px,28vmin,320px)',height:'clamp(96px,28vmin,320px)',borderRadius:'clamp(18px,3vmin,34px)',color:'white',fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'clamp(3rem,15vmin,11rem)',lineHeight:1,boxShadow:'0 6px 16px rgba(0,0,0,0.12)'}}>{myTeam}</div>
+                                <div style={{display:'inline-flex',alignItems:'center',gap:'12px',color:'#d97706',fontWeight:900,fontSize:'clamp(1.5rem,5.5vmin,3.6rem)'}}><Icon.Coffee size={36}/>이번 라운드는 휴식</div>
+                                <p style={{color:'var(--c-sub)',fontWeight:800,fontSize:'clamp(0.95rem,2.8vmin,1.7rem)'}}>다음 라운드를 기다려 주세요</p>
+                            </div>
+                        );
+                        if (myMatch) {
+                            const [ma, mb] = myMatch.match;
+                            const opp = ma === myTeam ? mb : ma;
+                            return (
+                                <div style={{flex:'1 1 0%',minHeight:0,width:'100%',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'clamp(16px,4vmin,44px)'}}>
+                                    <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'clamp(14px,5vmin,64px)'}}>
+                                        <div style={{textAlign:'center'}}>
+                                            <MatchBoardTeam name={myTeam} size={'clamp(104px,32vmin,380px)'} font={'clamp(3.2rem,17vmin,13rem)'}/>
+                                            <p style={{marginTop:'clamp(6px,1.4vmin,14px)',color:'var(--c-accent-deep)',fontWeight:900,fontSize:'clamp(0.95rem,2.8vmin,1.8rem)'}}>우리 팀</p>
+                                        </div>
+                                        <span style={{color:'#cbd5e1',fontWeight:900,fontSize:'clamp(1.8rem,6.5vmin,5rem)',flexShrink:0}}>VS</span>
+                                        <div style={{textAlign:'center'}}>
+                                            <MatchBoardTeam name={opp} size={'clamp(104px,32vmin,380px)'} font={'clamp(3.2rem,17vmin,13rem)'}/>
+                                            <p style={{marginTop:'clamp(6px,1.4vmin,14px)',color:'var(--c-sub)',fontWeight:900,fontSize:'clamp(0.95rem,2.8vmin,1.8rem)'}}>상대 팀</p>
+                                        </div>
+                                    </div>
+                                    <div style={{display:'inline-flex',alignItems:'center',gap:'10px',color:'var(--c-text)',fontWeight:900,fontSize:'clamp(1.1rem,3.2vmin,2.1rem)',background:'white',border:'1px solid var(--c-border)',padding:'clamp(8px,1.6vmin,14px) clamp(18px,2.8vmin,32px)',borderRadius:'999px',boxShadow:'0 4px 14px rgba(0,0,0,0.05)'}}>
+                                        <Icon.MapPin size={24}/>{fieldLabel(myMatch.fieldIdx)}
+                                    </div>
+                                </div>
+                            );
+                        }
+                        return (
+                            <div style={{margin:'auto',textAlign:'center',color:'var(--c-sub)'}}>
+                                <div style={{display:'flex',justifyContent:'center'}}><Icon.Flag size={44} className="text-slate-400"/></div>
+                                <p style={{fontWeight:900,fontSize:'clamp(1.1rem,3vmin,1.8rem)',marginTop:'8px'}}>이 라운드에 우리 팀 경기가 없습니다</p>
+                            </div>
+                        );
+                      })()
+                    ) : (<>
                     <div style={{width:'100%',flex:'1 1 0%',minHeight:0,display:'flex',flexDirection:portrait?'column':'row',flexWrap:'nowrap',gap:'clamp(10px,2vmin,22px)',alignItems:'stretch',justifyContent:'center'}}>
                     {allDone ? (
                         <div style={{margin:'auto',textAlign:'center'}}>
@@ -136,11 +186,12 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                             })}
                         </div>
                     )}
+                    </>)}
                 </div>
             </div>
             {/* 하단 네비 — 항상 보임 */}
             <div style={{flexShrink:0,padding:'10px 16px max(10px, env(safe-area-inset-bottom))',background:'white',borderTop:'1px solid var(--c-border)',display:'flex',gap:'10px',alignItems:'center'}}>
-                {isAdmin ? (<>
+                {ctrl ? (<>
                     <button onClick={onPrev} disabled={currentIndex <= 0} style={{...navBtn,flex:1,background:currentIndex <= 0 ? '#f1f5f9' : 'var(--c-border)',color:currentIndex <= 0 ? '#cbd5e1' : 'var(--c-text)'}}><span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'4px'}}><Icon.ChevronLeft size={16}/>이전</span></button>
                     {!allDone && (isCurDone
                         ? <button onClick={() => onToggleComplete(session.id)} style={{...navBtn,flex:1,background:'var(--c-border)',color:'var(--c-text)'}}>종료 취소</button>
@@ -173,6 +224,8 @@ const TabMatch = ({
     meetings, embedded,
 }) => {
     const [boardOpen, setBoardOpen] = React.useState(false);
+    const [boardMode, setBoardMode] = React.useState('mine'); // 'mine'=내 팀만 / 'all'=구장별 전체(관리자)
+    const openBoard = (m) => { setBoardMode(m); setBoardOpen(true); };
     const [selectedMeetingId, setSelectedMeetingId] = React.useState('');
     // 모임 선택 시 그 모임의 날짜·시간·장소를 매치 설정에 자동 채움
     const pickMeeting = (mid) => {
@@ -517,12 +570,21 @@ const TabMatch = ({
                             </div>
                         )}
 
-                        {/* 패드 크게 보기 진입 */}
-                        <button onClick={() => setBoardOpen(true)}
-                            className="w-full mb-4 py-3.5 rounded-2xl font-black text-sm text-white flex items-center justify-center gap-2 active:scale-95 transition-all"
-                            style={{background:'linear-gradient(135deg,#0f2660,var(--c-accent-deep))',boxShadow:'0 8px 20px -6px rgba(18,46,120,0.5)'}}>
-                            <Icon.Tv size={18}/>매치판 크게 보기
-                        </button>
+                        {/* 패드 크게 보기 진입 — 회원=내 팀만 / 관리자=내 팀 + 구장별 전체 */}
+                        <div className={`mb-4 ${isAdminMode ? 'grid grid-cols-2 gap-2' : ''}`}>
+                            <button onClick={() => openBoard('mine')}
+                                className="w-full py-3.5 rounded-2xl font-black text-sm text-white flex items-center justify-center gap-2 active:scale-95 transition-all"
+                                style={{background:'linear-gradient(135deg,#0f2660,var(--c-accent-deep))',boxShadow:'0 8px 20px -6px rgba(18,46,120,0.5)'}}>
+                                <Icon.Tv size={18}/>내 팀 크게 보기
+                            </button>
+                            {isAdminMode && (
+                                <button onClick={() => openBoard('all')}
+                                    className="w-full py-3.5 rounded-2xl font-black text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
+                                    style={{background:'#dbe3f6',color:'var(--c-accent-deep)'}}>
+                                    <Icon.Clipboard size={18}/>전체 대진 크게 보기
+                                </button>
+                            )}
+                        </div>
 
                         {/* ── 내 경기 뷰 ── */}
                         {matchViewMode==='my' && (
@@ -699,7 +761,8 @@ const TabMatch = ({
         {boardOpen && boardSessions.length > 0 && (
             <MatchBoardModal sessions={boardSessions} fieldNames={boardFieldNames}
                 startIndex={boardCurrent} dateLabel={boardDate} onClose={() => setBoardOpen(false)}
-                isAdmin={isAdminMode} currentIndex={localMatchIndex} completedMatches={localCompletedMatches}
+                isAdmin={isAdminMode} mode={boardMode} myTeamInfo={myTeamInfo}
+                currentIndex={localMatchIndex} completedMatches={localCompletedMatches}
                 onPrev={matchHandlePrevMatch} onNext={matchHandleNextMatch} onToggleComplete={matchHandleToggleComplete} onAutoAdvance={matchHandleAutoAdvance} />
         )}
     </div>
