@@ -47,48 +47,61 @@ const TabRules = ({ isAdminMode, showAlert, memberName }) => {
         return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
     };
 
-    // 회칙 본문 렌더: "제N조 ..." 줄은 라임 배지 + 볼드 제목, 그 외는 본문 (구조 없으면 그대로 본문)
+    // 회칙 본문 렌더(B+): "제N조 ..." 줄 기준으로 조항을 블록 단위로 묶어, 라임 "제N조" 배지 +
+    // 굵은 제목 + 본문으로 카드 안에 구분선으로 나눠 표시. (제1조 앞 서문/구조 없는 글은 단일 본문 블록)
     const renderRules = (text) => {
         const lines = (text || '').split('\n');
-        return lines.map((line, i) => {
+        const blocks = [];
+        let cur = null;
+        lines.forEach(line => {
             const m = line.match(/^\s*(제\s*\d+\s*조)\s*(.*)$/);
-            if (m) return (
-                <div key={i} className="flex items-baseline gap-2 mt-5 first:mt-0">
-                    <span className="shrink-0 text-[11px] font-black px-2 py-0.5 rounded-lg bg-live text-[#15171E]">{m[1].replace(/\s+/g,'')}</span>
-                    {m[2] && <span className="font-black text-[15px] text-slate-800 leading-snug">{m[2]}</span>}
-                </div>
-            );
-            if (line.trim() === '') return <div key={i} className="h-2"/>;
-            return <p key={i} className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap mt-1">{line}</p>;
+            if (m) {
+                cur = { no: m[1].replace(/\s+/g,''), title: (m[2]||'').trim(), body: [] };
+                blocks.push(cur);
+            } else {
+                if (!cur) { cur = { no: null, title: '', body: [] }; blocks.push(cur); }
+                cur.body.push(line);
+            }
         });
+        return blocks
+            .filter(b => b.no || b.title || b.body.some(l => l.trim()))
+            .map((b, i) => (
+                <div key={i} className={`py-4 first:pt-1 last:pb-1 ${i > 0 ? 'border-t border-slate-100' : ''}`}>
+                    {b.no && <span className="inline-block text-[11px] font-black px-2.5 py-1 rounded-full bg-live text-[#15171E] mb-2.5">{b.no}</span>}
+                    {b.title && <h3 className="font-black text-[17px] text-slate-800 leading-snug mb-2">{b.title}</h3>}
+                    {b.body.filter(l => l.trim()).map((l, j) => (
+                        <p key={j} className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{l}</p>
+                    ))}
+                </div>
+            ));
     };
 
     return (
         <div className="animate-in">
-            <div className="rounded-2xl p-5 mb-4 text-white flex items-center justify-between gap-3" style={{ background:'linear-gradient(135deg,#334155,#1e293b)', boxShadow:'0 10px 28px -8px rgba(30,41,59,0.5)' }}>
-                <div className="flex items-center gap-3 min-w-0">
-                    <Icon.ShieldCheck size={28} className="text-white shrink-0"/>
-                    <div className="min-w-0">
-                        <p className="text-[11px] font-black uppercase tracking-widest text-white/70">우리 팀 규칙</p>
-                        <p className="font-black text-xl leading-tight">OTP FC 회칙</p>
-                    </div>
+            {/* 헤더(B+): 큰 "회칙" 제목 + 개정일 칩 + (관리자) 편집 */}
+            <div className="flex items-end justify-between gap-3 mb-4 reveal">
+                <div className="flex items-baseline gap-2.5 flex-wrap min-w-0">
+                    <h2 className="font-black text-2xl text-slate-900 leading-none">회칙</h2>
+                    {updatedAt && !isEditing && (
+                        <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">{formatDate(updatedAt)} 개정</span>
+                    )}
                 </div>
                 {isAdminMode && !isEditing && (
                     <button onClick={()=>{setEditContent(content);setIsEditing(true);}}
-                        className="p-2 rounded-xl bg-white/20 text-white shrink-0 active:scale-95 transition-all">
+                        className="p-2 rounded-xl bg-slate-100 text-slate-500 shrink-0 active:scale-95 transition-all">
                         <Icon.Edit size={15}/>
                     </button>
                 )}
             </div>
 
             {isEditing ? (
-                <div>
+                <div className="reveal">
                     <textarea
                         value={editContent}
                         onChange={e=>setEditContent(e.target.value)}
                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-700 leading-relaxed resize-none"
                         rows={20}
-                        placeholder="회칙 내용을 입력하세요..."
+                        placeholder="회칙 내용을 입력하세요... (예: 제1조 목적)"
                     />
                     <div className="flex gap-2 mt-3">
                         <button onClick={()=>setIsEditing(false)}
@@ -102,18 +115,16 @@ const TabRules = ({ isAdminMode, showAlert, memberName }) => {
                     </div>
                 </div>
             ) : content ? (
-                <div>
-                    <div className="card rounded-2xl p-5">
+                <div className="reveal">
+                    <div className="card rounded-2xl px-5 py-1">
                         {renderRules(content)}
                     </div>
-                    {updatedAt && (
-                        <p className="text-[10px] text-slate-400 mt-2 text-right">
-                            {formatDate(updatedAt)}{updatedBy && ` · ${updatedBy}`} 수정
-                        </p>
+                    {updatedBy && (
+                        <p className="text-[10px] text-slate-400 mt-2 text-right">{updatedBy} 수정</p>
                     )}
                 </div>
             ) : (
-                <div className="card rounded-2xl p-8 text-center text-slate-400">
+                <div className="card rounded-2xl p-8 text-center text-slate-400 reveal">
                     <div className="flex justify-center mb-2 opacity-25"><Icon.ShieldCheck size={36}/></div>
                     <p className="font-black text-sm">아직 회칙이 등록되지 않았습니다</p>
                     {isAdminMode && <p className="text-xs mt-1">우측 상단 편집 버튼으로 작성하세요</p>}
