@@ -194,7 +194,7 @@ const TabMatch = ({
 
         {/* ── 관리자 매치 패널 ── */}
         {isAdminMode && isMatchPanelOpen ? (
-            <div>
+            <div className="reveal">
                 {/* 서브탭 */}
                 <div className="flex gap-2 mb-4">
                     {[['setup','설정'],['results','매치표'],['stats','통계']].map(([v,l]) => (
@@ -455,7 +455,7 @@ const TabMatch = ({
         ) : (
             /* ── 일반/회원 뷰 ── */
             !scheduleData
-                ? <div className="text-center py-20 text-slate-500">
+                ? <div className="text-center py-20 text-slate-500 reveal">
                     <div className="flex justify-center mb-4 opacity-25"><Icon.Calendar size={56}/></div>
                     <p className="font-black text-lg mb-2">매치 테이블 준비 중</p>
                     <p className="text-sm text-slate-400">팀 편성이 확정되면<br/>경기 일정이 공개됩니다</p>
@@ -468,9 +468,9 @@ const TabMatch = ({
                 const myTeam = myTeamInfo?.teamName;
                 const myTeamIdx2 = myTeamInfo?.teamIdx ?? 0;
                 return (
-                    <div>
+                    <div className="stagger">
                         {/* 날짜 + 뷰 토글 */}
-                        <div className="rounded-3xl p-5 mb-4 text-white flex items-center justify-between gap-3" style={{ background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(18,46,120,0.45)' }}>
+                        <div className="rounded-2xl p-5 mb-4 text-white flex items-center justify-between gap-3" style={{ background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(18,46,120,0.45)' }}>
                             <div className="min-w-0">
                                 <p className="text-[11px] font-black uppercase tracking-widest text-white/80">{scheduleData.meetingDate} 매치</p>
                                 <p className="font-black text-2xl leading-tight mt-1">총 {sessions.length}<span className="text-base font-black text-white/80 ml-1">라운드</span></p>
