@@ -120,7 +120,7 @@ async function createTestMeeting({ me, activeMembers, showAlert, showConfirm }) 
                 // 현재 위치(GPS) 자동 설정 — 실패/거부/타임아웃이면 좌표 비운 채 진행(폴백). 위치 없으면 QR로 테스트.
                 const loc = await _tmCurrentLocation();
                 const locLat = loc ? loc.lat : null, locLng = loc ? loc.lng : null;
-                const locName = loc ? '📍 테스트 현재위치' : '🧪 테스트 모임';
+                const locName = loc ? '테스트 현재위치' : '🧪 테스트 모임';
 
                 // 현재 미러(현재 모임) 백업 — 덮어쓰기 전에 보관. 단 미러가 이미 테스트면 백업 안 함(테스트를 백업하는 사고 방지).
                 // shouldSetMirror: 이 테스트 모임을 '현재 모임(미러)'으로 둘지 결정.
@@ -132,7 +132,7 @@ async function createTestMeeting({ me, activeMembers, showAlert, showConfirm }) 
                     const cur = await getCol('settings').doc('meeting_schedule_v2').get();
                     if (cur.exists) {
                         const cd = cur.data() || {};
-                        const curIsTest = cd.location === '🧪 테스트 모임' || cd.location === '📍 테스트 현재위치';
+                        const curIsTest = cd.location === '🧪 테스트 모임' || cd.location === '테스트 현재위치' || cd.location === '📍 테스트 현재위치';
                         if (!curIsTest) mirrorBackup = cd;
                         else shouldSetMirror = false;  // 앞선 테스트 모임이 이미 현재 모임 → 유지
                     }
@@ -241,7 +241,7 @@ async function deleteTestMeeting({ showAlert, showConfirm }) {
                 //  - 자기 모임(v2): 생성 때 백업한 mirrorBackup으로 복원. 백업이 없으면(구버전) 안전하게 빈값 초기화로 폴백.
                 //  - 그새 진짜 모임으로 바뀌었으면(아래 가드 false) 건드리지 않음 → 최신 운영 데이터 보호.
                 //  - 매칭(match)은 테스트가 손대지 않으므로 기존 안전망(빈값 초기화)만 유지.
-                const _isTestMirror = (d) => d.location === '🧪 테스트 모임' || d.location === '📍 테스트 현재위치' || (testDate && d.date === testDate);
+                const _isTestMirror = (d) => d.location === '🧪 테스트 모임' || d.location === '테스트 현재위치' || d.location === '📍 테스트 현재위치' || (testDate && d.date === testDate);
                 const _emptyMirror = (mdoc) => ({ date: '', start: '', end: '', location: '', locationLat: null, locationLng: null, locationRadius: 100, maxLimit: 18, enableQR: false, managerId: '', managerName: '', meetingType: mdoc === 'meeting_schedule_match' ? 'match' : 'self' });
                 for (const mdoc of ['meeting_schedule_v2', 'meeting_schedule_match']) {
                     try {

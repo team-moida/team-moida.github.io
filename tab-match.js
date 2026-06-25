@@ -5,7 +5,7 @@ const MatchBoardTeam = ({ name }) => {
     return (
         <div style={{textAlign:'center',minWidth:0}}>
             <div className={getTeamBadge(idx)}
-                style={{width:'clamp(48px,12vmin,140px)',height:'clamp(48px,12vmin,140px)',borderRadius:'clamp(14px,2.4vmin,26px)',color:'white',fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'clamp(1.8rem,7vmin,4.4rem)',lineHeight:1,boxShadow:'0 6px 16px rgba(0,0,0,0.12)',margin:'0 auto'}}>
+                style={{width:'clamp(60px,16vmin,210px)',height:'clamp(60px,16vmin,210px)',borderRadius:'clamp(16px,3vmin,34px)',color:'white',fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'clamp(2.2rem,10vmin,7.5rem)',lineHeight:1,boxShadow:'0 6px 16px rgba(0,0,0,0.12)',margin:'0 auto'}}>
                 {name}
             </div>
         </div>
@@ -85,7 +85,7 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                 {/* 타이머 + 코트 — 화면 가운데에 함께 표시 (회원은 타이머 보기 전용) */}
                 <div style={{flex:'1 1 0%',minHeight:0,overflow:'hidden',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'clamp(10px,2.5vmin,26px)'}}>
                     {timerOpen && <MatchTimerBar isAdmin={isAdmin} />}
-                    <div style={{width:'100%',display:'flex',flexWrap:'wrap',gap:'clamp(10px,2vmin,20px)',alignContent:'center',justifyContent:'center'}}>
+                    <div style={{width:'100%',flex:'1 1 0%',minHeight:0,display:'flex',flexWrap:'wrap',gap:'clamp(12px,2.2vmin,24px)',alignContent:'stretch',alignItems:'stretch',justifyContent:'center'}}>
                     {allDone ? (
                         <div style={{margin:'auto',textAlign:'center'}}>
                             <div style={{display:'flex',justifyContent:'center'}}><Icon.Flag size={80} className="text-emerald-500"/></div>
@@ -100,11 +100,11 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                     ) : session.matches.map((m, mi) => {
                         const [t1, t2] = m.match;
                         return (
-                            <div key={mi} style={{flex:'1 1 clamp(210px,28%,440px)',maxWidth:'560px',background:'white',border:'1px solid var(--c-border)',borderRadius:'clamp(16px,2.4vmin,26px)',padding:'clamp(10px,2vmin,22px)',boxShadow:'0 4px 14px rgba(0,0,0,0.05)',display:'flex',flexDirection:'column',justifyContent:'center'}}>
-                                <p style={{textAlign:'center',color:'#64748b',fontWeight:900,fontSize:'clamp(0.85rem,2.2vmin,1.3rem)',marginBottom:'clamp(8px,1.5vmin,16px)'}}>{fieldLabel(m.fieldIdx)}</p>
-                                <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'clamp(8px,2vmin,24px)'}}>
+                            <div key={mi} style={{flex:'1 1 clamp(240px,42%,600px)',maxWidth:'700px',background:'white',border:'1px solid var(--c-border)',borderRadius:'clamp(18px,2.8vmin,32px)',padding:'clamp(12px,2.4vmin,30px)',boxShadow:'0 4px 14px rgba(0,0,0,0.05)',display:'flex',flexDirection:'column',justifyContent:'center'}}>
+                                <p style={{textAlign:'center',color:'#64748b',fontWeight:900,fontSize:'clamp(0.95rem,2.6vmin,1.8rem)',marginBottom:'clamp(10px,2vmin,22px)'}}>{fieldLabel(m.fieldIdx)}</p>
+                                <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'clamp(10px,2.6vmin,34px)'}}>
                                     <MatchBoardTeam name={t1}/>
-                                    <span style={{color:'#cbd5e1',fontWeight:900,fontSize:'clamp(1.2rem,3.5vmin,2.2rem)',flexShrink:0}}>VS</span>
+                                    <span style={{color:'#cbd5e1',fontWeight:900,fontSize:'clamp(1.4rem,4.2vmin,3.4rem)',flexShrink:0}}>VS</span>
                                     <MatchBoardTeam name={t2}/>
                                 </div>
                             </div>
@@ -113,12 +113,12 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                     </div>
                     {/* 휴식 팀 — 코트 아래(가운데 묶음 안), 조끼 이름 없이 배지만 */}
                     {!allDone && session.resting && session.resting.length > 0 && (
-                        <div style={{flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',flexWrap:'wrap',gap:'10px',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'16px',padding:'clamp(6px,1.2vmin,12px) 14px'}}>
-                            <span style={{color:'#d97706',fontWeight:900,fontSize:'clamp(0.8rem,2vmin,1.15rem)',display:'inline-flex',alignItems:'center',gap:'6px'}}><Icon.Coffee size={16}/>휴식</span>
+                        <div style={{flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',flexWrap:'wrap',gap:'clamp(8px,1.6vmin,14px)',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'18px',padding:'clamp(8px,1.8vmin,16px) clamp(14px,2.4vmin,24px)'}}>
+                            <span style={{color:'#d97706',fontWeight:900,fontSize:'clamp(1rem,2.6vmin,1.75rem)',display:'inline-flex',alignItems:'center',gap:'8px'}}><Icon.Coffee size={22}/>휴식</span>
                             {session.resting.map((r, ri) => {
                                 const ridx = String(r).charCodeAt(0) - 65;
                                 return (
-                                    <span key={ri} className={getTeamBadge(ridx)} style={{width:'clamp(28px,5vmin,44px)',height:'clamp(28px,5vmin,44px)',borderRadius:'10px',color:'white',fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'clamp(0.95rem,2.4vmin,1.45rem)'}}>{r}</span>
+                                    <span key={ri} className={getTeamBadge(ridx)} style={{width:'clamp(38px,6.5vmin,68px)',height:'clamp(38px,6.5vmin,68px)',borderRadius:'12px',color:'white',fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'clamp(1.2rem,3.2vmin,2.1rem)'}}>{r}</span>
                                 );
                             })}
                         </div>
