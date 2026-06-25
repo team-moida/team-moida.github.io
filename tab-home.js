@@ -397,7 +397,7 @@ const NextMeetingCard = ({
                     onTabChange('attend', kind, meeting.id || getMeetingId(meeting));
                 }
             }}
-            className={`w-full rounded-2xl p-5 text-left text-white active:scale-98 transition-all${showOverlay ? ' blur-sm' : ''}`}
+            className={`w-full rounded-3xl p-5 text-left text-white active:scale-98 transition-all${showOverlay ? ' blur-sm' : ''}`}
             style={{ background: cfg.accent, boxShadow:`0 10px 28px -8px ${cfg.accent}59` }}>
             <div className="flex items-center justify-between gap-2 mb-2.5">
                 <div className="flex items-center gap-1.5 min-w-0">
@@ -420,7 +420,8 @@ const NextMeetingCard = ({
                     )}
                 </div>
             </div>
-            <p className="font-black text-lg leading-tight">{fmtMeetingDate(meeting.date)} · {meeting.start}~{meeting.end}</p>
+            <p className="font-black text-[30px] leading-none tracking-tight">{fmtMeetingDate(meeting.date)}</p>
+            <p className="text-sm font-bold text-white/80 mt-1.5">{meeting.start} ~ {meeting.end}</p>
             {kind==='match' && meeting.opponentName && (
                 <p className="text-sm font-black text-white/90 mt-1 truncate">vs {meeting.opponentName}</p>
             )}
@@ -553,7 +554,7 @@ const NextMeetingCard = ({
         </button>
         {/* 관리자: 모임 종료 시간이 지나면 카드 위에 '모임 종료' 버튼 (누르면 그날 출석 기록 저장) */}
         {showOverlay && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/40 rounded-2xl">
+            <div className="absolute inset-0 flex items-center justify-center bg-white/40 rounded-3xl">
                 <button onClick={onEndMeeting} className="bg-rose-500 text-white px-6 py-3 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg">모임 종료</button>
             </div>
         )}
@@ -986,7 +987,7 @@ const PenaltyPayCard = ({ isAdminMode, memberName, memberInfo, managers = [], mo
     if (mode === 'banner') {
         if (isAdminMode || myList.length === 0) return null;
         return (
-            <button onClick={onGoDues} className="w-full flex items-center gap-2 px-4 py-3 rounded-2xl bg-rose-500 text-white active:scale-98 transition-all shadow-sm">
+            <button onClick={onGoDues} className="w-full flex items-center gap-2 px-4 py-3 rounded-2xl text-white active:scale-98 transition-all" style={{ background:'linear-gradient(135deg,#f43f5e,#e11d48)', boxShadow:'0 8px 22px -8px rgba(244,63,94,0.5)' }}>
                 <Icon.Banknote size={16} className="text-white flex-shrink-0"/>
                 <span className="flex-1 text-left font-black text-sm truncate">미납 벌금 {myList.length}건 · {fmtWon(myTotal)}</span>
                 <span className="text-xs font-black shrink-0 inline-flex items-center gap-0.5">납부하기 <Icon.ChevronRight size={13}/></span>
