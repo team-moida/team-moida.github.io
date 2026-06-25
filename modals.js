@@ -752,21 +752,28 @@ const AppModals = ({
             };
             const v = VARIANTS[alertModal.variant] || VARIANTS[alertModal.type] || VARIANTS.info;
             const isConfirm = alertModal.type === 'confirm';
+            const isLoading = alertModal.type === 'loading';
             const close = () => setAlertModal(p=>({...p,show:false}));
             return (
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{zIndex:70}}>
                 <div className="bg-white rounded-3xl p-6 w-full max-w-xs shadow-2xl animate-in text-center">
-                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3.5" style={{background:v.tint, color:v.color}}>
-                        <v.Ic size={30}/>
-                    </div>
+                    {isLoading ? (
+                        <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    ) : (
+                        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3.5" style={{background:v.tint, color:v.color}}>
+                            <v.Ic size={30}/>
+                        </div>
+                    )}
                     <h3 className="font-black text-xl text-slate-800 mb-1.5">{alertModal.title}</h3>
-                    {alertModal.content && <p className="text-sm font-bold text-slate-500 whitespace-pre-line leading-relaxed mb-5">{alertModal.content}</p>}
-                    <div className="flex gap-2.5">
-                        {isConfirm && <button onClick={close} className="flex-1 py-3.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm active:scale-95 transition-all">취소</button>}
-                        <button onClick={()=>{ if(alertModal.onConfirm) alertModal.onConfirm(); close(); }} className={`flex-1 py-3.5 ${v.btn} text-white rounded-2xl font-black text-sm active:scale-95 transition-all`}>
-                            {isConfirm?'확인':'닫기'}
-                        </button>
-                    </div>
+                    {alertModal.content && <p className={`text-sm font-bold text-slate-500 whitespace-pre-line leading-relaxed ${isLoading?'':'mb-5'}`}>{alertModal.content}</p>}
+                    {!isLoading && (
+                        <div className="flex gap-2.5">
+                            {isConfirm && <button onClick={close} className="flex-1 py-3.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm active:scale-95 transition-all">취소</button>}
+                            <button onClick={()=>{ if(alertModal.onConfirm) alertModal.onConfirm(); close(); }} className={`flex-1 py-3.5 ${v.btn} text-white rounded-2xl font-black text-sm active:scale-95 transition-all`}>
+                                {isConfirm?'확인':'닫기'}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
             );

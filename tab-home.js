@@ -372,6 +372,8 @@ const NextMeetingCard = ({
 }) => {
     const cfg = MEETING_KIND[kind] || MEETING_KIND.self;
     const showOverlay = kind !== 'match' && isActive && isAdminMode && isMeetingOver && !isMeetingEndSaved;
+    // 출석 인라인 GPS/QR 버튼이 보이는 상태 — 이때는 카드 자체 누름 스케일을 끈다(버튼만 애니메이션)
+    const showInlineAttend = isActive && kind === 'self' && !mySession?.checkedIn && teamReady && (dayInfo?.type === 'today' || dayInfo?.type === 'started');
     // 히어로 날짜: 큰 일(日) 숫자 + 월·요일 (달력 한 장 느낌)
     const _md = meeting.date ? new Date(meeting.date + 'T00:00:00') : null;
     const _ok = _md && !isNaN(_md.getTime());
@@ -381,7 +383,7 @@ const NextMeetingCard = ({
     return (
         <div className="relative">
         <button onClick={()=> onTabChange('attend', kind, meeting.id || getMeetingId(meeting))}
-            className={`w-full rounded-3xl p-5 text-left text-white active:scale-98 transition-all${showOverlay ? ' blur-sm' : ''}`}
+            className={`w-full rounded-3xl p-5 text-left text-white transition-all${showInlineAttend ? '' : ' active:scale-98'}${showOverlay ? ' blur-sm' : ''}`}
             style={{ background: cfg.accent, boxShadow:`0 16px 34px -6px ${cfg.accent}66` }}>
             <div className="flex items-center justify-between gap-2 mb-2.5">
                 <div className="flex items-center gap-1.5 min-w-0">

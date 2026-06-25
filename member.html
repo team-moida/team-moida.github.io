@@ -178,6 +178,7 @@ function App() {
     const [announcementModal, setAnnouncementModal] = useState({ open: false, mode: 'add', data: null });
     const showAlert = (title, content, type='info', onConfirm=null, variant=null) => setAlertModal({show:true, title, content, type, onConfirm, variant});
     const showConfirm = (title, content, onConfirm, variant=null) => setAlertModal({show:true, title, content, type:'confirm', onConfirm, variant});
+    const showLoading = (title, content='') => setAlertModal({show:true, title, content, type:'loading', onConfirm:null, variant:'info'});
     // 회비 신고 반려: 사유 입력 모달 열기 → 확인 시 신고 삭제 + 회원에게 반려 푸시(사유 포함).
     // 푸시는 notifications 문서 추가(type:'dues',pushOnly) → 서버가 전송, 공지엔 안 뜸.
     const openDuesReject = (report) => { if (!report || !report.memberId || !report.month) return; setDuesRejectReason(''); setDuesReject(report); };
@@ -449,6 +450,7 @@ function App() {
 
     // 홈 카드 인라인 GPS 출석 — 전체화면 대신 팝업으로 가능여부 + 확인(출석 체크).
     const startInlineGPS = () => {
+        showLoading('위치 확인 중', '잠시만 기다려 주세요…');
         handleGPSCheckIn((res) => {
             if (res.status === 'within') {
                 showConfirm('출석 가능', `모임 장소에서 ${res.distance}m\n인정 범위(${res.radius}m) 안에 있어요.`, handleGPSAttend, 'success');
