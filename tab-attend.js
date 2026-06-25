@@ -150,29 +150,29 @@ const KioskModal = ({
             {confirmTarget && (
                 <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,zIndex:10,background:'rgba(0,0,0,0.55)',display:'flex',alignItems:'center',justifyContent:'center',padding:'24px'}}
                     onClick={() => setConfirmTarget(null)}>
-                    <div style={{background:'white',borderRadius:'28px',overflow:'hidden',width:'100%',maxWidth:'320px',boxShadow:'0 25px 50px rgba(0,0,0,0.35)'}}
+                    <div className={`${teamBadgeClass} text-white`} style={{borderRadius:'28px',overflow:'hidden',width:'100%',maxWidth:'340px',boxShadow:'0 25px 50px rgba(0,0,0,0.4)'}}
                         onClick={e => e.stopPropagation()}>
-                        <div style={{height:'10px'}} className={teamBadgeClass}/>
-                        <div style={{padding:'28px 24px 24px',textAlign:'center',userSelect:'none'}}>
+                        <div style={{padding:'30px 24px 24px',textAlign:'center',userSelect:'none'}}>
+                            <p style={{fontSize:'0.8rem',fontWeight:900,opacity:0.85,marginBottom:'16px'}}>{confirmTarget.teamName ? '조끼 색상·번호 확인 후 착용해 주세요' : '출석 처리할까요?'}</p>
                             {confirmTarget.jerseyNumber && (
-                                <div style={{fontSize:'5rem',fontWeight:900,lineHeight:1,marginBottom:'8px',color:'#1e293b'}}>
+                                <div style={{fontSize:'5.5rem',fontWeight:900,lineHeight:1,marginBottom:'6px',color:'white',textShadow:'0 2px 12px rgba(0,0,0,0.25)'}}>
                                     {confirmTarget.jerseyNumber}
                                 </div>
                             )}
-                            <p style={{fontSize:'2.2rem',fontWeight:900,color:'#0f172a',lineHeight:1.2,marginBottom:'10px',wordBreak:'keep-all'}}>{confirmTarget.name}</p>
+                            <p style={{fontSize:'2.2rem',fontWeight:900,color:'white',lineHeight:1.2,marginBottom:'8px',wordBreak:'keep-all',textShadow:'0 1px 6px rgba(0,0,0,0.25)'}}>{confirmTarget.name}</p>
                             {confirmTarget.teamName
-                                ? <p style={{fontSize:'1rem',color:'#64748b',marginBottom:'24px'}}>{confirmTarget.teamName}팀 · {teamColorLabel} 조끼</p>
+                                ? <p style={{fontSize:'1.05rem',fontWeight:900,opacity:0.92,marginBottom:'24px'}}>{confirmTarget.teamName}팀 · {teamColorLabel} 조끼</p>
                                 : <div style={{marginBottom:'24px'}}/>
                             }
                             <div style={{display:'flex',gap:'10px'}}>
                                 <button onClick={() => setConfirmTarget(null)}
-                                    style={{flex:1,height:'56px',borderRadius:'16px',background:'#f1f5f9',color:'#475569',fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
-                                    className="active:scale-95 hover:bg-slate-200 transition-all">
+                                    style={{flex:1,height:'56px',borderRadius:'16px',background:'rgba(255,255,255,0.22)',color:'white',fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
+                                    className="active:scale-95 transition-all">
                                     취소
                                 </button>
                                 <button onClick={handleConfirm}
-                                    style={{flex:1,height:'56px',borderRadius:'16px',color:'white',fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
-                                    className={`${teamBadgeClass} active:scale-95 hover:opacity-90 transition-all`}>
+                                    style={{flex:1,height:'56px',borderRadius:'16px',background:'white',color:'#15171E',fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
+                                    className="active:scale-95 transition-all">
                                     확인
                                 </button>
                             </div>
