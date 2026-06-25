@@ -89,15 +89,17 @@ body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-se
 .kconfirm .btns{display:flex; gap:10px}
 .kconfirm .btns button{flex:1; height:56px; border-radius:16px; font-family:inherit; font-weight:900; font-size:16px; border:0; cursor:pointer}
 
-/* ===== 아이패드 가로 모드 (팀을 좌우 칼럼으로 → 스크롤 없이 한 화면) ===== */
-.phone.land{ width:980px; height:720px; max-width:96vw }
+/* ===== 아이패드 가로 모드 (팀을 위아래로 쌓고, 각 팀 선수는 가로 한 줄) ===== */
+.phone.land{ width:1000px; height:750px; max-width:96vw }
 .land .khead{ padding:16px 22px }
 .land .kclock{ font-size:34px }
-.land .kbody{ display:flex; gap:14px; align-items:flex-start; padding:16px 18px 20px }
-.land .kteam{ flex:1 1 0; min-width:0; margin-bottom:0 }
-.land .ktiles{ grid-template-columns:repeat(2,1fr); gap:9px }
-.land .ktile .num{ font-size:80px }
-.land .ktile .nm{ font-size:20px }
+.land .kbody{ padding:16px 18px 18px }
+.land .kteam{ margin-bottom:14px }
+.land .kteam-h{ margin-bottom:8px }
+.land .ktiles{ display:flex; gap:9px }
+.land .ktile{ flex:1 1 0; min-width:0; aspect-ratio:auto; height:112px }
+.land .ktile .num{ font-size:62px }
+.land .ktile .nm{ font-size:19px }
 
 svg{display:block}
 </style>
