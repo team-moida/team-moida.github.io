@@ -101,9 +101,8 @@ const KioskModal = ({
                                         </div>
                                         {/* 이름 — 정중앙, 번호 위에 */}
                                         <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'3px',padding:'0 4px',pointerEvents:'none',userSelect:'none'}}>
-                                            <span style={{fontWeight:900,fontSize:'1.5rem',textAlign:'center',wordBreak:'keep-all',lineHeight:1.1,textShadow:'0 1px 4px rgba(0,0,0,0.35)'}}>{p.name}</span>
+                                            <span style={{fontWeight:900,fontSize:'clamp(1.5rem, 5.2vw, 3rem)',textAlign:'center',wordBreak:'keep-all',lineHeight:1.1,textShadow:'0 1px 4px rgba(0,0,0,0.35)'}}>{p.name}</span>
                                             <div style={{display:'flex',gap:'3px'}}>
-                                                {p.gender==='여성'&&<span style={{fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'#ec4899',color:'white'}}>W</span>}
                                                 {p.isGuest&&<span style={{fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'rgba(0,0,0,0.3)',color:'white'}}>G</span>}
                                             </div>
                                         </div>
@@ -132,9 +131,8 @@ const KioskModal = ({
                                         {idx+1}
                                     </div>
                                     <div style={{position:'absolute',bottom:'10px',left:0,right:0,display:'flex',flexDirection:'column',alignItems:'center',gap:'3px',pointerEvents:'none',userSelect:'none'}}>
-                                        <span style={{fontWeight:900,fontSize:'1rem',textAlign:'center',wordBreak:'keep-all',lineHeight:1.2,paddingLeft:'4px',paddingRight:'4px'}}>{p.name}</span>
+                                        <span style={{fontWeight:900,fontSize:'clamp(1rem, 4.5vw, 2.2rem)',textAlign:'center',wordBreak:'keep-all',lineHeight:1.2,paddingLeft:'4px',paddingRight:'4px'}}>{p.name}</span>
                                         <div style={{display:'flex',gap:'3px'}}>
-                                            {p.gender==='여성'&&<span style={{fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'#ec4899',color:'white'}}>W</span>}
                                             {p.isGuest&&<span style={{fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'rgba(0,0,0,0.3)',color:'white'}}>G</span>}
                                         </div>
                                     </div>
