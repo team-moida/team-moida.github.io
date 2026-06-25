@@ -22,6 +22,7 @@ function getKakaoRedirectUri() {
 
 let pendingKakaoId = '';
 let pendingNickname = '';
+let pendingKakaoImg = '';
 let isKakaoLoading = false;
 
 function getSaved() {
@@ -91,7 +92,7 @@ async function handleSignupSubmit() {
         const docRef = await getCol('members').add({
             name, birth: birth6, phone,
             gender: '미설정', position: 'all', level: '4', role: '회원',
-            joinDate: today, kakaoId: pendingKakaoId,
+            joinDate: today, kakaoId: pendingKakaoId, kakaoProfileImage: pendingKakaoImg,
             isResigned: false, createdAt: new Date().toISOString()
         });
         const memberData = { memberId: docRef.id, name, role: '회원', kakaoId: pendingKakaoId, isAppAdmin: false };
@@ -139,7 +140,10 @@ async function handleKakaoCallback(code) {
         const userData = await userRes.json();
         if (!userData.id) throw new Error('카카오 사용자 정보 조회 실패');
         const kakaoId = String(userData.id);
-        const nickname = userData.kakao_account?.profile?.nickname || '';
+        const _kprof = userData.kakao_account?.profile || {};
+        const nickname = _kprof.nickname || '';
+        // 카카오 프로필 사진(기본이미지면 제외 → 글자/업로드 사진으로 폴백). 작은 썸네일 우선.
+        pendingKakaoImg = (!_kprof.is_default_image && (_kprof.thumbnail_image_url || _kprof.profile_image_url)) || '';
 
         if (intent === 'signup') {
             await processSignupFlow(kakaoId, nickname);
@@ -161,6 +165,10 @@ async function processLoginFlow(kakaoId, nickname) {
             const doc = snap.docs[0];
             const data = doc.data();
             if (data.isResigned) { showToast('탈퇴한 회원입니다.', 'error'); showView('login-view'); return; }
+            // 로그인할 때마다 카카오 프사 최신화(있을 때만)
+            if (pendingKakaoImg && data.kakaoProfileImage !== pendingKakaoImg) {
+                try { await doc.ref.update({ kakaoProfileImage: pendingKakaoImg }); } catch(_) {}
+            }
             const memberData = { memberId: doc.id, name: data.name, role: data.role || '회원', kakaoId, isAppAdmin: data.isAppAdmin || false };
             localStorage.setItem(LS_KEY, JSON.stringify(memberData));
             routeByRole(memberData);
@@ -220,7 +228,7 @@ async function handleKakaoLink() {
             if (b.substring(2) === birth6 || b === birth6) found = { id: doc.id, ...data };
         });
         if (!found) { showToast('이름 또는 생년월일이 일치하지 않습니다.', 'error'); return; }
-        await getCol('members').doc(found.id).update({ kakaoId: pendingKakaoId });
+        await getCol('members').doc(found.id).update({ kakaoId: pendingKakaoId, kakaoProfileImage: pendingKakaoImg });
         const memberData = { memberId: found.id, name: found.name, role: found.role || '회원', kakaoId: pendingKakaoId, isAppAdmin: found.isAppAdmin || false };
         localStorage.setItem(LS_KEY, JSON.stringify(memberData));
         showToast('카카오 계정이 연결되었습니다!', 'ok');

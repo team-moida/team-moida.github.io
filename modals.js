@@ -256,8 +256,8 @@ function ProfileModal({ isOpen, onClose, memberInfo, memberData, showAlert }) {
                 {/* 프로필 사진 — 업로드(자동 축소 저장) / 기본(글자) */}
                 <div className="flex flex-col items-center mb-5">
                     <div className="relative">
-                        {profileImg
-                            ? <img src={profileImg} alt="" className="w-20 h-20 rounded-full object-cover border border-slate-200"/>
+                        {(profileImg || memberInfo.kakaoProfileImage)
+                            ? <img src={profileImg || memberInfo.kakaoProfileImage} alt="" className="w-20 h-20 rounded-full object-cover border border-slate-200"/>
                             : <div className="w-20 h-20 rounded-full bg-teal-500 text-white flex items-center justify-center font-black text-2xl">{(memberInfo.name||'').trim().slice(-1)||'?'}</div>}
                         <button onClick={()=>fileRef.current && fileRef.current.click()} disabled={photoSaving}
                             className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white border border-slate-200 shadow flex items-center justify-center text-slate-500"><Icon.Camera size={14}/></button>
