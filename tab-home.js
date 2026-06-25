@@ -889,13 +889,23 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
     // ── 계좌 표시 + 회비 납부 (회원·관리자 공통) ──
     return (
         <>
-        <div className="rounded-3xl p-5 text-white" style={{ background: showPayPrompt ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'linear-gradient(135deg,var(--c-success),#059669)', boxShadow: showPayPrompt ? '0 10px 28px -8px rgba(217,119,6,0.45)' : '0 10px 28px -8px rgba(5,150,105,0.45)' }}>
+        <div className="rounded-2xl p-4 text-white" style={{ background: showPayPrompt ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'linear-gradient(135deg,var(--c-success),#059669)', boxShadow: showPayPrompt ? '0 10px 28px -8px rgba(217,119,6,0.45)' : '0 10px 28px -8px rgba(5,150,105,0.45)' }}>
             <div className="flex items-start justify-between gap-2 mb-3">
-                <div className="flex items-center gap-3 min-w-0">
-                    <Icon.CreditCard size={24} className="text-white flex-shrink-0"/>
+                <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                    <Icon.CreditCard size={22} className="text-white flex-shrink-0 mt-0.5"/>
                     <div className="min-w-0">
                         <p className="text-[11px] font-black uppercase tracking-widest text-white/80">회비 납부</p>
-                        <p className="font-black text-lg leading-tight truncate">{acc.bank||'모임 계좌'}{acc.holder?` · ${acc.holder}`:''}</p>
+                        {/* 예금주 옆에 계좌번호 + 작은 복사 (좁으면 줄바꿈) */}
+                        <div className="flex items-center gap-x-2 gap-y-1 flex-wrap mt-0.5">
+                            <span className="font-black text-[15px] leading-tight">{acc.bank||'모임 계좌'}{acc.holder?` · ${acc.holder}`:''}</span>
+                            {acc.accountNo && <span className="font-black text-[15px] leading-tight break-all">{acc.accountNo}</span>}
+                            {acc.accountNo && (
+                                <button onClick={()=>copyText(acc.accountNo,'acc')} className="px-2 py-0.5 rounded-md bg-white/25 text-white text-[11px] font-black shrink-0 active:scale-95 transition-all inline-flex items-center gap-0.5">
+                                    {copied==='acc' ? <><Icon.Check size={11}/>복사됨</> : '복사'}
+                                </button>
+                            )}
+                        </div>
+                        {acc.amountHint && <p className="text-[11px] font-black text-white/70 mt-1">{acc.amountHint}</p>}
                     </div>
                 </div>
                 {isAdminMode && (
@@ -903,12 +913,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
                 )}
             </div>
             {dues}
-            {acc.accountNo && (
-                <div className="bg-white/10 rounded-2xl p-3 mb-3 space-y-2">
-                    {infoRow('계좌번호', acc.accountNo, 'acc', false)}
-                    {acc.amountHint && <p className="text-[11px] font-black text-white/75 pt-0.5">{acc.amountHint}</p>}
-                </div>
-            )}
+            {/* 계좌번호·복사·금액안내는 상단 헤더(예금주 옆)로 이동 → 카드 축소 */}
             <div className="space-y-2">
                 {(tossHref || kakaoHref) && (
                     <div className="flex gap-2">
