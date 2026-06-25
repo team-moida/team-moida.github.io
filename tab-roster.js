@@ -41,6 +41,7 @@ const TabRoster = ({
                 <div className="space-y-2">
                     {[...activeMembers].sort((a,b)=>a.name.localeCompare(b.name)).map(m=>(
                         <div key={m.id} className="card border-slate-100 rounded-2xl p-4 flex items-center gap-3">
+                            <span className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-base flex-shrink-0 ${getLevelColor(m.level)}`}>{m.level}</span>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className="font-black text-slate-800">{m.name}</span>
@@ -50,7 +51,6 @@ const TabRoster = ({
                                     {m.coupleId&&<span className="text-[10px] font-black text-teal-500 flex items-center gap-0.5"><Icon.Heart size={9}/>{allMembers.find(p=>p.id===m.coupleId)?.name||'?'}</span>}
                                 </div>
                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${getLevelColor(m.level)}`}>{m.level}</span>
                                     <span className="text-[10px] text-slate-400">{formatBirth(m.birth)}</span>
                                     {m.position&&m.position!=='all'&&<span className="text-[10px] text-slate-400">{m.position}</span>}
                                     {m.address&&<span className="text-[10px] text-slate-400">{m.address}</span>}
