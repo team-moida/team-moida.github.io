@@ -740,20 +740,37 @@ const AppModals = ({
         )}
 
         {/* ===== 알림/확인 모달 ===== */}
-        {alertModal.show && (
+        {alertModal.show && (() => {
+            // lab 통일 팝업: 둥근 카드 + 색 아이콘 칩 + 가운데 제목/메시지 + 버튼.
+            // 아이콘은 style을 무시하므로 칩 div의 color(currentColor)로 채색.
+            const VARIANTS = {
+                success: { Ic: Icon.CheckCircle,   color:'#10b981', tint:'rgba(16,185,129,0.13)', btn:'bg-emerald-500' },
+                warn:    { Ic: Icon.AlertTriangle, color:'#f59e0b', tint:'rgba(245,158,11,0.13)', btn:'bg-amber-500' },
+                danger:  { Ic: Icon.AlertTriangle, color:'#ef4444', tint:'rgba(239,68,68,0.13)',  btn:'bg-rose-500' },
+                info:    { Ic: Icon.Info,          color:'#183FB0', tint:'rgba(24,63,176,0.10)',  btn:'bg-teal-500' },
+                confirm: { Ic: Icon.Info,          color:'#183FB0', tint:'rgba(24,63,176,0.10)',  btn:'bg-teal-500' },
+            };
+            const v = VARIANTS[alertModal.variant] || VARIANTS[alertModal.type] || VARIANTS.info;
+            const isConfirm = alertModal.type === 'confirm';
+            const close = () => setAlertModal(p=>({...p,show:false}));
+            return (
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{zIndex:70}}>
-                <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in">
-                    <h3 className="font-black text-lg text-slate-800 mb-2">{alertModal.title}</h3>
-                    <p className="text-sm text-slate-500 whitespace-pre-line mb-5">{alertModal.content}</p>
-                    <div className="flex gap-2">
-                        {alertModal.type==='confirm'&&<button onClick={()=>setAlertModal(p=>({...p,show:false}))} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>}
-                        <button onClick={()=>{if(alertModal.onConfirm)alertModal.onConfirm();setAlertModal(p=>({...p,show:false}));}} className="flex-1 py-3 bg-teal-500 text-white rounded-2xl font-black text-sm">
-                            {alertModal.type==='confirm'?'확인':'닫기'}
+                <div className="bg-white rounded-3xl p-6 w-full max-w-xs shadow-2xl animate-in text-center">
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3.5" style={{background:v.tint, color:v.color}}>
+                        <v.Ic size={30}/>
+                    </div>
+                    <h3 className="font-black text-xl text-slate-800 mb-1.5">{alertModal.title}</h3>
+                    {alertModal.content && <p className="text-sm font-bold text-slate-500 whitespace-pre-line leading-relaxed mb-5">{alertModal.content}</p>}
+                    <div className="flex gap-2.5">
+                        {isConfirm && <button onClick={close} className="flex-1 py-3.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm active:scale-95 transition-all">취소</button>}
+                        <button onClick={()=>{ if(alertModal.onConfirm) alertModal.onConfirm(); close(); }} className={`flex-1 py-3.5 ${v.btn} text-white rounded-2xl font-black text-sm active:scale-95 transition-all`}>
+                            {isConfirm?'확인':'닫기'}
                         </button>
                     </div>
                 </div>
             </div>
-        )}
+            );
+        })()}
 
         {/* 인앱 QR 스캐너 */}
         <QRScannerModal

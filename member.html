@@ -172,12 +172,12 @@ function App() {
     React.useEffect(() => { if (tab !== 'meeting') setViewMeetingId(null); }, [tab]);
     const testMode = !!displayMeetingSettings?.testMode;
     const [mySession, setMySession] = useState(null);
-    const [alertModal, setAlertModal] = useState({show:false,title:'',content:'',type:'info',onConfirm:null});
+    const [alertModal, setAlertModal] = useState({show:false,title:'',content:'',type:'info',onConfirm:null,variant:null});
     const [duesReject, setDuesReject] = useState(null);          // 회비 신고 반려 대상 report (null이면 닫힘)
     const [duesRejectReason, setDuesRejectReason] = useState(''); // 반려 사유 입력값
     const [announcementModal, setAnnouncementModal] = useState({ open: false, mode: 'add', data: null });
-    const showAlert = (title, content, type='info', onConfirm=null) => setAlertModal({show:true, title, content, type, onConfirm});
-    const showConfirm = (title, content, onConfirm) => setAlertModal({show:true, title, content, type:'confirm', onConfirm});
+    const showAlert = (title, content, type='info', onConfirm=null, variant=null) => setAlertModal({show:true, title, content, type, onConfirm, variant});
+    const showConfirm = (title, content, onConfirm, variant=null) => setAlertModal({show:true, title, content, type:'confirm', onConfirm, variant});
     // 회비 신고 반려: 사유 입력 모달 열기 → 확인 시 신고 삭제 + 회원에게 반려 푸시(사유 포함).
     // 푸시는 notifications 문서 추가(type:'dues',pushOnly) → 서버가 전송, 공지엔 안 뜸.
     const openDuesReject = (report) => { if (!report || !report.memberId || !report.month) return; setDuesRejectReason(''); setDuesReject(report); };
@@ -451,11 +451,11 @@ function App() {
     const startInlineGPS = () => {
         handleGPSCheckIn((res) => {
             if (res.status === 'within') {
-                showConfirm('출석 가능', `모임 장소에서 ${res.distance}m\n인정 범위(${res.radius}m) 안에 있어요.`, handleGPSAttend);
+                showConfirm('출석 가능', `모임 장소에서 ${res.distance}m\n인정 범위(${res.radius}m) 안에 있어요.`, handleGPSAttend, 'success');
             } else if (res.status === 'outside') {
-                showAlert('아직 멀어요', `현재 ${res.distance}m 떨어져 있어요.\n${res.radius}m 이내로 들어와서 다시 시도해 주세요.`);
+                showAlert('아직 멀어요', `현재 ${res.distance}m 떨어져 있어요.\n${res.radius}m 이내로 들어와서 다시 시도해 주세요.`, 'info', null, 'warn');
             } else {
-                showAlert('위치 확인 실패', res.message || '위치를 확인할 수 없습니다.');
+                showAlert('위치 확인 실패', res.message || '위치를 확인할 수 없습니다.', 'info', null, 'danger');
             }
         });
     };
