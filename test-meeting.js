@@ -123,13 +123,18 @@ async function createTestMeeting({ me, activeMembers, showAlert, showConfirm }) 
                 const locName = loc ? '📍 테스트 현재위치' : '🧪 테스트 모임';
 
                 // 현재 미러(현재 모임) 백업 — 덮어쓰기 전에 보관. 단 미러가 이미 테스트면 백업 안 함(테스트를 백업하는 사고 방지).
+                // shouldSetMirror: 이 테스트 모임을 '현재 모임(미러)'으로 둘지 결정.
+                //   이미 테스트 모임이 현재 모임이면(=먼저 만든 더 앞선 테스트가 현재) 빼앗지 않는다 →
+                //   '가장 앞(먼저 만든) 테스트 모임'에 현재 모임·키오스크가 고정된다(여러 개 만들어도 안 흔들림).
                 let mirrorBackup = null;
+                let shouldSetMirror = true;
                 try {
                     const cur = await getCol('settings').doc('meeting_schedule_v2').get();
                     if (cur.exists) {
                         const cd = cur.data() || {};
                         const curIsTest = cd.location === '🧪 테스트 모임' || cd.location === '📍 테스트 현재위치';
                         if (!curIsTest) mirrorBackup = cd;
+                        else shouldSetMirror = false;  // 앞선 테스트 모임이 이미 현재 모임 → 유지
                     }
                 } catch (_) {}
 
@@ -177,21 +182,29 @@ async function createTestMeeting({ me, activeMembers, showAlert, showConfirm }) 
                     label: `${date} 테스트 매치 (${schedule.list.length}라운드)`, isTest: true,
                 });
 
-                // 5) 삭제용 마커 — 복원용으로 원래 미러(mirrorBackup)도 함께 보관
-                batch.set(getCol('settings').doc('test_meeting'), { testId: meetingId, date, createdAt: nowIso, mirrorBackup });
+                // 5)+6) '가장 앞' 테스트 모임만 현재 모임(미러)·삭제 마커를 잡는다.
+                //   먼저 만든 테스트가 이미 현재 모임이면(shouldSetMirror=false) 건드리지 않아,
+                //   현재 모임·키오스크가 가장 앞 테스트 모임에 고정되고, 마커(원본 미러 백업)도 보존된다.
+                if (shouldSetMirror) {
+                    // 5) 삭제용 마커 — 복원용으로 원래 미러(mirrorBackup)도 함께 보관
+                    batch.set(getCol('settings').doc('test_meeting'), { testId: meetingId, date, createdAt: nowIso, mirrorBackup });
 
-                // 6) 현재 모임(미러)을 이 테스트 모임으로 설정 → 홈 isActive=true → 출석 영역 표시.
-                //    삭제 시 mirrorBackup으로 복원(단 그새 진짜 모임으로 바뀌었으면 복원 안 함).
-                batch.set(getCol('settings').doc('meeting_schedule_v2'), {
-                    date, meetingId, start, end, location: locName,
-                    locationLat: locLat, locationLng: locLng, locationRadius: 100, enableQR: true,
-                    meetingType: 'self', maxLimit: 24,
-                    managerId: me.id || '', managerName: me.name || '테스트', testMode: false,
-                });
+                    // 6) 현재 모임(미러)을 이 테스트 모임으로 설정 → 홈 isActive=true → 출석 영역 표시.
+                    //    삭제 시 mirrorBackup으로 복원(단 그새 진짜 모임으로 바뀌었으면 복원 안 함).
+                    batch.set(getCol('settings').doc('meeting_schedule_v2'), {
+                        date, meetingId, start, end, location: locName,
+                        locationLat: locLat, locationLng: locLng, locationRadius: 100, enableQR: true,
+                        meetingType: 'self', maxLimit: 24,
+                        managerId: me.id || '', managerName: me.name || '테스트', testMode: false,
+                    });
+                }
 
                 await batch.commit();
+                const kioskNote = shouldSetMirror
+                    ? "\n\n홈 정기 카드의 '출석하기'로 GPS/QR 출석을 테스트할 수 있어요."
+                    : "\n\n※ 현재 모임·키오스크는 '가장 앞' 테스트 모임에 유지됩니다. 이 모임은 모임 탭에서 팀·매치를 확인하세요.";
                 showAlert('🧪 테스트 모임 생성 완료',
-                    `${date} ${start}~${end} · ${chosen.length}명 / ${teamCount}팀 / ${schedule.list.length}라운드\n위치: ${loc ? '현재 위치 자동 설정됨' : '취득 실패 — QR로 테스트하세요'}\n\n홈 정기 카드의 '출석하기'로 GPS/QR 출석을 테스트할 수 있어요.\n끝나면 [테스트 삭제]로 흔적 없이 지우세요(현재 모임도 원복).`);
+                    `${date} ${start}~${end} · ${chosen.length}명 / ${teamCount}팀 / ${schedule.list.length}라운드\n위치: ${loc ? '현재 위치 자동 설정됨' : '취득 실패 — QR로 테스트하세요'}${kioskNote}\n끝나면 [테스트 삭제]로 흔적 없이 지우세요(현재 모임도 원복).`);
             } catch (e) {
                 showAlert('오류', '테스트 모임 생성 실패: ' + (e?.message || e));
             }
