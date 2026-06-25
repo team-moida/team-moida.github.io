@@ -768,7 +768,8 @@ function App() {
                 )}
                 {tab === 'meeting' && viewMeeting && (
                     <div>
-                        <MeetingDetailHeader meeting={viewMeeting} onBack={() => setViewMeetingId(null)} />
+                        <MeetingDetailHeader meeting={viewMeeting} onBack={() => setViewMeetingId(null)}
+                            onSettings={isAdminMode ? () => { setPendingEditMeeting(viewMeeting); navTab('meeting-list'); } : null} />
                         <div className="flex gap-1.5 mb-3 p-1 bg-slate-100 rounded-2xl">
                             {(viewKind === 'match'
                                 ? [['attend','출석'],['team','명단']]

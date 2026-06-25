@@ -831,7 +831,7 @@ const MeetingListScreen = ({
 };
 
 // ─── 모임 상세 상단 헤더 (뒤로가기 + 모임 요약) ──────────────────────────────────
-const MeetingDetailHeader = ({ meeting, onBack }) => {
+const MeetingDetailHeader = ({ meeting, onBack, onSettings }) => {
     const kind = (meeting.meetingType || 'self') === 'match' ? 'match' : 'self';
     const cfg = MEETING_KIND[kind];
     const dayInfo = computeMeetingDay(meeting.date, meeting.start);
@@ -849,6 +849,11 @@ const MeetingDetailHeader = ({ meeting, onBack }) => {
                 <p className="font-black text-slate-800 truncate mt-0.5">{fmtMeetingDate(meeting.date)} · {meeting.start}~{meeting.end}</p>
                 {meeting.location && <p className="text-[11px] text-slate-400 truncate flex items-center gap-1"><Icon.MapPin size={11} className="flex-shrink-0"/><span className="truncate">{meeting.location}</span></p>}
             </div>
+            {onSettings && (
+                <button onClick={onSettings} className="flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 text-slate-600 shrink-0 active:scale-95 transition-all text-xs font-black" title="모임 설정">
+                    <Icon.Settings size={15}/> 설정
+                </button>
+            )}
         </div>
     );
 };
@@ -960,10 +965,12 @@ const TabAttend = ({
     // 활성 모임이 아니면 '출석 현황' 탭이 없으므로, 그 탭이 선택돼 있으면 명단으로 되돌린다.
     React.useEffect(() => {
         const di = computeMeetingDay(meetingSettings?.date, meetingSettings?.start);
-        if (isAdminMode && isViewActive && (di?.type === 'today' || di?.type === 'started')) {
-            setAttendSubTab('attend');
-        } else if (!isViewActive) {
-            setAttendSubTab(prev => prev === 'attend' ? 'roster' : prev);
+        if (!isViewActive) {
+            setAttendSubTab('roster');                          // 예정 모임 = 명단 작성
+        } else if (isAdminMode && (di?.type === 'today' || di?.type === 'started')) {
+            setAttendSubTab('attend');                          // 당일/진행중 = 출석 현황
+        } else {
+            setAttendSubTab(prev => (prev === 'attend' || prev === 'roster') ? prev : 'attend');
         }
     }, [isViewActive, meetingSettings?.date]);
 
@@ -976,21 +983,41 @@ const TabAttend = ({
         {/* 관리자 패널 — 항상 표시 (출석 관리 토글 제거, 서브탭으로 직접 이동) */}
         {isAdminMode ? (
             <div>
-                {/* 서브탭 */}
-                <div className="flex gap-2 mb-4">
-                    {[['roster','명단 관리'], ...(isViewActive ? [['attend','출석 현황'],['checkin','출석체크']] : []), ['history','기록']].map(([v,l]) => (
-                        <button key={v} onClick={() => { setAttendSubTab(v); setSelectedHistoryDetail(null); }}
-                            className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${attendSubTab===v?'bg-teal-500 text-white shadow':'text-slate-400 bg-slate-100'}`}>{l}</button>
-                    ))}
-                    {attendSubTab === 'attend' && attendActiveList.length > 0 && (
-                        <>
-                            <div className="flex-1"/>
+                {/* 출석 상단 — 현황↔명단 전환 + 출석체크/QR + 모임 종료 (서브탭 단순화) */}
+                <div className="mb-4 space-y-2">
+                    <div className="flex items-center gap-2">
+                        {isViewActive ? (
+                            <div className="flex-1 flex gap-1.5 p-1 bg-slate-100 rounded-2xl">
+                                {[['attend','출석 현황'],['roster','명단 편집']].map(([v,l]) => (
+                                    <button key={v} onClick={() => { setAttendSubTab(v); setSelectedHistoryDetail(null); }}
+                                        className={`flex-1 py-2 rounded-xl text-sm font-black transition-all ${attendSubTab===v?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>{l}</button>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="flex-1 text-sm font-black text-slate-600 px-1 py-2">명단 작성</p>
+                        )}
+                        {isViewActive && attendActiveList.length > 0 && (
                             <button onClick={attendHandleEndMeeting}
                                 disabled={attendIsPending || !isMeetingOver || attendHistory.some(h => h.date === meetingSettings?.date)}
-                                className={`px-3 py-2 rounded-xl font-black text-xs transition-all disabled:opacity-30 ${attendHistory.some(h => h.date === meetingSettings?.date) ? 'bg-emerald-50 text-emerald-500' : isMeetingOver ? 'bg-rose-500 text-white active:scale-95' : 'bg-slate-100 text-slate-300'}`}>
+                                className={`px-3 py-2 rounded-xl font-black text-xs transition-all disabled:opacity-30 flex-shrink-0 ${attendHistory.some(h => h.date === meetingSettings?.date) ? 'bg-emerald-50 text-emerald-500' : isMeetingOver ? 'bg-rose-500 text-white active:scale-95' : 'bg-slate-100 text-slate-300'}`}>
                                 {attendHistory.some(h => h.date === meetingSettings?.date) ? <span className="inline-flex items-center justify-center gap-1">저장 완료 <Icon.Check size={12}/></span> : '모임 종료'}
                             </button>
-                        </>
+                        )}
+                    </div>
+                    {isViewActive && (
+                        <div className="flex gap-2">
+                            <button onClick={() => setIsKioskOpen(true)}
+                                className="flex-1 py-2.5 rounded-xl text-sm font-black text-white flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+                                style={{background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))'}}>
+                                <Icon.Clipboard size={15}/> 출석 체크 열기
+                            </button>
+                            {generateAttendQRCode && (selectedMeeting?.meetingType || 'self') !== 'match' && (
+                                <button onClick={() => generateAttendQRCode(selectedMeeting)}
+                                    className="px-4 py-2.5 rounded-xl text-sm font-black bg-slate-100 text-slate-600 flex items-center gap-1.5 active:scale-95 transition-all">
+                                    <Icon.QrCode size={15}/> QR
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
 
