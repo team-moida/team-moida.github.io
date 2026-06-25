@@ -706,10 +706,9 @@ function App() {
                 isMeetingEndSaved={attend.attendHistory?.some(h => h.date === displayMeetingSettings?.date) || false}
                 unreadCount={unreadCount} onOpenAnnouncements={openAnnouncements}
                 onOpenProfile={() => setIsProfileModalOpen(true)} profileImage={memberInfo?.profileImage || memberInfo?.kakaoProfileImage}
-            >
-                {tab === 'home' && <AnnounceTicker announcements={announcements} meetings={meetings} onOpen={openAnnouncements} onTabChange={navTab} />}
-            </MemberHeader>
+            />
             <div className="px-4 pt-4">
+                {tab === 'home' && <div className="mb-3"><AnnounceTicker announcements={announcements} meetings={meetings} onOpen={openAnnouncements} onTabChange={navTab} /></div>}
                 {tab === 'home' && (
                     <TabHome
                         notifPermission={notifPermission} registerFcmToken={registerFcmToken}
