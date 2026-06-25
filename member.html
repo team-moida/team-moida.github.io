@@ -583,9 +583,15 @@ function App() {
     };
     const managers = roster.allMembers.filter(m => STAFF_ROLES.includes(m.role));
     // 보고 있는 모임이 그 종류(정기/매칭)의 '현재 모임'인지 — 출석/신청/대진/매치는 현재 모임에서만 동작
-    // 활성 판정: 보고 있는 모임이 그 종류의 활성 모임이거나, 같은 날짜의 형제 모임(테스트 모임 여러 개 대응 — 같은 날짜는 출석 데이터 공유)
+    // 활성 판정: (1) 그 종류의 활성(가장 이른 미종료) 모임이거나 (2) 현재 모임(미러)이 가리키는 모임이면 활성.
+    //  ※ 키오스크/출석 명단은 미러(displayMeetingSettings) 기준으로 동작한다. 테스트 모임은 날짜가 제각각이고
+    //    새로 만들 때마다 미러가 '최신' 테스트 모임을 가리키므로, 미러 기준도 함께 인정해야 현재 보는 모임에서 키오스크 버튼이 유지된다.
     const _activeForView = viewKind === 'match' ? activeMatch : activeSelf;
-    const isViewActive = !!viewMeeting && !!_activeForView && (viewMeeting.id === _activeForView.id || viewMeeting.date === _activeForView.date);
+    const _mirrorForView = viewKind === 'match' ? meetingSettingsMatch : meetingSettings;
+    const isViewActive = !!viewMeeting && (
+        (!!_activeForView && (viewMeeting.id === _activeForView.id || viewMeeting.date === _activeForView.date)) ||
+        (!!_mirrorForView?.date && viewMeeting.date === _mirrorForView.date)
+    );
 
     const { moveMonth, handleAddMember, handleUpdateMember, handleResignConfirm,
             handleRestoreResigned, handleDeleteMember,
