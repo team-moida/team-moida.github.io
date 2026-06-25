@@ -1,11 +1,11 @@
 // ─── 매치판 큰 팀 배지 (조끼색 + 팀글자) ───────────────────────────────────────
 // vmin 단위 → 가로/세로 회전에 맞춰 화면 짧은 변 기준으로 자동 축소 (스크롤 방지)
-const MatchBoardTeam = ({ name }) => {
+const MatchBoardTeam = ({ name, size, font }) => {
     const idx = String(name).charCodeAt(0) - 65;
     return (
         <div style={{textAlign:'center',minWidth:0}}>
             <div className={getTeamBadge(idx)}
-                style={{width:'clamp(60px,16vmin,210px)',height:'clamp(60px,16vmin,210px)',borderRadius:'clamp(16px,3vmin,34px)',color:'white',fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'clamp(2.2rem,10vmin,7.5rem)',lineHeight:1,boxShadow:'0 6px 16px rgba(0,0,0,0.12)',margin:'0 auto'}}>
+                style={{width:size||'clamp(60px,16vmin,210px)',height:size||'clamp(60px,16vmin,210px)',borderRadius:'clamp(16px,3vmin,34px)',color:'white',fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',fontSize:font||'clamp(2.2rem,10vmin,7.5rem)',lineHeight:1,boxShadow:'0 6px 16px rgba(0,0,0,0.12)',margin:'0 auto'}}>
                 {name}
             </div>
         </div>
@@ -36,6 +36,16 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
         document.body.style.overscrollBehavior = 'none';
         return () => { document.body.style.overscrollBehavior = prev; };
     }, []);
+    // 화면 방향 — 세로면 구장 세로 나열·대진 가로 / 가로면 구장 가로 나열·대진 세로 (카드 모양에 맞춰 교차 → 공백 최소화)
+    const [portrait, setPortrait] = React.useState(() => {
+        try { return window.matchMedia('(orientation: portrait)').matches; } catch (_) { return true; }
+    });
+    React.useEffect(() => {
+        let mq; try { mq = window.matchMedia('(orientation: portrait)'); } catch (_) { return; }
+        const on = () => setPortrait(mq.matches); on();
+        mq.addEventListener ? mq.addEventListener('change', on) : mq.addListener(on);
+        return () => { mq.removeEventListener ? mq.removeEventListener('change', on) : mq.removeListener(on); };
+    }, []);
     // 관리자: 실제 진행 라운드(currentIndex)를 따라가며 이동·종료 제어 / 회원: 자유 탐색(browseIdx)
     const allDone = isAdmin && currentIndex >= total;
     const idx = isAdmin ? clampIdx(currentIndex) : browseIdx;
@@ -43,6 +53,9 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
     const isCurDone = isAdmin && !allDone && session.id != null && completedMatches?.has(session.id);
     const fieldLabel = (fi) => (fieldNames[fi] || `${fi + 1}구장`);
     const navBtn = {height:'clamp(48px,9vmin,66px)',borderRadius:'16px',border:'none',fontWeight:900,fontSize:'clamp(0.95rem,2.6vmin,1.35rem)'};
+    // 배지/글자 크기 — 방향별로 크게. 세로는 카드 가로폭, 가로는 세로높이가 여유 → 각각 vw/vmin 기준으로 큼직하게.
+    const badgeSize = portrait ? 'clamp(80px,34vw,300px)' : 'clamp(80px,27vmin,340px)';
+    const badgeFont = portrait ? 'clamp(2.6rem,18vw,9rem)' : 'clamp(2.6rem,15vmin,10rem)';
 
     // 자동 진행: 타이머가 끝나는 순간(켜져있고 관리자) 현재 라운드 '종료' + 다음 라운드로 넘기고 타이머 리셋(다음 라운드 대기).
     // 종료→true 상승 에지에서 1회만 실행. onAutoAdvance가 종료표시+인덱스+1을 한 번에 처리.
@@ -85,7 +98,7 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                 {/* 타이머 + 코트 — 화면 가운데에 함께 표시 (회원은 타이머 보기 전용) */}
                 <div style={{flex:'1 1 0%',minHeight:0,overflow:'hidden',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'clamp(10px,2.5vmin,26px)'}}>
                     {timerOpen && <MatchTimerBar isAdmin={isAdmin} />}
-                    <div style={{width:'100%',flex:'1 1 0%',minHeight:0,display:'flex',flexWrap:'wrap',gap:'clamp(12px,2.2vmin,24px)',alignContent:'stretch',alignItems:'stretch',justifyContent:'center'}}>
+                    <div style={{width:'100%',flex:'1 1 0%',minHeight:0,display:'flex',flexDirection:portrait?'column':'row',flexWrap:'nowrap',gap:'clamp(10px,2vmin,22px)',alignItems:'stretch',justifyContent:'center'}}>
                     {allDone ? (
                         <div style={{margin:'auto',textAlign:'center'}}>
                             <div style={{display:'flex',justifyContent:'center'}}><Icon.Flag size={80} className="text-emerald-500"/></div>
@@ -100,12 +113,12 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                     ) : session.matches.map((m, mi) => {
                         const [t1, t2] = m.match;
                         return (
-                            <div key={mi} style={{flex:'1 1 clamp(240px,42%,600px)',maxWidth:'700px',background:'white',border:'1px solid var(--c-border)',borderRadius:'clamp(18px,2.8vmin,32px)',padding:'clamp(12px,2.4vmin,30px)',boxShadow:'0 4px 14px rgba(0,0,0,0.05)',display:'flex',flexDirection:'column',justifyContent:'center'}}>
-                                <p style={{textAlign:'center',color:'#64748b',fontWeight:900,fontSize:'clamp(0.95rem,2.6vmin,1.8rem)',marginBottom:'clamp(10px,2vmin,22px)'}}>{fieldLabel(m.fieldIdx)}</p>
-                                <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'clamp(10px,2.6vmin,34px)'}}>
-                                    <MatchBoardTeam name={t1}/>
+                            <div key={mi} style={{flex:'1 1 0',minWidth:0,minHeight:0,background:'white',border:'1px solid var(--c-border)',borderRadius:'clamp(18px,2.8vmin,32px)',padding:'clamp(10px,2vmin,26px)',boxShadow:'0 4px 14px rgba(0,0,0,0.05)',display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center'}}>
+                                <p style={{textAlign:'center',color:'#64748b',fontWeight:900,fontSize:'clamp(0.95rem,2.6vmin,1.8rem)',marginBottom:'clamp(8px,1.6vmin,18px)',flexShrink:0}}>{fieldLabel(m.fieldIdx)}</p>
+                                <div style={{flex:'1 1 0',minHeight:0,width:'100%',display:'flex',flexDirection:portrait?'row':'column',alignItems:'center',justifyContent:'center',gap:'clamp(8px,2.2vmin,30px)'}}>
+                                    <MatchBoardTeam name={t1} size={badgeSize} font={badgeFont}/>
                                     <span style={{color:'#cbd5e1',fontWeight:900,fontSize:'clamp(1.4rem,4.2vmin,3.4rem)',flexShrink:0}}>VS</span>
-                                    <MatchBoardTeam name={t2}/>
+                                    <MatchBoardTeam name={t2} size={badgeSize} font={badgeFont}/>
                                 </div>
                             </div>
                         );
