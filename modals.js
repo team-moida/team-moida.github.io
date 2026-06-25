@@ -807,11 +807,14 @@ const AppModals = ({
                                     </div>
                                 </div>
                             )}
-                            <button onClick={()=>attendHandleUncheckIn(attendModal.data)} className="w-full py-3 bg-red-50 text-red-500 border border-red-200 rounded-2xl font-black text-sm">출석 취소</button>
+                            <button onClick={()=>setAttendModal({type:null,data:null})} className="w-full py-3.5 bg-teal-500 text-white rounded-2xl font-black text-base shadow-sm active:scale-95 transition-all">확인</button>
+                            <button onClick={()=>attendHandleUncheckIn(attendModal.data)} className="w-full py-3 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm mt-2 active:scale-95 transition-all">출석 취소</button>
                           </div>
-                        : <button onClick={()=>attendHandleCheckIn(attendModal.data)} className="w-full py-4 bg-teal-500 text-white rounded-2xl font-black text-lg shadow-lg">출석 체크</button>
+                        : <div>
+                            <button onClick={()=>attendHandleCheckIn(attendModal.data)} className="w-full py-4 bg-teal-500 text-white rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-all">출석 체크</button>
+                            <button onClick={()=>setAttendModal({type:null,data:null})} className="w-full py-3 text-slate-400 text-sm mt-3 font-black">닫기</button>
+                          </div>
                     }
-                    <button onClick={()=>setAttendModal({type:null,data:null})} className="w-full py-3 text-slate-400 text-sm mt-3">닫기</button>
                 </div>
             </div>
         )}
