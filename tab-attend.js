@@ -1519,20 +1519,7 @@ const TabAttend = ({
             />
         )}
 
-        {/* 직접 출석(키오스크) — 관리자 전용, 현재 모임 + 선정 인원 있을 때 */}
-        {isAdminMode && isViewActive && attendActiveList.length > 0 && (
-            <button onClick={() => setIsKioskOpen(true)}
-                className="w-full rounded-2xl p-4 text-white active:scale-98 transition-all flex items-center gap-3"
-                style={{ minHeight:'96px', background:'linear-gradient(135deg,#f97316,#ea580c)', boxShadow:'0 10px 28px -8px rgba(234,88,12,0.45)' }}>
-                <Icon.CheckSq size={34} className="text-white shrink-0"/>
-                <div className="min-w-0 text-left flex-1">
-                    <p className="text-[11px] font-black uppercase tracking-widest text-white/80">관리자 · 직접 출석</p>
-                    <p className="font-black text-base leading-tight">키오스크 모드 열기</p>
-                    <p className="text-xs text-white/75 mt-0.5 truncate">회원이 직접 이름을 탭해 출석 처리</p>
-                </div>
-                <Icon.ChevronRight size={20} className="text-white/80 shrink-0"/>
-            </button>
-        )}
+        {/* 직접 출석(키오스크) 진입은 상단 '출석 체크 열기'(관리자 전용)로 일원화 — 하단 큰 카드 제거 */}
 
         <KioskModal
             isKioskOpen={isKioskOpen}
