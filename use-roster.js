@@ -4,8 +4,13 @@ function useRoster({ isAdminMode }) {
     const [allMembers, setAllMembers] = useState([]);
     const [rosterSubTab, setRosterSubTab] = useState('directory');
     const [targetMonth, setTargetMonth] = useState(() => {
+        // 회원 회비 카드와 동일한 '미리보기 창'(월말 7일 전부터 다음 달) 기준으로 기본 월을 잡는다.
+        // 안 그러면 월말에 회원이 신고한 '다음 달' 회비가 관리자(이번 달 기준)에 안 보인다.
         const n = new Date();
-        return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`;
+        const Y = n.getFullYear(), Mo = n.getMonth(), D = n.getDate();
+        const dim = new Date(Y, Mo + 1, 0).getDate();
+        const tgt = (D >= dim - 6) ? new Date(Y, Mo + 1, 1) : new Date(Y, Mo, 1);
+        return `${tgt.getFullYear()}-${String(tgt.getMonth()+1).padStart(2,'0')}`;
     });
     const [filterCategory, setFilterCategory] = useState('all');
     const [monthlyStatuses, setMonthlyStatuses] = useState({});
