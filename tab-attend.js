@@ -722,7 +722,7 @@ const MeetingListScreen = ({
                     <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">버튼 한 번으로 현재 시각 기준 모임 + 나 포함 랜덤 인원으로 팀편성·매치표까지 자동 생성합니다. [테스트 삭제]를 누르면 기록이 남지 않습니다.</p>
                     <div className="flex gap-2">
                         <button onClick={onCreateTestMeeting} className="flex-1 py-2 rounded-xl bg-amber-500 text-white font-black text-xs active:scale-95 transition-all">생성</button>
-                        <button onClick={onDeleteTestMeeting} className="flex-1 py-2 rounded-xl bg-rose-50 text-rose-500 font-black text-xs active:scale-95 transition-all border border-rose-200">테스트 삭제(흔적 없이)</button>
+                        <button onClick={onDeleteTestMeeting} className="flex-1 py-2 rounded-xl bg-rose-50 text-rose-500 font-black text-xs active:scale-95 transition-all border border-rose-200">테스트 삭제</button>
                     </div>
                 </div>
             )}
