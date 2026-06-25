@@ -1548,26 +1548,15 @@ const TabAttend = ({
             />
         )}
 
-        {/* 회원 출석 — '출석 체크' 버튼 → 팝업(AttendModal). 홈 카드와 동일하게 통일 (GPS 결과는 팝업 안에서 표시) */}
+        {/* 회원 출석 체크인 UI (①출석완료 ②QR결과 ③GPS·QR버튼 ④GPS결과 팝업) — CheckInPanel 공유 컴포넌트(F-1) */}
         {showCheckin && (
-            mySession?.checkedIn ? (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-center">
-                    <div className="flex justify-center mb-2"><div className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center"><Icon.Check size={28} className="text-white"/></div></div>
-                    <p className="font-black text-xl text-emerald-400">출석 완료!</p>
-                    <p className="text-slate-400 text-sm mt-1">{mySession.checkInTime} · {mySession.status}</p>
-                </div>
-            ) : (
-                <button onClick={onOpenAttendModal}
-                    className="w-full rounded-2xl p-5 text-white text-left active:scale-98 transition-all flex items-center gap-4"
-                    style={{ background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(18,46,120,0.45)' }}>
-                    <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center flex-shrink-0"><Icon.MapPin size={26} className="text-white"/></div>
-                    <div className="min-w-0">
-                        <p className="font-black text-base leading-tight">출석 체크</p>
-                        <p className="text-[12px] font-black text-white/80 mt-0.5">위치 확인{meetingSettings?.enableQR ? ' · QR' : ''}로 출석하기</p>
-                    </div>
-                    <Icon.ChevronRight size={20} className="text-white/70 ml-auto flex-shrink-0"/>
-                </button>
-            )
+            <CheckInPanel
+                compact={false}
+                mySession={mySession} meetingSettings={meetingSettings}
+                gpsStatus={gpsStatus} distance={distance} setGpsStatus={setGpsStatus}
+                handleGPSCheckIn={handleGPSCheckIn} handleGPSAttend={handleGPSAttend} isCheckingIn={isCheckingIn}
+                qrStatus={qrStatus} qrMessage={qrMessage} setQrStatus={setQrStatus} setIsQRScannerOpen={setIsQRScannerOpen}
+            />
         )}
 
         {/* 직접 출석(키오스크) 진입은 상단 '출석 체크 열기'(관리자 전용)로 일원화 — 하단 큰 카드 제거 */}

@@ -64,81 +64,63 @@ function CheckInPanel({
           </div>
         )}
 
-        {/* ④ GPS 진행/결과 (위치 확인 누른 뒤에만) */}
+        {/* ④ GPS 결과 — 가운데 팝업 (버튼은 그대로, 누른 뒤 결과만 팝업으로) */}
         {!mySession?.checkedIn && gpsStatus!=='idle' && (
-            <div className="card rounded-2xl p-5">
-                {gpsStatus==='checking' && (
-                    <div className="text-center py-4">
-                        <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-                        <p className="text-slate-400 font-black">GPS 확인 중...</p>
-                    </div>
-                )}
-
-                {gpsStatus==='within' && (
-                    <div className="text-center">
-                        <div className="relative w-20 h-20 mx-auto mb-4">
-                            <div className="absolute inset-0 bg-teal-100 rounded-full pulse-ring"></div>
-                            <div className="w-20 h-20 bg-teal-500 rounded-full flex items-center justify-center"><Icon.MapPin size={32} className="text-white"/></div>
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-6" style={{background:'rgba(15,23,42,0.5)'}}
+                onClick={()=>{ if (gpsStatus!=='checking') setGpsStatus('idle'); }}>
+                <div className="bg-white rounded-3xl w-full max-w-[330px] p-6 text-center" onClick={e=>e.stopPropagation()}>
+                    {gpsStatus==='checking' && (
+                        <div className="py-4">
+                            <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                            <p className="text-slate-500 font-black">GPS 확인 중...</p>
                         </div>
-                        <p className="font-black text-emerald-400 text-lg mb-3">모임 장소 근처!</p>
-                        {distance !== null && (
-                            <div className="mb-4 px-2">
-                                <div className="flex justify-between text-[10px] font-black mb-1.5">
-                                    <span className="text-emerald-400 inline-flex items-center gap-0.5"><Icon.Check size={11}/>인정 범위 내</span>
-                                    <span className="text-slate-400">{distance}m / {meetingSettings?.locationRadius||100}m</span>
-                                </div>
-                                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                                    <div className="h-full bg-emerald-400 rounded-full transition-all duration-700"
-                                        style={{width:`${Math.max(10, Math.round((1 - distance/(meetingSettings?.locationRadius||100))*100))}%`}}/>
-                                </div>
+                    )}
+
+                    {gpsStatus==='within' && (
+                        <>
+                            <div className="flex justify-center mb-3"><div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center"><Icon.CheckCircle size={36} className="text-emerald-500"/></div></div>
+                            <p className="font-black text-xl text-slate-800 mb-1.5">출석 가능</p>
+                            <p className="text-sm text-slate-500 leading-relaxed mb-5">모임 장소에서 {distance ?? 0}m<br/>인정 범위({meetingSettings?.locationRadius||100}m) 안에 있어요.</p>
+                            <div className="flex gap-2.5">
+                                <button onClick={()=>setGpsStatus('idle')} className="flex-1 py-3.5 rounded-2xl bg-slate-100 text-slate-600 font-black active:scale-95 transition-all">취소</button>
+                                <button onClick={handleGPSAttend} disabled={isCheckingIn} className="flex-1 py-3.5 rounded-2xl bg-emerald-500 text-white font-black active:scale-95 transition-all disabled:opacity-50">{isCheckingIn ? '처리 중...' : '확인'}</button>
                             </div>
-                        )}
-                        <button onClick={handleGPSAttend} disabled={isCheckingIn}
-                            className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-base shadow-lg disabled:opacity-50">
-                            {isCheckingIn ? '출석 처리 중...' : <span className="inline-flex items-center justify-center gap-1"><Icon.Check size={16}/>출석 체크</span>}
-                        </button>
-                    </div>
-                )}
+                        </>
+                    )}
 
-                {gpsStatus==='outside' && (
-                    <div className="text-center">
-                        <div className="flex justify-center mb-2"><Icon.Walk size={36} className="text-yellow-500"/></div>
-                        <p className="font-black text-yellow-500 text-lg mb-3">아직 멀리 있습니다</p>
-                        {distance !== null && (
-                            <div className="mb-4 px-2">
-                                <div className="flex justify-between text-[10px] font-black mb-1.5">
-                                    <span className="text-yellow-500">현재 {distance}m</span>
-                                    <span className="text-slate-400">{meetingSettings?.locationRadius||100}m 이내 필요</span>
-                                </div>
-                                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                                    <div className="h-full bg-yellow-400 rounded-full transition-all duration-700"
-                                        style={{width:`${Math.min(90, Math.round(distance/((meetingSettings?.locationRadius||100)*3)*100))}%`}}/>
-                                </div>
-                                <p className="text-[10px] text-slate-400 mt-1.5">{Math.max(0, distance-(meetingSettings?.locationRadius||100))}m 더 이동하면 출석 가능</p>
+                    {gpsStatus==='outside' && (
+                        <>
+                            <div className="flex justify-center mb-3"><div className="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center"><Icon.Walk size={34} className="text-amber-500"/></div></div>
+                            <p className="font-black text-xl text-slate-800 mb-1.5">아직 멀어요</p>
+                            <p className="text-sm text-slate-500 leading-relaxed mb-5">모임 장소에서 {distance}m<br/>인정 범위({meetingSettings?.locationRadius||100}m) 안으로 들어와 주세요.</p>
+                            <div className="flex gap-2.5">
+                                <button onClick={()=>setGpsStatus('idle')} className="flex-1 py-3.5 rounded-2xl bg-slate-100 text-slate-600 font-black active:scale-95 transition-all">취소</button>
+                                <button onClick={handleGPSCheckIn} className="flex-1 py-3.5 rounded-2xl bg-teal-500 text-white font-black active:scale-95 transition-all">다시 확인</button>
                             </div>
-                        )}
-                        <button onClick={handleGPSCheckIn} className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm flex items-center justify-center gap-1.5">
-                            <Icon.Refresh size={14}/>다시 확인
-                        </button>
-                    </div>
-                )}
+                        </>
+                    )}
 
-                {gpsStatus==='no_location' && (
-                    <div className="text-center">
-                        <div className="flex justify-center mb-2"><Icon.Settings size={36} className="text-slate-400"/></div>
-                        <p className="font-black text-slate-500 mb-1">장소 미설정</p>
-                        <p className="text-slate-500 text-xs">관리자가 모임 장소 GPS를 설정하지 않았습니다.<br/>{meetingSettings?.enableQR ? 'QR 출석을 이용해주세요.' : '관리자에게 문의해주세요.'}</p>
-                    </div>
-                )}
+                    {gpsStatus==='no_location' && (
+                        <>
+                            <div className="flex justify-center mb-3"><div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center"><Icon.Settings size={32} className="text-slate-400"/></div></div>
+                            <p className="font-black text-lg text-slate-700 mb-1.5">장소 미설정</p>
+                            <p className="text-sm text-slate-500 leading-relaxed mb-5">관리자가 모임 장소 GPS를 설정하지 않았습니다.<br/>{meetingSettings?.enableQR ? 'QR 출석을 이용해주세요.' : '관리자에게 문의해주세요.'}</p>
+                            <button onClick={()=>setGpsStatus('idle')} className="w-full py-3.5 rounded-2xl bg-slate-100 text-slate-600 font-black active:scale-95 transition-all">확인</button>
+                        </>
+                    )}
 
-                {gpsStatus==='error' && (
-                    <div className="text-center">
-                        <div className="flex justify-center mb-2"><Icon.AlertTriangle size={36} className="text-red-400"/></div>
-                        <p className="font-black text-red-400 mb-3">위치 확인 실패</p>
-                        <button onClick={()=>setGpsStatus('idle')} className="px-5 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-black text-sm">다시 시도</button>
-                    </div>
-                )}
-
+                    {gpsStatus==='error' && (
+                        <>
+                            <div className="flex justify-center mb-3"><div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center"><Icon.AlertTriangle size={32} className="text-red-400"/></div></div>
+                            <p className="font-black text-lg text-slate-800 mb-1.5">위치 확인 실패</p>
+                            <p className="text-sm text-slate-500 leading-relaxed mb-5">위치 권한을 허용했는지 확인 후 다시 시도해 주세요.</p>
+                            <div className="flex gap-2.5">
+                                <button onClick={()=>setGpsStatus('idle')} className="flex-1 py-3.5 rounded-2xl bg-slate-100 text-slate-600 font-black active:scale-95 transition-all">닫기</button>
+                                <button onClick={handleGPSCheckIn} className="flex-1 py-3.5 rounded-2xl bg-teal-500 text-white font-black active:scale-95 transition-all">다시 시도</button>
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
         )}
         </>
