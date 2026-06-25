@@ -243,7 +243,7 @@ async function deleteTestMeeting({ showAlert, showConfirm }) {
                 }
 
                 await getCol('settings').doc('test_meeting').delete().catch(() => {});
-                showAlert('삭제 완료', total > 0 ? `테스트 모임을 완전히 삭제했습니다 (${total}건).` : '삭제할 테스트 모임이 없습니다.');
+                showAlert('삭제 완료', total > 0 ? '테스트 모임을 완전히 삭제했습니다.' : '삭제할 테스트 모임이 없습니다.');
             } catch (e) {
                 showAlert('오류', '테스트 삭제 실패: ' + (e?.message || e));
             }
