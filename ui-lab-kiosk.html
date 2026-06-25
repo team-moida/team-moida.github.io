@@ -89,6 +89,16 @@ body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-se
 .kconfirm .btns{display:flex; gap:10px}
 .kconfirm .btns button{flex:1; height:56px; border-radius:16px; font-family:inherit; font-weight:900; font-size:16px; border:0; cursor:pointer}
 
+/* ===== 아이패드 가로 모드 (팀을 좌우 칼럼으로 → 스크롤 없이 한 화면) ===== */
+.phone.land{ width:980px; height:720px; max-width:96vw }
+.land .khead{ padding:16px 22px }
+.land .kclock{ font-size:34px }
+.land .kbody{ display:flex; gap:14px; align-items:flex-start; padding:16px 18px 20px }
+.land .kteam{ flex:1 1 0; min-width:0; margin-bottom:0 }
+.land .ktiles{ grid-template-columns:repeat(2,1fr); gap:9px }
+.land .ktile .num{ font-size:80px }
+.land .ktile .nm{ font-size:20px }
+
 svg{display:block}
 </style>
 </head>
@@ -97,9 +107,11 @@ svg{display:block}
 <div class="lab-bar">
   <span class="lab-title">모이다 <b>키오스크 · 직접 출석 B+</b></span>
   <span class="lab-spacer"></span>
-  <button class="lab-mini" id="popBtn">확인 팝업 보기</button>
+  <button class="lab-mini on" id="oPort">📱 폰 세로</button>
+  <button class="lab-mini" id="oLand">📲 아이패드 가로</button>
+  <button class="lab-mini" id="popBtn">확인 팝업</button>
 </div>
-<div class="lab-note">관리자가 '출석 체크 열기'로 띄우는 풀스크린입니다. 선수 타일을 탭하면 확인 팝업이 떠요.</div>
+<div class="lab-note">관리자가 '출석 체크 열기'로 띄우는 풀스크린입니다. 위에서 폰/아이패드 전환 · 선수 타일을 탭하면 확인 팝업이 떠요.</div>
 
 <div class="stage">
   <div class="phone" id="phone">
@@ -137,15 +149,19 @@ svg{display:block}
   var COLHEX={A:'#ef4444',B:'#2563eb',C:'#16a34a',D:'#f59e0b'};
   var VEST={A:'빨강',B:'파랑',C:'초록',D:'노랑'};
 
-  // 더미 팀 (A 빨강 / B 파랑)
+  // 더미 팀 (A 빨강 / B 파랑 / C 초록 · 18명 · 12명 출석)
   var teams=[
     {t:'A', vest:'빨강', members:[
-      {n:'이성훈',no:3,done:true},{n:'박준호',no:7,done:true},{n:'한지우',no:11,w:true},
-      {n:'강도현',no:5},{n:'윤재석',no:9},{n:'김도영',no:14}
+      {n:'이성훈',no:3,done:true},{n:'박준호',no:7,done:true},{n:'한지우',no:11,w:true,done:true},
+      {n:'강도현',no:5,done:true},{n:'윤재석',no:9},{n:'김도영',no:14}
     ]},
     {t:'B', vest:'파랑', members:[
-      {n:'정현섭',no:1,done:true},{n:'최민수',no:8},{n:'서지훈',no:4},
-      {n:'장샛별',no:6,w:true},{n:'오유균',no:2},{n:'이태경',no:10}
+      {n:'정현섭',no:1,done:true},{n:'최민수',no:8,done:true},{n:'서지훈',no:4,done:true},
+      {n:'장샛별',no:6,w:true,done:true},{n:'오유균',no:2},{n:'이태경',no:10}
+    ]},
+    {t:'C', vest:'초록', members:[
+      {n:'김현우',no:12,done:true},{n:'박서준',no:15,done:true},{n:'이준영',no:13,done:true},
+      {n:'정다은',no:16,w:true,done:true},{n:'한도윤',no:17},{n:'송민재',no:18}
     ]}
   ];
 
@@ -205,6 +221,13 @@ svg{display:block}
   ov.addEventListener('click',function(e){ if(e.target===ov) ov.hidden=true; });
   // 데모 버튼
   document.getElementById('popBtn').addEventListener('click',function(){ openConfirm('A','이성훈',3,false); });
+
+  // 방향 전환 (폰 세로 / 아이패드 가로)
+  var phone=document.getElementById('phone');
+  var oPort=document.getElementById('oPort'), oLand=document.getElementById('oLand');
+  function setLand(land){ phone.classList.toggle('land',land); oLand.classList.toggle('on',land); oPort.classList.toggle('on',!land); }
+  oPort.addEventListener('click',function(){setLand(false);});
+  oLand.addEventListener('click',function(){setLand(true);});
 })();
 </script>
 </body>
