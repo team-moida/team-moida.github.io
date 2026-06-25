@@ -843,7 +843,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
         const isRenew = ms && ms.active && ms.remaining <= 1;
         return (
             <>
-            <button onClick={onGoDues} className="w-full rounded-2xl px-4 py-3 text-left text-white active:scale-98 transition-all flex items-center gap-3" style={{ background:'linear-gradient(135deg,var(--c-success),#059669)', boxShadow:'0 8px 22px -8px rgba(5,150,105,0.5)' }}>
+            <button onClick={onGoDues} className="w-full rounded-2xl px-4 py-3 text-left text-white active:scale-98 transition-all flex items-center gap-3" style={{ background:'linear-gradient(135deg,#f59e0b,#d97706)', boxShadow:'0 8px 22px -8px rgba(217,119,6,0.5)' }}>
                 <Icon.CreditCard size={24} className="text-white flex-shrink-0"/>
                 <div className="flex-1 min-w-0">
                     <p className="font-black text-sm leading-tight truncate">{isRenew ? `${ms.type}납 갱신 시기예요` : `${targetMonLabel} 회비 납부 시기예요`}</p>
@@ -854,10 +854,10 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
             {showPopup && (
                 <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6" onClick={dismissPopup}>
                     <div className="bg-white rounded-3xl p-6 w-full max-w-xs text-center shadow-2xl" onClick={e=>e.stopPropagation()}>
-                        <div className="flex justify-center mb-2"><Icon.CreditCard size={36} className="text-emerald-500"/></div>
+                        <div className="flex justify-center mb-2"><Icon.CreditCard size={36} className="text-amber-500"/></div>
                         <p className="font-black text-lg text-slate-800">{targetMonLabel} 회비 납부</p>
                         <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">곧 {targetMonLabel}이 시작돼요.<br/>잊지 말고 회비를 납부해 주세요!</p>
-                        <button onClick={()=>{ dismissPopup(); onGoDues && onGoDues(); }} className="mt-4 w-full py-3 rounded-2xl bg-emerald-500 text-white font-black text-sm active:scale-95 transition-all">납부하러 가기</button>
+                        <button onClick={()=>{ dismissPopup(); onGoDues && onGoDues(); }} className="mt-4 w-full py-3 rounded-2xl bg-amber-500 text-white font-black text-sm active:scale-95 transition-all">납부하러 가기</button>
                     </div>
                 </div>
             )}
@@ -884,7 +884,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
     // ── 계좌 표시 + 회비 납부 (회원·관리자 공통) ──
     return (
         <>
-        <div className="rounded-2xl p-5 text-white" style={{ background:'linear-gradient(135deg,var(--c-success),#059669)', boxShadow:'0 10px 28px -8px rgba(5,150,105,0.45)' }}>
+        <div className="rounded-3xl p-5 text-white" style={{ background: showPayPrompt ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'linear-gradient(135deg,var(--c-success),#059669)', boxShadow: showPayPrompt ? '0 10px 28px -8px rgba(217,119,6,0.45)' : '0 10px 28px -8px rgba(5,150,105,0.45)' }}>
             <div className="flex items-start justify-between gap-2 mb-3">
                 <div className="flex items-center gap-3 min-w-0">
                     <Icon.CreditCard size={24} className="text-white flex-shrink-0"/>
@@ -912,7 +912,7 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
                     </div>
                 )}
                 {showPayPrompt && (
-                    <button onClick={()=>submitReport(sel)} disabled={submitting} className="w-full py-3 rounded-xl bg-white text-emerald-700 font-black text-sm active:scale-95 transition-all">{submitting?'처리 중...':'송금했어요 (납부 신고)'}</button>
+                    <button onClick={()=>submitReport(sel)} disabled={submitting} className="w-full py-3 rounded-xl bg-white text-amber-700 font-black text-sm active:scale-95 transition-all">{submitting?'처리 중...':'송금했어요 (납부 신고)'}</button>
                 )}
             </div>
         </div>
