@@ -651,32 +651,53 @@ const MeetingRecordsView = ({ meetings, attendHistory, darkMode, onEdit, onDelet
                 </div>
             ) : ended.map(m => {
                 const kind = (m.meetingType || 'self') === 'match' ? 'match' : 'self';
-                const cfg = MEETING_KIND[kind];
                 const hist = kind === 'self' ? histByDate[m.date] : null;
+                const _md = m.date ? new Date(m.date + 'T00:00:00') : null;
+                const _ok = _md && !isNaN(_md.getTime());
+                const dDay = _ok ? _md.getDate() : '';
+                const dMon = _ok ? ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'][_md.getMonth()] : '';
+                const dDow = _ok ? ['일','월','화','수','목','금','토'][_md.getDay()] : '';
+                const isMatch = kind === 'match';
+                const dMonShort = dMon ? dMon.slice(0, 3) : '';
+                const chipBg = isMatch ? '#C2F94A' : '#183FB0';
+                const chipFg = isMatch ? '#15171E' : '#ffffff';
+                const meta = `${dDow} ${m.start}~${m.end}${m.location ? ` · ${m.location}` : ''}${isMatch && m.opponentName ? ` · vs ${m.opponentName}` : ''}`;
                 return (
-                    <button key={m.id} onClick={() => setDetail({ meeting: m, hist })}
-                        className="w-full rounded-2xl p-4 text-left bg-white border border-slate-100 active:scale-98 transition-all"
-                        style={darkMode ? { background: '#1e293b', borderColor: '#334155' } : {}}>
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: cfg.accent }} />
-                                <span className="text-[10px] font-black uppercase tracking-widest shrink-0" style={{ color: cfg.accent }}>{cfg.label}</span>
-                                <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md shrink-0">종료</span>
+                    <div key={m.id} className="card rounded-2xl overflow-hidden">
+                        <button onClick={() => setDetail({ meeting: m, hist })} className="w-full flex items-center gap-3 p-3 text-left active:scale-98 transition-all">
+                            {/* 날짜 칩 (정기=인디고 / 매칭=라임) */}
+                            <div className="flex-shrink-0 w-[58px] h-[58px] rounded-2xl flex flex-col items-center justify-center" style={{ background: chipBg, color: chipFg }}>
+                                {_ok ? (
+                                    <><span className="text-[22px] font-black leading-none tabular-nums">{dDay}</span>
+                                    <span className="text-[10px] font-black mt-0.5 tracking-wider" style={{ opacity: .9 }}>{dMonShort}</span></>
+                                ) : <Icon.Calendar size={22}/>}
                             </div>
-                            {hist && <span className="text-[11px] font-black text-teal-600 shrink-0">출석 {hist.present ?? '-'}/{hist.total ?? '-'}</span>}
-                        </div>
-                        <p className="font-black text-slate-800" style={darkMode ? { color: '#f1f5f9' } : {}}>{fmtMeetingDate(m.date)} · {m.start}~{m.end}</p>
-                        {kind === 'match' && m.opponentName && <p className="text-xs font-black text-indigo-500 mt-0.5 truncate">vs {m.opponentName}</p>}
-                        {m.location && <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1 min-w-0"><Icon.MapPin size={12} className="shrink-0" /><span className="truncate">{m.location}</span></p>}
+                            {/* 제목 + 종료 배지 + 메타 */}
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-black text-[15px] text-slate-800">{isMatch ? '매칭' : '정기모임'}</span>
+                                    {m.isTest && <span className="inline-flex items-center gap-0.5 text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-100 text-amber-600"><Icon.Beaker size={9}/>테스트</span>}
+                                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">종료</span>
+                                </div>
+                                <p className="text-[12.5px] font-bold text-slate-500 mt-1 truncate">{meta}</p>
+                            </div>
+                            {/* 출석 인원 (정기만) */}
+                            {hist && (
+                                <div className="flex-shrink-0 text-center pl-1">
+                                    <p className="text-[20px] font-black leading-none tabular-nums text-teal-600">{hist.present ?? '-'}</p>
+                                    <p className="text-[10px] font-black text-slate-400 mt-0.5">출석</p>
+                                </div>
+                            )}
+                        </button>
                         {(onEdit || onDelete) && (
-                            <div className="flex items-center justify-end gap-1.5 mt-2.5 pt-2.5 border-t" style={{borderColor: darkMode ? '#334155' : '#f1f5f9'}}>
+                            <div className="flex items-center justify-end gap-1.5 px-3 pb-2.5">
                                 {onEdit && <span role="button" onClick={(e)=>{ e.stopPropagation(); onEdit(m); }}
-                                    className="flex items-center gap-1 text-[11px] font-black px-2.5 py-1 rounded-lg bg-blue-50 text-blue-600 active:scale-95 cursor-pointer"><Icon.Edit size={12}/> 수정</span>}
+                                    className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-slate-100 text-slate-500 active:scale-95 cursor-pointer"><Icon.Edit size={12}/> 수정</span>}
                                 {onDelete && <span role="button" onClick={(e)=>{ e.stopPropagation(); onDelete(m, hist); }}
-                                    className="flex items-center gap-1 text-[11px] font-black px-2.5 py-1 rounded-lg bg-rose-50 text-rose-500 active:scale-95 cursor-pointer"><Icon.Trash size={12}/> 삭제</span>}
+                                    className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-rose-50 text-rose-500 active:scale-95 cursor-pointer"><Icon.Trash size={12}/> 삭제</span>}
                             </div>
                         )}
-                    </button>
+                    </div>
                 );
             })}
             {detail && <RecordDetailModal detail={detail} onClose={() => setDetail(null)} onEdit={onEdit} onDelete={onDelete} onFinalizePenalty={onFinalizePenalty} darkMode={darkMode} />}
