@@ -151,7 +151,6 @@ const fmtAnnDate = (iso) => {
 // announcements는 use-fcm.js 기준 최신순 + type:'test' 제외됨. 클릭 시 공지 게시판으로 이동.
 const AnnounceTicker = ({ announcements, onOpen, onTabChange, meetings }) => {
     const [idx, setIdx] = React.useState(0);
-    const cntRef = React.useRef(0);
     const list = announcements || [];
     // 모임 연결 공지인데 그 모임이 종료됐으면 '완료' 배지
     const isAnnDone = (a) => {
@@ -159,6 +158,12 @@ const AnnounceTicker = ({ announcements, onOpen, onTabChange, meetings }) => {
         const mt = meetings.find(m => m.id === a.linkMeetingId);
         return mt ? isMeetingEnded(mt) : false;
     };
+    // 공지 여러 개면 5초마다 다음 공지로 — 고정돼 있다가 위로 올라가고 다음 공지가 아래에서 위로 등장
+    React.useEffect(() => {
+        if (list.length <= 1) return;
+        const t = setInterval(() => setIdx(i => (i + 1) % list.length), 5000);
+        return () => clearInterval(t);
+    }, [list.length]);
     // 공지 0개 — 빈 띠 유지. 눌러도 게시판으로 이동.
     if (list.length === 0) {
         return (
@@ -173,22 +178,16 @@ const AnnounceTicker = ({ announcements, onOpen, onTabChange, meetings }) => {
 
     const safeIdx = idx % list.length;
     const a = list[safeIdx];
-    // 어두운 띠 + 라임 '공지' 칩 뒤로 제목이 가로로 흐름. 한 공지당 2바퀴 후 다음 공지로 교체(아래→위 등장)
-    const onIter = () => {
-        cntRef.current += 1;
-        if (cntRef.current >= 2 && list.length > 1) { cntRef.current = 0; setIdx(i => (i + 1) % list.length); }
-    };
+    // 어두운 띠 + 라임 '공지' 칩. 제목은 고정(길면 …), 4초마다 위로 교체(아래→위 등장)
     return (
         <button onClick={onOpen} className="w-full text-left active:scale-98 transition-all">
-            <div className="moida-notice-band relative h-12 rounded-2xl overflow-hidden">
-                {/* key 변경 → 새 공지가 아래에서 위로 등장 */}
-                <div key={safeIdx} className="moida-ticker-up absolute inset-y-0 right-0 left-[58px] overflow-hidden">
-                    <div className="moida-notice-scroll" onAnimationIteration={onIter}>
-                        {isAnnDone(a) && <span className="mr-1.5 align-middle text-[10px] font-black px-1.5 py-0.5 rounded bg-white/20 text-white/90">완료</span>}
-                        <span className="align-middle font-black text-[13px] text-white">{a.title}</span>
-                    </div>
+            <div className="moida-notice-band relative h-9 rounded-xl overflow-hidden">
+                {/* key 변경 → 고정돼 있다가 위로 올라가고 다음 공지가 아래에서 위로 등장 */}
+                <div key={safeIdx} className="moida-ticker-up absolute inset-y-0 right-3 left-[52px] flex items-center overflow-hidden">
+                    {isAnnDone(a) && <span className="mr-1.5 text-[10px] font-black px-1.5 py-0.5 rounded bg-white/20 text-white/90 flex-shrink-0">완료</span>}
+                    <span className="font-black text-[13px] text-white truncate">{a.title}</span>
                 </div>
-                <span className="moida-notice-chip absolute left-2.5 top-1/2 -translate-y-1/2 z-[3] bg-live text-[#15171E] text-[10px] font-black px-2.5 py-[5px] rounded-full">공지</span>
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 z-[3] bg-live text-[#15171E] text-[10px] font-black px-2.5 py-1 rounded-full">공지</span>
             </div>
         </button>
     );
