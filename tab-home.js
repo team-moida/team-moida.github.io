@@ -210,13 +210,13 @@ const fmtMeetingDate = (ds) => {
 //  · 좌표가 없거나(관리자 GPS 미지정) 조회 실패 시 조용히 숨김 → 카드 깔끔 유지.
 // 기상청 PTY(강수형태) → [이모지, 한글]
 const PTY_MAP = {
-    0: [Icon.Sun, '맑음'],
-    1: [Icon.CloudRain, '비'],
-    2: [Icon.CloudSnow, '비/눈'],
-    3: [Icon.CloudSnow, '눈'],
-    5: [Icon.CloudDrizzle, '빗방울'],
-    6: [Icon.CloudDrizzle, '빗방울·눈날림'],
-    7: [Icon.CloudSnow, '눈날림'],
+    0: [Icon.Sun, '맑음', '#FDE047'],
+    1: [Icon.CloudRain, '비', '#7DD3FC'],
+    2: [Icon.CloudSnow, '비/눈', '#BAE6FD'],
+    3: [Icon.CloudSnow, '눈', '#E0F2FE'],
+    5: [Icon.CloudDrizzle, '빗방울', '#7DD3FC'],
+    6: [Icon.CloudDrizzle, '빗방울·눈날림', '#BAE6FD'],
+    7: [Icon.CloudSnow, '눈날림', '#E0F2FE'],
 };
 // WGS84 위경도 → 기상청 격자 좌표 변환 (LCC 투영)
 function latLngToKmaGrid(lat, lng) {
@@ -328,11 +328,11 @@ const MeetingWeather = ({ lat, lng, isAdminMode }) => {
             </div>
         );
     }
-    const [WxIcon, label] = PTY_MAP[wx.pty] || PTY_MAP[0];
+    const [WxIcon, label, wxColor] = PTY_MAP[wx.pty] || PTY_MAP[0];
     const r = (v) => (v == null || isNaN(Number(v))) ? '–' : Math.round(Number(v));
     return (
         <div className="mt-3 flex items-center gap-2 text-sm font-black min-w-0">
-            <WxIcon size={20} className="text-white flex-shrink-0"/>
+            <WxIcon size={20} className="flex-shrink-0" style={{color: wxColor}}/>
             <span className="text-white flex-shrink-0">{r(wx.temp)}°</span>
             <span className="text-white/40 flex-shrink-0">·</span>
             <span className="text-white/85 flex-shrink-0">{label}</span>
