@@ -331,23 +331,13 @@ const MeetingWeather = ({ lat, lng, isAdminMode }) => {
     const [WxIcon, label] = PTY_MAP[wx.pty] || PTY_MAP[0];
     const r = (v) => (v == null || isNaN(Number(v))) ? '–' : Math.round(Number(v));
     return (
-        <div className="mt-3">
-            {addr && (
-                <p className="text-xs font-black text-white/70 mb-1.5 truncate">{addr}</p>
-            )}
-            <div className="flex items-center gap-3">
-            <WxIcon size={34} className="text-white flex-shrink-0"/>
-            <div className="min-w-0 flex-1">
-                <div className="flex items-baseline gap-1.5 min-w-0">
-                    <span className="text-[10px] font-black text-white/70 flex-shrink-0">지금</span>
-                    <span className="text-lg font-black text-white flex-shrink-0">{r(wx.temp)}°</span>
-                    <span className="text-xs font-black text-white/80 truncate">{label}</span>
-                </div>
-                <div className="flex items-center gap-x-2.5 gap-y-0.5 mt-0.5 text-[11px] font-black flex-wrap">
-                    <span className="text-white/70">습도 {r(wx.humidity)}%</span>
-                </div>
-            </div>
-            </div>
+        <div className="mt-3 flex items-center gap-2 text-sm font-black min-w-0">
+            <WxIcon size={20} className="text-white flex-shrink-0"/>
+            <span className="text-white flex-shrink-0">{r(wx.temp)}°</span>
+            <span className="text-white/40 flex-shrink-0">·</span>
+            <span className="text-white/85 flex-shrink-0">{label}</span>
+            <span className="text-white/40 flex-shrink-0">·</span>
+            <span className="text-white/70 truncate">습도 {r(wx.humidity)}%</span>
         </div>
     );
 };
