@@ -389,7 +389,7 @@ const NextMeetingCard = ({
     const _md = meeting.date ? new Date(meeting.date + 'T00:00:00') : null;
     const _ok = _md && !isNaN(_md.getTime());
     const dDay = _ok ? _md.getDate() : '';
-    const dMon = _ok ? (_md.getMonth() + 1) : '';
+    const dMon = _ok ? ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'][_md.getMonth()] : '';
     const dDow = _ok ? ['일','월','화','수','목','금','토'][_md.getDay()] : '';
     return (
         <div className="relative">
@@ -430,7 +430,7 @@ const NextMeetingCard = ({
                 <div className="flex items-end gap-2.5">
                     <span className="font-black text-[52px] leading-[0.82] tracking-tight">{dDay}</span>
                     <div className="pb-1.5">
-                        <p className="font-black text-base leading-tight">{dMon}월</p>
+                        <p className="font-black text-sm leading-tight tracking-wide">{dMon}</p>
                         <p className="text-sm font-bold text-white/80 leading-tight">{dDow}요일</p>
                     </div>
                 </div>
