@@ -21,7 +21,7 @@ const KioskModal = ({
     isKioskOpen, setIsKioskOpen,
     attendGroupedTeams, attendActiveList,
     attendCheckedInCount, meetingSettings,
-    attendHandleCheckIn, setAttendModal,
+    attendHandleCheckIn, attendHandleUncheckIn, setAttendModal,
 }) => {
     const [confirmTarget, setConfirmTarget] = React.useState(null);
     if (!isKioskOpen) return null;
@@ -69,10 +69,7 @@ const KioskModal = ({
                             <div style={{display:'flex',gap:'6px'}}>
                                 {group.members.map(p => (
                                     <button key={p.id}
-                                        onClick={() => p.checkedIn
-                                            ? setAttendModal({type:'checkin', data:{...p, teamIdx:group.teamIdx, teamName:group.teamName}})
-                                            : setConfirmTarget({...p, teamIdx:group.teamIdx, teamName:group.teamName})
-                                        }
+                                        onClick={() => setConfirmTarget({...p, teamIdx:group.teamIdx, teamName:group.teamName})}
                                         style={{flex:'1 1 0',minWidth:0,aspectRatio:'1',minHeight:'72px'}}
                                         className={`relative overflow-hidden rounded-2xl active:scale-95 transition-all text-white ${getTeamBadge(group.teamIdx)} ${p.checkedIn?'opacity-40':''}`}>
                                         {p.checkedIn && (
@@ -105,10 +102,7 @@ const KioskModal = ({
                         <div className="grid grid-cols-3 gap-2.5">
                             {attendActiveList.map((p, idx) => (
                                 <button key={p.id}
-                                    onClick={() => p.checkedIn
-                                        ? setAttendModal({type:'checkin', data:{...p, jerseyNumber:idx+1}})
-                                        : setConfirmTarget({...p, jerseyNumber:idx+1})
-                                    }
+                                    onClick={() => setConfirmTarget({...p, jerseyNumber:idx+1})}
                                     style={{minHeight:'100px'}}
                                     className={`relative overflow-hidden rounded-2xl active:scale-95 transition-all text-white bg-teal-500 ${p.checkedIn?'opacity-40':''}`}>
                                     {p.checkedIn && (
@@ -146,40 +140,64 @@ const KioskModal = ({
                     </div>
                 )}
             </div>
-            {/* 확인 팝업 */}
-            {confirmTarget && (
+            {/* 확인 팝업 — 박스 전체가 조끼색. 밝은 조끼(연두·노랑)는 글자색 자동 보정. 출석한 회원은 출석취소 분기 */}
+            {confirmTarget && (() => {
+                const lightTeam = /text-slate/.test(teamBadgeClass);   // getTeamBadge가 밝은 조끼엔 text-slate-800을 줌
+                const txt = lightTeam ? '#1e293b' : '#ffffff';
+                const txtSoft = lightTeam ? 'rgba(30,41,59,0.72)' : 'rgba(255,255,255,0.9)';
+                const okBg = lightTeam ? '#1e293b' : '#ffffff';
+                const okFg = lightTeam ? '#ffffff' : '#15171E';
+                const subBg = lightTeam ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.22)';
+                const isIn = !!confirmTarget.checkedIn;
+                const shadow = lightTeam ? 'none' : '0 2px 12px rgba(0,0,0,0.25)';
+                return (
                 <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,zIndex:10,background:'rgba(0,0,0,0.55)',display:'flex',alignItems:'center',justifyContent:'center',padding:'24px'}}
                     onClick={() => setConfirmTarget(null)}>
-                    <div className={`${teamBadgeClass} text-white`} style={{borderRadius:'28px',overflow:'hidden',width:'100%',maxWidth:'340px',boxShadow:'0 25px 50px rgba(0,0,0,0.4)'}}
+                    <div className={teamBadgeClass} style={{borderRadius:'28px',overflow:'hidden',width:'100%',maxWidth:'340px',boxShadow:'0 25px 50px rgba(0,0,0,0.4)'}}
                         onClick={e => e.stopPropagation()}>
                         <div style={{padding:'30px 24px 24px',textAlign:'center',userSelect:'none'}}>
-                            <p style={{fontSize:'0.8rem',fontWeight:900,opacity:0.85,marginBottom:'16px'}}>{confirmTarget.teamName ? '조끼 색상·번호 확인 후 착용해 주세요' : '출석 처리할까요?'}</p>
+                            <p style={{fontSize:'0.82rem',fontWeight:900,color:txtSoft,marginBottom:'16px'}}>
+                                {isIn ? '이미 출석 완료된 회원이에요' : (confirmTarget.teamName ? '조끼 색상·번호 확인 후 착용해 주세요' : '출석 처리할까요?')}
+                            </p>
                             {confirmTarget.jerseyNumber && (
-                                <div style={{fontSize:'5.5rem',fontWeight:900,lineHeight:1,marginBottom:'6px',color:'white',textShadow:'0 2px 12px rgba(0,0,0,0.25)'}}>
+                                <div style={{fontSize:'5.5rem',fontWeight:900,lineHeight:1,marginBottom:'6px',color:txt,textShadow:shadow}}>
                                     {confirmTarget.jerseyNumber}
                                 </div>
                             )}
-                            <p style={{fontSize:'2.2rem',fontWeight:900,color:'white',lineHeight:1.2,marginBottom:'8px',wordBreak:'keep-all',textShadow:'0 1px 6px rgba(0,0,0,0.25)'}}>{confirmTarget.name}</p>
+                            <p style={{fontSize:'2.2rem',fontWeight:900,color:txt,lineHeight:1.2,marginBottom:'8px',wordBreak:'keep-all',textShadow:shadow}}>{confirmTarget.name}</p>
                             {confirmTarget.teamName
-                                ? <p style={{fontSize:'1.05rem',fontWeight:900,opacity:0.92,marginBottom:'24px'}}>{confirmTarget.teamName}팀 · {teamColorLabel} 조끼</p>
-                                : <div style={{marginBottom:'24px'}}/>
+                                ? <p style={{fontSize:'1.05rem',fontWeight:900,color:txtSoft,marginBottom: isIn?'6px':'24px'}}>{confirmTarget.teamName}팀 · {teamColorLabel} 조끼</p>
+                                : <div style={{marginBottom: isIn?'6px':'24px'}}/>
                             }
+                            {isIn && (
+                                <p style={{fontSize:'0.95rem',fontWeight:900,color:txtSoft,marginBottom:'24px'}}>출석 완료{confirmTarget.checkInTime?` · ${confirmTarget.checkInTime}`:''}</p>
+                            )}
                             <div style={{display:'flex',gap:'10px'}}>
-                                <button onClick={() => setConfirmTarget(null)}
-                                    style={{flex:1,height:'56px',borderRadius:'16px',background:'rgba(255,255,255,0.22)',color:'white',fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
-                                    className="active:scale-95 transition-all">
-                                    취소
-                                </button>
-                                <button onClick={handleConfirm}
-                                    style={{flex:1,height:'56px',borderRadius:'16px',background:'white',color:'#15171E',fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
-                                    className="active:scale-95 transition-all">
-                                    확인
-                                </button>
+                                {isIn ? (
+                                    <>
+                                        <button onClick={() => { attendHandleUncheckIn && attendHandleUncheckIn(confirmTarget); setConfirmTarget(null); }}
+                                            style={{flex:1,height:'56px',borderRadius:'16px',background:subBg,color:txt,fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
+                                            className="active:scale-95 transition-all">출석 취소</button>
+                                        <button onClick={() => setConfirmTarget(null)}
+                                            style={{flex:1,height:'56px',borderRadius:'16px',background:okBg,color:okFg,fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
+                                            className="active:scale-95 transition-all">확인</button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button onClick={() => setConfirmTarget(null)}
+                                            style={{flex:1,height:'56px',borderRadius:'16px',background:subBg,color:txt,fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
+                                            className="active:scale-95 transition-all">취소</button>
+                                        <button onClick={handleConfirm}
+                                            style={{flex:1,height:'56px',borderRadius:'16px',background:okBg,color:okFg,fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
+                                            className="active:scale-95 transition-all">확인</button>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
                 </div>
-            )}
+                );
+            })()}
         </div>
     );
 };
@@ -884,7 +902,7 @@ const TabAttend = ({
     qrStatus, qrMessage, setQrStatus, setIsQRScannerOpen,
     gpsStatus, distance, handleGPSCheckIn, handleGPSAttend,
     isCheckingIn, setGpsStatus,
-    isKioskOpen, setIsKioskOpen, attendHandleCheckIn,
+    isKioskOpen, setIsKioskOpen, attendHandleCheckIn, attendHandleUncheckIn,
     isMeetingOver, attendHandleEndMeeting,
     viewMeeting, isViewActive, onEditMeeting,
     myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel, handleAbsent,
@@ -1529,6 +1547,7 @@ const TabAttend = ({
             attendCheckedInCount={attendCheckedInCount}
             meetingSettings={meetingSettings}
             attendHandleCheckIn={attendHandleCheckIn}
+            attendHandleUncheckIn={attendHandleUncheckIn}
             setAttendModal={setAttendModal}
         />
     </div>
