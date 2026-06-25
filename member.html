@@ -931,7 +931,7 @@ function App() {
                         const active = tab===key;
                         return (
                             <button key={key} onClick={()=>{ if (key === 'meeting') setViewMeetingId(null); setTab(key); }}
-                                className={`relative flex flex-col items-center justify-center flex-1 h-[72px] transition-all ${active?'text-teal-500':'text-slate-400'}`}>
+                                className={`relative flex flex-col items-center justify-center flex-1 h-full transition-all ${active?'text-teal-500':'text-slate-400'}`}>
                                 {active && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-[3px] rounded-full bg-teal-500"/>}
                                 <Comp size={30}/>
                                 <span className={`text-[11px] font-black mt-1 ${active?'text-teal-500':'text-slate-400'}`}>{label}</span>
