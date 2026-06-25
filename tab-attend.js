@@ -37,14 +37,15 @@ const KioskModal = ({
         <div className="fixed inset-0 z-50 flex flex-col" style={{background:'#f8fafc',overscrollBehavior:'none',fontFamily:"'Esamanru', sans-serif"}}>
             <KioskScrollLock />
             {/* 상단 바 */}
-            <div style={{background:'white',borderBottom:'1px solid #e2e8f0',paddingLeft:'16px',paddingRight:'16px',paddingBottom:'14px',paddingTop:'max(14px, env(safe-area-inset-top))',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                <div>
-                    <p style={{color:'#1e293b',fontWeight:900,fontSize:'1rem'}}>직접 출석</p>
-                    <p style={{color:'#64748b',fontSize:'0.75rem',marginTop:'2px'}}>{meetingSettings?.date} · <span style={{color:'var(--c-accent-deep)',fontWeight:900}}>{attendCheckedInCount}명 출석</span> / {attendActiveList.length}명</p>
-                    <p style={{color:'#1e293b',fontSize:'1.5rem',fontWeight:900,marginTop:'4px',letterSpacing:'0.05em'}}><KioskClock /></p>
+            <div style={{background:'white',borderBottom:'1px solid #e2e8f0',paddingLeft:'20px',paddingRight:'16px',paddingBottom:'16px',paddingTop:'max(16px, env(safe-area-inset-top))',flexShrink:0,display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'12px'}}>
+                <div style={{minWidth:0}}>
+                    <p style={{color:'#94a3b8',fontWeight:900,fontSize:'0.78rem',letterSpacing:'0.06em'}}>직접 출석</p>
+                    <p style={{color:'#0f172a',fontWeight:900,fontSize:'1.3rem',marginTop:'2px'}}>{meetingSettings?.date}</p>
+                    <p style={{color:'#0f172a',fontSize:'clamp(2.7rem,8vw,3.8rem)',fontWeight:900,marginTop:'2px',lineHeight:1,letterSpacing:'0.01em',fontVariantNumeric:'tabular-nums'}}><KioskClock /></p>
+                    <p style={{color:'#64748b',fontSize:'0.85rem',marginTop:'9px',fontWeight:700}}><span style={{color:'var(--c-accent-deep)',fontWeight:900}}>{attendCheckedInCount}명 출석</span> / {attendActiveList.length}명</p>
                 </div>
                 <button onClick={() => setIsKioskOpen(false)}
-                    style={{width:'40px',height:'40px',borderRadius:'12px',background:'#f1f5f9',color:'#64748b',display:'flex',alignItems:'center',justifyContent:'center',border:'none',cursor:'pointer',fontWeight:900}}>
+                    style={{width:'40px',height:'40px',borderRadius:'12px',background:'#f1f5f9',color:'#64748b',display:'flex',alignItems:'center',justifyContent:'center',border:'none',cursor:'pointer',fontWeight:900,flexShrink:0}}>
                     <Icon.X size={20}/>
                 </button>
             </div>
