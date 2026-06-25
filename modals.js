@@ -350,7 +350,7 @@ const AppModals = ({
                     <div className="flex items-center gap-3 mb-5">
                         <div className="flex-1">
                             <p className="font-black text-lg text-slate-800">{billingMember.name}</p>
-                            <p className="text-xs text-slate-400">{billingMember.role} · Lv.{billingMember.level}</p>
+                            <p className="text-xs text-slate-400">{billingMember.role} · {billingMember.level}</p>
                         </div>
                         <button onClick={()=>setBillingMember(null)} className="text-slate-400 text-2xl leading-none">×</button>
                     </div>

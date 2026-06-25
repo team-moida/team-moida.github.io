@@ -16,7 +16,7 @@ function DirectoryTab({ members, activeMembers, resignedMembers, setEditingMembe
                                 {m.coupleId&&<span className="text-[10px] font-black text-teal-500 flex items-center gap-0.5"><Icon.Heart size={9}/>{members.find(p=>p.id===m.coupleId)?.name||'?'}</span>}
                             </div>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${getLevelColor(m.level)}`}>Lv.{m.level}</span>
+                                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${getLevelColor(m.level)}`}>{m.level}</span>
                                 <span className="text-[10px] text-slate-400">{formatBirth(m.birth)}</span>
                                 {m.position&&m.position!=='all'&&<span className="text-[10px] text-slate-400">{m.position}</span>}
                                 {m.address&&<span className="text-[10px] text-slate-400 flex items-center gap-0.5"><Icon.MapPin size={10}/>{m.address}</span>}

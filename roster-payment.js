@@ -60,7 +60,7 @@ function PaymentActionModal({ selectedMember, setSelectedMember, actionStep, set
                 <div className="flex items-center gap-3 mb-5">
                     <div className="flex-1">
                         <p className="font-black text-lg text-slate-800">{selectedMember.name}</p>
-                        <p className="text-xs text-slate-400">{selectedMember.role} · Lv.{selectedMember.level}</p>
+                        <p className="text-xs text-slate-400">{selectedMember.role} · {selectedMember.level}</p>
                     </div>
                     <button onClick={()=>setSelectedMember(null)} className="text-slate-400 text-2xl leading-none">×</button>
                 </div>

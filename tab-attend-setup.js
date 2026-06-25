@@ -165,7 +165,7 @@ const AttendSetupTab = ({
                         <span className="font-black text-sm text-slate-800 flex-1">{member.name}</span>
                         {member.gender==='여성'&&<span className="text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
                         {STAFF_ROLES.includes(member.role)&&<span className={`text-[9px] px-1.5 py-0.5 rounded-lg font-black ${getRoleBadgeClass(member.role)}`}>{member.role}</span>}
-                        <span className="text-[9px] font-black text-slate-400">Lv.{member.level}</span>
+                        <span className="text-[9px] font-black text-slate-400">{member.level}</span>
                     </button>
                 );
             })}
@@ -188,7 +188,7 @@ const AttendSetupTab = ({
                                 <span className="font-black text-sm text-slate-800 flex-1">{member.name}</span>
                                 {member.gender==='여성'&&<span className="text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
                                 <span className="text-[9px] px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-lg font-black">{badge}</span>
-                                <span className="text-[9px] font-black text-slate-400">Lv.{member.level}</span>
+                                <span className="text-[9px] font-black text-slate-400">{member.level}</span>
                             </button>
                         );
                     })}
