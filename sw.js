@@ -32,7 +32,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ── 기존 캐시 로직 ──────────────────────────────────────
-const CACHE_NAME = 'moida-v193';
+const CACHE_NAME = 'moida-v194';
 const CACHE_URLS = [
     '/index.html',
     '/tailwind-config.js',
@@ -70,6 +70,7 @@ self.addEventListener('fetch', event => {
         url.includes('cdn.tailwindcss') ||
         url.includes('cdnjs.cloudflare') ||
         url.includes('unpkg.com') ||
+        url.includes('jsdelivr') ||
         url.includes('gstatic.com')
     ) return;
 

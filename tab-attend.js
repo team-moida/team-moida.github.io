@@ -738,12 +738,15 @@ const MeetingListScreen = ({
               <>
                 {/* 예정 / 기록 전환 (관리자 전용) */}
                 {isAdminMode && (
+                    <>
                     <div className="flex gap-1.5 p-1 bg-slate-100 rounded-2xl">
                         {[['upcoming','예정'],['ended','기록']].map(([v,l]) => (
                             <button key={v} onClick={()=>setListView(v)}
                                 className={`flex-1 py-2 rounded-xl text-sm font-black transition-all ${listView===v?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>{l}</button>
                         ))}
                     </div>
+                    {listView==='upcoming' && <p className="text-[11px] font-black text-slate-400 px-1">· '기록'은 운영진(회장·매니저·총무·부총무)만 보여요</p>}
+                    </>
                 )}
                 {isAdminMode && listView === 'ended' ? (
                     <MeetingRecordsView meetings={meetings} attendHistory={attendHistory} darkMode={darkMode}
@@ -764,68 +767,52 @@ const MeetingListScreen = ({
                     const dDay = _ok ? _md.getDate() : '';
                     const dMon = _ok ? ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'][_md.getMonth()] : '';
                     const dDow = _ok ? ['일','월','화','수','목','금','토'][_md.getDay()] : '';
+                    const isMatch = kind === 'match';
+                    const dMonShort = dMon ? dMon.slice(0, 3) : '';
+                    const chipBg = isMatch ? '#C2F94A' : '#183FB0';
+                    const chipFg = isMatch ? '#15171E' : '#ffffff';
+                    const meta = `${dDow} ${m.start}${m.location ? ` · ${m.location}` : ''}${isMatch && m.opponentName ? ` · vs ${m.opponentName}` : ''}`;
+                    const countNum = isMatch ? ((m.maxMale || 0) + (m.maxFemale || 0)) : (m.maxLimit || 18);
                     return (
-                        <button key={m.id} onClick={() => onSelect(m)}
-                            className="w-full rounded-3xl p-5 text-left text-white active:scale-98 transition-all"
-                            style={{ background: cfg.accent, boxShadow: `0 16px 34px -6px ${cfg.accent}66` }}>
-                            <div className="flex items-center justify-between gap-2 mb-2.5">
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                    <p className="text-xs font-black uppercase tracking-widest text-white/80">{cfg.label}</p>
-                                    {m.isTest && <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-lg bg-white/30 text-white flex-shrink-0"><Icon.Beaker size={11}/>테스트</span>}
+                        <div key={m.id} className="card rounded-2xl overflow-hidden">
+                            <button onClick={() => onSelect(m)} className="w-full flex items-center gap-3 p-3 text-left active:scale-98 transition-all">
+                                {/* 날짜 칩 (정기=인디고 / 매칭=라임) */}
+                                <div className="flex-shrink-0 w-[58px] h-[58px] rounded-2xl flex flex-col items-center justify-center" style={{ background: chipBg, color: chipFg }}>
+                                    {_ok ? (
+                                        <><span className="text-[22px] font-black leading-none tabular-nums">{dDay}</span>
+                                        <span className="text-[10px] font-black mt-0.5 tracking-wider" style={{ opacity: .9 }}>{dMonShort}</span></>
+                                    ) : <Icon.Calendar size={22}/>}
                                 </div>
-                                <div className="flex items-center gap-1.5 flex-shrink-0">
-                                    {isAdminMode && kind === 'self' && generateAttendQRCode && (
+                                {/* 제목 + 상태 + 메타 */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="font-black text-[15px] text-slate-800">{isMatch ? '매칭' : '정기모임'}</span>
+                                        {m.isTest && <span className="inline-flex items-center gap-0.5 text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-100 text-amber-600"><Icon.Beaker size={9}/>테스트</span>}
+                                        {dayInfo && dayInfo.type === 'started'
+                                            ? <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-500 text-white animate-pulse">LIVE</span>
+                                            : (dayInfo && dayInfo.label && dayInfo.type !== 'past') && <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${dayInfo.urgent ? 'bg-rose-50 text-rose-500' : dayInfo.type === 'today' ? 'bg-teal-50 text-teal-600' : 'bg-slate-100 text-slate-500'}`}>{dayInfo.label}</span>}
+                                    </div>
+                                    <p className="text-[12.5px] font-bold text-slate-500 mt-1 truncate">{meta}</p>
+                                </div>
+                                {/* 정원 */}
+                                <div className="flex-shrink-0 text-center pl-1">
+                                    <p className="text-[20px] font-black leading-none tabular-nums text-teal-600">{countNum}</p>
+                                    <p className="text-[10px] font-black text-slate-400 mt-0.5">정원</p>
+                                </div>
+                            </button>
+                            {isAdminMode && (
+                                <div className="flex items-center justify-end gap-1.5 px-3 pb-2.5">
+                                    {kind === 'self' && generateAttendQRCode && (
                                         <span role="button" onClick={(e) => { e.stopPropagation(); generateAttendQRCode(m); }}
-                                            className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-white/25 text-white active:scale-95 cursor-pointer">
-                                            <Icon.QrCode size={12}/> QR
-                                        </span>
+                                            className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-slate-100 text-slate-500 active:scale-95 cursor-pointer"><Icon.QrCode size={12}/> QR</span>
                                     )}
-                                    {dayInfo && dayInfo.type !== 'past' && dayInfo.label && (
-                                        <span className={`text-xs font-black px-3 py-1 ${
-                                            dayInfo.type === 'started' ? 'rounded-full bg-live text-[#15171E] moida-pulse-live' :
-                                            dayInfo.urgent ? 'rounded-xl bg-white text-rose-500' :
-                                            dayInfo.type === 'today' ? 'rounded-xl bg-white text-slate-700' :
-                                            'rounded-xl bg-white/25 text-white'}`}>{dayInfo.label}</span>
-                                    )}
+                                    <span role="button" onClick={(e) => { e.stopPropagation(); setEmbeddedEdit(m); }}
+                                        className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-slate-100 text-slate-500 active:scale-95 cursor-pointer"><Icon.Edit size={12}/> 수정</span>
+                                    <span role="button" onClick={(e) => { e.stopPropagation(); handleDeleteMeeting(m); }}
+                                        className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-rose-50 text-rose-500 active:scale-95 cursor-pointer"><Icon.Trash size={12}/> 삭제</span>
                                 </div>
-                            </div>
-                            {_ok ? (
-                                <div className="flex items-end gap-3">
-                                    <span className="font-black text-[84px] leading-[0.78] tracking-tight tabular-nums">{dDay}</span>
-                                    <div className="pb-2">
-                                        <p className="text-[13px] font-black text-white/60 tracking-wider leading-none">{dMon}</p>
-                                        <p className="text-[22px] font-black leading-tight mt-1">{dDow}요일</p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <p className="font-black text-[28px] leading-none tracking-tight">{fmtMeetingDate(m.date)}</p>
                             )}
-                            <p className="text-sm font-bold text-white/80 mt-2.5">{m.start} ~ {m.end}</p>
-                            {kind === 'match' && m.opponentName && (
-                                <p className="text-sm font-black text-white/90 mt-1 truncate">vs {m.opponentName}</p>
-                            )}
-                            {m.location && (
-                                <p className="text-sm text-white/75 mt-1 flex items-center gap-1 min-w-0">
-                                    <Icon.MapPin size={13} className="flex-shrink-0"/><span className="truncate">{m.location}</span>
-                                </p>
-                            )}
-                            <div className="mt-3 pt-3 border-t flex items-center justify-between gap-2" style={{borderColor:'rgba(255,255,255,0.22)'}}>
-                                <span className="flex items-center gap-1.5 text-xs font-black text-white/80 min-w-0">
-                                    <Icon.Users size={14} className="flex-shrink-0"/>
-                                    <span className="truncate">{kind === 'match' ? `정원 남 ${m.maxMale||0} · 여 ${m.maxFemale||0}` : `최대 ${m.maxLimit||18}명`}</span>
-                                </span>
-                                {isAdminMode ? (
-                                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                                        <span role="button" onClick={(e)=>{ e.stopPropagation(); setEmbeddedEdit(m); }}
-                                            className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-white/25 text-white active:scale-95 cursor-pointer"><Icon.Edit size={12}/> 수정</span>
-                                        <span role="button" onClick={(e)=>{ e.stopPropagation(); handleDeleteMeeting(m); }}
-                                            className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-rose-500/80 text-white active:scale-95 cursor-pointer"><Icon.Trash size={12}/> 삭제</span>
-                                    </div>
-                                ) : (
-                                    <span className="flex items-center gap-0.5 text-xs font-black text-white flex-shrink-0">자세히 <Icon.ChevronRight size={14}/></span>
-                                )}
-                            </div>
-                        </button>
+                        </div>
                     );
                 })
               )}
