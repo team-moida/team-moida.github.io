@@ -37,6 +37,10 @@ input:focus { outline: none; }
 @media (prefers-reduced-motion: reduce){
   .moida-notice-scroll{ animation:none!important; padding-left:12px!important; transform:translateY(-50%)!important; }
 }
+/* ── B+ LIVE(진행 중) 라임 펄스 링 ── */
+@keyframes moidaPulseLive{0%,100%{box-shadow:0 0 0 0 rgba(194,249,74,.5)} 70%{box-shadow:0 0 0 11px rgba(194,249,74,0)}}
+.moida-pulse-live{ animation:moidaPulseLive 2s infinite; }
+@media (prefers-reduced-motion: reduce){ .moida-pulse-live{ animation:none!important } }
 .card-white { background: white; }
 select { appearance: none; }
 .tab-bar { background: rgba(255,255,255,0.95); border-top: 1px solid #e2e8f0; backdrop-filter: blur(10px); }

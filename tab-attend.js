@@ -767,7 +767,7 @@ const MeetingListScreen = ({
                     return (
                         <button key={m.id} onClick={() => onSelect(m)}
                             className="w-full rounded-3xl p-5 text-left text-white active:scale-98 transition-all"
-                            style={{ background: cfg.accent, boxShadow: `0 10px 28px -8px ${cfg.accent}59` }}>
+                            style={{ background: cfg.accent, boxShadow: `0 16px 34px -6px ${cfg.accent}66` }}>
                             <div className="flex items-center justify-between gap-2 mb-2.5">
                                 <div className="flex items-center gap-1.5 min-w-0">
                                     <p className="text-xs font-black uppercase tracking-widest text-white/80">{cfg.label}</p>
@@ -781,11 +781,11 @@ const MeetingListScreen = ({
                                         </span>
                                     )}
                                     {dayInfo && dayInfo.type !== 'past' && dayInfo.label && (
-                                        <span className={`text-xs font-black px-3 py-1 rounded-xl ${
-                                            dayInfo.type === 'started' ? 'bg-white text-emerald-600' :
-                                            dayInfo.urgent ? 'bg-white text-rose-500' :
-                                            dayInfo.type === 'today' ? 'bg-white text-slate-700' :
-                                            'bg-white/25 text-white'}`}>{dayInfo.label}</span>
+                                        <span className={`text-xs font-black px-3 py-1 ${
+                                            dayInfo.type === 'started' ? 'rounded-full bg-live text-[#15171E] moida-pulse-live' :
+                                            dayInfo.urgent ? 'rounded-xl bg-white text-rose-500' :
+                                            dayInfo.type === 'today' ? 'rounded-xl bg-white text-slate-700' :
+                                            'rounded-xl bg-white/25 text-white'}`}>{dayInfo.label}</span>
                                     )}
                                 </div>
                             </div>
