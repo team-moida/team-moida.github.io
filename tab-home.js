@@ -429,9 +429,9 @@ const NextMeetingCard = ({
                 <p className="text-sm font-black text-white/90 mt-2 truncate">vs {meeting.opponentName}</p>
             )}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 text-sm font-bold text-white/85">
-                <span className="flex items-center gap-1"><Icon.Clock size={14} className="opacity-75 flex-shrink-0"/>{meeting.start} ~ {meeting.end}</span>
-                {meeting.location && <span className="flex items-center gap-1 min-w-0"><Icon.MapPin size={14} className="opacity-75 flex-shrink-0"/><span className="truncate">{meeting.location}</span></span>}
-                <span className="flex items-center gap-1"><Icon.Users size={14} className="opacity-75 flex-shrink-0"/>{kind==='match' ? `남 ${meeting.maxMale||0}·여 ${meeting.maxFemale||0}` : `정원 ${meeting.maxLimit||18}명`}</span>
+                <span className="flex items-center gap-1"><span className="text-[15px] leading-none flex-shrink-0">⏰</span>{meeting.start} ~ {meeting.end}</span>
+                {meeting.location && <span className="flex items-center gap-1 min-w-0"><span className="text-[15px] leading-none flex-shrink-0">📍</span><span className="truncate">{meeting.location}</span></span>}
+                <span className="flex items-center gap-1"><span className="text-[15px] leading-none flex-shrink-0">👥</span>{kind==='match' ? `남 ${meeting.maxMale||0}·여 ${meeting.maxFemale||0}` : `정원 ${meeting.maxLimit||18}명`}</span>
             </div>
             {/* 실시간 날씨 (모임 좌표 기준) — 지난 모임에는 표시 안 함 */}
             {dayInfo && dayInfo.type !== 'past' && (
