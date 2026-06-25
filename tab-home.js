@@ -505,16 +505,18 @@ const NextMeetingCard = ({
                                         </div>
                                     );
                                     return (
-                                        <div className="px-3 py-2.5 rounded-xl" style={{background:'rgba(255,255,255,0.18)'}}>
-                                            <p className="text-[11px] font-black text-white/80 mb-1">현재 {r.roundNo}라운드 <span className="text-white/55">/ {r.total}</span></p>
+                                        <div className="px-4 py-3.5 rounded-2xl" style={{background:'rgba(255,255,255,0.1)'}}>
+                                            <p className="text-[11px] font-black text-white/65 mb-2 tracking-wide">현재 {r.roundNo}라운드 <span className="text-white/40">/ {r.total}</span> · 내 경기</p>
                                             {r.resting ? (
                                                 <span className="flex items-center gap-1.5 text-sm font-black text-white min-w-0"><Icon.Coffee size={15} className="flex-shrink-0"/><span className="truncate">이번 라운드는 쉼</span></span>
                                             ) : r.opponent ? (
                                                 <div className="flex items-center gap-2 min-w-0">
-                                                    <span className="flex items-center gap-1 text-sm font-black text-white flex-shrink-0"><Icon.MapPin size={14} className="opacity-80"/>{r.fieldName}</span>
-                                                    <span className="text-white/60 text-xs font-black flex-shrink-0">vs</span>
-                                                    <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-white text-xs font-black flex-shrink-0 ${getTeamBadge(r.oppIdx)}`}>{r.opponent}</span>
-                                                    <span className="text-xs text-white/70 truncate">{getTeamColorName(r.oppIdx)} 조끼</span>
+                                                    <span className={`w-5 h-5 rounded-md flex-shrink-0 ring-1 ring-white/25 ${getTeamBadge(myTeamIdx)}`}></span>
+                                                    <span className="text-[15px] font-black text-white flex-shrink-0">{myTeamInfo.teamName}팀</span>
+                                                    <span className="text-xs font-black italic text-white/50 flex-shrink-0">vs</span>
+                                                    <span className={`w-5 h-5 rounded-md flex-shrink-0 ring-1 ring-white/25 ${getTeamBadge(r.oppIdx)}`}></span>
+                                                    <span className="text-[15px] font-black text-white flex-shrink-0">{r.opponent}팀</span>
+                                                    <span className="ml-auto text-xs font-black text-white/60 flex-shrink-0">{r.fieldName}</span>
                                                 </div>
                                             ) : (
                                                 <span className="text-sm text-white/70">경기 정보 없음</span>
