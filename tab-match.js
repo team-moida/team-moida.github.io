@@ -58,7 +58,7 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
 
     return (
         <div className="fixed inset-0 z-[60] flex flex-col"
-            style={{background:'var(--c-bg)',overscrollBehavior:'none',fontFamily:"'Esamanru', sans-serif",
+            style={{background:'var(--c-bg)',overscrollBehavior:'none',fontFamily:"'Pretendard Variable', Pretendard, sans-serif",
                 paddingLeft:'env(safe-area-inset-left)',paddingRight:'env(safe-area-inset-right)'}}>
             {/* 상단 바 — 라운드 강조 + 날짜/시간 부제 */}
             <div style={{background:'white',borderBottom:'1px solid var(--c-border)',padding:'max(12px, env(safe-area-inset-top)) 16px 12px',flexShrink:0,display:'flex',alignItems:'center',gap:'12px'}}>

@@ -13,6 +13,7 @@
     <!-- TWA 네이티브 FCM 토큰 캡처: index.html에서 먼저 localStorage에 저장 → member.html use-fcm.js가 로그인 후 Firestore 저장 -->
     <script>(function(){try{var p=new URLSearchParams(location.search);var nt=p.get('nativeToken');if(nt){localStorage.setItem('pendingNativeToken',nt);p.delete('nativeToken');var s=p.toString();history.replaceState(null,'',location.pathname+(s?'?'+s:'')+location.hash);}}catch(e){}})();</script>
     <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <script src="tailwind-config.js"></script>
