@@ -1,7 +1,7 @@
 .leaflet-container{font-family:'Esamanru',sans-serif}
 .leaflet-control-zoom a{font-family:sans-serif}
 @font-face{font-family:'Esamanru';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10@1.0/GongGothicLight.woff') format('woff');font-weight:300}
-body{font-family:'Esamanru',sans-serif!important;-webkit-tap-highlight-color:transparent;background:#f8fafc;user-select:none;overscroll-behavior-y:none;-webkit-font-smoothing:antialiased;touch-action:manipulation}
+body{font-family:'Esamanru',sans-serif!important;-webkit-tap-highlight-color:transparent;background:radial-gradient(125% 90% at 50% -8%,#e8ecf9 0%,#f3f5fb 46%,#f4f6fa 100%);min-height:100vh;user-select:none;overscroll-behavior-y:none;-webkit-font-smoothing:antialiased;touch-action:manipulation}
 .custom-scrollbar::-webkit-scrollbar{width:5px}
 .custom-scrollbar::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
 select,input{transition:border-color 0.2s}
