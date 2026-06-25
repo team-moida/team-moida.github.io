@@ -1136,7 +1136,7 @@ const TabHome = ({
             return { ...c, isActive, dayInfo };
         });
     return (
-    <div className="animate-in space-y-3">
+    <div className="stagger space-y-3">
         {/* 회비 납부 신고 (관리자 전용 · 대기 신고가 있을 때만 — 홈에서 한눈에 확정/삭제) */}
         {isAdminMode && <DuesReportsHomeCard duesReports={duesReports} onConfirm={onConfirmDuesReport} onReject={onRejectDuesReport} onGoDuesTab={onGoDuesTab} />}
 

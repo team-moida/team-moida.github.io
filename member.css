@@ -1,6 +1,8 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: #f8fafc;
+    /* B+ : 옅은 인디고빛 배경 (라이트만 · 다크는 common.css의 html.dark body 토큰이 덮음) */
+    background: radial-gradient(125% 90% at 50% -8%, #e8ecf9 0%, #f3f5fb 46%, #f4f6fa 100%);
+    min-height: 100vh;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     overscroll-behavior-y: none;
@@ -14,7 +16,19 @@ body {
 @keyframes pulseRing { 0%{transform:scale(1);opacity:1} 70%{transform:scale(1.4);opacity:0} 100%{transform:scale(1.4);opacity:0} }
 button:active { transform: scale(0.96); opacity: 0.85; }
 input:focus { outline: none; }
-.card { background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.card { background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 4px 14px rgba(0,0,0,0.05); }
+/* ── B+ 모션 키트 (순차 페이드업) — .reveal 단일 / .stagger > * 자동 지연 ── */
+@keyframes floatUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+.reveal { animation: floatUp .5s cubic-bezier(.34,1.56,.64,1) both; }
+.stagger > * { animation: floatUp .5s cubic-bezier(.34,1.56,.64,1) both; }
+.stagger > *:nth-child(1){animation-delay:.02s} .stagger > *:nth-child(2){animation-delay:.07s}
+.stagger > *:nth-child(3){animation-delay:.12s} .stagger > *:nth-child(4){animation-delay:.17s}
+.stagger > *:nth-child(5){animation-delay:.22s} .stagger > *:nth-child(6){animation-delay:.27s}
+.stagger > *:nth-child(7){animation-delay:.32s} .stagger > *:nth-child(n+8){animation-delay:.37s}
+@media (prefers-reduced-motion: reduce){
+  .reveal,.stagger > *,.animate-in,.moida-ticker-up,.pulse-ring{animation:none!important}
+  button:active{transform:none!important}
+}
 .card-white { background: white; }
 select { appearance: none; }
 .tab-bar { background: rgba(255,255,255,0.95); border-top: 1px solid #e2e8f0; backdrop-filter: blur(10px); }

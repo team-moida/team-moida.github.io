@@ -11,12 +11,12 @@ function MemberHeader({
     return (
         <div className="px-5 pb-4 member-header-bg" style={{paddingTop:'max(2.5rem, calc(env(safe-area-inset-top) + 1rem))'}}>
             <div className="flex items-center justify-between gap-2 mb-0">
-                {/* 엠블럼을 이름 텍스트 왼쪽에 배치 */}
+                {/* 브랜드: 모이다(크게) + OTP FC·이름(작게) 병기 — 엠블럼은 왼쪽 유지 */}
                 <div className="flex items-center gap-2.5 min-w-0">
                     <img src="icon.png" alt="OTP FC" className="w-11 h-11 object-contain flex-shrink-0" onError={e=>e.target.style.display='none'}/>
                     <div className="min-w-0">
-                        <p className="text-teal-600 text-xs tracking-widest uppercase font-bold">OTP FC</p>
-                        <h1 className="text-2xl font-black text-slate-800 mt-0.5 truncate">{memberName} 님</h1>
+                        <h1 className="text-[28px] leading-none font-black text-teal-600 tracking-tight">모이다</h1>
+                        <p className="text-[13px] font-bold text-slate-500 mt-1.5 truncate">OTP FC · {memberName} 님</p>
                     </div>
                 </div>
                 {/* 아이콘 — 좁은 화면에서 줄바꿈/우측 정렬 (홈·새로고침 버튼 제거: 새로고침은 화면을 당겨서) */}
