@@ -151,6 +151,7 @@ const fmtAnnDate = (iso) => {
 // announcements는 use-fcm.js 기준 최신순 + type:'test' 제외됨. 클릭 시 공지 게시판으로 이동.
 const AnnounceTicker = ({ announcements, onOpen, onTabChange, meetings }) => {
     const [idx, setIdx] = React.useState(0);
+    const cntRef = React.useRef(0);
     const list = announcements || [];
     // 모임 연결 공지인데 그 모임이 종료됐으면 '완료' 배지
     const isAnnDone = (a) => {
@@ -158,12 +159,6 @@ const AnnounceTicker = ({ announcements, onOpen, onTabChange, meetings }) => {
         const mt = meetings.find(m => m.id === a.linkMeetingId);
         return mt ? isMeetingEnded(mt) : false;
     };
-    React.useEffect(() => {
-        if (list.length <= 1) return;
-        const t = setInterval(() => setIdx(i => (i + 1) % list.length), 5000);
-        return () => clearInterval(t);
-    }, [list.length]);
-
     // 공지 0개 — 빈 띠 유지. 눌러도 게시판으로 이동.
     if (list.length === 0) {
         return (
@@ -178,19 +173,22 @@ const AnnounceTicker = ({ announcements, onOpen, onTabChange, meetings }) => {
 
     const safeIdx = idx % list.length;
     const a = list[safeIdx];
+    // 어두운 띠 + 라임 '공지' 칩 뒤로 제목이 가로로 흐름. 한 공지당 2바퀴 후 다음 공지로 교체(아래→위 등장)
+    const onIter = () => {
+        cntRef.current += 1;
+        if (cntRef.current >= 2 && list.length > 1) { cntRef.current = 0; setIdx(i => (i + 1) % list.length); }
+    };
     return (
-        <button onClick={onOpen} className="w-full text-left active:scale-98 transition-all overflow-hidden">
-            <div className="flex items-center gap-2.5">
-                <Icon.Bell size={15} className="text-teal-500 flex-shrink-0"/>
-                {/* key 변경 → moida-ticker-up 애니메이션 재생 (아래에서 위로 등장) */}
-                <div key={safeIdx} className="flex-1 min-w-0 flex items-center justify-between gap-2 moida-ticker-up">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                        <NoticeBadge category={a.category} />
-                        {isAnnDone(a) && <span className="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-lg bg-slate-200 text-slate-500">완료</span>}
-                        <span className="font-black text-sm text-slate-700 truncate">{a.title}</span>
+        <button onClick={onOpen} className="w-full text-left active:scale-98 transition-all">
+            <div className="moida-notice-band relative h-12 rounded-2xl overflow-hidden">
+                {/* key 변경 → 새 공지가 아래에서 위로 등장 */}
+                <div key={safeIdx} className="moida-ticker-up absolute inset-y-0 right-0 left-[58px] overflow-hidden">
+                    <div className="moida-notice-scroll" onAnimationIteration={onIter}>
+                        {isAnnDone(a) && <span className="mr-1.5 align-middle text-[10px] font-black px-1.5 py-0.5 rounded bg-white/20 text-white/90">완료</span>}
+                        <span className="align-middle font-black text-[13px] text-white">{a.title}</span>
                     </div>
-                    <span className="text-[10px] text-slate-400 whitespace-nowrap flex-shrink-0">{fmtAnnDate(a.sentAt)}</span>
                 </div>
+                <span className="moida-notice-chip absolute left-2.5 top-1/2 -translate-y-1/2 z-[3] bg-live text-[#15171E] text-[10px] font-black px-2.5 py-[5px] rounded-full">공지</span>
             </div>
         </button>
     );
@@ -427,17 +425,17 @@ const NextMeetingCard = ({
                 </div>
             </div>
             {_ok ? (
-                <div className="flex items-end gap-2.5">
-                    <span className="font-black text-[52px] leading-[0.82] tracking-tight">{dDay}</span>
-                    <div className="pb-1.5">
-                        <p className="font-black text-sm leading-tight tracking-wide">{dMon}</p>
-                        <p className="text-sm font-bold text-white/80 leading-tight">{dDow}요일</p>
+                <div className="flex items-end gap-3">
+                    <span className="font-black text-[68px] leading-[0.8] tracking-tight tabular-nums">{dDay}</span>
+                    <div className="pb-2">
+                        <p className="text-[13px] font-black text-white/60 tracking-wider leading-none">{dMon}</p>
+                        <p className="text-[22px] font-black leading-tight mt-1">{dDow}요일</p>
                     </div>
                 </div>
             ) : (
                 <p className="font-black text-[28px] leading-none tracking-tight">{fmtMeetingDate(meeting.date)}</p>
             )}
-            <p className="text-sm font-bold text-white/80 mt-2">{meeting.start} ~ {meeting.end}</p>
+            <p className="text-sm font-bold text-white/80 mt-2.5">{meeting.start} ~ {meeting.end}</p>
             {kind==='match' && meeting.opponentName && (
                 <p className="text-sm font-black text-white/90 mt-1 truncate">vs {meeting.opponentName}</p>
             )}

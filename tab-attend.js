@@ -790,17 +790,17 @@ const MeetingListScreen = ({
                                 </div>
                             </div>
                             {_ok ? (
-                                <div className="flex items-end gap-2.5">
-                                    <span className="font-black text-[52px] leading-[0.82] tracking-tight">{dDay}</span>
-                                    <div className="pb-1.5">
-                                        <p className="font-black text-sm leading-tight tracking-wide">{dMon}</p>
-                                        <p className="text-sm font-bold text-white/80 leading-tight">{dDow}요일</p>
+                                <div className="flex items-end gap-3">
+                                    <span className="font-black text-[68px] leading-[0.8] tracking-tight tabular-nums">{dDay}</span>
+                                    <div className="pb-2">
+                                        <p className="text-[13px] font-black text-white/60 tracking-wider leading-none">{dMon}</p>
+                                        <p className="text-[22px] font-black leading-tight mt-1">{dDow}요일</p>
                                     </div>
                                 </div>
                             ) : (
                                 <p className="font-black text-[28px] leading-none tracking-tight">{fmtMeetingDate(m.date)}</p>
                             )}
-                            <p className="text-sm font-bold text-white/80 mt-2">{m.start} ~ {m.end}</p>
+                            <p className="text-sm font-bold text-white/80 mt-2.5">{m.start} ~ {m.end}</p>
                             {kind === 'match' && m.opponentName && (
                                 <p className="text-sm font-black text-white/90 mt-1 truncate">vs {m.opponentName}</p>
                             )}

@@ -29,6 +29,14 @@ input:focus { outline: none; }
   .reveal,.stagger > *,.animate-in,.moida-ticker-up,.pulse-ring{animation:none!important}
   button:active{transform:none!important}
 }
+/* ── B+ 공지 순환 띠 (어두운 띠 + 라임칩 뒤로 가로 흐름, 2바퀴 후 위로 교체) ── */
+.moida-notice-band{ background:linear-gradient(135deg,#1e293b,#0f172a); }
+.moida-notice-scroll{ position:absolute; top:50%; left:0; white-space:nowrap; padding-left:100%; transform:translateY(-50%); animation:moidaScroll 11s linear infinite; }
+@keyframes moidaScroll{ 0%{transform:translate(0,-50%)} 100%{transform:translate(-100%,-50%)} }
+.moida-notice-chip{ box-shadow:8px 0 14px 6px #1e293b; }
+@media (prefers-reduced-motion: reduce){
+  .moida-notice-scroll{ animation:none!important; padding-left:12px!important; transform:translateY(-50%)!important; }
+}
 .card-white { background: white; }
 select { appearance: none; }
 .tab-bar { background: rgba(255,255,255,0.95); border-top: 1px solid #e2e8f0; backdrop-filter: blur(10px); }
