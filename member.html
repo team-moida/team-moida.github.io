@@ -417,18 +417,8 @@ function App() {
 
     const teamReady = useMemo(() => isAttendOpen(effectiveMeeting, nowTime, testMode), [effectiveMeeting, nowTime, testMode]);
 
-    // F-2a-1b 자동표시 — 홈에서 활성 정기·미출석·출석열림이면 풀스크린 출석창을 1회 자동으로 띄움(화면만, DB쓰기 0).
-    // 닫은 모임(dismissedMeetingId)·이미 열림(attendModalOpen)·출석완료(checkedIn)면 안 뜸 → 재오픈/루프 없음.
-    useEffect(() => {
-        if (tab !== 'home' || attendModalOpen) return;
-        if (activeMeetingKind !== 'self') return;
-        if (!mySession || mySession.checkedIn) return;
-        if (attend.isMeetingOver) return;
-        if (!isAttendOpen(meetingSettings, nowTime, testMode)) return;
-        const mid = getMeetingId(meetingSettings);
-        if (!mid || mid === dismissedMeetingId) return;
-        setAttendModalOpen(true);
-    }, [tab, activeMeetingKind, mySession, attend.isMeetingOver, nowTime, dismissedMeetingId, meetingSettings, testMode, attendModalOpen]);
+    // (구) 풀스크린 출석창 자동표시 제거 — 이제 홈 '다음 모임' 카드 안에 인라인 GPS/QR 출석으로 대체.
+    //  GPS=팝업(가능여부+확인 / startInlineGPS), QR=스캐너. 전체화면 모달은 더 이상 자동으로 뜨지 않음.
 
     // F-2a-1b 완료 자동닫힘 — 출석 완료되면 "출석 완료!"를 약 1.2초 보여주고 모달을 자동으로 닫음.
     useEffect(() => {
@@ -456,6 +446,19 @@ function App() {
     useEffect(() => {
         if (urlParams.token && appView === 'app') handleQRAttendance();
     }, [urlParams.token, appView]);
+
+    // 홈 카드 인라인 GPS 출석 — 전체화면 대신 팝업으로 가능여부 + 확인(출석 체크).
+    const startInlineGPS = () => {
+        handleGPSCheckIn((res) => {
+            if (res.status === 'within') {
+                showConfirm('출석 가능', `모임 장소에서 ${res.distance}m\n인정 범위(${res.radius}m) 안에 있어요.`, handleGPSAttend);
+            } else if (res.status === 'outside') {
+                showAlert('아직 멀어요', `현재 ${res.distance}m 떨어져 있어요.\n${res.radius}m 이내로 들어와서 다시 시도해 주세요.`);
+            } else {
+                showAlert('위치 확인 실패', res.message || '위치를 확인할 수 없습니다.');
+            }
+        });
+    };
 
     const handleLogout = () => { showConfirm('로그아웃', '로그아웃 하시겠어요?', () => { localStorage.removeItem('moida_member_data'); localStorage.removeItem('moida_admin_backup'); location.href = 'index.html'; }); };
     const enterTestPreview = async () => {
@@ -727,6 +730,7 @@ function App() {
                         onGoDuesTab={() => { roster.setRosterSubTab('monthly'); navTab('roster'); }}
                         generateAttendQRCode={generateAttendQRCode}
                         onOpenAttendModal={openAttendModal}
+                        onInlineGPS={startInlineGPS} onInlineQR={() => setIsQRScannerOpen(true)}
                         onEditMeeting={(m) => { setPendingEditMeeting(m); navTab('meeting-list'); }}
                         onDeleteMeeting={handleDeleteMeeting}
                     />

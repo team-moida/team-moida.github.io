@@ -74,23 +74,36 @@ function makeQRGPSHandlers(ctx) {
         }
     };
 
-    const handleGPSCheckIn = async () => {
+    // onResult(함수)를 주면 toast/인라인 대신 결과를 콜백으로 넘긴다(홈 카드 팝업용).
+    // onClick으로 호출되면 첫 인자가 이벤트 객체(typeof!=='function') → cb=null → 기존 출석탭 동작 그대로.
+    const handleGPSCheckIn = async (onResult) => {
+        const cb = typeof onResult === 'function' ? onResult : null;
         if (!memberData?.memberId) return;
         setGpsStatus('checking');
-        if (!navigator.geolocation) { setGpsStatus('error'); showToast('이 기기는 GPS를 지원하지 않습니다.', 'error'); return; }
+        if (!navigator.geolocation) {
+            setGpsStatus('error');
+            if (cb) cb({ status: 'error', message: '이 기기는 GPS를 지원하지 않습니다.' }); else showToast('이 기기는 GPS를 지원하지 않습니다.', 'error');
+            return;
+        }
         navigator.geolocation.getCurrentPosition(async (pos) => {
             const {latitude, longitude} = pos.coords;
             const locationLat = meetingSettings?.locationLat;
             const locationLng = meetingSettings?.locationLng;
-            if (!locationLat || !locationLng) { setGpsStatus('no_location'); showToast('관리자가 모임 장소를 아직 설정하지 않았습니다.', 'error'); return; }
+            if (!locationLat || !locationLng) {
+                setGpsStatus('no_location');
+                if (cb) cb({ status: 'no_location', message: '관리자가 모임 장소를 아직 설정하지 않았습니다.' }); else showToast('관리자가 모임 장소를 아직 설정하지 않았습니다.', 'error');
+                return;
+            }
             const dist = calcDistance(latitude, longitude, locationLat, locationLng);
             setDistance(Math.round(dist));
             const radius = meetingSettings?.locationRadius || 100;
-            if (testMode || dist <= radius) { setGpsStatus('within'); } else { setGpsStatus('outside'); }
+            const within = testMode || dist <= radius;
+            setGpsStatus(within ? 'within' : 'outside');
+            if (cb) cb({ status: within ? 'within' : 'outside', distance: Math.round(dist), radius });
         }, (err) => {
             setGpsStatus('error');
             const msg = err.code === 1 ? '위치 권한을 허용해주세요.' : err.code === 2 ? 'GPS 신호를 찾을 수 없습니다.' : '위치 확인 시간이 초과되었습니다.';
-            showToast(msg, 'error');
+            if (cb) cb({ status: 'error', message: msg }); else showToast(msg, 'error');
         }, {timeout: 10000, maximumAge: 0, enableHighAccuracy: true});
     };
 

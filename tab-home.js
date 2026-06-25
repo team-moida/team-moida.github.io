@@ -369,7 +369,7 @@ const NextMeetingCard = ({
     meeting, kind, isActive, dayInfo, darkMode, isAdminMode, onTabChange,
     mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount, scheduleData,
     isMeetingOver, isMeetingEndSaved, onEndMeeting, onGenerateQR, onEditMeeting, onDeleteMeeting,
-    onOpenAttendModal,
+    onOpenAttendModal, onInlineGPS, onInlineQR, enableQR,
 }) => {
     const cfg = MEETING_KIND[kind] || MEETING_KIND.self;
     const showOverlay = kind !== 'match' && isActive && isAdminMode && isMeetingOver && !isMeetingEndSaved;
@@ -381,16 +381,7 @@ const NextMeetingCard = ({
     const dDow = _ok ? ['일','월','화','수','목','금','토'][_md.getDay()] : '';
     return (
         <div className="relative">
-        <button onClick={()=>{
-                // 정기 활성·미출석·출석열림(teamReady)·당일이면 풀스크린 출석 모달, 그 외엔 모임 화면으로 이동(F-2a-1a)
-                // ↑ 카드의 '출석하기' 행이 보이는 조건과 100% 동일(라벨↔동작 일치)
-                if (isActive && kind === 'self' && !mySession?.checkedIn && teamReady
-                    && (dayInfo.type==='today' || dayInfo.type==='started') && onOpenAttendModal) {
-                    onOpenAttendModal();
-                } else {
-                    onTabChange('attend', kind, meeting.id || getMeetingId(meeting));
-                }
-            }}
+        <button onClick={()=> onTabChange('attend', kind, meeting.id || getMeetingId(meeting))}
             className={`w-full rounded-3xl p-5 text-left text-white active:scale-98 transition-all${showOverlay ? ' blur-sm' : ''}`}
             style={{ background: cfg.accent, boxShadow:`0 16px 34px -6px ${cfg.accent}66` }}>
             <div className="flex items-center justify-between gap-2 mb-2.5">
@@ -456,11 +447,31 @@ const NextMeetingCard = ({
                         </div>
                     ) : (dayInfo.type==='today' || dayInfo.type==='started') ? (
                         (kind === 'self' && teamReady) ? (
-                            <div className="flex items-center justify-between gap-2 -mx-1.5 px-3 py-2.5 rounded-xl" style={{background:'rgba(255,255,255,0.2)'}}>
-                                <span className="flex items-center gap-1.5 text-sm font-black text-white min-w-0">
-                                    <Icon.CheckSq size={16} className="flex-shrink-0"/><span className="truncate">출석하기</span>
-                                </span>
-                                <Icon.ChevronRight size={16} className="text-white/80 flex-shrink-0"/>
+                            <div>
+                                <div className="flex items-center gap-2 mb-2.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-live moida-pulse-live flex-shrink-0"></span>
+                                    <span className="text-[13px] font-black text-white">지금 출석 체크하세요</span>
+                                </div>
+                                <div className="flex gap-2.5">
+                                    <span role="button" onClick={(e)=>{ e.stopPropagation(); onInlineGPS && onInlineGPS(); }}
+                                        className="flex-1 min-w-0 rounded-2xl p-4 bg-white active:scale-95 transition-all flex flex-col justify-between cursor-pointer" style={{minHeight:'104px'}}>
+                                        <Icon.MapPin size={32} className="text-teal-600"/>
+                                        <div className="min-w-0">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">GPS 출석</p>
+                                            <p className="font-black text-[15px] leading-tight text-teal-700">위치 확인</p>
+                                        </div>
+                                    </span>
+                                    {enableQR && (
+                                        <span role="button" onClick={(e)=>{ e.stopPropagation(); onInlineQR && onInlineQR(); }}
+                                            className="flex-1 min-w-0 rounded-2xl p-4 text-white active:scale-95 transition-all flex flex-col justify-between cursor-pointer" style={{minHeight:'104px', background:'rgba(255,255,255,0.14)'}}>
+                                            <Icon.QrCode size={32} className="text-white"/>
+                                            <div className="min-w-0">
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-white/70">QR 출석</p>
+                                                <p className="font-black text-[15px] leading-tight text-white">스캔하기</p>
+                                            </div>
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         ) : kind === 'self' ? (
                             <div className="flex items-center gap-1.5 text-xs text-white/70">
@@ -1104,6 +1115,7 @@ const TabHome = ({
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
     duesReports, onConfirmDuesReport, onRejectDuesReport, onGoDuesTab,
     generateAttendQRCode, onEditMeeting, onDeleteMeeting, onOpenAttendModal,
+    onInlineGPS, onInlineQR,
 }) => {
     // 정기/매칭 다음 모임 분리 (회원이 둘 다 참여할 수 있어 종류별 카드로 표시)
     // 종료(done) + 지난 날짜 모임은 홈 '다음 모임'에서 제외 (끝난 모임은 기록 탭에서만)
@@ -1158,7 +1170,8 @@ const TabHome = ({
                 allowFromDisplay={allowFromDisplay} participantCount={participantCount} scheduleData={scheduleData}
                 isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting}
                 onGenerateQR={generateAttendQRCode} onEditMeeting={onEditMeeting} onDeleteMeeting={onDeleteMeeting}
-                onOpenAttendModal={onOpenAttendModal} />
+                onOpenAttendModal={onOpenAttendModal} onInlineGPS={onInlineGPS} onInlineQR={onInlineQR}
+                enableQR={meetingSettings?.enableQR} />
         )) : (
             <button onClick={()=>onTabChange('meeting-list')} className="w-full card rounded-2xl p-5 text-center active:scale-98 transition-all">
                 <div className="text-slate-400 py-3">
