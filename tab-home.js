@@ -332,7 +332,7 @@ const MeetingWeather = ({ lat, lng, isAdminMode }) => {
     const r = (v) => (v == null || isNaN(Number(v))) ? '–' : Math.round(Number(v));
     return (
         <div className="mt-3 flex items-center gap-2 text-sm font-black min-w-0">
-            <WxIcon size={20} className="flex-shrink-0" style={{color: wxColor}}/>
+            <span className="flex items-center flex-shrink-0" style={{color: wxColor}}><WxIcon size={20}/></span>
             <span className="text-white flex-shrink-0">{r(wx.temp)}°</span>
             <span className="text-white/40 flex-shrink-0">·</span>
             <span className="text-white/85 flex-shrink-0">{label}</span>
