@@ -441,11 +441,18 @@ const NextMeetingCard = ({
                 <div className="mt-4 pt-4 border-t space-y-2.5" style={{borderColor:'rgba(255,255,255,0.22)'}}>
                     {/* 출석 상태 — 출석체크 시점(당일/모임중)이 되면 체크 버튼, 완료 시 완료 표시 */}
                     {mySession?.checkedIn ? (
-                        <div className="flex items-center justify-between gap-2">
-                            <span className="flex items-center gap-1.5 text-sm font-black text-white min-w-0">
+                        <div className="flex items-center gap-2">
+                            <span className="flex items-center gap-1.5 text-sm font-black text-live min-w-0">
                                 <Icon.Check size={16} className="flex-shrink-0"/><span className="truncate">출석 완료</span>
                             </span>
-                            <span className="text-xs font-black text-white/70 flex-shrink-0">{mySession.checkInTime}</span>
+                            {(kind === 'self' && myTeamInfo) ? (
+                                <span className="ml-auto flex items-center gap-2 text-sm font-black text-white flex-shrink-0">
+                                    <span className="truncate">내 팀 · {myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</span>
+                                    <span className={`w-7 h-7 rounded-lg flex-shrink-0 ring-1 ring-white/30 ${getTeamBadge(myTeamIdx)}`}></span>
+                                </span>
+                            ) : (
+                                <span className="ml-auto text-xs font-black text-white/70 flex-shrink-0">{mySession.checkInTime}</span>
+                            )}
                         </div>
                     ) : (dayInfo.type==='today' || dayInfo.type==='started') ? (
                         (kind === 'self' && teamReady) ? (
@@ -484,15 +491,7 @@ const NextMeetingCard = ({
                                 <Icon.Users size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">팀 편성 준비 중</span>
                             </div>
                         ) : (
-                            <div className="space-y-2.5">
-                                <div className="flex items-center gap-2.5">
-                                    <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-black flex-shrink-0 ${getTeamBadge(myTeamIdx)}`}>{myTeamInfo.jerseyNumber}</span>
-                                    <div className="min-w-0">
-                                        <p className="font-black text-base text-white leading-tight truncate">{myTeamInfo.teamName}팀 · {myTeamInfo.jerseyNumber}번</p>
-                                        <p className="text-xs text-white/75 leading-tight">{getTeamColorName(myTeamIdx)} 조끼</p>
-                                    </div>
-                                </div>
-                                {(() => {
+                            (() => {
                                     const r = getMyCurrentRoundMatch(scheduleData, myTeamInfo.teamName);
                                     if (!r) return (
                                         <div className="flex items-center gap-1.5 text-xs text-white/70 px-3 py-2 rounded-xl" style={{background:'rgba(255,255,255,0.12)'}}>
@@ -523,8 +522,7 @@ const NextMeetingCard = ({
                                             )}
                                         </div>
                                     );
-                                })()}
-                            </div>
+                            })()
                         )
                     ) : teamReady && myTeamInfo ? (
                         <div className="flex items-center justify-between gap-2">
