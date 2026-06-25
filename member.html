@@ -771,6 +771,7 @@ function App() {
                     <div>
                         <MeetingDetailHeader meeting={viewMeeting} onBack={() => setViewMeetingId(null)}
                             onSettings={isAdminMode ? () => { setPendingEditMeeting(viewMeeting); navTab('meeting-list'); } : null} />
+                        {isAdminMode && (
                         <div className="flex gap-1.5 mb-3 p-1 bg-slate-100 rounded-2xl">
                             {(viewKind === 'match'
                                 ? [['attend','출석'],['team','명단']]
@@ -780,61 +781,11 @@ function App() {
                                     className={`flex-1 min-w-0 py-2 rounded-xl text-sm font-black truncate transition-all ${meetingSubTab===k?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>{l}</button>
                             ))}
                         </div>
+                        )}
                     </div>
                 )}
-                {tab === 'meeting' && viewMeeting && meetingSubTab === 'team' && (
-                    <TabTeam
-                        isAdminMode={isAdminMode} isTeamPanelOpen={team.isTeamPanelOpen} setIsTeamPanelOpen={team.setIsTeamPanelOpen}
-                        teamMakerTab={team.teamMakerTab} setTeamMakerTab={team.setTeamMakerTab}
-                        teamingSettings={team.teamingSettings} setTeamingSettings={team.setTeamingSettings}
-                        excludedIds={team.excludedIds} setExcludedIds={team.setExcludedIds}
-                        editTeams={team.editTeams} editMeetingDate={team.editMeetingDate} editIsConfirmed={team.editIsConfirmed}
-                        selectedMemberTM={team.selectedMemberTM} setSelectedMemberTM={team.setSelectedMemberTM}
-                        selectedTeamTM={team.selectedTeamTM} setSelectedTeamTM={team.setSelectedTeamTM}
-                        draggedItem={team.draggedItem} dropIndicator={team.dropIndicator} setDropIndicator={team.setDropIndicator}
-                        savedDrafts={team.savedDrafts} confirmedDrafts={team.confirmedDrafts}
-                        teamStorageSubTab={team.teamStorageSubTab} setTeamStorageSubTab={team.setTeamStorageSubTab}
-                        previewDraft={team.previewDraft} setPreviewDraft={team.setPreviewDraft}
-                        isCapturing={team.isCapturing} teamDraftData={team.teamDraftData}
-                        teamReady={teamReady} allowFromDisplay={allowFromDisplay}
-                        myTeamIdx={myTeamIdx} memberData={memberData} allMembers={roster.allMembers}
-                        teamsDisabled={viewKind === 'match'} participants={meetingParticipants}
-                        tmMeetingDate={team.tmMeetingDate} tmActiveList={team.tmActiveList}
-                        tmEntryList={team.tmEntryList} tmLevelStats={team.tmLevelStats} tmUnassigned={team.tmUnassigned}
-                        generateTeams={generateTeams} tmCapture={tmCapture} tmSaveDraft={tmSaveDraft}
-                        tmConfirm={tmConfirm} tmReset={tmReset} tmReGenerate={tmReGenerate}
-                        tmDragStart={tmDragStart} tmDragEnd={tmDragEnd} tmMemberDragOver={tmMemberDragOver}
-                        tmTeamDragOver={tmTeamDragOver} tmTeamDragLeave={tmTeamDragLeave}
-                        tmDrop={tmDrop} tmMemberClick={tmMemberClick} tmMoveToTeam={tmMoveToTeam}
-                        tmTeamBadgeClick={tmTeamBadgeClick} showConfirm={showConfirm}
-                        selectedDraftIds={team.selectedDraftIds} setSelectedDraftIds={team.setSelectedDraftIds}
-                        tmDeleteConfirmed={tmDeleteConfirmed} tmDeleteSelectedDrafts={tmDeleteSelectedDrafts}
-                    />
-                )}
-                {tab === 'meeting' && viewMeeting && meetingSubTab === 'match' && viewKind !== 'match' && (
-                    <TabMatch
-                        isAdminMode={isAdminMode} isMatchPanelOpen={match.isMatchPanelOpen} setIsMatchPanelOpen={match.setIsMatchPanelOpen}
-                        matchAdminView={match.matchAdminView} setMatchAdminView={match.setMatchAdminView}
-                        localSchedule={match.localSchedule} localCompletedMatches={match.localCompletedMatches}
-                        setLocalCompletedMatches={match.setLocalCompletedMatches} localMatchIndex={match.localMatchIndex}
-                        matchConfig={match.matchConfig} setMatchConfig={match.setMatchConfig}
-                        meetings={meetings}
-                        matchIsSaving={match.matchIsSaving} matchIsCapturing={match.matchIsCapturing}
-                        presets={match.presets} selectedPresetId={match.selectedPresetId}
-                        setSelectedPresetId={match.setSelectedPresetId} presetToggles={match.presetToggles}
-                        confirmedDrafts={team.confirmedDrafts} matchStatsData={match.matchStatsData}
-                        scheduleData={scheduleData} matchViewMode={matchViewMode} setMatchViewMode={setMatchViewMode}
-                        myTeamInfo={myTeamInfo}
-                        matchSaveSchedule={matchSaveSchedule} matchHandleCapture={matchHandleCapture}
-                        matchGenerateTable={matchGenerateTable}
-                        matchHandleNextMatch={matchHandleNextMatch} matchHandlePrevMatch={matchHandlePrevMatch}
-                        matchHandleToggleComplete={matchHandleToggleComplete} matchHandleAutoAdvance={matchHandleAutoAdvance}
-                        matchHandlePresetSelect={matchHandlePresetSelect} matchToggleSubCourt={matchToggleSubCourt}
-                        splitTime={splitTime} setIsLoadMatchModalOpen={match.setIsLoadMatchModalOpen}
-                        setIsPresetModalOpen={match.setIsPresetModalOpen}
-                    />
-                )}
-                {tab === 'meeting' && viewMeeting && meetingSubTab === 'attend' && (
+                {/* 회원=지금 할 일(맨 위) / 관리자=출석 서브탭 */}
+                {tab === 'meeting' && viewMeeting && (isAdminMode ? meetingSubTab === 'attend' : true) && (
                     <TabAttend
                         viewMeeting={viewMeeting} isViewActive={isViewActive}
                         onEditMeeting={(m) => { setPendingEditMeeting(m); setViewMeetingId(null); }}
@@ -897,6 +848,63 @@ function App() {
                         handleAbsent={handleAbsent}
                     />
                 )}
+                {/* 회원=내 팀 / 관리자=팀 편성 */}
+                {tab === 'meeting' && viewMeeting && (isAdminMode ? meetingSubTab === 'team' : true) && (
+                    <TabTeam
+                        isAdminMode={isAdminMode} isTeamPanelOpen={team.isTeamPanelOpen} setIsTeamPanelOpen={team.setIsTeamPanelOpen}
+                        teamMakerTab={team.teamMakerTab} setTeamMakerTab={team.setTeamMakerTab}
+                        teamingSettings={team.teamingSettings} setTeamingSettings={team.setTeamingSettings}
+                        excludedIds={team.excludedIds} setExcludedIds={team.setExcludedIds}
+                        editTeams={team.editTeams} editMeetingDate={team.editMeetingDate} editIsConfirmed={team.editIsConfirmed}
+                        selectedMemberTM={team.selectedMemberTM} setSelectedMemberTM={team.setSelectedMemberTM}
+                        selectedTeamTM={team.selectedTeamTM} setSelectedTeamTM={team.setSelectedTeamTM}
+                        draggedItem={team.draggedItem} dropIndicator={team.dropIndicator} setDropIndicator={team.setDropIndicator}
+                        savedDrafts={team.savedDrafts} confirmedDrafts={team.confirmedDrafts}
+                        teamStorageSubTab={team.teamStorageSubTab} setTeamStorageSubTab={team.setTeamStorageSubTab}
+                        previewDraft={team.previewDraft} setPreviewDraft={team.setPreviewDraft}
+                        isCapturing={team.isCapturing} teamDraftData={team.teamDraftData}
+                        teamReady={teamReady} allowFromDisplay={allowFromDisplay}
+                        myTeamIdx={myTeamIdx} memberData={memberData} allMembers={roster.allMembers}
+                        teamsDisabled={viewKind === 'match'} participants={meetingParticipants}
+                        tmMeetingDate={team.tmMeetingDate} tmActiveList={team.tmActiveList}
+                        tmEntryList={team.tmEntryList} tmLevelStats={team.tmLevelStats} tmUnassigned={team.tmUnassigned}
+                        generateTeams={generateTeams} tmCapture={tmCapture} tmSaveDraft={tmSaveDraft}
+                        tmConfirm={tmConfirm} tmReset={tmReset} tmReGenerate={tmReGenerate}
+                        tmDragStart={tmDragStart} tmDragEnd={tmDragEnd} tmMemberDragOver={tmMemberDragOver}
+                        tmTeamDragOver={tmTeamDragOver} tmTeamDragLeave={tmTeamDragLeave}
+                        tmDrop={tmDrop} tmMemberClick={tmMemberClick} tmMoveToTeam={tmMoveToTeam}
+                        tmTeamBadgeClick={tmTeamBadgeClick} showConfirm={showConfirm}
+                        selectedDraftIds={team.selectedDraftIds} setSelectedDraftIds={team.setSelectedDraftIds}
+                        tmDeleteConfirmed={tmDeleteConfirmed} tmDeleteSelectedDrafts={tmDeleteSelectedDrafts}
+                        embedded={!isAdminMode}
+                    />
+                )}
+                {/* 회원=경기 / 관리자=매치 관리 (매칭 모임 제외) */}
+                {tab === 'meeting' && viewMeeting && viewKind !== 'match' && (isAdminMode ? meetingSubTab === 'match' : true) && (
+                    <TabMatch
+                        isAdminMode={isAdminMode} isMatchPanelOpen={match.isMatchPanelOpen} setIsMatchPanelOpen={match.setIsMatchPanelOpen}
+                        matchAdminView={match.matchAdminView} setMatchAdminView={match.setMatchAdminView}
+                        localSchedule={match.localSchedule} localCompletedMatches={match.localCompletedMatches}
+                        setLocalCompletedMatches={match.setLocalCompletedMatches} localMatchIndex={match.localMatchIndex}
+                        matchConfig={match.matchConfig} setMatchConfig={match.setMatchConfig}
+                        meetings={meetings}
+                        matchIsSaving={match.matchIsSaving} matchIsCapturing={match.matchIsCapturing}
+                        presets={match.presets} selectedPresetId={match.selectedPresetId}
+                        setSelectedPresetId={match.setSelectedPresetId} presetToggles={match.presetToggles}
+                        confirmedDrafts={team.confirmedDrafts} matchStatsData={match.matchStatsData}
+                        scheduleData={scheduleData} matchViewMode={matchViewMode} setMatchViewMode={setMatchViewMode}
+                        myTeamInfo={myTeamInfo}
+                        matchSaveSchedule={matchSaveSchedule} matchHandleCapture={matchHandleCapture}
+                        matchGenerateTable={matchGenerateTable}
+                        matchHandleNextMatch={matchHandleNextMatch} matchHandlePrevMatch={matchHandlePrevMatch}
+                        matchHandleToggleComplete={matchHandleToggleComplete} matchHandleAutoAdvance={matchHandleAutoAdvance}
+                        matchHandlePresetSelect={matchHandlePresetSelect} matchToggleSubCourt={matchToggleSubCourt}
+                        splitTime={splitTime} setIsLoadMatchModalOpen={match.setIsLoadMatchModalOpen}
+                        setIsPresetModalOpen={match.setIsPresetModalOpen}
+                        embedded={!isAdminMode}
+                    />
+                )}
+                {/* (지금 할 일은 맨 위로 이동) */}
                 {tab === 'dues' && (
                     <div className="animate-in space-y-3">
                         <h2 className="font-black text-lg text-slate-800 px-1">회비 납부</h2>

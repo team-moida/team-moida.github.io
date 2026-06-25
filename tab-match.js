@@ -157,7 +157,7 @@ const TabMatch = ({
     matchSaveSchedule, matchHandleCapture, matchGenerateTable,
     matchHandleNextMatch, matchHandlePrevMatch, matchHandleToggleComplete, matchHandleAutoAdvance, matchHandlePresetSelect, matchToggleSubCourt,
     splitTime, setIsLoadMatchModalOpen, setIsPresetModalOpen,
-    meetings,
+    meetings, embedded,
 }) => {
     const [boardOpen, setBoardOpen] = React.useState(false);
     const [selectedMeetingId, setSelectedMeetingId] = React.useState('');
@@ -455,11 +455,21 @@ const TabMatch = ({
         ) : (
             /* ── 일반/회원 뷰 ── */
             !scheduleData
-                ? <div className="text-center py-20 text-slate-500 reveal">
-                    <div className="flex justify-center mb-4 opacity-25"><Icon.Calendar size={56}/></div>
-                    <p className="font-black text-lg mb-2">매치 테이블 준비 중</p>
-                    <p className="text-sm text-slate-400">팀 편성이 확정되면<br/>경기 일정이 공개됩니다</p>
-                  </div>
+                ? (embedded ? (
+                    <div className="mt-2 reveal">
+                        <h3 className="font-black text-lg text-slate-900 mb-2 px-1">경기</h3>
+                        <div className="card border-slate-100 rounded-2xl p-5 text-center text-slate-400">
+                            <p className="text-xs font-black">경기 일정 준비 중</p>
+                            <p className="text-[11px] mt-1">팀 편성이 확정되면 경기 순서가 공개됩니다</p>
+                        </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-20 text-slate-500 reveal">
+                        <div className="flex justify-center mb-4 opacity-25"><Icon.Calendar size={56}/></div>
+                        <p className="font-black text-lg mb-2">매치 테이블 준비 중</p>
+                        <p className="text-sm text-slate-400">팀 편성이 확정되면<br/>경기 일정이 공개됩니다</p>
+                    </div>
+                  ))
             : (() => {
                 const sessions = scheduleData.schedule?.list || [];
                 const cmi = scheduleData.currentMatchIndex ?? 0;
@@ -469,17 +479,30 @@ const TabMatch = ({
                 const myTeamIdx2 = myTeamInfo?.teamIdx ?? 0;
                 return (
                     <div className="stagger">
-                        {/* 날짜 + 뷰 토글 */}
-                        <div className="rounded-2xl p-5 mb-4 text-white flex items-center justify-between gap-3" style={{ background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(18,46,120,0.45)' }}>
-                            <div className="min-w-0">
-                                <p className="text-[11px] font-black uppercase tracking-widest text-white/80">{scheduleData.meetingDate} 매치</p>
-                                <p className="font-black text-2xl leading-tight mt-1">총 {sessions.length}<span className="text-base font-black text-white/80 ml-1">라운드</span></p>
+                        {/* 날짜 + 뷰 토글 (회원 한 화면=컴팩트 '경기' 제목 / 단독=인디고 히어로) */}
+                        {embedded ? (
+                            <div className="flex items-center justify-between gap-2 mt-2 mb-3 px-1">
+                                <div className="flex items-baseline gap-2 min-w-0">
+                                    <h3 className="font-black text-lg text-slate-900">경기</h3>
+                                    <span className="text-xs font-black text-slate-400">총 {sessions.length}라운드</span>
+                                </div>
+                                <div className="flex bg-slate-100 rounded-xl p-1 gap-1 shrink-0">
+                                    <button onClick={()=>setMatchViewMode('my')} className={`px-3 py-1.5 rounded-lg font-black text-xs transition-all ${matchViewMode==='my'?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>내 경기</button>
+                                    <button onClick={()=>setMatchViewMode('all')} className={`px-3 py-1.5 rounded-lg font-black text-xs transition-all ${matchViewMode==='all'?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>전체 보기</button>
+                                </div>
                             </div>
-                            <div className="flex bg-white/20 rounded-xl p-1 gap-1 shrink-0">
-                                <button onClick={()=>setMatchViewMode('my')} className={`px-3 py-1.5 rounded-lg font-black text-xs transition-all ${matchViewMode==='my'?'bg-white text-teal-600 shadow-sm':'text-white/80'}`}>내 경기</button>
-                                <button onClick={()=>setMatchViewMode('all')} className={`px-3 py-1.5 rounded-lg font-black text-xs transition-all ${matchViewMode==='all'?'bg-white text-teal-600 shadow-sm':'text-white/80'}`}>전체 보기</button>
+                        ) : (
+                            <div className="rounded-2xl p-5 mb-4 text-white flex items-center justify-between gap-3" style={{ background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(18,46,120,0.45)' }}>
+                                <div className="min-w-0">
+                                    <p className="text-[11px] font-black uppercase tracking-widest text-white/80">{scheduleData.meetingDate} 매치</p>
+                                    <p className="font-black text-2xl leading-tight mt-1">총 {sessions.length}<span className="text-base font-black text-white/80 ml-1">라운드</span></p>
+                                </div>
+                                <div className="flex bg-white/20 rounded-xl p-1 gap-1 shrink-0">
+                                    <button onClick={()=>setMatchViewMode('my')} className={`px-3 py-1.5 rounded-lg font-black text-xs transition-all ${matchViewMode==='my'?'bg-white text-teal-600 shadow-sm':'text-white/80'}`}>내 경기</button>
+                                    <button onClick={()=>setMatchViewMode('all')} className={`px-3 py-1.5 rounded-lg font-black text-xs transition-all ${matchViewMode==='all'?'bg-white text-teal-600 shadow-sm':'text-white/80'}`}>전체 보기</button>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* 패드 크게 보기 진입 */}
                         <button onClick={() => setBoardOpen(true)}

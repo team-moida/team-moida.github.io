@@ -18,6 +18,7 @@ const TabTeam = ({
     tmDragStart, tmDragEnd, tmMemberDragOver, tmTeamDragOver, tmTeamDragLeave,
     tmDrop, tmMemberClick, tmMoveToTeam, tmTeamBadgeClick, showConfirm,
     selectedDraftIds, setSelectedDraftIds, tmDeleteConfirmed, tmDeleteSelectedDrafts,
+    embedded,
 }) => {
     const { useState } = React;
     const [draftSelectMode, setDraftSelectMode] = useState(false);
@@ -355,17 +356,37 @@ const TabTeam = ({
         ) : (
             /* ── 일반/회원 뷰 ── */
             !teamDraftData
-                ? <div className="text-center py-20 text-slate-500">
-                    <div className="flex justify-center mb-4 opacity-25"><Icon.Users size={56}/></div>
-                    <p className="font-black text-lg mb-2">아직 팀이 편성되지 않았습니다</p>
-                    <p className="text-sm text-slate-400">운영진이 팀 편성을 완료하면<br/>여기에 표시됩니다</p>
-                  </div>
+                ? (embedded ? (
+                    <div className="mt-2">
+                        <h3 className="font-black text-lg text-slate-900 mb-2 px-1">내 팀</h3>
+                        <div className="card border-slate-100 rounded-2xl p-5 text-center text-slate-400">
+                            <p className="text-xs font-black">아직 팀이 편성되지 않았습니다</p>
+                            <p className="text-[11px] mt-1">운영진이 편성을 완료하면 여기에 표시됩니다</p>
+                        </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-20 text-slate-500">
+                        <div className="flex justify-center mb-4 opacity-25"><Icon.Users size={56}/></div>
+                        <p className="font-black text-lg mb-2">아직 팀이 편성되지 않았습니다</p>
+                        <p className="text-sm text-slate-400">운영진이 팀 편성을 완료하면<br/>여기에 표시됩니다</p>
+                    </div>
+                  ))
                 : (!teamReady && !isAdminMode)
-                ? <div className="text-center py-20 text-slate-500">
-                    <div className="flex justify-center mb-4 opacity-25"><Icon.Users size={56}/></div>
-                    <p className="font-black text-lg mb-2">팀 편성 비공개 중</p>
-                    <p className="text-sm text-slate-400">{allowFromDisplay}부터 공개됩니다</p>
-                  </div>
+                ? (embedded ? (
+                    <div className="mt-2">
+                        <h3 className="font-black text-lg text-slate-900 mb-2 px-1">내 팀</h3>
+                        <div className="card border-slate-100 rounded-2xl p-5 text-center text-slate-400">
+                            <p className="text-xs font-black">팀 편성 비공개 중</p>
+                            <p className="text-[11px] mt-1">{allowFromDisplay}부터 공개됩니다</p>
+                        </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-20 text-slate-500">
+                        <div className="flex justify-center mb-4 opacity-25"><Icon.Users size={56}/></div>
+                        <p className="font-black text-lg mb-2">팀 편성 비공개 중</p>
+                        <p className="text-sm text-slate-400">{allowFromDisplay}부터 공개됩니다</p>
+                    </div>
+                  ))
                 : (
                     <div>
                         {isAdminMode && !teamReady && (
@@ -373,10 +394,17 @@ const TabTeam = ({
                                 <span className="shrink-0">⏳</span><span className="min-w-0">관리자 미리보기 — 회원에게는 {allowFromDisplay}부터 공개됩니다</span>
                             </div>
                         )}
-                        <div className="rounded-2xl p-5 mb-4 text-white" style={{ background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(18,46,120,0.45)' }}>
-                            <p className="text-[11px] font-black uppercase tracking-widest text-white/80">{teamDraftData.meetingDate} 팀 편성</p>
-                            <p className="font-black text-2xl leading-tight mt-1">{teamDraftData.teams.length}팀<span className="text-base font-black text-white/80 ml-1"> 편성 완료</span></p>
-                        </div>
+                        {embedded ? (
+                            <div className="flex items-baseline gap-2 mt-2 mb-3 px-1">
+                                <h3 className="font-black text-lg text-slate-900">내 팀</h3>
+                                <span className="text-xs font-black text-slate-400">{teamDraftData.teams.length}팀 편성 완료</span>
+                            </div>
+                        ) : (
+                            <div className="rounded-2xl p-5 mb-4 text-white" style={{ background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))', boxShadow:'0 10px 28px -8px rgba(18,46,120,0.45)' }}>
+                                <p className="text-[11px] font-black uppercase tracking-widest text-white/80">{teamDraftData.meetingDate} 팀 편성</p>
+                                <p className="font-black text-2xl leading-tight mt-1">{teamDraftData.teams.length}팀<span className="text-base font-black text-white/80 ml-1"> 편성 완료</span></p>
+                            </div>
+                        )}
                         <div className="grid grid-cols-2 gap-3">
                             {teamDraftData.teams.map((team, teamIdx) => (
                                 <div key={teamIdx} className={`rounded-2xl p-4 border ${teamIdx===myTeamIdx?'border-teal-500 bg-teal-50':'card border-slate-100'}`}>
