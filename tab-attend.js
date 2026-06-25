@@ -759,9 +759,14 @@ const MeetingListScreen = ({
                     const kind = (m.meetingType || 'self') === 'match' ? 'match' : 'self';
                     const cfg = MEETING_KIND[kind];
                     const dayInfo = computeMeetingDay(m.date, m.start);
+                    const _md = m.date ? new Date(m.date + 'T00:00:00') : null;
+                    const _ok = _md && !isNaN(_md.getTime());
+                    const dDay = _ok ? _md.getDate() : '';
+                    const dMon = _ok ? (_md.getMonth() + 1) : '';
+                    const dDow = _ok ? ['일','월','화','수','목','금','토'][_md.getDay()] : '';
                     return (
                         <button key={m.id} onClick={() => onSelect(m)}
-                            className="w-full rounded-2xl p-5 text-left text-white active:scale-98 transition-all"
+                            className="w-full rounded-3xl p-5 text-left text-white active:scale-98 transition-all"
                             style={{ background: cfg.accent, boxShadow: `0 10px 28px -8px ${cfg.accent}59` }}>
                             <div className="flex items-center justify-between gap-2 mb-2.5">
                                 <div className="flex items-center gap-1.5 min-w-0">
@@ -784,7 +789,18 @@ const MeetingListScreen = ({
                                     )}
                                 </div>
                             </div>
-                            <p className="font-black text-lg leading-tight">{fmtMeetingDate(m.date)} · {m.start}~{m.end}</p>
+                            {_ok ? (
+                                <div className="flex items-end gap-2.5">
+                                    <span className="font-black text-[52px] leading-[0.82] tracking-tight">{dDay}</span>
+                                    <div className="pb-1.5">
+                                        <p className="font-black text-base leading-tight">{dMon}월</p>
+                                        <p className="text-sm font-bold text-white/80 leading-tight">{dDow}요일</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="font-black text-[28px] leading-none tracking-tight">{fmtMeetingDate(m.date)}</p>
+                            )}
+                            <p className="text-sm font-bold text-white/80 mt-2">{m.start} ~ {m.end}</p>
                             {kind === 'match' && m.opponentName && (
                                 <p className="text-sm font-black text-white/90 mt-1 truncate">vs {m.opponentName}</p>
                             )}
