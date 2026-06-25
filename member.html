@@ -583,7 +583,9 @@ function App() {
     };
     const managers = roster.allMembers.filter(m => STAFF_ROLES.includes(m.role));
     // 보고 있는 모임이 그 종류(정기/매칭)의 '현재 모임'인지 — 출석/신청/대진/매치는 현재 모임에서만 동작
-    const isViewActive = !!viewMeeting && viewMeeting.id === (viewKind === 'match' ? activeMatch : activeSelf)?.id;
+    // 활성 판정: 보고 있는 모임이 그 종류의 활성 모임이거나, 같은 날짜의 형제 모임(테스트 모임 여러 개 대응 — 같은 날짜는 출석 데이터 공유)
+    const _activeForView = viewKind === 'match' ? activeMatch : activeSelf;
+    const isViewActive = !!viewMeeting && !!_activeForView && (viewMeeting.id === _activeForView.id || viewMeeting.date === _activeForView.date);
 
     const { moveMonth, handleAddMember, handleUpdateMember, handleResignConfirm,
             handleRestoreResigned, handleDeleteMember,
