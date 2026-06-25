@@ -1256,13 +1256,6 @@ const TabAttend = ({
                                     <div className="mt-6 pt-4 border-t border-slate-100">
                                         <div className="flex items-center justify-between mb-3">
                                             <p className="text-xs font-black text-slate-400 uppercase tracking-widest">출석 현황</p>
-                                            {attendActiveList.length > 0 && (
-                                                <button onClick={() => setIsKioskOpen(true)}
-                                                    className="px-3 py-1.5 rounded-xl text-xs font-black text-white flex items-center gap-1"
-                                                    style={{background:'linear-gradient(135deg,#f97316,#ea580c)'}}>
-                                                    <Icon.Clipboard size={13}/> 키오스크
-                                                </button>
-                                            )}
                                         </div>
                                         <div className="card rounded-2xl p-4">
                                             <div className="flex gap-2 text-center">
