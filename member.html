@@ -702,7 +702,7 @@ function App() {
                 onEndMeeting={attendHandleEndMeeting}
                 isMeetingEndSaved={attend.attendHistory?.some(h => h.date === displayMeetingSettings?.date) || false}
                 unreadCount={unreadCount} onOpenAnnouncements={openAnnouncements}
-                onOpenProfile={() => setIsProfileModalOpen(true)}
+                onOpenProfile={() => setIsProfileModalOpen(true)} profileImage={memberInfo?.profileImage}
             >
                 {tab === 'home' && <AnnounceTicker announcements={announcements} meetings={meetings} onOpen={openAnnouncements} onTabChange={navTab} />}
             </MemberHeader>

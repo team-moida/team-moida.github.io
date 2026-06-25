@@ -171,14 +171,62 @@ function ProfileModal({ isOpen, onClose, memberInfo, memberData, showAlert }) {
     const [address, setAddress] = useState('');
     const [saving, setSaving] = useState(false);
     const [editing, setEditing] = useState(false);
+    const [profileImg, setProfileImg] = useState('');
+    const [photoSaving, setPhotoSaving] = useState(false);
+    const fileRef = React.useRef(null);
 
     useEffect(() => {
         if (isOpen && memberInfo) {
             setPhone(memberInfo.phone || '');
             setAddress(memberInfo.address || '');
+            setProfileImg(memberInfo.profileImage || '');
             setEditing(false);
         }
     }, [isOpen, memberInfo?.id]);
+
+    // 사진을 256x256 정사각으로 줄여 base64로 저장(별도 저장소 없이 회원 문서에 보관)
+    const resizeToDataUrl = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = ev => {
+            const img = new Image();
+            img.onload = () => {
+                const SIZE = 256;
+                const canvas = document.createElement('canvas');
+                canvas.width = SIZE; canvas.height = SIZE;
+                const s = Math.min(img.width, img.height);
+                const sx = (img.width - s) / 2, sy = (img.height - s) / 2;
+                canvas.getContext('2d').drawImage(img, sx, sy, s, s, 0, 0, SIZE, SIZE);
+                resolve(canvas.toDataURL('image/jpeg', 0.82));
+            };
+            img.onerror = reject;
+            img.src = ev.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+
+    const handlePickPhoto = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        e.target.value = '';
+        if (!file) return;
+        setPhotoSaving(true);
+        try {
+            const dataUrl = await resizeToDataUrl(file);
+            await getCol('members').doc(memberData.memberId).update({ profileImage: dataUrl });
+            setProfileImg(dataUrl);
+            showAlert('완료', '프로필 사진이 변경되었습니다.');
+        } catch (err) { showAlert('오류', '사진 변경에 실패했습니다.'); }
+        finally { setPhotoSaving(false); }
+    };
+
+    const handleResetPhoto = async () => {
+        setPhotoSaving(true);
+        try {
+            await getCol('members').doc(memberData.memberId).update({ profileImage: '' });
+            setProfileImg('');
+        } catch (err) { showAlert('오류', '실패했습니다.'); }
+        finally { setPhotoSaving(false); }
+    };
 
     if (!isOpen || !memberInfo) return null;
 
@@ -204,6 +252,23 @@ function ProfileModal({ isOpen, onClose, memberInfo, memberData, showAlert }) {
                 <div className="flex items-center justify-between mb-5">
                     <h2 className="text-xl font-black text-slate-800">내 프로필</h2>
                     <button onClick={onClose} className="text-slate-400 text-2xl leading-none">×</button>
+                </div>
+                {/* 프로필 사진 — 업로드(자동 축소 저장) / 기본(글자) */}
+                <div className="flex flex-col items-center mb-5">
+                    <div className="relative">
+                        {profileImg
+                            ? <img src={profileImg} alt="" className="w-20 h-20 rounded-full object-cover border border-slate-200"/>
+                            : <div className="w-20 h-20 rounded-full bg-teal-500 text-white flex items-center justify-center font-black text-2xl">{(memberInfo.name||'').trim().slice(-1)||'?'}</div>}
+                        <button onClick={()=>fileRef.current && fileRef.current.click()} disabled={photoSaving}
+                            className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white border border-slate-200 shadow flex items-center justify-center text-slate-500"><Icon.Camera size={14}/></button>
+                    </div>
+                    <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePickPhoto}/>
+                    <div className="flex items-center gap-2 mt-3">
+                        <button onClick={()=>fileRef.current && fileRef.current.click()} disabled={photoSaving}
+                            className="text-xs font-black px-3 py-1.5 rounded-lg bg-teal-50 text-teal-600 disabled:opacity-50">{photoSaving?'저장 중…':'사진 변경'}</button>
+                        {profileImg && <button onClick={handleResetPhoto} disabled={photoSaving}
+                            className="text-xs font-black px-3 py-1.5 rounded-lg bg-slate-100 text-slate-500 disabled:opacity-50">기본으로</button>}
+                    </div>
                 </div>
                 {/* 기본 정보 (항상 읽기 전용) */}
                 <div className="bg-slate-50 rounded-2xl p-4 mb-4 space-y-2.5">

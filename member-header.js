@@ -3,7 +3,7 @@ function MemberHeader({
     myTeamInfo, myTeamIdx, handleLogout, toggleTheme, darkMode,
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
     unreadCount = 0, onOpenAnnouncements, canPreview, onEnterTestPreview,
-    onOpenProfile, isInPreview, onExitTestPreview, children
+    onOpenProfile, profileImage, isInPreview, onExitTestPreview, children
 }) {
     const showOverlay = isAdminMode && isMeetingOver && !isMeetingEndSaved;
     // 종 클릭 → 전체 공지 모달 (2단계에서 실제 연결). 미연결 시 콘솔 로그만.
@@ -41,8 +41,8 @@ function MemberHeader({
                     )}
                     {/* 프로필 아바타(LAB형) → 내 프로필 · 라이트/다크 · 로그아웃 */}
                     <div className="relative">
-                        <button onClick={()=>setMenuOpen(o=>!o)} className="w-9 h-9 rounded-full bg-teal-500 text-white font-black text-sm flex items-center justify-center flex-shrink-0 shadow-sm" title="프로필">
-                            {avatarChar}
+                        <button onClick={()=>setMenuOpen(o=>!o)} className="w-9 h-9 rounded-full bg-teal-500 text-white font-black text-sm flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden" title="프로필">
+                            {profileImage ? <img src={profileImage} alt="" className="w-full h-full object-cover"/> : avatarChar}
                         </button>
                         {menuOpen && (
                             <>
