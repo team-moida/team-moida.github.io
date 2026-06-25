@@ -736,7 +736,7 @@ const AppModals = ({
                         <input type="text" placeholder="이름" style={{userSelect:'text'}} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black"
                             value={attendNewGuest.name} onChange={e=>setAttendNewGuest(p=>({...p,name:e.target.value}))} />
                         <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black pr-8"
-                            value={attendNewGuest.gender} onChange={e=>setAttendNewGuest(p=>({...p,gender:e.target.value}))}>
+                            value={attendNewGuest.gender} onChange={e=>setAttendNewGuest(p=>({...p,gender:e.target.value, level:e.target.value==='여성'?'7':'1'}))}>
                             <option value="남성">남성</option><option value="여성">여성</option>
                         </select>
                         <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black pr-8"
@@ -746,7 +746,7 @@ const AppModals = ({
                         </select>
                         <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black pr-8"
                             value={attendNewGuest.level} onChange={e=>setAttendNewGuest(p=>({...p,level:e.target.value}))}>
-                            {[1,2,3,4,5,6].map(l=><option key={l} value={String(l)}>Lv.{l}</option>)}
+                            {(attendNewGuest.gender==='여성'?[7,8,9,10,11,12]:[1,2,3,4,5,6]).map(l=><option key={l} value={String(l)}>Lv.{l}</option>)}
                         </select>
                     </div>
                     <div className="flex gap-2 mt-4">
