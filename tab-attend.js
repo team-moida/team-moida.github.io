@@ -1,9 +1,20 @@
-// ─── 키오스크 실시간 시계 ───────────────────────────────────────────────────────────
-const KioskClock = () => {
-    const fmt = () => { const n = new Date(); return `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}`; };
-    const [time, setTime] = React.useState(fmt);
-    React.useEffect(() => { const t = setInterval(() => setTime(fmt()), 1000); return () => clearInterval(t); }, []);
-    return <span style={{fontVariantNumeric:'tabular-nums'}}>{time}</span>;
+// ─── 키오스크 실시간 시계 (지각 시간=시작 9분 전 지나면 주황색) ──────────────────────
+const KioskClock = ({ meetingSettings }) => {
+    // 정상 마감 시각 = 모임 시작 - 9분 (handlers-attend.js attendHandleCheckIn 기준과 동일). 이후는 '지각'.
+    const lateAt = React.useMemo(() => {
+        const dt = meetingSettings?.date, st = meetingSettings?.start;
+        if (!dt || !st) return null;
+        const [y, m, d] = dt.split('-'); const [hh, mm] = st.split(':');
+        const start = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(hh) || 0, parseInt(mm) || 0, 0);
+        return start.getTime() - 9 * 60 * 1000;
+    }, [meetingSettings?.date, meetingSettings?.start]);
+    const calc = () => {
+        const n = new Date(); const pad = (x) => String(x).padStart(2, '0');
+        return { t: `${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`, late: lateAt != null && n.getTime() > lateAt };
+    };
+    const [st, setSt] = React.useState(calc);
+    React.useEffect(() => { const id = setInterval(() => setSt(calc()), 1000); return () => clearInterval(id); }, [lateAt]);
+    return <span style={{fontVariantNumeric:'tabular-nums', color: st.late ? '#f59e0b' : '#0f172a', transition:'color .4s'}}>{st.t}</span>;
 };
 
 // ─── 키오스크 열릴 때 body pull-to-refresh 차단 ──────────────────────────────────
@@ -37,17 +48,21 @@ const KioskModal = ({
         <div className="fixed inset-0 z-50 flex flex-col" style={{background:'#f8fafc',overscrollBehavior:'none',fontFamily:"'Esamanru', sans-serif"}}>
             <KioskScrollLock />
             {/* 상단 바 */}
-            <div style={{background:'white',borderBottom:'1px solid #e2e8f0',paddingLeft:'20px',paddingRight:'16px',paddingBottom:'16px',paddingTop:'max(16px, env(safe-area-inset-top))',flexShrink:0,display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'12px'}}>
-                <div style={{minWidth:0}}>
-                    <p style={{color:'#94a3b8',fontWeight:900,fontSize:'0.78rem',letterSpacing:'0.06em'}}>직접 출석</p>
-                    <p style={{color:'#0f172a',fontWeight:900,fontSize:'1.3rem',marginTop:'2px'}}>{meetingSettings?.date}</p>
-                    <p style={{color:'#0f172a',fontSize:'clamp(2.7rem,8vw,3.8rem)',fontWeight:900,marginTop:'2px',lineHeight:1,letterSpacing:'0.01em',fontVariantNumeric:'tabular-nums'}}><KioskClock /></p>
-                    <p style={{color:'#64748b',fontSize:'0.85rem',marginTop:'9px',fontWeight:700}}><span style={{color:'var(--c-accent-deep)',fontWeight:900}}>{attendCheckedInCount}명 출석</span> / {attendActiveList.length}명</p>
+            <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'max(14px, env(safe-area-inset-top)) 16px 16px',flexShrink:0,position:'relative'}}>
+                {/* 상단: 라벨 + 닫기 */}
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                    <p style={{color:'#94a3b8',fontWeight:900,fontSize:'0.8rem',letterSpacing:'0.06em'}}>직접 출석</p>
+                    <button onClick={() => setIsKioskOpen(false)}
+                        style={{width:'40px',height:'40px',borderRadius:'12px',background:'#f1f5f9',color:'#64748b',display:'flex',alignItems:'center',justifyContent:'center',border:'none',cursor:'pointer',fontWeight:900,flexShrink:0}}>
+                        <Icon.X size={20}/>
+                    </button>
                 </div>
-                <button onClick={() => setIsKioskOpen(false)}
-                    style={{width:'40px',height:'40px',borderRadius:'12px',background:'#f1f5f9',color:'#64748b',display:'flex',alignItems:'center',justifyContent:'center',border:'none',cursor:'pointer',fontWeight:900,flexShrink:0}}>
-                    <Icon.X size={20}/>
-                </button>
+                {/* 가운데: 날짜 + 큰 시계(지각 시간이면 주황) + 출석 수 */}
+                <div style={{textAlign:'center',marginTop:'2px'}}>
+                    <p style={{color:'#475569',fontWeight:900,fontSize:'1.05rem'}}>{meetingSettings?.date}</p>
+                    <p style={{fontSize:'clamp(3rem,14vw,6rem)',fontWeight:900,marginTop:'2px',lineHeight:1,letterSpacing:'0.01em'}}><KioskClock meetingSettings={meetingSettings} /></p>
+                    <p style={{color:'#64748b',fontSize:'0.9rem',marginTop:'10px',fontWeight:700}}><span style={{color:'var(--c-accent-deep)',fontWeight:900}}>{attendCheckedInCount}명 출석</span> / {attendActiveList.length}명</p>
+                </div>
             </div>
             {/* 출석 진행 바 */}
             {attendActiveList.length > 0 && (
