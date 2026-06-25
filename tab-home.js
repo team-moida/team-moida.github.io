@@ -1076,6 +1076,80 @@ const PenaltyPayCard = ({ isAdminMode, memberName, memberInfo, managers = [], mo
         </div>
     );
 };
+// ─── 회비 탭: 회비 납부 내역 (최근 6개월) ─────────────────────────────────────
+// monthly_checks/{월}.statuses[회원ID] = 'paid'(정상)/'rest'(휴식). 저장된 값을 읽기만 함(쓰기 0).
+const DuesHistoryCard = ({ memberInfo }) => {
+    const { useState, useEffect } = React;
+    const [rows, setRows] = useState(null); // null=불러오는 중, []=없음
+    const memberId = memberInfo?.id || null;
+    useEffect(() => {
+        if (!memberId) { setRows([]); return; }
+        const now = new Date();
+        const months = [];
+        for (let i = 1; i <= 6; i++) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            months.push({ key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: `${d.getMonth() + 1}월` });
+        }
+        let alive = true;
+        Promise.all(months.map(m => getMonthlyCol().doc(m.key).get()
+            .then(s => ({ ...m, status: (s.exists && s.data().statuses) ? s.data().statuses[memberId] : null }))
+            .catch(() => ({ ...m, status: null }))))
+            .then(res => { if (alive) setRows(res.filter(r => r.status === 'paid' || r.status === 'rest')); });
+        return () => { alive = false; };
+    }, [memberId]);
+    return (
+        <div>
+            <h3 className="font-black text-base text-slate-800 px-1 mb-2">회비 납부 내역</h3>
+            <div className="card rounded-2xl px-4 divide-y divide-slate-100">
+                {rows === null ? (
+                    <p className="text-sm text-slate-400 font-bold py-4 text-center">불러오는 중…</p>
+                ) : rows.length === 0 ? (
+                    <p className="text-sm text-slate-400 font-bold py-4 text-center">최근 납부 내역이 없습니다</p>
+                ) : rows.map(r => (
+                    <div key={r.key} className="flex items-center justify-between py-3.5">
+                        <span className="font-black text-sm text-slate-700">{r.label} 회비</span>
+                        {r.status === 'rest'
+                            ? <span className="text-xs font-black text-sky-600 bg-sky-50 px-2.5 py-1 rounded-full">휴식</span>
+                            : <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">정상</span>}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+// ─── 회비 탭: 벌금 내역 (납부완료된 지난 벌금) ─────────────────────────────────
+// penalties에서 내 status='paid'만 모음. 미납은 위 PenaltyPayCard가 처리. 읽기만 함(쓰기 0).
+const PenaltyHistoryCard = ({ memberInfo }) => {
+    const { useState, useEffect } = React;
+    const [list, setList] = useState([]);
+    const memberId = memberInfo?.id || null;
+    useEffect(() => {
+        if (!memberId) { setList([]); return; }
+        const unsub = getCol('penalties').where('memberId', '==', memberId).onSnapshot(s => {
+            setList(s.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.status === 'paid')
+                .sort((a, b) => (b.paidAt || b.meetingDate || '').localeCompare(a.paidAt || a.meetingDate || '')));
+        });
+        return () => unsub();
+    }, [memberId]);
+    if (list.length === 0) return null;
+    const fmtWon = (n) => (n || 0).toLocaleString() + '원';
+    return (
+        <div>
+            <h3 className="font-black text-base text-slate-800 px-1 mb-2">벌금 내역</h3>
+            <div className="card rounded-2xl px-4 divide-y divide-slate-100">
+                {list.map(p => (
+                    <div key={p.id} className="flex items-center justify-between gap-2 py-3.5 min-w-0">
+                        <div className="min-w-0">
+                            <p className="font-black text-sm text-slate-700 truncate">{p.meetingDate} · {PENALTY_TYPE_LABEL[p.type] || '벌금'}</p>
+                            <p className="text-[11px] font-black text-emerald-500 mt-0.5">납부완료</p>
+                        </div>
+                        <span className="text-sm font-black text-slate-400 shrink-0">{fmtWon(p.amount)}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
 // ─── 홈: 회비 납부 신고 알림 (관리자 전용) ──────────────────────────────────────
 // 회비 탭 깊숙이 있던 신고 목록을 홈 상단에서 한눈에 보고 바로 확정/삭제할 수 있게.
 // 대기 신고가 없으면 표시 안 함(홈을 깔끔하게 유지). duesReports는 회비 탭과 동일 소스.

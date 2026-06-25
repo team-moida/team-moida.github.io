@@ -898,6 +898,8 @@ function App() {
                         <h2 className="font-black text-lg text-slate-800 px-1">회비 납부</h2>
                         <DuesAccountCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} />
                         <PenaltyPayCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} managers={managers} />
+                        {!isAdminMode && <PenaltyHistoryCard memberInfo={memberInfo} />}
+                        {!isAdminMode && <DuesHistoryCard memberInfo={memberInfo} />}
                     </div>
                 )}
                 {tab === 'rules' && (
