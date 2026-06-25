@@ -734,6 +734,7 @@ function App() {
                         generateAttendQRCode={generateAttendQRCode}
                         onOpenAttendModal={openAttendModal}
                         onInlineGPS={startInlineGPS} onInlineQR={() => setIsQRScannerOpen(true)}
+                        onOpenKiosk={() => attend.setIsKioskOpen(true)}
                         onEditMeeting={(m) => { setPendingEditMeeting(m); navTab('meeting-list'); }}
                         onDeleteMeeting={handleDeleteMeeting}
                     />

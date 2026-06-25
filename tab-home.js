@@ -368,7 +368,7 @@ const NextMeetingCard = ({
     meeting, kind, isActive, dayInfo, darkMode, isAdminMode, onTabChange,
     mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount, scheduleData,
     isMeetingOver, isMeetingEndSaved, onEndMeeting, onGenerateQR, onEditMeeting, onDeleteMeeting,
-    onOpenAttendModal, onInlineGPS, onInlineQR, enableQR,
+    onOpenAttendModal, onInlineGPS, onInlineQR, enableQR, onOpenKiosk,
 }) => {
     const cfg = MEETING_KIND[kind] || MEETING_KIND.self;
     const showOverlay = kind !== 'match' && isActive && isAdminMode && isMeetingOver && !isMeetingEndSaved;
@@ -391,6 +391,12 @@ const NextMeetingCard = ({
                     {meeting.isTest && <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-lg bg-white/30 text-white flex-shrink-0"><Icon.Beaker size={11}/>테스트</span>}
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {isAdminMode && isActive && kind === 'self' && onOpenKiosk && (
+                        <span role="button" onClick={(e)=>{ e.stopPropagation(); onTabChange('attend', kind, meeting.id || getMeetingId(meeting)); onOpenKiosk(); }}
+                            className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-white/25 text-white active:scale-95 cursor-pointer">
+                            <Icon.Clipboard size={12}/> 키오스크
+                        </span>
+                    )}
                     {isAdminMode && kind === 'self' && onGenerateQR && (
                         <span role="button" onClick={(e)=>{ e.stopPropagation(); onGenerateQR(meeting); }}
                             className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-white/25 text-white active:scale-95 cursor-pointer">
@@ -1190,7 +1196,7 @@ const TabHome = ({
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
     duesReports, onConfirmDuesReport, onRejectDuesReport, onGoDuesTab,
     generateAttendQRCode, onEditMeeting, onDeleteMeeting, onOpenAttendModal,
-    onInlineGPS, onInlineQR,
+    onInlineGPS, onInlineQR, onOpenKiosk,
 }) => {
     // 정기/매칭 다음 모임 분리 (회원이 둘 다 참여할 수 있어 종류별 카드로 표시)
     // 종료(done) + 지난 날짜 모임은 홈 '다음 모임'에서 제외 (끝난 모임은 기록 탭에서만)
@@ -1246,7 +1252,7 @@ const TabHome = ({
                 isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting}
                 onGenerateQR={generateAttendQRCode} onEditMeeting={onEditMeeting} onDeleteMeeting={onDeleteMeeting}
                 onOpenAttendModal={onOpenAttendModal} onInlineGPS={onInlineGPS} onInlineQR={onInlineQR}
-                enableQR={meetingSettings?.enableQR} />
+                enableQR={meetingSettings?.enableQR} onOpenKiosk={onOpenKiosk} />
         )) : (
             <button onClick={()=>onTabChange('meeting-list')} className="w-full card rounded-2xl p-5 text-center active:scale-98 transition-all">
                 <div className="text-slate-400 py-3">
