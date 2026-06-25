@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>모이다 UI Lab — 키오스크(직접 출석) B+</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet" />
+<style>
+/* ============================================================
+   모이다 UI Lab — 키오스크(직접 출석) B+ 리프레시 (미리보기 전용)
+   조끼색 타일 + 시계/진행 + 탭→확인 팝업. 실제 앱과 별개·더미 데이터
+   ============================================================ */
+:root{
+  --indigo:#183FB0; --indigo-deep:#122E78; --lime:#C2F94A; --lime-ink:#15171E;
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --A:#ef4444; --B:#2563eb; --C:#16a34a; --D:#f59e0b; --E:#7c3aed; --F:#0ea5e9;
+  --bg:#f4f6fa; --card:#ffffff; --ink:#0f172a; --mid:#475569; --faint:#94a3b8; --border:#e7ebf3; --soft:#eef1f8;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  background:#0d1016; color:#e6e9f0; min-height:100vh; display:flex; flex-direction:column; align-items:center; letter-spacing:-.01em}
+
+.lab-bar{position:sticky; top:0; z-index:80; width:100%; display:flex; align-items:center; gap:8px;
+  padding:10px 14px calc(10px + env(safe-area-inset-top)); background:rgba(13,16,22,.9);
+  backdrop-filter:blur(12px); border-bottom:1px solid rgba(255,255,255,.08)}
+.lab-title{color:#fff; font-weight:800; font-size:14px}.lab-title b{color:var(--lime)}
+.lab-spacer{flex:1}
+.lab-mini{border:1px solid rgba(255,255,255,.16); background:transparent; color:#cbd3e1; font-family:inherit; font-weight:800; font-size:12px; padding:7px 12px; border-radius:999px; cursor:pointer}
+.lab-mini.on{background:var(--lime); color:var(--lime-ink); border-color:var(--lime)}
+.lab-note{width:100%; max-width:420px; color:#7c8598; font-size:11.5px; font-weight:600; padding:10px 16px 0; text-align:center}
+
+.stage{width:100%; display:flex; justify-content:center; padding:16px 12px 40px}
+.phone{width:404px; max-width:95vw; height:812px; border-radius:34px; overflow:hidden; position:relative;
+  background:var(--bg); box-shadow:0 26px 70px rgba(0,0,0,.5)}
+.scroll{position:absolute; inset:0; overflow-y:auto; -webkit-overflow-scrolling:touch}
+.scroll::-webkit-scrollbar{display:none}
+
+@keyframes floatUp{from{opacity:0; transform:translateY(12px)} to{opacity:1; transform:none}}
+@keyframes pop{from{opacity:0; transform:scale(.92)} to{opacity:1; transform:none}}
+.tap{transition:transform .12s ease}.tap:active{transform:scale(.96)}
+@media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important}}
+
+/* ===== 헤더 (인디고 + 큰 시계 + 라임 카운트) ===== */
+.khead{position:sticky; top:0; z-index:10; background:linear-gradient(135deg,var(--indigo),var(--indigo-deep)); color:#fff;
+  padding:18px 18px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px}
+.khead .klabel{font-size:12px; font-weight:900; letter-spacing:.1em; color:#b9c6f5; text-transform:uppercase}
+.khead .kclock{font-size:38px; font-weight:900; line-height:1; margin-top:5px; font-variant-numeric:tabular-nums; letter-spacing:.01em}
+.khead .kdate{font-size:12px; font-weight:800; color:#cdd7fa; margin-top:6px}
+.kright{display:flex; flex-direction:column; align-items:flex-end; gap:10px}
+.kx{width:42px; height:42px; border-radius:14px; background:rgba(255,255,255,.16); color:#fff; border:0; display:grid; place-items:center; cursor:pointer}
+.kcount{background:var(--lime); color:var(--lime-ink); border-radius:14px; padding:8px 14px; font-weight:900; font-size:15px; text-align:center; line-height:1}
+.kcount b{font-size:24px; display:block; margin-bottom:1px}
+.kcount span{font-size:11px; opacity:.7}
+/* 진행바 */
+.kprog{height:8px; background:rgba(255,255,255,.18)}
+.kprog > i{display:block; height:100%; width:67%; background:var(--lime); transition:width .7s var(--ease-spring)}
+
+.kbody{padding:16px 16px 30px}
+
+/* ===== 팀 섹션 ===== */
+.kteam{margin-bottom:20px; animation:floatUp .45s var(--ease-spring) both}
+.kteam-h{display:flex; align-items:center; gap:11px; background:var(--card); border:1px solid var(--border); border-radius:18px; padding:11px 14px; margin-bottom:10px; box-shadow:0 4px 14px rgba(30,40,90,.05)}
+.kbadge{width:40px; height:40px; border-radius:13px; display:grid; place-items:center; color:#fff; font-weight:900; font-size:18px; flex:0 0 auto}
+.kteam-h .kt{font-size:15px; font-weight:900; color:var(--ink)}
+.kteam-h .ks{font-size:12px; font-weight:800; color:var(--faint); margin-top:1px}
+.kteam-h .kpill{margin-left:auto; font-size:11px; font-weight:900; color:var(--mid); background:var(--soft); padding:5px 11px; border-radius:999px}
+
+.ktiles{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.ktile{position:relative; aspect-ratio:1; border-radius:18px; overflow:hidden; color:#fff; border:0; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 14px rgba(0,0,0,.12)}
+.ktile .num{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:96px; font-weight:900; color:rgba(255,255,255,.26); line-height:1; pointer-events:none; user-select:none}
+.ktile .nm{position:relative; z-index:1; font-weight:900; font-size:22px; text-shadow:0 1px 5px rgba(0,0,0,.32); text-align:center; line-height:1.1; word-break:keep-all; padding:0 4px}
+.ktile .tags{position:absolute; bottom:9px; left:0; right:0; display:flex; justify-content:center; gap:4px; z-index:1}
+.ktile .tagw{font-size:9px; font-weight:900; padding:1px 5px; border-radius:5px; background:#ec4899; color:#fff}
+.ktile .tagg{font-size:9px; font-weight:900; padding:1px 5px; border-radius:5px; background:rgba(0,0,0,.32); color:#fff}
+.ktile.done{opacity:.42}
+.ktile .check{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.22); z-index:2}
+.ktile .check > span{width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,.35); display:grid; place-items:center}
+
+/* ===== 확인 팝업 (조끼색 카드) ===== */
+.kov{position:absolute; inset:0; z-index:40; background:rgba(15,23,42,.55); display:flex; align-items:center; justify-content:center; padding:24px}
+.kov[hidden]{display:none}
+.kconfirm{width:100%; max-width:340px; border-radius:28px; overflow:hidden; box-shadow:0 25px 50px rgba(0,0,0,.4); animation:pop .25s var(--ease-spring) both}
+.kconfirm .inner{padding:30px 24px 24px; text-align:center}
+.kconfirm .ask{font-size:13px; font-weight:900; margin-bottom:16px}
+.kconfirm .knum{font-size:84px; font-weight:900; line-height:1; margin-bottom:6px}
+.kconfirm .kname{font-size:34px; font-weight:900; line-height:1.2; margin-bottom:8px; word-break:keep-all}
+.kconfirm .kteamline{font-size:16px; font-weight:900; margin-bottom:24px}
+.kconfirm .btns{display:flex; gap:10px}
+.kconfirm .btns button{flex:1; height:56px; border-radius:16px; font-family:inherit; font-weight:900; font-size:16px; border:0; cursor:pointer}
+
+svg{display:block}
+</style>
+</head>
+<body>
+
+<div class="lab-bar">
+  <span class="lab-title">모이다 <b>키오스크 · 직접 출석 B+</b></span>
+  <span class="lab-spacer"></span>
+  <button class="lab-mini" id="popBtn">확인 팝업 보기</button>
+</div>
+<div class="lab-note">관리자가 '출석 체크 열기'로 띄우는 풀스크린입니다. 선수 타일을 탭하면 확인 팝업이 떠요.</div>
+
+<div class="stage">
+  <div class="phone" id="phone">
+    <div class="scroll">
+
+      <!-- 헤더 -->
+      <div class="khead">
+        <div>
+          <div class="klabel">직접 출석</div>
+          <div class="kclock" id="clock">09:14:22</div>
+          <div class="kdate">6월 29일 (일) · 장유 풋살장</div>
+        </div>
+        <div class="kright">
+          <button class="kx tap"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+          <div class="kcount"><b>12</b><span>/ 18 출석</span></div>
+        </div>
+      </div>
+      <div class="kprog"><i></i></div>
+
+      <div class="kbody" id="body"></div>
+
+    </div>
+
+    <!-- 확인 팝업 -->
+    <div class="kov" id="ov" hidden>
+      <div class="kconfirm" id="confirm"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  var COL={A:'var(--A)',B:'var(--B)',C:'var(--C)',D:'var(--D)'};
+  var COLHEX={A:'#ef4444',B:'#2563eb',C:'#16a34a',D:'#f59e0b'};
+  var VEST={A:'빨강',B:'파랑',C:'초록',D:'노랑'};
+
+  // 더미 팀 (A 빨강 / B 파랑)
+  var teams=[
+    {t:'A', vest:'빨강', members:[
+      {n:'이성훈',no:3,done:true},{n:'박준호',no:7,done:true},{n:'한지우',no:11,w:true},
+      {n:'강도현',no:5},{n:'윤재석',no:9},{n:'김도영',no:14}
+    ]},
+    {t:'B', vest:'파랑', members:[
+      {n:'정현섭',no:1,done:true},{n:'최민수',no:8},{n:'서지훈',no:4},
+      {n:'장샛별',no:6,w:true},{n:'오유균',no:2},{n:'이태경',no:10}
+    ]}
+  ];
+
+  function tile(t, m){
+    var done = m.done;
+    return '<button class="ktile tap'+(done?' done':'')+'" style="background:'+COL[t]+'" data-t="'+t+'" data-n="'+m.n+'" data-no="'+m.no+'" data-w="'+(m.w?1:0)+'">'+
+      '<span class="num">'+m.no+'</span>'+
+      '<span class="nm">'+m.n+'</span>'+
+      ((m.w)?'<span class="tags"><span class="tagw">W</span></span>':'')+
+      (done?'<span class="check"><span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span></span>':'')+
+    '</button>';
+  }
+  function render(){
+    document.getElementById('body').innerHTML = teams.map(function(tm){
+      var doneN=tm.members.filter(function(m){return m.done;}).length;
+      return '<div class="kteam">'+
+        '<div class="kteam-h">'+
+          '<span class="kbadge" style="background:'+COL[tm.t]+'">'+tm.t+'</span>'+
+          '<div><div class="kt">'+tm.t+'팀 · '+tm.vest+' 조끼</div><div class="ks">출석 '+doneN+' / '+tm.members.length+'명</div></div>'+
+          '<span class="kpill">'+tm.vest+'</span>'+
+        '</div>'+
+        '<div class="ktiles">'+tm.members.map(function(m){return tile(tm.t,m);}).join('')+'</div>'+
+      '</div>';
+    }).join('');
+  }
+  render();
+
+  // 시계
+  function tick(){
+    var n=new Date(); function p(x){return String(x).padStart(2,'0');}
+    var el=document.getElementById('clock'); if(el) el.textContent=p(n.getHours())+':'+p(n.getMinutes())+':'+p(n.getSeconds());
+  }
+  tick(); setInterval(tick,1000);
+
+  // 확인 팝업 (조끼색 카드)
+  var ov=document.getElementById('ov'), confirm=document.getElementById('confirm');
+  function openConfirm(t,name,no,w){
+    var hex=COLHEX[t], vest=VEST[t];
+    confirm.style.background=hex;
+    confirm.innerHTML='<div class="inner" style="color:#fff">'+
+      '<p class="ask" style="color:rgba(255,255,255,.9)">조끼 색상·번호 확인 후 착용해 주세요</p>'+
+      '<div class="knum" style="text-shadow:0 2px 12px rgba(0,0,0,.25)">'+no+'</div>'+
+      '<p class="kname" style="text-shadow:0 2px 12px rgba(0,0,0,.25)">'+name+(w?' <span style="font-size:16px;background:#ec4899;padding:2px 8px;border-radius:7px;vertical-align:middle">W</span>':'')+'</p>'+
+      '<p class="kteamline" style="color:rgba(255,255,255,.9)">'+t+'팀 · '+vest+' 조끼</p>'+
+      '<div class="btns">'+
+        '<button id="cCancel" style="background:rgba(255,255,255,.22);color:#fff">취소</button>'+
+        '<button id="cOk" style="background:#fff;color:'+'#15171E'+'">확인</button>'+
+      '</div></div>';
+    ov.hidden=false;
+    confirm.querySelector('#cCancel').onclick=function(){ov.hidden=true;};
+    confirm.querySelector('#cOk').onclick=function(){ov.hidden=true;};
+  }
+  document.getElementById('body').addEventListener('click',function(e){
+    var b=e.target.closest('.ktile'); if(!b)return;
+    openConfirm(b.dataset.t, b.dataset.n, b.dataset.no, b.dataset.w==='1');
+  });
+  ov.addEventListener('click',function(e){ if(e.target===ov) ov.hidden=true; });
+  // 데모 버튼
+  document.getElementById('popBtn').addEventListener('click',function(){ openConfirm('A','이성훈',3,false); });
+})();
+</script>
+</body>
+</html>
