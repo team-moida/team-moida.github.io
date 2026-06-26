@@ -371,6 +371,18 @@ const NextMeetingCard = ({
     onOpenAttendModal, onInlineGPS, onInlineQR, enableQR, onOpenKiosk,
 }) => {
     const cfg = MEETING_KIND[kind] || MEETING_KIND.self;
+    // 매칭 = 라임 카드(밝은 배경) → 어두운 글자 / 정기 = 인디고 카드 → 흰 글자
+    const dark = kind === 'match';
+    const cardBg = dark ? '#C2F94A' : cfg.accent;
+    const cardShadow = dark ? '0 16px 34px -6px rgba(163,224,53,0.5)' : `0 16px 34px -6px ${cfg.accent}66`;
+    const ink   = dark ? 'text-[#15171E]'    : 'text-white';
+    const ink90 = dark ? 'text-[#15171E]/90' : 'text-white/90';
+    const ink85 = dark ? 'text-[#15171E]/85' : 'text-white/85';
+    const ink80 = dark ? 'text-[#15171E]/80' : 'text-white/80';
+    const ink70 = dark ? 'text-[#15171E]/70' : 'text-white/70';
+    const ink60 = dark ? 'text-[#15171E]/60' : 'text-white/60';
+    const chip  = dark ? 'bg-black/10 text-[#15171E]' : 'bg-white/25 text-white';
+    const softBorder = dark ? 'rgba(0,0,0,0.16)' : 'rgba(255,255,255,0.22)';
     const showOverlay = kind !== 'match' && isActive && isAdminMode && isMeetingOver && !isMeetingEndSaved;
     // 출석 인라인 GPS/QR 버튼이 보이는 상태 — 이때는 카드 자체 누름 스케일을 끈다(버튼만 애니메이션)
     const showInlineAttend = isActive && kind === 'self' && !mySession?.checkedIn && teamReady && (dayInfo?.type === 'today' || dayInfo?.type === 'started');
@@ -400,12 +412,12 @@ const NextMeetingCard = ({
     return (
         <div className="relative">
         <button onClick={()=> onTabChange('attend', kind, meeting.id || getMeetingId(meeting))}
-            className={`w-full rounded-3xl p-5 text-left text-white transition-all${showInlineAttend ? '' : ' active:scale-98'}${showOverlay ? ' blur-sm' : ''}`}
-            style={{ background: cfg.accent, boxShadow:`0 16px 34px -6px ${cfg.accent}66` }}>
+            className={`w-full rounded-3xl p-5 text-left ${ink} transition-all${showInlineAttend ? '' : ' active:scale-98'}${showOverlay ? ' blur-sm' : ''}`}
+            style={{ background: cardBg, boxShadow: cardShadow }}>
             <div className="flex items-center justify-between gap-2 mb-2.5">
                 <div className="flex items-center gap-1.5 min-w-0">
-                    <p className="text-xs font-black uppercase tracking-widest text-white/80">{cfg.label}</p>
-                    {meeting.isTest && <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-lg bg-white/30 text-white flex-shrink-0"><Icon.Beaker size={11}/>테스트</span>}
+                    <p className={`text-xs font-black uppercase tracking-widest ${ink80}`}>{cfg.label}</p>
+                    {meeting.isTest && <span className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-lg ${chip} flex-shrink-0`}><Icon.Beaker size={11}/>테스트</span>}
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                     {isAdminMode && isActive && kind === 'self' && onOpenKiosk && (
@@ -422,10 +434,10 @@ const NextMeetingCard = ({
                     )}
                     {dayInfo && dayInfo.type !== 'past' && dayInfo.label && (
                         <span className={`text-xs font-black px-3 py-1 ${
-                            dayInfo.type==='started'?'rounded-full bg-live text-[#15171E] moida-pulse-live':
+                            dayInfo.type==='started'?(dark?'rounded-full bg-[#15171E] text-live moida-pulse-live':'rounded-full bg-live text-[#15171E] moida-pulse-live'):
                             dayInfo.urgent?'rounded-xl bg-white text-rose-500':
                             dayInfo.type==='today'?'rounded-xl bg-white text-slate-700':
-                            'rounded-xl bg-white/25 text-white'}`}>{dayInfo.label}</span>
+                            (dark?'rounded-xl bg-black/10 text-[#15171E]':'rounded-xl bg-white/25 text-white')}`}>{dayInfo.label}</span>
                     )}
                 </div>
             </div>
@@ -433,7 +445,7 @@ const NextMeetingCard = ({
                 <div className="flex items-end gap-3">
                     <span className="font-black text-[84px] leading-[0.78] tracking-tight tabular-nums">{dDay}</span>
                     <div className="pb-2">
-                        <p className="text-[13px] font-black text-white/60 tracking-wider leading-none">{dMon}</p>
+                        <p className={`text-[13px] font-black ${ink60} tracking-wider leading-none`}>{dMon}</p>
                         <p className="text-[22px] font-black leading-tight mt-1">{dDow}요일</p>
                     </div>
                 </div>
@@ -441,9 +453,9 @@ const NextMeetingCard = ({
                 <p className="font-black text-[28px] leading-none tracking-tight">{fmtMeetingDate(meeting.date)}</p>
             )}
             {kind==='match' && meeting.opponentName && (
-                <p className="text-sm font-black text-white/90 mt-2 truncate">vs {meeting.opponentName}</p>
+                <p className={`text-sm font-black ${ink90} mt-2 truncate`}>vs {meeting.opponentName}</p>
             )}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 text-sm font-bold text-white/85">
+            <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 text-sm font-bold ${ink85}`}>
                 <span className="flex items-center gap-1"><span className="text-[15px] leading-none flex-shrink-0">⏰</span>{meeting.start} ~ {meeting.end}</span>
                 {meeting.location && <span className="flex items-center gap-1 min-w-0"><span className="text-[15px] leading-none flex-shrink-0">📍</span><span className="truncate">{meeting.location}</span></span>}
                 <span className="flex items-center gap-1"><span className="text-[15px] leading-none flex-shrink-0">👥</span>{kind==='match' ? `현재 ${curCount}명 · 남 ${meeting.maxMale||0}·여 ${meeting.maxFemale||0}` : `현재 ${curCount} · 정원 ${meeting.maxLimit||18}명`}</span>
@@ -454,11 +466,11 @@ const NextMeetingCard = ({
                 <MeetingWeather lat={meeting.locationLat} lng={meeting.locationLng} isAdminMode={isAdminMode} />
             )}
             {isActive ? (
-                <div className="mt-4 pt-4 border-t space-y-2.5" style={{borderColor:'rgba(255,255,255,0.22)'}}>
+                <div className="mt-4 pt-4 border-t space-y-2.5" style={{borderColor: softBorder}}>
                     {/* 출석 상태 — 출석체크 시점(당일/모임중)이 되면 체크 버튼, 완료 시 완료 표시 */}
                     {mySession?.checkedIn ? (
                         <div className="flex items-center gap-2">
-                            <span className="flex items-center gap-1.5 text-sm font-black text-live min-w-0">
+                            <span className={`flex items-center gap-1.5 text-sm font-black ${dark?'text-emerald-700':'text-live'} min-w-0`}>
                                 <Icon.Check size={16} className="flex-shrink-0"/><span className="truncate">출석 완료</span>
                             </span>
                             {(kind === 'self' && myTeamInfo) ? (
@@ -467,7 +479,7 @@ const NextMeetingCard = ({
                                     <span className={`w-7 h-7 rounded-lg flex-shrink-0 ring-1 ring-white/30 ${getTeamBadge(myTeamIdx)}`}></span>
                                 </span>
                             ) : (
-                                <span className="ml-auto text-xs font-black text-white/70 flex-shrink-0">{mySession.checkInTime}</span>
+                                <span className={`ml-auto text-xs font-black ${ink70} flex-shrink-0`}>{mySession.checkInTime}</span>
                             )}
                         </div>
                     ) : (dayInfo.type==='today' || dayInfo.type==='started') ? (
@@ -503,22 +515,22 @@ const NextMeetingCard = ({
                                 <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">{allowFromDisplay ? `${allowFromDisplay}부터 출석 가능` : '곧 출석이 열립니다'}</span>
                             </div>
                         ) : (
-                            <div className="flex items-center justify-between gap-2 -mx-1.5 px-3 py-2.5 rounded-xl" style={{background:'rgba(255,255,255,0.2)'}}>
-                                <span className="flex items-center gap-1.5 text-sm font-black text-white min-w-0">
+                            <div className="flex items-center justify-between gap-2 -mx-1.5 px-3 py-2.5 rounded-xl" style={{background: dark?'rgba(0,0,0,0.08)':'rgba(255,255,255,0.2)'}}>
+                                <span className={`flex items-center gap-1.5 text-sm font-black ${ink} min-w-0`}>
                                     <Icon.CheckSq size={16} className="flex-shrink-0"/><span className="truncate">지금 출석 체크하기</span>
                                 </span>
-                                <Icon.ChevronRight size={16} className="text-white/80 flex-shrink-0"/>
+                                <Icon.ChevronRight size={16} className={`${ink80} flex-shrink-0`}/>
                             </div>
                         )
                     ) : (
-                        <div className="flex items-center gap-1.5 text-xs text-white/70">
+                        <div className={`flex items-center gap-1.5 text-xs ${ink70}`}>
                             <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">모임 당일에 출석 체크가 열립니다</span>
                         </div>
                     )}
                     {/* 팀 상태 — 팀편성 OFF면 참여 명단, 아니면 공개 시점에 내 팀 표시 */}
                     {meeting.meetingType === 'match' ? (
-                        <div className="flex items-center gap-1.5 text-sm font-black text-white min-w-0">
-                            <Icon.Users size={16} className="flex-shrink-0 text-white/80"/><span className="truncate">참여 명단 {curCount}명</span>
+                        <div className={`flex items-center gap-1.5 text-sm font-black ${ink} min-w-0`}>
+                            <Icon.Users size={16} className={`flex-shrink-0 ${ink80}`}/><span className="truncate">참여 명단 {curCount}명</span>
                         </div>
                     ) : mySession?.checkedIn ? (
                         /* F-2b 1단계 — 출석 완료(정기) 시 내 조끼·번호 + 현재 라운드 내 경기 (화면만, 매치표·조끼색 읽기만) */

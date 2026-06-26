@@ -5,22 +5,30 @@ const RosterStatsView = ({ activeMembers, attendHistory, monthlyStatuses }) => {
     const { useState, useMemo } = React;
     const [sortBy, setSortBy] = useState('rate'); // rate | late | no
     const data = useMemo(() => {
+        const parseT = (t) => { const m = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(t || ''); return m ? (+m[1]) * 3600 + (+m[2]) * 60 + (+(m[3] || 0)) : null; };
         const included = (activeMembers || []).filter(m => (monthlyStatuses ? monthlyStatuses[m.id] !== 'rest' : true));
         const agg = {};
         (attendHistory || []).forEach(h => (h.records || []).forEach(r => {
             if (!r.memberId) return;
-            const a = agg[r.memberId] || (agg[r.memberId] = { go: 0, late: 0, no: 0 });
+            const a = agg[r.memberId] || (agg[r.memberId] = { go: 0, late: 0, no: 0, ciSum: 0, ciCount: 0 });
             if (r.status === '정상') a.go++; else if (r.status === '지각') a.late++; else if (r.status === '노쇼') a.no++;
+            if (r.status === '정상' || r.status === '지각') { const t = parseT(r.checkInTime); if (t != null) { a.ciSum += t; a.ciCount++; } }
         }));
         const rows = included.map(m => {
-            const a = agg[m.id] || { go: 0, late: 0, no: 0 };
+            const a = agg[m.id] || { go: 0, late: 0, no: 0, ciSum: 0, ciCount: 0 };
             const conf = a.go + a.late + a.no;
-            return { id: m.id, name: m.name, role: m.role, go: a.go, late: a.late, no: a.no, conf, rate: conf ? Math.round((a.go + a.late) / conf * 100) : null };
+            return { id: m.id, name: m.name, role: m.role, go: a.go, late: a.late, no: a.no, conf,
+                rate: conf ? Math.round((a.go + a.late) / conf * 100) : null,
+                avgCi: a.ciCount ? a.ciSum / a.ciCount : Infinity };
         });
         const withRec = rows.filter(r => r.conf > 0);
+        // 개근왕: 출석률 높은순 → 지각+노쇼 적은순 → 평균 출석시간 빠른순. (≥90%만 후보)
+        const kingCand = withRec.filter(r => r.rate >= 90)
+            .sort((a, b) => b.rate - a.rate || (a.late + a.no) - (b.late + b.no) || a.avgCi - b.avgCi);
+        const kingId = kingCand.length ? kingCand[0].id : null;
         const avg = withRec.length ? Math.round(withRec.reduce((s, r) => s + r.rate, 0) / withRec.length) : 0;
         const totalNo = withRec.reduce((s, r) => s + r.no, 0);
-        return { withRec, noRec: rows.length - withRec.length, included: rows.length, avg, totalNo };
+        return { withRec, noRec: rows.length - withRec.length, included: rows.length, avg, totalNo, kingId };
     }, [activeMembers, attendHistory, monthlyStatuses]);
 
     const sorted = useMemo(() => {
@@ -54,7 +62,7 @@ const RosterStatsView = ({ activeMembers, attendHistory, monthlyStatuses }) => {
             ) : (
                 <div className="card rounded-2xl overflow-hidden">
                     {sorted.map((r, i) => {
-                        const king = i === 0 && sortBy === 'rate' && r.rate >= 90;
+                        const king = r.id === data.kingId;
                         const warn = r.no >= 2;
                         return (
                             <div key={r.id} className={`flex items-center gap-3 px-3.5 py-3 ${i>0?'border-t border-slate-100':''}`}>
