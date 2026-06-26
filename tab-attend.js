@@ -727,35 +727,37 @@ const MeetingRecordsView = ({ meetings, attendHistory, darkMode, onEdit, onDelet
 };
 
 // ─── 모임 카드 목록 화면 (모임 탭 첫 화면 — 홈 카드와 같은 단색 카드 디자인) ──────
-// 삭제한 모임 보관함 — trashed 출석기록 목록(복원/영구삭제). MeetingListScreen '보관함' 탭에서 사용.
-const MeetingArchiveView = ({ trashRows, onRestore, onPurge }) => {
-    if (!trashRows || trashRows.length === 0) return (
+// 삭제한 모임 보관함 — soft-deleted 모임 목록(복원/영구삭제). 예정·종료 가리지 않고 삭제된 모임 전부.
+const MeetingArchiveView = ({ rows, onRestore, onPurge }) => {
+    if (!rows || rows.length === 0) return (
         <div className="card rounded-2xl p-8 text-center text-slate-400">
             <div className="flex justify-center mb-3 opacity-30"><Icon.Trash size={34}/></div>
             <p className="font-black text-sm">보관함이 비어 있어요</p>
-            <p className="text-xs mt-1">삭제한 모임의 출석 기록이 여기 모여요</p>
+            <p className="text-xs mt-1">삭제한 모임이 여기 모여요</p>
         </div>
     );
     return (
         <div className="space-y-2">
-            <p className="text-[11px] font-black text-slate-400 px-1">삭제한 모임 {trashRows.length}개 · 복원하면 통계·기록에 다시 포함돼요</p>
+            <p className="text-[11px] font-black text-slate-400 px-1">삭제한 모임 {rows.length}개 · 복원하면 모임 목록에 다시 나타나요</p>
             <div className="card rounded-2xl overflow-hidden">
-                {trashRows.map((m, i) => {
+                {rows.map((m, i) => {
+                    const isMatch = (m.meetingType || 'self') === 'match';
                     const _md = m.date ? new Date(m.date + 'T00:00:00') : null;
                     const _ok = _md && !isNaN(_md.getTime());
                     const dd = _ok ? _md.getDate() : '–';
                     const sub = _ok ? `${_md.getMonth() + 1}월 ${['일','월','화','수','목','금','토'][_md.getDay()]}` : '';
+                    const meta = `${m.start || ''}${m.location ? ` · ${m.location}` : ''}${isMatch && m.opponentName ? ` · vs ${m.opponentName}` : ''}`;
                     return (
-                        <div key={m.key} className={`flex items-center gap-2.5 px-3.5 py-3 ${i>0?'border-t border-slate-100':''}`}>
+                        <div key={m.id} className={`flex items-center gap-2.5 px-3.5 py-3 ${i>0?'border-t border-slate-100':''}`}>
                             <div className="flex-shrink-0 w-10 text-center opacity-70">
                                 <p className="text-[16px] font-black text-slate-500 leading-none tabular-nums">{dd}</p>
                                 <p className="text-[9.5px] font-black text-slate-400 mt-0.5">{sub}</p>
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-[12.5px] font-black text-slate-600 truncate">{m.location}{m.isMatch?' · 매칭':''}</p>
-                                <p className="text-[11px] font-bold text-slate-400 truncate">출석 {m.present}/{m.total}{m.time?` · ${m.time}`:''}</p>
+                                <p className="text-[12.5px] font-black text-slate-600 truncate">{isMatch ? '매칭' : '정기모임'}{m.isTest ? ' · 테스트' : ''}</p>
+                                <p className="text-[11px] font-bold text-slate-400 truncate">{meta || '시간 미정'}</p>
                             </div>
-                            <span role="button" onClick={() => onRestore(m.id)} className="flex items-center gap-1 text-[11px] font-black px-2.5 py-1.5 rounded-lg bg-teal-50 text-teal-600 active:scale-95 cursor-pointer flex-shrink-0"><Icon.Refresh size={12}/>복원</span>
+                            <span role="button" onClick={() => onRestore(m)} className="flex items-center gap-1 text-[11px] font-black px-2.5 py-1.5 rounded-lg bg-teal-50 text-teal-600 active:scale-95 cursor-pointer flex-shrink-0"><Icon.Refresh size={12}/>복원</span>
                             <span role="button" onClick={() => onPurge(m)} className="text-[11px] font-black px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-500 active:scale-95 cursor-pointer flex-shrink-0">영구삭제</span>
                         </div>
                     );
@@ -767,25 +769,16 @@ const MeetingArchiveView = ({ trashRows, onRestore, onPurge }) => {
 // MEETING_KIND·computeMeetingDay·fmtMeetingDate는 tab-home.js의 전역 정의를 재사용한다.
 const MeetingListScreen = ({
     meetings, isAdminMode, onSelect,
-    activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers, members, showAlert, showConfirm,
+    activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers, members, showAlert,
     pendingEditMeeting, onPendingEditHandled,
-    attendHistory, attendHistoryTrash, darkMode, onDeleteRecord, generateAttendQRCode, onFinalizePenalty,
+    attendHistory, darkMode, onDeleteRecord, generateAttendQRCode, onFinalizePenalty,
     onCreateTestMeeting, onDeleteTestMeeting, onDeleteOneTest,
+    deletedMeetings, onRestoreMeeting, onPurgeMeeting,
 }) => {
     const [listView, setListView] = React.useState('upcoming'); // upcoming | ended(기록) | archive(보관함)
-    // 삭제한 모임 보관함 — trashed 출석기록
-    const trashRows = React.useMemo(() => (attendHistoryTrash || []).map(h => {
-        const recs = h.records || [];
-        return { key: h.id, id: h.id, date: h.date || '', time: h.meetingTime || '', isMatch: h.meetingType === 'match', location: h.location || '장소 미지정',
-            present: h.present != null ? h.present : recs.filter(r => r.status === '정상' || r.status === '지각').length,
-            total: h.total != null ? h.total : recs.length };
-    }).sort((a, b) => (b.date || '').localeCompare(a.date || '')), [attendHistoryTrash]);
-    const restoreTrash = (id) => getHistoryCol().doc(id).update({ trashed: false, trashedAt: null }).catch(() => showAlert && showAlert('오류', '복원 실패'));
-    const purgeTrash = (m) => {
-        const go = () => getHistoryCol().doc(m.id).delete().catch(() => showAlert && showAlert('오류', '삭제 실패'));
-        if (showConfirm) showConfirm('영구 삭제', `${m.date} 출석 기록을 완전히 삭제할까요?\n복원할 수 없어요.`, go);
-        else go();
-    };
+    // 삭제한 모임 보관함 — soft-deleted 모임(예정·종료 무관), 최신순
+    const archivedRows = React.useMemo(() => (deletedMeetings || []).slice()
+        .sort((a, b) => (b.date || '').localeCompare(a.date || '')), [deletedMeetings]);
     // 테스트 모임 = 개발자 모드 전용 (운영진 모드에선 숨김). localStorage 직접 판정 — 모드 전환 시 reload되므로 항상 최신.
     const isDevMode = (() => { try { return localStorage.getItem('moida_dev') === '1' && (localStorage.getItem('moida_view_mode') || 'dev') === 'dev'; } catch(e) { return false; } })();
     const [pendingAction, setPendingAction] = React.useState(null); // 'add' | 'recurring' — 카드 화면에서 모달 바로 열기
@@ -828,7 +821,7 @@ const MeetingListScreen = ({
                 {isAdminMode && (
                     <>
                     <div className="flex gap-1.5 p-1 bg-slate-100 rounded-2xl">
-                        {[['upcoming','예정'],['ended','기록'],['archive', trashRows.length>0 ? `보관함 ${trashRows.length}` : '보관함']].map(([v,l]) => (
+                        {[['upcoming','예정'],['ended','기록'],['archive', archivedRows.length>0 ? `보관함 ${archivedRows.length}` : '보관함']].map(([v,l]) => (
                             <button key={v} onClick={()=>setListView(v)}
                                 className={`flex-1 py-2 rounded-xl text-sm font-black transition-all ${listView===v?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>{l}</button>
                         ))}
@@ -841,7 +834,7 @@ const MeetingListScreen = ({
                     <MeetingRecordsView meetings={meetings} attendHistory={attendHistory} darkMode={darkMode}
                         onEdit={(m) => setEmbeddedEdit(m)} onDelete={onDeleteRecord} onFinalizePenalty={onFinalizePenalty} />
                 ) : isAdminMode && listView === 'archive' ? (
-                    <MeetingArchiveView trashRows={trashRows} onRestore={restoreTrash} onPurge={purgeTrash} />
+                    <MeetingArchiveView rows={archivedRows} onRestore={onRestoreMeeting} onPurge={onPurgeMeeting} />
                 ) : upcoming.length === 0 ? (
                 <div className="card rounded-2xl p-8 text-center text-slate-400">
                     <div className="flex justify-center mb-3 opacity-30"><Icon.Calendar size={36}/></div>

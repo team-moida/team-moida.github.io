@@ -93,12 +93,16 @@ const RosterStatsView = ({ activeMembers, attendHistory, attendHistoryTrash = []
     // 휴지통 — 삭제한 모임의 출석 기록(trashed). 복원/영구삭제 가능.
     const trashRows = useMemo(() => (attendHistoryTrash || []).map(h => {
         const recs = h.records || [];
-        return { key: h.id, id: h.id, date: h.date || '', isMatch: h.meetingType === 'match', location: h.location || '장소 미지정',
+        return { key: h.id, id: h.id, meetingId: h.meetingId || '', date: h.date || '', isMatch: h.meetingType === 'match', location: h.location || '장소 미지정',
             present: h.present != null ? h.present : recs.filter(r => r.status === '정상' || r.status === '지각').length,
             total: h.total != null ? h.total : recs.length };
     }).sort((a, b) => (b.date || '').localeCompare(a.date || '')), [attendHistoryTrash]);
     const [trashOpen, setTrashOpen] = useState(false);
-    const restoreTrash = (id) => getHistoryCol().doc(id).update({ trashed: false, trashedAt: null }).catch(() => showAlert && showAlert('오류', '복원 실패'));
+    const restoreTrash = (row) => {
+        getHistoryCol().doc(row.id).update({ trashed: false, trashedAt: null }).catch(() => showAlert && showAlert('오류', '복원 실패'));
+        // 출석기록 복원 시 그 모임도 보관함에서 함께 복원(soft-delete 해제)
+        if (row.meetingId) getCol('meetings').doc(row.meetingId).update({ deleted: false, deletedAt: null }).catch(() => {});
+    };
     const purgeTrash = (m) => {
         const go = () => getHistoryCol().doc(m.id).delete().catch(() => showAlert && showAlert('오류', '삭제 실패'));
         if (showConfirm) showConfirm('영구 삭제', `${m.date} 출석 기록을 완전히 삭제할까요?\n복원할 수 없어요.`, go);
@@ -244,7 +248,7 @@ const RosterStatsView = ({ activeMembers, attendHistory, attendHistoryTrash = []
                                                 <p className="text-[12.5px] font-black text-slate-500 truncate">{m.location}{m.isMatch?' · 매칭':''}</p>
                                                 <p className="text-[11px] font-bold text-slate-400 truncate">출석 {m.present}/{m.total}</p>
                                             </div>
-                                            <span role="button" onClick={() => restoreTrash(m.id)} className="text-[11px] font-black px-2.5 py-1.5 rounded-lg bg-teal-50 text-teal-600 active:scale-95 cursor-pointer flex-shrink-0">복원</span>
+                                            <span role="button" onClick={() => restoreTrash(m)} className="text-[11px] font-black px-2.5 py-1.5 rounded-lg bg-teal-50 text-teal-600 active:scale-95 cursor-pointer flex-shrink-0">복원</span>
                                             <span role="button" onClick={() => purgeTrash(m)} className="text-[11px] font-black px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-500 active:scale-95 cursor-pointer flex-shrink-0">영구삭제</span>
                                         </div>
                                     );

@@ -197,6 +197,7 @@ function App() {
     const [meetingSettingsMatch, setMeetingSettingsMatch] = useState(null);
     const [activeMeetingKind, setActiveMeetingKind] = useState('self');
     const [meetings, setMeetings] = useState([]);
+    const [deletedMeetings, setDeletedMeetings] = useState([]);  // 보관함(soft-deleted) 모임
     // 개발 모드가 아니면 테스트 모임(isTest)은 목록·홈·공지에서 숨긴다 (viewMeeting 등 내부 참조는 원본 meetings 유지)
     const visibleMeetings = isDevMode ? meetings : meetings.filter(m => !m.isTest);
     const displayMeetingSettings = activeMeetingKind === 'match' ? meetingSettingsMatch : meetingSettings;
@@ -482,11 +483,36 @@ function App() {
     }, []);
 
     useEffect(() => {
-        const unsub = getCol('meetings').onSnapshot(snap =>
-            setMeetings(snap.docs.map(d => ({id: d.id, ...d.data()})))
-        );
+        const unsub = getCol('meetings').onSnapshot(snap => {
+            const all = snap.docs.map(d => ({id: d.id, ...d.data()}));
+            setMeetings(all.filter(m => !m.deleted));            // 보관(삭제)된 모임은 일반 목록에서 제외
+            setDeletedMeetings(all.filter(m => m.deleted));      // 보관함 목록
+        });
         return () => unsub();
     }, []);
+    // 보관함 모임 복원(deleted 해제 + 그 모임 출석기록 통계 복귀) / 영구삭제(모임·신청·명단·기록 완전 제거)
+    const restoreMeeting = (m) => showConfirm('모임 복원', `${m.date} 모임을 복원할까요?`, async () => {
+        try {
+            await getCol('meetings').doc(m.id).update({ deleted: false, deletedAt: null });
+            const hs = await getHistoryCol().where('meetingId', '==', m.id).get();
+            if (!hs.empty) { const b = db.batch(); hs.docs.forEach(d => b.update(d.ref, { trashed: false, trashedAt: null })); await b.commit(); }
+        } catch (e) { showAlert('오류', '복원 실패: ' + e.message); }
+    });
+    const purgeMeeting = (m) => showConfirm('영구 삭제', `${m.date} 모임을 완전히 삭제할까요?\n신청·출석 기록까지 모두 사라지고 복원할 수 없어요.`, async () => {
+        try {
+            const [regs, sess, hist] = await Promise.all([
+                getCol('registrations').where('meetingId', '==', m.id).get(),
+                getCol('weekly_session').where('meetingId', '==', m.id).get(),
+                getHistoryCol().where('meetingId', '==', m.id).get(),
+            ]);
+            const b = db.batch();
+            b.delete(getCol('meetings').doc(m.id));
+            regs.docs.forEach(d => b.delete(d.ref));
+            sess.docs.forEach(d => b.delete(d.ref));
+            hist.docs.forEach(d => b.delete(d.ref));
+            await b.commit();
+        } catch (e) { showAlert('오류', '삭제 실패: ' + e.message); }
+    });
 
     useEffect(() => {
         if (!memberData?.memberId || !displayMeetingSettings?.date) return;
@@ -930,8 +956,9 @@ function App() {
                         onSelect={(m) => { setViewMeetingId(m.id); setMeetingSubTab('attend'); }}
                         activeMeeting={activeMeeting}
                         handleSaveMeeting={handleSaveMeeting} handleDeleteMeeting={handleDeleteMeeting}
-                        managers={managers} members={roster.allMembers} showAlert={showAlert} showConfirm={showConfirm}
-                        attendHistory={attend.attendHistory} attendHistoryTrash={attend.attendHistoryTrash} darkMode={darkMode}
+                        managers={managers} members={roster.allMembers} showAlert={showAlert}
+                        attendHistory={attend.attendHistory} darkMode={darkMode}
+                        deletedMeetings={deletedMeetings} onRestoreMeeting={restoreMeeting} onPurgeMeeting={purgeMeeting}
                         onDeleteRecord={handleDeleteMeetingRecord}
                         generateAttendQRCode={generateAttendQRCode}
                         onFinalizePenalty={attendFinalizePenalties}

@@ -221,20 +221,15 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
         const typeActive = mType === 'match' ? activeMatch : activeSelf;
         const isCurrentMeeting = typeActive?.id === meeting.id;
         const confirmMsg = isCurrentMeeting
-            ? `현재 진행 예정 모임입니다. 삭제 시 신청 및 참가자 정보도 모두 사라집니다. 정말 삭제하시겠습니까?`
-            : `${meeting.date} 모임을 삭제하시겠습니까?`;
+            ? `현재 진행 예정 모임입니다. 삭제하면 보관함으로 이동해요(복원 가능). 삭제할까요?`
+            : `${meeting.date} 모임을 삭제할까요? 보관함에서 복원할 수 있어요.`;
         showConfirm('모임 삭제', confirmMsg, async () => {
             try {
-                const [regSnap, sessionSnap, histSnap] = await Promise.all([
-                    getCol('registrations').where('meetingId', '==', meeting.id).get(),
-                    getCol('weekly_session').where('meetingId', '==', meeting.id).get(),
-                    getHistoryCol().where('meetingId', '==', meeting.id).get(),
-                ]);
+                // 영구삭제 대신 보관함으로(soft-delete). 신청·참가자(weekly_session)는 복원 위해 유지,
+                // 출석기록(history)은 통계에서 빠지도록 trashed 표시. 보관함/통계에서 복원·영구삭제 가능.
+                const histSnap = await getHistoryCol().where('meetingId', '==', meeting.id).get();
                 const batch = db.batch();
-                batch.delete(getMeetingsCol().doc(meeting.id));
-                regSnap.docs.forEach(d => batch.delete(d.ref));
-                sessionSnap.docs.forEach(d => batch.delete(d.ref));
-                // 출석 기록(history)은 영구삭제 대신 휴지통으로 이동(trashed) → 통계 제외 + 복원 가능
+                batch.update(getMeetingsCol().doc(meeting.id), { deleted: true, deletedAt: new Date().toISOString() });
                 histSnap.docs.forEach(d => batch.update(d.ref, { trashed: true, trashedAt: new Date().toISOString() }));
                 await batch.commit();
                 if (isCurrentMeeting) {
