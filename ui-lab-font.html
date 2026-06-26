@@ -3,11 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>SUITE 폰트 미리보기 — 모이다</title>
-<!-- 현재 앱 폰트(Pretendard) -->
+<title>폰트 비교 미리보기 — 모이다</title>
+<!-- 후보 폰트 (모두 상업·웹 무료 / jsDelivr 동적 서브셋) -->
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@1.3.9/dist/web/static/pretendard-dynamic-subset.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css" type="text/css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fonts-archive/GmarketSans/subsets/GmarketSans-dynamic-subset.css" type="text/css"/>
 <style>
-  /* ── SUITE (눈누 font_page/1150) ── */
+  /* ── SUITE (눈누 1150) ── */
   @font-face { font-family:'SUITE'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Light.woff2') format('woff2'); font-weight:300; font-display:swap; }
   @font-face { font-family:'SUITE'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Regular.woff2') format('woff2'); font-weight:400; font-display:swap; }
   @font-face { font-family:'SUITE'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Medium.woff2') format('woff2'); font-weight:500; font-display:swap; }
@@ -18,25 +20,32 @@
 
   :root{ --indigo:#183FB0; --deep:#122E78; --lime:#C2F94A; --ink:#0f172a; --sub:#475569; --mute:#94A3B8; }
   *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-  body{ font-family:'Pretendard Variable',Pretendard,-apple-system,sans-serif; background:radial-gradient(140% 100% at 50% 0%, #eef2ff 0%, #f8fafc 46%); color:var(--ink); padding:0 0 60px; -webkit-text-size-adjust:100%; }
+  body{ font-family:'Pretendard Variable',Pretendard,-apple-system,sans-serif; background:radial-gradient(140% 100% at 50% 0%, #eef2ff 0%, #f8fafc 46%); color:var(--ink); padding:0 0 70px; -webkit-text-size-adjust:100%; }
   /* 토글로 전체 폰트 전환 */
-  body.suite{ font-family:'SUITE','Pretendard Variable',sans-serif; }
+  body.f-sui{ font-family:'SUITE','Pretendard Variable',sans-serif; }
+  body.f-pap{ font-family:'Paperlogy','Pretendard Variable',sans-serif; }
+  body.f-gma{ font-family:'Gmarket Sans','Pretendard Variable',sans-serif; }
 
   .wrap{ max-width:440px; margin:0 auto; padding:16px; }
-  .topbar{ position:sticky; top:0; z-index:20; background:rgba(248,250,252,0.86); backdrop-filter:blur(10px); padding:12px 16px; border-bottom:1px solid #e2e8f0; }
-  .seg{ display:flex; gap:6px; background:#e9eefb; padding:5px; border-radius:16px; max-width:440px; margin:0 auto; }
-  .seg button{ flex:1; padding:11px; border:0; border-radius:12px; font-weight:800; font-size:14px; background:transparent; color:#64748b; cursor:pointer; font-family:inherit; transition:.2s; }
-  .seg button.on{ background:#fff; color:var(--indigo); box-shadow:0 2px 8px rgba(0,0,0,.08); }
-  .now{ text-align:center; font-size:12px; font-weight:700; color:var(--mute); margin-top:8px; }
+  .topbar{ position:sticky; top:0; z-index:20; background:rgba(248,250,252,0.9); backdrop-filter:blur(10px); padding:12px 16px 14px; border-bottom:1px solid #e2e8f0; }
+  .seg{ display:grid; grid-template-columns:1fr 1fr; gap:6px; max-width:440px; margin:0 auto; }
+  .seg button{ padding:11px 8px; border:1.5px solid #dbe3f5; border-radius:13px; font-weight:800; font-size:13.5px; background:#fff; color:#64748b; cursor:pointer; font-family:inherit; transition:.18s; }
+  .seg button.on{ background:var(--indigo); color:#fff; border-color:var(--indigo); box-shadow:0 4px 12px rgba(24,63,176,.28); }
+  .star{ font-size:10px; vertical-align:super; }
+  .desc{ max-width:440px; margin:12px auto 0; background:#fff; border-radius:14px; padding:11px 14px; box-shadow:0 4px 14px rgba(0,0,0,.05); }
+  .desc b{ color:var(--indigo); font-size:14px; }
+  .desc p{ font-size:12.5px; color:var(--sub); margin-top:3px; line-height:1.5; font-weight:500; }
 
   .sec{ font-size:12px; font-weight:800; color:var(--mute); letter-spacing:.1em; text-transform:uppercase; margin:26px 4px 12px; }
 
-  /* 헤더 로고 비교 */
-  .logo-row{ background:#fff; border-radius:20px; padding:18px 20px; box-shadow:0 4px 14px rgba(0,0,0,.05); margin-bottom:10px; }
-  .logo-label{ font-size:11px; font-weight:700; color:var(--mute); margin-bottom:4px; }
-  .logo{ font-size:34px; font-weight:900; color:var(--indigo); letter-spacing:-0.04em; line-height:1; }
-  .logo.pre{ font-family:'Pretendard Variable',Pretendard,sans-serif; }
-  .logo.sui{ font-family:'SUITE',sans-serif; }
+  /* 헤더 로고 4종 비교 */
+  .logo-row{ background:#fff; border-radius:18px; padding:14px 18px; box-shadow:0 4px 14px rgba(0,0,0,.05); margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .logo-label{ font-size:10.5px; font-weight:700; color:var(--mute); flex:0 0 auto; }
+  .logo{ font-size:30px; font-weight:900; color:var(--indigo); letter-spacing:-0.03em; line-height:1; }
+  .l-pre{ font-family:'Pretendard Variable',Pretendard,sans-serif; }
+  .l-sui{ font-family:'SUITE',sans-serif; }
+  .l-pap{ font-family:'Paperlogy',sans-serif; }
+  .l-gma{ font-family:'Gmarket Sans',sans-serif; }
 
   .card{ background:#fff; border-radius:20px; box-shadow:0 4px 14px rgba(0,0,0,.05); overflow:hidden; margin-bottom:12px; }
   .mcard-btn{ width:100%; display:flex; align-items:center; gap:12px; padding:14px; text-align:left; background:none; border:0; font-family:inherit; }
@@ -75,31 +84,29 @@
   .btn{ flex:1; padding:14px; border-radius:14px; border:0; font-size:15px; font-weight:800; font-family:inherit; cursor:pointer; }
   .btn.fill{ background:var(--indigo); color:#fff; }
   .btn.soft{ background:#eef2ff; color:var(--indigo); }
-
-  /* 굵기 견본 */
-  .weights{ background:#fff; border-radius:18px; padding:8px 18px; box-shadow:0 4px 14px rgba(0,0,0,.05); }
-  .wrow{ font-family:'SUITE',sans-serif; padding:11px 0; border-bottom:1px solid #f1f5f9; font-size:21px; display:flex; justify-content:space-between; align-items:baseline; }
-  .wrow:last-child{ border-bottom:0; }
-  .wrow span{ font-family:'Pretendard Variable',sans-serif; font-size:11px; font-weight:600; color:var(--mute); }
 </style>
 </head>
 <body>
   <div class="topbar">
     <div class="seg">
-      <button id="bPre" class="on" onclick="setFont('pre')">현재 폰트 (Pretendard)</button>
-      <button id="bSui" onclick="setFont('sui')">SUITE 폰트</button>
+      <button id="b-pre" class="on" onclick="setFont('pre')">기본 Pretendard</button>
+      <button id="b-sui" onclick="setFont('sui')">SUITE</button>
+      <button id="b-pap" onclick="setFont('pap')">Paperlogy<span class="star">★</span></button>
+      <button id="b-gma" onclick="setFont('gma')">Gmarket</button>
     </div>
-    <div class="now" id="now">아래 전체가 <b>현재 폰트</b>로 보입니다 — 버튼으로 전환해 비교하세요</div>
+    <div class="desc" id="desc"><b>Pretendard (현재 폰트)</b><p>중립적이고 가독성이 가장 좋아요. 지금 앱에 쓰는 폰트로 가장 안정적이고 무난합니다.</p></div>
   </div>
 
   <div class="wrap">
-    <!-- 헤더 로고 직접 비교 -->
-    <div class="sec">헤더 '모이다' 로고 — 위/아래 직접 비교</div>
-    <div class="logo-row"><div class="logo-label">현재 (Pretendard)</div><div class="logo pre">모이다</div></div>
-    <div class="logo-row"><div class="logo-label">SUITE</div><div class="logo sui">모이다</div></div>
+    <!-- 헤더 로고 4종 직접 비교 -->
+    <div class="sec">헤더 '모이다' 로고 — 4종 한눈에</div>
+    <div class="logo-row"><span class="logo-label">Pretendard</span><span class="logo l-pre">모이다</span></div>
+    <div class="logo-row"><span class="logo-label">SUITE</span><span class="logo l-sui">모이다</span></div>
+    <div class="logo-row"><span class="logo-label">Paperlogy ★</span><span class="logo l-pap">모이다</span></div>
+    <div class="logo-row"><span class="logo-label">Gmarket</span><span class="logo l-gma">모이다</span></div>
 
     <!-- 모임 카드 -->
-    <div class="sec">모임 카드</div>
+    <div class="sec">모임 카드 (선택 폰트로 표시)</div>
     <div class="card">
       <button class="mcard-btn">
         <div class="chip self"><div class="d">28</div><div class="m">JUN</div></div>
@@ -141,28 +148,22 @@
         <button class="btn fill">출석 체크</button>
       </div>
     </div>
-
-    <!-- 굵기 견본 -->
-    <div class="sec">SUITE 굵기 (7종)</div>
-    <div class="weights">
-      <div class="wrow" style="font-weight:300">모이다 OTP FC 풋살 <span>Light 300</span></div>
-      <div class="wrow" style="font-weight:400">모이다 OTP FC 풋살 <span>Regular 400</span></div>
-      <div class="wrow" style="font-weight:500">모이다 OTP FC 풋살 <span>Medium 500</span></div>
-      <div class="wrow" style="font-weight:600">모이다 OTP FC 풋살 <span>SemiBold 600</span></div>
-      <div class="wrow" style="font-weight:700">모이다 OTP FC 풋살 <span>Bold 700</span></div>
-      <div class="wrow" style="font-weight:800">모이다 OTP FC 풋살 <span>ExtraBold 800</span></div>
-      <div class="wrow" style="font-weight:900">모이다 OTP FC 풋살 <span>Heavy 900</span></div>
-    </div>
   </div>
 
 <script>
+  var DESC = {
+    pre:['Pretendard (현재 폰트)','중립적이고 가독성이 가장 좋아요. 지금 앱에 쓰는 폰트로 가장 안정적이고 무난합니다.'],
+    sui:['SUITE (스위트)','모서리가 둥글고 부드러운 모던 고딕. 친근하고 따뜻한 인상이라 커뮤니티 느낌에 잘 맞아요.'],
+    pap:['Paperlogy (페이퍼로지) ★ 추천','모던하고 기하학적인 트렌디 폰트. 젊고 도전적인 인상이라 모이다 컨셉(스포티·인디고+라임)과 가장 잘 어울려요. 9가지 굵기 지원.'],
+    gma:['Gmarket Sans (지마켓 산스)','굵고 임팩트가 강한 스포티 폰트. 로고·큰 숫자엔 강렬하지만 본문이 길면 다소 부담스러울 수 있어요(굵기 3종).']
+  };
   function setFont(m){
-    document.body.classList.toggle('suite', m==='sui');
-    document.getElementById('bPre').classList.toggle('on', m==='pre');
-    document.getElementById('bSui').classList.toggle('on', m==='sui');
-    document.getElementById('now').innerHTML = m==='sui'
-      ? '아래 전체가 <b>SUITE 폰트</b>로 보입니다 (위 비교줄·굵기견본 제외)'
-      : '아래 전체가 <b>현재 폰트</b>로 보입니다 — 버튼으로 전환해 비교하세요';
+    document.body.className = m==='pre' ? '' : ('f-'+m);
+    ['pre','sui','pap','gma'].forEach(function(k){
+      document.getElementById('b-'+k).classList.toggle('on', k===m);
+    });
+    var d = DESC[m];
+    document.getElementById('desc').innerHTML = '<b>'+d[0]+'</b><p>'+d[1]+'</p>';
   }
 </script>
 </body>
