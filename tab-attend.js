@@ -97,13 +97,13 @@ const KioskModal = ({
                                         )}
                                         {/* 번호 — 이름 뒤에 깔리는 연한 워터마크(조끼색보다 연하게). 카드 크기에 비례 */}
                                         <div style={{position:'absolute',inset:0,containerType:'inline-size',overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none',userSelect:'none'}}>
-                                            <span style={{fontSize:(String(p.jerseyNumber ?? '').length >= 2 ? '78cqw' : '110cqw'),fontWeight:900,lineHeight:1,color:'rgba(255,255,255,0.3)',transform:'translateY(0.05em)'}}>{p.jerseyNumber}</span>
+                                            <span style={{fontSize:(String(p.jerseyNumber ?? '').length >= 2 ? '78cqw' : '110cqw'),fontWeight:900,lineHeight:1,color:'rgba(255,255,255,0.3)'}}>{p.jerseyNumber}</span>
                                         </div>
                                         {/* 이름 — 정중앙, 번호 위에 (게스트 배지는 우상단으로 분리 → 이름 중앙정렬 유지) */}
                                         <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 4px',pointerEvents:'none',userSelect:'none'}}>
                                             <span style={{fontWeight:900,fontSize:'clamp(1.5rem, 5.2vw, 3rem)',textAlign:'center',wordBreak:'keep-all',lineHeight:1.1,textShadow:'0 1px 4px rgba(0,0,0,0.35)'}}>{p.name}</span>
                                         </div>
-                                        {p.isGuest && <span style={{position:'absolute',top:'6px',right:'6px',fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'rgba(0,0,0,0.3)',color:'white',pointerEvents:'none',userSelect:'none'}}>G</span>}
+                                        {p.isGuest && <span style={{position:'absolute',top:'5px',right:'8px',fontSize:'clamp(0.95rem, 2.7vw, 1.8rem)',fontWeight:900,lineHeight:1,color:/text-slate/.test(getTeamBadge(group.teamIdx))?'#1e293b':'#ffffff',pointerEvents:'none',userSelect:'none'}}>G</span>}
                                     </button>
                                 ))}
                             </div>
@@ -131,7 +131,7 @@ const KioskModal = ({
                                     <div style={{position:'absolute',bottom:'10px',left:0,right:0,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none',userSelect:'none'}}>
                                         <span style={{fontWeight:900,fontSize:'clamp(1rem, 4.5vw, 2.2rem)',textAlign:'center',wordBreak:'keep-all',lineHeight:1.2,paddingLeft:'4px',paddingRight:'4px'}}>{p.name}</span>
                                     </div>
-                                    {p.isGuest && <span style={{position:'absolute',top:'8px',right:'10px',fontSize:'9px',fontWeight:900,padding:'1px 5px',borderRadius:4,background:'rgba(0,0,0,0.3)',color:'white',pointerEvents:'none',userSelect:'none'}}>G</span>}
+                                    {p.isGuest && <span style={{position:'absolute',top:'7px',right:'11px',fontSize:'clamp(0.9rem, 2.4vw, 1.6rem)',fontWeight:900,lineHeight:1,color:'#ffffff',pointerEvents:'none',userSelect:'none'}}>G</span>}
                                 </button>
                             ))}
                         </div>
