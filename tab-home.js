@@ -380,6 +380,23 @@ const NextMeetingCard = ({
     const dDay = _ok ? _md.getDate() : '';
     const dMon = _ok ? ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'][_md.getMonth()] : '';
     const dDow = _ok ? ['일','월','화','수','목','금','토'][_md.getDay()] : '';
+    // 현재 인원 — 이 카드의 모임(날짜+종류) 기준 weekly_session(선정명단) 직접 집계.
+    // 관리자가 직접 지정한 인원도 포함(선착순 신청 전이라도). 노쇼는 제외.
+    const [liveCount, setLiveCount] = React.useState(null);
+    React.useEffect(() => {
+        if (!meeting?.date) { setLiveCount(null); return; }
+        const _mid = (typeof getMeetingId === 'function') ? getMeetingId(meeting) : meeting.date;
+        const unsub = getCol('weekly_session')
+            .where('date', '==', meeting.date)
+            .onSnapshot(snap => {
+                const n = snap.docs.map(d => d.data())
+                    .filter(p => p.status !== '노쇼' && (p.meetingId ? p.meetingId === _mid : !String(_mid).endsWith('__match')))
+                    .length;
+                setLiveCount(n);
+            }, () => setLiveCount(null));
+        return () => unsub();
+    }, [meeting?.date, meeting?.meetingType]);
+    const curCount = (liveCount != null) ? liveCount : (participantCount || 0);
     return (
         <div className="relative">
         <button onClick={()=> onTabChange('attend', kind, meeting.id || getMeetingId(meeting))}
@@ -429,7 +446,7 @@ const NextMeetingCard = ({
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 text-sm font-bold text-white/85">
                 <span className="flex items-center gap-1"><span className="text-[15px] leading-none flex-shrink-0">⏰</span>{meeting.start} ~ {meeting.end}</span>
                 {meeting.location && <span className="flex items-center gap-1 min-w-0"><span className="text-[15px] leading-none flex-shrink-0">📍</span><span className="truncate">{meeting.location}</span></span>}
-                <span className="flex items-center gap-1"><span className="text-[15px] leading-none flex-shrink-0">👥</span>{kind==='match' ? `현재 ${participantCount||0}명 · 남 ${meeting.maxMale||0}·여 ${meeting.maxFemale||0}` : `현재 ${participantCount||0} · 정원 ${meeting.maxLimit||18}명`}</span>
+                <span className="flex items-center gap-1"><span className="text-[15px] leading-none flex-shrink-0">👥</span>{kind==='match' ? `현재 ${curCount}명 · 남 ${meeting.maxMale||0}·여 ${meeting.maxFemale||0}` : `현재 ${curCount} · 정원 ${meeting.maxLimit||18}명`}</span>
             </div>
             {/* 실시간 날씨 (모임 좌표 기준) — 지난 모임에는 표시 안 함 */}
             {dayInfo && dayInfo.type !== 'past' && (
@@ -500,7 +517,7 @@ const NextMeetingCard = ({
                     {/* 팀 상태 — 팀편성 OFF면 참여 명단, 아니면 공개 시점에 내 팀 표시 */}
                     {meeting.meetingType === 'match' ? (
                         <div className="flex items-center gap-1.5 text-sm font-black text-white min-w-0">
-                            <Icon.Users size={16} className="flex-shrink-0 text-white/80"/><span className="truncate">참여 명단 {participantCount || 0}명</span>
+                            <Icon.Users size={16} className="flex-shrink-0 text-white/80"/><span className="truncate">참여 명단 {curCount}명</span>
                         </div>
                     ) : mySession?.checkedIn ? (
                         /* F-2b 1단계 — 출석 완료(정기) 시 내 조끼·번호 + 현재 라운드 내 경기 (화면만, 매치표·조끼색 읽기만) */
