@@ -1051,9 +1051,9 @@ const PenaltyPayCard = ({ isAdminMode, memberName, memberInfo, managers = [], mo
                         <span className="text-lg font-black text-rose-600">{fmtWon(payTotal)}</span>
                     </div>
                     {acc?.accountNo && (
-                        <button onClick={() => copyText(`${acc.bank ? acc.bank + ' ' : ''}${acc.accountNo}\n${depositName}`)}
+                        <button onClick={() => copyText(`${acc.bank ? acc.bank + ' ' : ''}${acc.accountNo}`)}
                             className="w-full mb-2 py-2 rounded-xl bg-slate-100 text-slate-600 font-black text-xs active:scale-95 transition-all flex items-center justify-center gap-1">
-                            {copied ? <><Icon.Check size={13} />복사됨</> : '계좌번호 · 입금자명 복사'}
+                            {copied ? <><Icon.Check size={13} />복사됨</> : '계좌번호 복사'}
                         </button>
                     )}
                     {payTotal > 0 ? (
