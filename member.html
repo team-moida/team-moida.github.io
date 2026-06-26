@@ -996,6 +996,7 @@ function App() {
                         {key:'meeting', label:'모임', Comp:Icon.Calendar},
                         {key:'dues',    label:'회비', Comp:Icon.CreditCard},
                         {key:'rules',   label:'회칙', Comp:Icon.ShieldCheck},
+                        {key:'notice',  label:'게시판', Comp:Icon.Clipboard},
                         ...(isAdminMode ? [{key:'roster', label:'명단', Comp:Icon.List}] : []),
                     ].map(({key,label,Comp})=>{
                         const active = tab===key;
