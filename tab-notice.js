@@ -21,6 +21,7 @@ const NOTICE_CAT = {
     '일반': 'bg-slate-100 text-slate-500',    // 중립
     '모임': 'bg-emerald-50 text-emerald-600', // 성공색
     '중요': 'bg-red-50 text-red-500',         // 위험색
+    '정보': 'bg-blue-50 text-blue-500',       // 안내(알림 설정 등)
 };
 const NoticeBadge = ({ category }) => {
     const cat = category || '공지';
@@ -151,8 +152,11 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                                 <Icon.Bell size={16} className="text-teal-500"/>
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="font-black text-[14.5px] text-teal-600 truncate">알림이 조용히 오나요?</p>
-                                <p className="text-[11.5px] text-slate-400 mt-0.5 truncate">{showGuide ? '내 폰에 맞게 한 번만 설정하면 배너로 떠요' : '탭하면 설정 방법을 알려드려요'}</p>
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    <NoticeBadge category="정보" />
+                                    <p className="font-black text-[14.5px] text-teal-600 truncate">알림이 조용히 오나요?</p>
+                                </div>
+                                <p className="text-[11.5px] text-slate-400 mt-1 truncate">{showGuide ? '내 폰에 맞게 한 번만 설정하면 배너로 떠요' : '탭하면 설정 방법을 알려드려요'}</p>
                             </div>
                             <Icon.ChevronRight size={16} className={`text-slate-300 flex-shrink-0 transition-transform ${showGuide ? 'rotate-90' : ''}`}/>
                         </button>
