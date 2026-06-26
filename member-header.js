@@ -17,7 +17,7 @@ function MemberHeader({
                 <div className="flex items-center gap-2.5 min-w-0">
                     <img src="icon.png" alt="OTP FC" className="w-11 h-11 object-contain flex-shrink-0" onError={e=>e.target.style.display='none'}/>
                     <div className="min-w-0">
-                        <h1 className="text-[28px] leading-none font-black text-teal-600" style={{fontFamily:"'Pretendard Variable', Pretendard, -apple-system, sans-serif", WebkitTextStroke:'0.6px currentColor', letterSpacing:'-0.04em'}}>모이다</h1>
+                        <h1 className="text-[28px] leading-none font-black text-teal-600" style={{fontFamily:"'Paperlogy', 'Pretendard Variable', Pretendard, -apple-system, sans-serif", WebkitTextStroke:'0.6px currentColor', letterSpacing:'-0.04em'}}>모이다</h1>
                         <p className="text-[13px] font-bold text-slate-500 mt-1.5 truncate">OTP FC · {memberName} 님</p>
                     </div>
                 </div>
