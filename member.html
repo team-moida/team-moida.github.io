@@ -835,7 +835,7 @@ function App() {
                 {tab === 'home' && (
                     <TabHome
                         notifPermission={notifPermission} registerFcmToken={registerFcmToken}
-                        onTabChange={navTab} meetingDayInfo={meetingDayInfo} teamReady={teamReady} meetings={visibleMeetings}
+                        onTabChange={navTab} meetingDayInfo={meetingDayInfo} teamReady={teamReady} meetings={visibleMeetings} members={roster.allMembers}
                         participantCount={meetingParticipants.length}
                         allowFromDisplay={allowFromDisplay} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                         scheduleData={scheduleData}
@@ -876,7 +876,7 @@ function App() {
                         onSelect={(m) => { setViewMeetingId(m.id); setMeetingSubTab('attend'); }}
                         activeMeeting={activeMeeting}
                         handleSaveMeeting={handleSaveMeeting} handleDeleteMeeting={handleDeleteMeeting}
-                        managers={managers} showAlert={showAlert}
+                        managers={managers} members={roster.allMembers} showAlert={showAlert}
                         attendHistory={attend.attendHistory} darkMode={darkMode}
                         onDeleteRecord={handleDeleteMeetingRecord}
                         generateAttendQRCode={generateAttendQRCode}

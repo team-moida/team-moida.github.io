@@ -68,3 +68,12 @@ const extendEndDate = (currentEndDateStr,monthsToAdd=1) => {
 
 /* ── 모임 식별자 ── */
 const getMeetingId = (m) => m.meetingType === 'match' ? m.date + '__match' : m.date;
+
+/* ── 모임 담당자 표시 "이름(직책)" ── 직책은 members 목록에서 managerId로 조회. 직책 없으면 이름만. */
+const getManagerLabel = (meeting, members) => {
+    const name = meeting?.managerName || '';
+    if (!name) return '';
+    const m = (members || []).find(x => x.id === meeting.managerId);
+    const role = (m && m.role && m.role !== '회원') ? m.role : '';
+    return role ? `${name}(${role})` : name;
+};

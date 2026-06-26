@@ -730,7 +730,7 @@ const MeetingRecordsView = ({ meetings, attendHistory, darkMode, onEdit, onDelet
 // MEETING_KIND·computeMeetingDay·fmtMeetingDate는 tab-home.js의 전역 정의를 재사용한다.
 const MeetingListScreen = ({
     meetings, isAdminMode, onSelect,
-    activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers, showAlert,
+    activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers, members, showAlert,
     pendingEditMeeting, onPendingEditHandled,
     attendHistory, darkMode, onDeleteRecord, generateAttendQRCode, onFinalizePenalty,
     onCreateTestMeeting, onDeleteTestMeeting, onDeleteOneTest,
@@ -811,6 +811,7 @@ const MeetingListScreen = ({
                     const chipFg = isMatch ? '#15171E' : '#ffffff';
                     const meta = `${dDow} ${m.start}${m.location ? ` · ${m.location}` : ''}${isMatch && m.opponentName ? ` · vs ${m.opponentName}` : ''}`;
                     const countNum = isMatch ? ((m.maxMale || 0) + (m.maxFemale || 0)) : (m.maxLimit || 18);
+                    const mgrLabel = getManagerLabel(m, members);
                     return (
                         <div key={m.id} className="card rounded-2xl overflow-hidden">
                             <button onClick={() => onSelect(m)} className="w-full flex items-center gap-3 p-3 text-left active:scale-98 transition-all">
@@ -831,6 +832,7 @@ const MeetingListScreen = ({
                                             : (dayInfo && dayInfo.label && dayInfo.type !== 'past') && <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${dayInfo.urgent ? 'bg-rose-50 text-rose-500' : dayInfo.type === 'today' ? 'bg-teal-50 text-teal-600' : 'bg-slate-100 text-slate-500'}`}>{dayInfo.label}</span>}
                                     </div>
                                     <p className="text-[12.5px] font-bold text-slate-500 mt-1 truncate">{meta}</p>
+                                    {mgrLabel && <p className="text-[11px] font-bold text-slate-400 mt-0.5 truncate">담당 {mgrLabel}</p>}
                                 </div>
                                 {/* 정원 */}
                                 <div className="flex-shrink-0 text-center pl-1">

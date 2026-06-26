@@ -365,7 +365,7 @@ const computeMeetingDay = (date, start) => {
     return { type:'started', label:'모임 중' };
 };
 const NextMeetingCard = ({
-    meeting, kind, isActive, dayInfo, darkMode, isAdminMode, onTabChange,
+    meeting, kind, isActive, dayInfo, darkMode, isAdminMode, onTabChange, members,
     mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount, scheduleData,
     isMeetingOver, isMeetingEndSaved, onEndMeeting, onGenerateQR, onEditMeeting, onDeleteMeeting,
     onOpenAttendModal, onInlineGPS, onInlineQR, enableQR, onOpenKiosk,
@@ -447,6 +447,7 @@ const NextMeetingCard = ({
                 <span className="flex items-center gap-1"><span className="text-[15px] leading-none flex-shrink-0">⏰</span>{meeting.start} ~ {meeting.end}</span>
                 {meeting.location && <span className="flex items-center gap-1 min-w-0"><span className="text-[15px] leading-none flex-shrink-0">📍</span><span className="truncate">{meeting.location}</span></span>}
                 <span className="flex items-center gap-1"><span className="text-[15px] leading-none flex-shrink-0">👥</span>{kind==='match' ? `현재 ${curCount}명 · 남 ${meeting.maxMale||0}·여 ${meeting.maxFemale||0}` : `현재 ${curCount} · 정원 ${meeting.maxLimit||18}명`}</span>
+                {getManagerLabel(meeting, members) && <span className="flex items-center gap-1"><span className="text-[15px] leading-none flex-shrink-0">🧑‍💼</span>{getManagerLabel(meeting, members)}</span>}
             </div>
             {/* 실시간 날씨 (모임 좌표 기준) — 지난 모임에는 표시 안 함 */}
             {dayInfo && dayInfo.type !== 'past' && (
@@ -1294,7 +1295,7 @@ const DuesReportsHomeCard = ({ duesReports, onConfirm, onReject, onGoDuesTab }) 
 const TabHome = ({
     notifPermission, registerFcmToken, onTabChange,
     meetingDayInfo, teamReady, allowFromDisplay,
-    myTeamInfo, myTeamIdx, memberData, memberInfo, meetings, participantCount, scheduleData,
+    myTeamInfo, myTeamIdx, memberData, memberInfo, meetings, members, participantCount, scheduleData,
     mySession, meetingSettings, meetingSettingsMatch, darkMode,
     memberName, announcements, onOpenAnnouncements,
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
@@ -1350,7 +1351,7 @@ const TabHome = ({
         {/* 다음 모임 — 정기/매칭 종류별로 분리해 색상으로 구분 (탭하면 모임 탭으로 이동) */}
         {meetingCards.length > 0 ? meetingCards.map(c => (
             <NextMeetingCard key={c.kind} meeting={c.meeting} kind={c.kind} isActive={c.isActive}
-                dayInfo={c.dayInfo} darkMode={darkMode} isAdminMode={isAdminMode} onTabChange={onTabChange}
+                dayInfo={c.dayInfo} darkMode={darkMode} isAdminMode={isAdminMode} onTabChange={onTabChange} members={members}
                 mySession={mySession} teamReady={teamReady} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                 allowFromDisplay={allowFromDisplay} participantCount={participantCount} scheduleData={scheduleData}
                 isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting}
