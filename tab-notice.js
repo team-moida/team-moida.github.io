@@ -34,7 +34,7 @@ const NoticeDoneBadge = () => (
     <span className="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-lg bg-slate-200 text-slate-500">완료</span>
 );
 
-const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDeleteOne, onDeleteMany, onNavigateMeeting, meetings }) => {
+const TabNotice = ({ announcements, isAdminMode, isDeveloper, canManage = () => true, onBack, onAdd, onEdit, onDeleteOne, onDeleteMany, onNavigateMeeting, meetings }) => {
     const { useState, useEffect } = React;
     const [selectedId, setSelectedId] = useState(null);   // 상세 보기 대상 (null이면 목록)
     const [selectMode, setSelectMode] = useState(false);  // 선택 삭제 모드
@@ -94,12 +94,15 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                                 신청하러 가기 <Icon.ChevronRight size={16}/>
                             </button>
                         )))}
-                    {isAdminMode && (
-                        <div className="flex gap-2 mt-5 pt-4 border-t border-slate-100">
-                            <button onClick={() => onEdit(selected)} className="flex-1 py-2.5 rounded-xl bg-blue-50 text-blue-500 font-black text-sm active:scale-95 transition-all">수정</button>
-                            <button onClick={() => onDeleteOne(selected.id)} className="flex-1 py-2.5 rounded-xl bg-red-50 text-red-500 font-black text-sm active:scale-95 transition-all">삭제</button>
-                        </div>
-                    )}
+                    {isAdminMode && (canManage(selected)
+                        ? (
+                            <div className="flex gap-2 mt-5 pt-4 border-t border-slate-100">
+                                <button onClick={() => onEdit(selected)} className="flex-1 py-2.5 rounded-xl bg-blue-50 text-blue-500 font-black text-sm active:scale-95 transition-all">수정</button>
+                                <button onClick={() => onDeleteOne(selected.id)} className="flex-1 py-2.5 rounded-xl bg-red-50 text-red-500 font-black text-sm active:scale-95 transition-all">삭제</button>
+                            </div>
+                        ) : (
+                            <p className="text-[11px] text-slate-400 font-bold text-center mt-5 pt-4 border-t border-slate-100">올린 사람만 수정·삭제할 수 있어요</p>
+                        ))}
                 </div>
             </div>
         );
@@ -133,7 +136,7 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                             {list.length > 0 && (
                                 <>
                                     <button onClick={() => setSelectMode(true)} className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-500 font-black text-xs active:scale-95 transition-all">선택삭제</button>
-                                    <button onClick={() => onDeleteMany(list.map(a => a.id))} className="px-3 py-1.5 rounded-lg bg-red-50 text-red-500 font-black text-xs active:scale-95 transition-all">전체삭제</button>
+                                    {isDeveloper && <button onClick={() => onDeleteMany(list.map(a => a.id))} className="px-3 py-1.5 rounded-lg bg-red-50 text-red-500 font-black text-xs active:scale-95 transition-all">전체삭제</button>}
                                 </>
                             )}
                         </>
@@ -169,12 +172,16 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                 ) : (
                     list.map((a, i) => (
                         <button key={a.id}
-                            onClick={() => selectMode ? toggleCheck(a.id) : setSelectedId(a.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 transition-colors ${i > 0 ? 'border-t border-slate-100' : ''} ${isAnnDone(a) ? 'opacity-60' : ''}`}>
+                            onClick={() => selectMode ? (canManage(a) && toggleCheck(a.id)) : setSelectedId(a.id)}
+                            className={`w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 transition-colors ${i > 0 ? 'border-t border-slate-100' : ''} ${isAnnDone(a) ? 'opacity-60' : ''} ${selectMode && !canManage(a) ? 'opacity-40' : ''}`}>
                             {selectMode && (
-                                <span className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center border-2 transition-all ${checkedIds.includes(a.id) ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-300'}`}>
-                                    {checkedIds.includes(a.id) && <Icon.Check size={12}/>}
-                                </span>
+                                canManage(a) ? (
+                                    <span className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center border-2 transition-all ${checkedIds.includes(a.id) ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-300'}`}>
+                                        {checkedIds.includes(a.id) && <Icon.Check size={12}/>}
+                                    </span>
+                                ) : (
+                                    <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center text-[9px] font-black text-slate-300">잠금</span>
+                                )
                             )}
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 min-w-0">
