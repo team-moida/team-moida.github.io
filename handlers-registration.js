@@ -267,6 +267,14 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
         const sessionRef = getCol('weekly_session').doc(`${meetingId}_${memberData.memberId}`);
         const mirrorRef = getCol('settings').doc(mirrorDocId);
 
+        // 운영진이 '회원 선정'으로 따로 넣어둔 세션(자동 ID)이 남아 있으면 먼저 제거 → 중복 입장 방지.
+        // (회원 신청은 고정 ID `${meetingId}_${memberId}`, 운영진 선정은 자동 ID라 서로 못 알아봐 중복됨)
+        try {
+            const sSnap = await getCol('weekly_session').where('meetingId', '==', meetingId).get();
+            const dups = sSnap.docs.filter(d => (d.data() || {}).memberId === memberData.memberId);
+            if (dups.length) { const b = db.batch(); dups.forEach(d => b.delete(d.ref)); await b.commit(); }
+        } catch (_) {}
+
         try {
             let resultStatus = 'confirmed';
             await db.runTransaction(async (tx) => {
