@@ -148,15 +148,12 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                 {!selectMode && (
                     <div className="border-b border-slate-100">
                         <button onClick={() => setShowGuide(v => !v)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 transition-colors">
-                            <div className="w-9 h-9 bg-teal-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                                <Icon.Bell size={16} className="text-teal-500"/>
-                            </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 min-w-0">
                                     <NoticeBadge category="정보" />
                                     <p className="font-black text-[14.5px] text-teal-600 truncate">알림이 조용히 오나요?</p>
                                 </div>
-                                <p className="text-[11.5px] text-slate-400 mt-1 truncate">{showGuide ? '내 폰에 맞게 한 번만 설정하면 배너로 떠요' : '탭하면 설정 방법을 알려드려요'}</p>
+                                <p className="text-[11.5px] text-slate-400 mt-1.5 truncate font-bold">{showGuide ? '내 폰에 맞게 한 번만 설정하면 배너로 떠요' : '탭하면 설정 방법을 알려드려요'}</p>
                             </div>
                             <Icon.ChevronRight size={16} className={`text-slate-300 flex-shrink-0 transition-transform ${showGuide ? 'rotate-90' : ''}`}/>
                         </button>
