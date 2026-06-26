@@ -930,8 +930,8 @@ function App() {
                         onSelect={(m) => { setViewMeetingId(m.id); setMeetingSubTab('attend'); }}
                         activeMeeting={activeMeeting}
                         handleSaveMeeting={handleSaveMeeting} handleDeleteMeeting={handleDeleteMeeting}
-                        managers={managers} members={roster.allMembers} showAlert={showAlert}
-                        attendHistory={attend.attendHistory} darkMode={darkMode}
+                        managers={managers} members={roster.allMembers} showAlert={showAlert} showConfirm={showConfirm}
+                        attendHistory={attend.attendHistory} attendHistoryTrash={attend.attendHistoryTrash} darkMode={darkMode}
                         onDeleteRecord={handleDeleteMeetingRecord}
                         generateAttendQRCode={generateAttendQRCode}
                         onFinalizePenalty={attendFinalizePenalties}
