@@ -127,6 +127,15 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
                 }
             });
 
+            // 운영진이 '회원 선정'으로 따로 넣어둔 세션(자동 ID)이 있으면 정리 → 중복 입장 방지.
+            // 방금 만든 고정 ID 세션(${meetingId}_${memberId})은 보존하고, 그 외 같은 회원 세션만 제거.
+            try {
+                const detId = `${meetingId}_${memberData.memberId}`;
+                const sSnap = await getCol('weekly_session').where('meetingId', '==', meetingId).get();
+                const strays = sSnap.docs.filter(d => (d.data() || {}).memberId === memberData.memberId && d.id !== detId);
+                if (strays.length) { const b = db.batch(); strays.forEach(d => b.delete(d.ref)); await b.commit(); }
+            } catch (_) {}
+
             showToast && showToast('신청 완료!', 'success');
         } catch (e) {
             if (e.message === '이미 신청했습니다') {
