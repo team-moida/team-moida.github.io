@@ -34,15 +34,17 @@
   .b-meet{ background:#ccfbf1; color:#0d9488; }          /* 모임 */
   .pushed{ font-size:9px; font-weight:800; color:#16a34a; background:#f0fdf4; padding:1px 6px; border-radius:6px; }
 
-  /* 글 카드 */
-  .post{ background:#fff; border-radius:16px; box-shadow:0 4px 14px rgba(0,0,0,.05); padding:14px; margin-bottom:9px; cursor:pointer; text-align:left; width:100%; border:0; font-family:inherit; display:block; }
-  .post.pin{ border:1.5px solid #fde68a; }
-  .post .row1{ display:flex; align-items:center; gap:6px; margin-bottom:6px; }
-  .post .pinico{ font-size:11px; }
-  .post .date{ margin-left:auto; font-size:10px; color:var(--mute); font-weight:700; }
-  .post .ttl{ font-weight:900; font-size:15px; color:var(--ink); line-height:1.3; }
-  .post .body{ font-size:12.5px; color:var(--sub); margin-top:4px; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-  .post .meta{ font-size:11px; color:var(--mute); margin-top:7px; font-weight:700; }
+  /* 글 목록 (하나의 카드 안에 행이 줄줄이) */
+  .list-card{ background:#fff; border-radius:18px; box-shadow:0 4px 14px rgba(0,0,0,.05); overflow:hidden; }
+  .prow{ display:block; width:100%; text-align:left; border:0; background:none; font-family:inherit; padding:13px 15px; cursor:pointer; border-bottom:1px solid #f1f5f9; }
+  .prow:last-child{ border-bottom:0; }
+  .prow:active{ background:#f8fafc; }
+  .prow.pin{ background:#fffdf5; }
+  .prow .row1{ display:flex; align-items:center; gap:6px; }
+  .prow .pinico{ font-size:11px; flex-shrink:0; }
+  .prow .ttl{ font-weight:800; font-size:14px; color:var(--ink); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .prow .date{ font-size:10px; color:var(--mute); font-weight:700; flex-shrink:0; }
+  .prow .meta{ font-size:11px; color:var(--mute); margin-top:5px; font-weight:700; display:flex; align-items:center; gap:5px; }
 
   /* 작성 */
   .field{ margin-bottom:13px; }
@@ -88,47 +90,32 @@
         <button class="write-btn" onclick="show('write')">＋ 글쓰기</button>
       </div>
 
-      <button class="post pin" onclick="show('detail')">
-        <div class="row1"><span class="pinico">📌</span><span class="bdg b-imp">중요</span><span class="pushed">알림 발송됨</span><span class="date">26.06.20</span></div>
-        <div class="ttl">6월 회비 납부 안내</div>
-        <div class="body">6월 회비 납부 기간입니다. 회비 탭에서 토스/계좌이체로 납부 부탁드립니다. 미납 시 모임 신청이 제한될 수 있어요.</div>
-        <div class="meta">회장 이성훈</div>
-      </button>
-
-      <button class="post pin" onclick="show('detail')">
-        <div class="row1"><span class="pinico">📌</span><span class="bdg b-notice">공지</span><span class="pushed">알림 발송됨</span><span class="date">26.06.25</span></div>
-        <div class="ttl">6/28 정기모임 장소 변경 안내</div>
-        <div class="body">이번 주 정기모임 장소가 플랩 스타디움 수원으로 변경되었습니다. 시간은 동일하게 오전 8시입니다.</div>
-        <div class="meta">매니저 박지훈</div>
-      </button>
-
-      <button class="post" onclick="show('detail')">
-        <div class="row1"><span class="bdg b-news">소식</span><span class="date">26.06.26</span></div>
-        <div class="ttl">지난 주 풋살 후기 📸</div>
-        <div class="body">지난 주 모임 정말 즐거웠습니다! 다들 고생 많으셨어요. 다음 주도 화이팅 💪 (사진 첨부는 다음 단계에서)</div>
-        <div class="meta">총무 최유진</div>
-      </button>
-
-      <button class="post" onclick="show('detail')">
-        <div class="row1"><span class="bdg b-news">소식</span><span class="date">26.06.24</span></div>
-        <div class="ttl">신규 회원 환영합니다 👋</div>
-        <div class="body">이번 달 새로 가입하신 두 분 환영합니다! 모임에서 반갑게 맞아주세요.</div>
-        <div class="meta">매니저 박지훈</div>
-      </button>
-
-      <button class="post" onclick="show('detail')">
-        <div class="row1"><span class="bdg b-meet">모임</span><span class="date">26.06.21</span></div>
-        <div class="ttl">6/21 매칭 결과</div>
-        <div class="body">FC번개와의 매칭 결과 공유합니다. 모두 수고하셨습니다!</div>
-        <div class="meta">회장 이성훈</div>
-      </button>
-
-      <button class="post" onclick="show('detail')">
-        <div class="row1"><span class="bdg b-news">소식</span><span class="date">26.06.18</span></div>
-        <div class="ttl">조끼 세탁 당번 안내</div>
-        <div class="body">이번 주 조끼 세탁 당번은 A팀입니다. 다음 모임 전까지 부탁드려요.</div>
-        <div class="meta">총무 최유진</div>
-      </button>
+      <div class="list-card">
+        <button class="prow pin" onclick="show('detail')">
+          <div class="row1"><span class="pinico">📌</span><span class="bdg b-imp">중요</span><span class="ttl">6월 회비 납부 안내</span><span class="date">06.20</span></div>
+          <div class="meta">회장 이성훈<span class="pushed">알림 발송됨</span></div>
+        </button>
+        <button class="prow pin" onclick="show('detail')">
+          <div class="row1"><span class="pinico">📌</span><span class="bdg b-notice">공지</span><span class="ttl">6/28 정기모임 장소 변경 안내</span><span class="date">06.25</span></div>
+          <div class="meta">매니저 박지훈<span class="pushed">알림 발송됨</span></div>
+        </button>
+        <button class="prow" onclick="show('detail')">
+          <div class="row1"><span class="bdg b-news">소식</span><span class="ttl">지난 주 풋살 후기 📸</span><span class="date">06.26</span></div>
+          <div class="meta">총무 최유진</div>
+        </button>
+        <button class="prow" onclick="show('detail')">
+          <div class="row1"><span class="bdg b-news">소식</span><span class="ttl">신규 회원 환영합니다 👋</span><span class="date">06.24</span></div>
+          <div class="meta">매니저 박지훈</div>
+        </button>
+        <button class="prow" onclick="show('detail')">
+          <div class="row1"><span class="bdg b-meet">모임</span><span class="ttl">6/21 매칭 결과</span><span class="date">06.21</span></div>
+          <div class="meta">회장 이성훈</div>
+        </button>
+        <button class="prow" onclick="show('detail')">
+          <div class="row1"><span class="bdg b-news">소식</span><span class="ttl">조끼 세탁 당번 안내</span><span class="date">06.18</span></div>
+          <div class="meta">총무 최유진</div>
+        </button>
+      </div>
     </div>
 
     <!-- ===== 글쓰기 ===== -->
