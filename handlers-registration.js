@@ -158,7 +158,7 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
         }
     };
 
-    const handleCancel = async () => {
+    const _doCancel = async () => {
         if (!meetingDate || !memberData?.memberId) return;
 
         const meetingRef = getMeetingsCol().doc(meetingId);
@@ -196,6 +196,17 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
         } catch (e) {
             console.error('취소 오류:', e);
             showAlert && showAlert('오류', '취소 중 오류가 발생했습니다. 다시 시도해주세요.');
+        }
+    };
+
+    // 신청 취소 시 확인 팝업을 한 번 더 띄운다 (홈/모임 탭 공통). showConfirm 없으면 바로 취소.
+    const handleCancel = () => {
+        if (!meetingDate || !memberData?.memberId) return;
+        if (typeof showConfirm === 'function') {
+            const label = mType === 'match' ? '매칭 모임' : '모임';
+            showConfirm('신청 취소', `${meetingDate} ${label} 신청을 취소할까요?`, _doCancel);
+        } else {
+            _doCancel();
         }
     };
 
