@@ -1,7 +1,7 @@
 // ─── 명단 > 통계 (운영진 전용) — history 집계로 회원별 출석률·지각·노쇼 랭킹 ───────────
 // 회비 납부 대상자 기준(휴식·탈퇴 제외). 출석률 = (정상+지각) ÷ 참가확정(정상+지각+노쇼).
 // '결석(불참 통보)'은 데이터상 분리가 어려워 노쇼에 포함된다.
-const RosterStatsView = ({ activeMembers, attendHistory, monthlyStatuses }) => {
+const RosterStatsView = ({ activeMembers, attendHistory, attendHistoryTrash = [], monthlyStatuses, showConfirm, showAlert }) => {
     const { useState, useMemo } = React;
     const [sortBy, setSortBy] = useState('rate'); // rate | late | no
     const [view, setView] = useState('member'); // member(회원별) | meeting(모임일별 출석)
@@ -90,6 +90,21 @@ const RosterStatsView = ({ activeMembers, attendHistory, monthlyStatuses }) => {
         });
     }, [meetingRows]);
 
+    // 휴지통 — 삭제한 모임의 출석 기록(trashed). 복원/영구삭제 가능.
+    const trashRows = useMemo(() => (attendHistoryTrash || []).map(h => {
+        const recs = h.records || [];
+        return { key: h.id, id: h.id, date: h.date || '', isMatch: h.meetingType === 'match', location: h.location || '장소 미지정',
+            present: h.present != null ? h.present : recs.filter(r => r.status === '정상' || r.status === '지각').length,
+            total: h.total != null ? h.total : recs.length };
+    }).sort((a, b) => (b.date || '').localeCompare(a.date || '')), [attendHistoryTrash]);
+    const [trashOpen, setTrashOpen] = useState(false);
+    const restoreTrash = (id) => getHistoryCol().doc(id).update({ trashed: false, trashedAt: null }).catch(() => showAlert && showAlert('오류', '복원 실패'));
+    const purgeTrash = (m) => {
+        const go = () => getHistoryCol().doc(m.id).delete().catch(() => showAlert && showAlert('오류', '삭제 실패'));
+        if (showConfirm) showConfirm('영구 삭제', `${m.date} 출석 기록을 완전히 삭제할까요?\n복원할 수 없어요.`, go);
+        else go();
+    };
+
     const roleOf = (role) => (typeof ADMIN_ROLES !== 'undefined' && ADMIN_ROLES.includes(role)) ? role : '';
 
     return (
@@ -147,8 +162,8 @@ const RosterStatsView = ({ activeMembers, attendHistory, monthlyStatuses }) => {
             )}
             {data.noRec > 0 && <p className="text-[11px] text-slate-400 font-bold mt-2.5 px-1">+ 출석 기록 없는 대상 회원 {data.noRec}명</p>}
             <p className="text-[10.5px] text-slate-400 font-bold mt-2 px-1 leading-relaxed">출석률 = (정상+지각) ÷ 참가확정 모임 · 결석(불참 통보)은 노쇼에 포함</p>
-            </>) : (
-                meetingRows.length === 0 ? (
+            </>) : (<>
+                {meetingRows.length === 0 ? (
                     <div className="card rounded-2xl p-8 text-center text-slate-400"><p className="font-black text-sm">종료된 정기모임 기록이 없습니다</p></div>
                 ) : (<>
                     <p className="text-[11.5px] font-bold text-slate-500 bg-teal-50 rounded-2xl px-3 py-2.5 mb-3.5 leading-relaxed">정기모임만 · 월별 모음 · 달마다 개근왕 · 모임을 누르면 출석 명단</p>
@@ -207,8 +222,39 @@ const RosterStatsView = ({ activeMembers, attendHistory, monthlyStatuses }) => {
                         </div>
                     ))}
                     <p className="text-[10.5px] text-slate-400 font-bold mt-1 px-1 leading-relaxed">매칭모임은 제외 · 개근왕은 그 달 정상 출석이 가장 많고 지각·노쇼가 적은 회원(동률 시 출석 시간 빠른 순)</p>
-                </>)
-            )}
+                </>)}
+                {trashRows.length > 0 && (
+                    <div className="mt-5">
+                        <button onClick={() => setTrashOpen(o => !o)} className="w-full flex items-center gap-2 px-1 mb-2 text-left">
+                            <Icon.Trash size={15} className="text-slate-400 flex-shrink-0"/>
+                            <h3 className="font-black text-base text-slate-500">휴지통 <span className="text-slate-400">{trashRows.length}</span></h3>
+                            <Icon.ChevronRight size={16} className={`ml-auto text-slate-300 transition-transform ${trashOpen?'rotate-90':''}`}/>
+                        </button>
+                        {trashOpen && (
+                            <div className="card rounded-2xl overflow-hidden">
+                                {trashRows.map((m, i) => {
+                                    const d = fmtMD(m.date);
+                                    return (
+                                        <div key={m.key} className={`flex items-center gap-2.5 px-3.5 py-3 ${i>0?'border-t border-slate-100':''}`}>
+                                            <div className="flex-shrink-0 w-10 text-center opacity-70">
+                                                <p className="text-[16px] font-black text-slate-500 leading-none tabular-nums">{d.dd}</p>
+                                                <p className="text-[9.5px] font-black text-slate-400 mt-0.5">{d.sub}</p>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[12.5px] font-black text-slate-500 truncate">{m.location}{m.isMatch?' · 매칭':''}</p>
+                                                <p className="text-[11px] font-bold text-slate-400 truncate">출석 {m.present}/{m.total}</p>
+                                            </div>
+                                            <span role="button" onClick={() => restoreTrash(m.id)} className="text-[11px] font-black px-2.5 py-1.5 rounded-lg bg-teal-50 text-teal-600 active:scale-95 cursor-pointer flex-shrink-0">복원</span>
+                                            <span role="button" onClick={() => purgeTrash(m)} className="text-[11px] font-black px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-500 active:scale-95 cursor-pointer flex-shrink-0">영구삭제</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                        <p className="text-[10.5px] text-slate-400 font-bold mt-2 px-1 leading-relaxed">삭제한 모임의 출석 기록 · 복원하면 통계에 다시 포함돼요</p>
+                    </div>
+                )}
+            </>)}
         </div>
     );
 };
@@ -216,7 +262,8 @@ const RosterStatsView = ({ activeMembers, attendHistory, monthlyStatuses }) => {
 const TabRoster = ({
     rosterSubTab, setRosterSubTab,
     setIsAddModalOpen,
-    activeMembers, allMembers, resignedMembers, attendHistory,
+    activeMembers, allMembers, resignedMembers, attendHistory, attendHistoryTrash,
+    showConfirm, showAlert,
     setEditingMember,
     setResigningMember, setResignForm,
     handleRestoreResigned, setDeletingMember,
@@ -387,7 +434,7 @@ const TabRoster = ({
 
         {/* ── 통계 서브탭 ── */}
         {rosterSubTab === 'stats' && (
-            <RosterStatsView activeMembers={activeMembers} attendHistory={attendHistory} monthlyStatuses={monthlyStatuses} />
+            <RosterStatsView activeMembers={activeMembers} attendHistory={attendHistory} attendHistoryTrash={attendHistoryTrash} monthlyStatuses={monthlyStatuses} showConfirm={showConfirm} showAlert={showAlert} />
         )}
     </div>
 );

@@ -225,14 +225,17 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
             : `${meeting.date} 모임을 삭제하시겠습니까?`;
         showConfirm('모임 삭제', confirmMsg, async () => {
             try {
-                const [regSnap, sessionSnap] = await Promise.all([
+                const [regSnap, sessionSnap, histSnap] = await Promise.all([
                     getCol('registrations').where('meetingId', '==', meeting.id).get(),
                     getCol('weekly_session').where('meetingId', '==', meeting.id).get(),
+                    getHistoryCol().where('meetingId', '==', meeting.id).get(),
                 ]);
                 const batch = db.batch();
                 batch.delete(getMeetingsCol().doc(meeting.id));
                 regSnap.docs.forEach(d => batch.delete(d.ref));
                 sessionSnap.docs.forEach(d => batch.delete(d.ref));
+                // 출석 기록(history)은 영구삭제 대신 휴지통으로 이동(trashed) → 통계 제외 + 복원 가능
+                histSnap.docs.forEach(d => batch.update(d.ref, { trashed: true, trashedAt: new Date().toISOString() }));
                 await batch.commit();
                 if (isCurrentMeeting) {
                     const mirrorId = mType === 'match' ? 'meeting_schedule_match' : 'meeting_schedule_v2';

@@ -6,6 +6,7 @@ function useAttend({ isAdminMode, memberData, meetingSettings, tmSessionData, ac
     const [isAttendPanelOpen, setIsAttendPanelOpen] = useState(false);
     const [attendSubTab, setAttendSubTab] = useState('roster');
     const [attendHistory, setAttendHistory] = useState([]);
+    const [attendHistoryTrash, setAttendHistoryTrash] = useState([]);
     const [selectedHistoryDetail, setSelectedHistoryDetail] = useState(null);
     const [historySortKey, setHistorySortKey] = useState('time');
     const [historySortOrder, setHistorySortOrder] = useState('asc');
@@ -32,7 +33,10 @@ function useAttend({ isAdminMode, memberData, meetingSettings, tmSessionData, ac
     useEffect(() => {
         if (!isAdminMode) return;
         const unsub = getHistoryCol().onSnapshot(snap => {
-            setAttendHistory(snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.date.localeCompare(a.date)));
+            const all = snap.docs.map(d=>({id:d.id,...d.data()}));
+            // 휴지통(trashed)으로 옮긴 기록은 통계/기록에서 제외하고 별도 목록으로
+            setAttendHistory(all.filter(h => !h.trashed).sort((a,b)=>b.date.localeCompare(a.date)));
+            setAttendHistoryTrash(all.filter(h => h.trashed).sort((a,b)=>(b.trashedAt||'').localeCompare(a.trashedAt||'') || b.date.localeCompare(a.date)));
         }, () => {});
         return () => unsub();
     }, [isAdminMode]);
@@ -190,6 +194,7 @@ function useAttend({ isAdminMode, memberData, meetingSettings, tmSessionData, ac
         isAttendPanelOpen, setIsAttendPanelOpen,
         attendSubTab, setAttendSubTab,
         attendHistory,
+        attendHistoryTrash,
         selectedHistoryDetail, setSelectedHistoryDetail,
         historySortKey, setHistorySortKey,
         historySortOrder, setHistorySortOrder,
