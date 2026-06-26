@@ -302,7 +302,7 @@ const RegSettingsSection = ({ meetingSettings, updateMeetingSettingsAdmin }) => 
 };
 
 // ─── 회원용 신청 카드 ─────────────────────────────────────────────────────────────
-const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel, handleAbsent, duesUnpaid, duesBlock, penaltyUnpaid = 0, penaltyTotal = 0, isPreview }) => {
+const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel, handleAbsent, handleUndoAbsent, duesUnpaid, duesBlock, penaltyUnpaid = 0, penaltyTotal = 0, isPreview }) => {
     const { useState } = React;
     const [absentConfirm, setAbsentConfirm] = useState(false);
     const [absentReason, setAbsentReason] = useState('');
@@ -334,6 +334,8 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
     const absentFine = absentType === 'noshow_1' ? 10000 : absentType === 'noshow_2' ? 20000 : 0;
     const absentBtnCls = absentFine === 20000 ? 'bg-red-500 text-white' : absentFine === 10000 ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-600';
     const absentBtnLabel = absentFine > 0 ? `불참 신청 (노쇼 · ${absentFine / 10000}만원 벌금)` : '불참 신청 (벌금 없음)';
+    // 불참 취소 가능 여부 — 내가 불참(absent) 상태이고, 아직 노쇼 기준 전(absent 구간)일 때만
+    const undoAbsentOk = myRegistration?.status === 'absent' && typeof getAbsentType === 'function' && getAbsentType(meetingSettings.date, meetingSettings.end) === 'absent';
 
     return (
         <div className="card rounded-2xl p-5">
@@ -444,6 +446,15 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
                                 </button>
                             </div>
                         )
+                    )}
+                    {undoAbsentOk && (
+                        <>
+                            <button onClick={() => isPreview ? alert('미리보기에서는 불참 취소가 되지 않아요.') : (handleUndoAbsent && handleUndoAbsent())}
+                                className="w-full py-2.5 rounded-2xl font-black text-sm active:scale-95 bg-teal-500 text-white">
+                                불참 취소 (다시 신청)
+                            </button>
+                            <p className="text-[11px] text-slate-400 text-center">취소하면 선착순 맨 뒤로 다시 신청돼요</p>
+                        </>
                     )}
                 </div>
             )}
@@ -919,7 +930,7 @@ const TabAttend = ({
     isKioskOpen, setIsKioskOpen, attendHandleCheckIn, attendHandleUncheckIn,
     isMeetingOver, attendHandleEndMeeting,
     viewMeeting, isViewActive, onEditMeeting,
-    myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel, handleAbsent,
+    myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel, handleAbsent, handleUndoAbsent,
     onOpenAttendModal,
 }) => {
     // 보고 있는 모임은 상위(member.html)에서 내려옴 — 모임 탭 카드에서 이미 선택된 모임
@@ -1533,6 +1544,7 @@ const TabAttend = ({
                 handleRegister={handleRegister}
                 handleCancel={handleCancel}
                 handleAbsent={handleAbsent}
+                handleUndoAbsent={handleUndoAbsent}
                 duesUnpaid={myDuesUnpaid}
                 duesBlock={duesBlock}
                 penaltyUnpaid={penaltyUnpaid}

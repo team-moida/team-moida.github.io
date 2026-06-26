@@ -239,5 +239,125 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
         }
     };
 
-    return { handleRegister, handleCancel, handleAbsent };
+    // 불참(absent) 취소 — 노쇼 기준 전(absent 구간)에만 가능. 선착순 '맨 뒤'로 다시 신청
+    // (registeredAt를 새로 찍어 뒤로). 자리 있으면 확정, 정원이 찼으면 대기 맨 뒤.
+    const handleUndoAbsent = async () => {
+        if (!meetingDate || !memberData?.memberId) return;
+
+        // 노쇼 기준 전(absent 구간)까지만 허용
+        if (getAbsentType(meetingDate, meetingSettings?.end) !== 'absent') {
+            showAlert && showAlert('불참 취소 불가', '노쇼 기준 시간이 지나 불참을 취소할 수 없어요.\n(모임 1일 전 밤 10시 이후 불가)');
+            return;
+        }
+
+        // 미납 벌금(지각/노쇼)이 있으면 재신청 차단 (신청과 동일 게이트)
+        try {
+            const penSnap = await getCol('penalties').where('memberId', '==', memberData.memberId).get();
+            const unpaid = penSnap.docs.map(d => d.data()).filter(p => p.status !== 'paid');
+            if (unpaid.length > 0) {
+                const total = unpaid.reduce((s, p) => s + (p.amount || 0), 0);
+                showAlert && showAlert('불참 취소 불가', `미납 벌금이 ${unpaid.length}건(${total.toLocaleString()}원) 있어요.\n회비 탭에서 납부 후 다시 신청해주세요.`);
+                return;
+            }
+        } catch (_) {}
+
+        const maxLimit = meetingSettings?.maxLimit || 18;
+        const meetingRef = getMeetingsCol().doc(meetingId);
+        const regRef = getRegistrationsCol().doc(`${meetingId}_${memberData.memberId}`);
+        const sessionRef = getCol('weekly_session').doc(`${meetingId}_${memberData.memberId}`);
+        const mirrorRef = getCol('settings').doc(mirrorDocId);
+
+        try {
+            let resultStatus = 'confirmed';
+            await db.runTransaction(async (tx) => {
+                const meetingDoc = await tx.get(meetingRef);
+                const regDoc = await tx.get(regRef);
+                if (!regDoc.exists) throw new Error('신청 기록이 없습니다');
+                const reg = regDoc.data();
+                if (reg.status !== 'absent') throw new Error('불참 상태가 아닙니다');
+                if (!meetingDoc.exists) throw new Error('모임 정보를 찾을 수 없습니다');
+
+                const meetingData = meetingDoc.data();
+                const confirmedCount = meetingData.confirmedCount || 0;
+                const waitingCount = meetingData.waitingCount || 0;
+                const isMatch = meetingData.meetingType === 'match';
+                const isFemale = (reg.gender || memberData.gender || '') === '여성';
+                const isFirstComeFirstServed = meetingData.isFirstComeFirstServed ?? true;
+
+                // 선착순 맨 뒤 = registeredAt 새로 + absent 흔적 제거(깨끗한 신청 문서로 재작성)
+                const regData = {
+                    meetingDate,
+                    meetingId,
+                    meetingType: isMatch ? 'match' : 'self',
+                    memberId: memberData.memberId,
+                    name: reg.name || memberData.name || '',
+                    gender: reg.gender || memberData.gender || '',
+                    level: reg.level || memberData.level || '',
+                    registeredAt: FieldValue.serverTimestamp(),
+                };
+                const sessionData = {
+                    memberId: memberData.memberId,
+                    name: reg.name || memberData.name || '',
+                    gender: reg.gender || memberData.gender || '',
+                    level: reg.level || memberData.level || '',
+                    date: meetingDate,
+                    meetingId,
+                    checkedIn: false,
+                    checkInTime: null,
+                    status: 'active',
+                    isGuest: false,
+                    team: null,
+                    createdAt: FieldValue.serverTimestamp(),
+                };
+
+                if (isMatch) {
+                    const maxG = isFemale ? (meetingData.maxFemale || 0) : (meetingData.maxMale || 0);
+                    const confirmedG = isFemale ? (meetingData.confirmedFemaleCount || 0) : (meetingData.confirmedMaleCount || 0);
+                    const waitingG = isFemale ? (meetingData.waitingFemaleCount || 0) : (meetingData.waitingMaleCount || 0);
+                    const confField = isFemale ? 'confirmedFemaleCount' : 'confirmedMaleCount';
+                    const waitField = isFemale ? 'waitingFemaleCount' : 'waitingMaleCount';
+                    if (confirmedG < maxG) {
+                        tx.set(regRef, { ...regData, status: 'confirmed', waitingNumber: null });
+                        tx.update(meetingRef, { confirmedCount: FieldValue.increment(1), [confField]: FieldValue.increment(1) });
+                        tx.update(mirrorRef, { confirmedCount: FieldValue.increment(1), [confField]: FieldValue.increment(1) });
+                        tx.set(sessionRef, sessionData);
+                        resultStatus = 'confirmed';
+                    } else {
+                        tx.set(regRef, { ...regData, status: 'waiting', waitingNumber: waitingG + 1 });
+                        tx.update(meetingRef, { waitingCount: FieldValue.increment(1), [waitField]: FieldValue.increment(1) });
+                        tx.update(mirrorRef, { waitingCount: FieldValue.increment(1), [waitField]: FieldValue.increment(1) });
+                        resultStatus = 'waiting';
+                    }
+                } else if (!isFirstComeFirstServed) {
+                    tx.set(regRef, { ...regData, status: 'confirmed', waitingNumber: null });
+                    tx.update(meetingRef, { confirmedCount: FieldValue.increment(1) });
+                    tx.update(mirrorRef, { confirmedCount: FieldValue.increment(1) });
+                    tx.set(sessionRef, sessionData);
+                    resultStatus = 'confirmed';
+                } else if (confirmedCount < maxLimit) {
+                    tx.set(regRef, { ...regData, status: 'confirmed', waitingNumber: null });
+                    tx.update(meetingRef, { confirmedCount: FieldValue.increment(1) });
+                    tx.update(mirrorRef, { confirmedCount: FieldValue.increment(1) });
+                    tx.set(sessionRef, sessionData);
+                    resultStatus = 'confirmed';
+                } else {
+                    tx.set(regRef, { ...regData, status: 'waiting', waitingNumber: waitingCount + 1 });
+                    tx.update(meetingRef, { waitingCount: FieldValue.increment(1) });
+                    tx.update(mirrorRef, { waitingCount: FieldValue.increment(1) });
+                    resultStatus = 'waiting';
+                }
+            });
+
+            showToast && showToast(
+                resultStatus === 'waiting' ? '불참을 취소했어요. 정원이 차서 대기 맨 뒤로 신청됐어요.' : '불참을 취소했어요. 선착순 맨 뒤로 다시 신청됐어요.',
+                'success'
+            );
+        } catch (e) {
+            console.error('불참 취소 오류:', e);
+            if (e.message === '불참 상태가 아닙니다') showAlert && showAlert('불참 취소 불가', '불참 상태가 아니에요.');
+            else showAlert && showAlert('오류', '불참 취소 중 오류가 발생했어요. 다시 시도해주세요.');
+        }
+    };
+
+    return { handleRegister, handleCancel, handleAbsent, handleUndoAbsent };
 }
