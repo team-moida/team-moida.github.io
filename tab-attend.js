@@ -727,6 +727,8 @@ const MeetingListScreen = ({
     const [isManageOpen, setIsManageOpen] = React.useState(false);
     const [testOpen, setTestOpen] = React.useState(false);
     const [listView, setListView] = React.useState('upcoming'); // upcoming | ended(기록)
+    // 테스트 모임 = 개발자 모드 전용 (운영진 모드에선 숨김). localStorage 직접 판정 — 모드 전환 시 reload되므로 항상 최신.
+    const isDevMode = (() => { try { return localStorage.getItem('moida_dev') === '1' && (localStorage.getItem('moida_view_mode') || 'dev') === 'dev'; } catch(e) { return false; } })();
     const [pendingAction, setPendingAction] = React.useState(null); // 'add' | 'recurring' — 카드 화면에서 모달 바로 열기
     const [embeddedEdit, setEmbeddedEdit] = React.useState(null); // 기록 탭에서 [수정] → 카드 위에 수정 폼
     // 홈/상세 카드의 [수정] 버튼으로 넘어온 경우 → 관리 목록을 거치지 않고 수정 폼을 카드 위에 바로 연다
@@ -758,14 +760,14 @@ const MeetingListScreen = ({
                             style={isManageOpen ? {background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
                             <Icon.Settings size={13}/>{isManageOpen ? '관리 ON' : '관리'}
                         </button>
-                        {!isManageOpen && (
+                        {!isManageOpen && isDevMode && (
                             <button onClick={() => setTestOpen(o => !o)}
                                 className="flex items-center gap-1 text-[11px] font-black px-2.5 py-1.5 rounded-xl bg-amber-50 text-amber-600 active:scale-95 transition-all"><Icon.Beaker size={14}/></button>
                         )}
                     </div>
                 </div>
             )}
-            {isAdminMode && !isManageOpen && testOpen && (
+            {isDevMode && !isManageOpen && testOpen && (
                 <div className="rounded-2xl p-3 border border-amber-200 bg-amber-50/50">
                     <p className="text-[11px] font-black text-amber-700 mb-1 flex items-center gap-1"><Icon.Beaker size={12}/>테스트 모임</p>
                     <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">버튼 한 번으로 현재 시각 기준 모임 + 나 포함 랜덤 인원으로 팀편성·매치표까지 자동 생성합니다. [테스트 삭제]를 누르면 기록이 남지 않습니다.</p>

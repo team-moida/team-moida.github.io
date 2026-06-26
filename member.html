@@ -149,8 +149,29 @@ function App() {
     });
     const [memberInfo, setMemberInfo] = useState(null);
     const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
-    const isAdmin = ADMIN_ROLES.includes(memberData?.role);
-    const isAdminMode = ADMIN_ROLES.includes(memberData?.role);
+    // ── 개발자 모드: 내 계정 하나로 [개발자/운영진/회원] 모드를 오가며 본다 (데이터는 내 계정 그대로) ──
+    //   PIN 해제(devUnlocked) 후 viewMode로 권한을 '낮춰' 본다. 개발자가 아니면 기존 역할 기반 그대로(영향 0).
+    const DEV_PIN_HASH = 2085915753;
+    const _devHash = (s) => { let x = 5381; const t = String(s || ''); for (let i = 0; i < t.length; i++) x = ((x * 33) ^ t.charCodeAt(i)) >>> 0; return x; };
+    const devUnlocked = (() => { try { return localStorage.getItem('moida_dev') === '1'; } catch(e) { return false; } })();
+    const viewMode = (() => { try { return localStorage.getItem('moida_view_mode') || 'dev'; } catch(e) { return 'dev'; } })();
+    const isDeveloper = devUnlocked;
+    const roleIsAdmin = ADMIN_ROLES.includes(memberData?.role);
+    const effAdmin = isDeveloper ? (viewMode !== 'member') : roleIsAdmin;
+    const isAdmin = effAdmin;
+    const isAdminMode = effAdmin;
+    const isDevMode = isDeveloper && viewMode === 'dev';   // 개발 전용 기능(테스트 모임 등) 노출 여부
+    const promptDeveloper = () => {
+        if (devUnlocked) return;
+        let pin; try { pin = window.prompt('개발자 PIN'); } catch(e) { return; }
+        if (pin == null) return;
+        if (_devHash(String(pin).trim()) === DEV_PIN_HASH) {
+            try { localStorage.setItem('moida_dev', '1'); localStorage.setItem('moida_view_mode', 'dev'); } catch(e) {}
+            location.reload();
+        } else { try { showToast('PIN이 올바르지 않습니다', 'error'); } catch(_) {} }
+    };
+    const changeViewMode = (m) => { try { localStorage.setItem('moida_view_mode', m); } catch(e) {} location.reload(); };
+    const lockDeveloper = () => { try { localStorage.removeItem('moida_dev'); localStorage.removeItem('moida_view_mode'); } catch(e) {} location.reload(); };
     const inTestPreview = (() => { try { return !!localStorage.getItem('moida_admin_backup'); } catch(e) { return false; } })();
     const [testExists, setTestExists] = useState(false);
     useEffect(() => {
@@ -713,8 +734,9 @@ function App() {
                 mySession={mySession} teamReady={teamReady} allowFromDisplay={allowFromDisplay}
                 myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                 handleLogout={handleLogout} toggleTheme={toggleTheme} darkMode={darkMode}
-                isAdminMode={isAdminMode} canPreview={isAdmin} onEnterTestPreview={enterTestPreview}
-                isInPreview={inTestPreview} onExitTestPreview={exitTestPreview}
+                isAdminMode={isAdminMode}
+                isDeveloper={isDeveloper} viewMode={viewMode} onChangeViewMode={changeViewMode}
+                onLockDeveloper={lockDeveloper} onLogoHold={promptDeveloper}
                 isMeetingOver={attend.isMeetingOver}
                 onEndMeeting={attendHandleEndMeeting}
                 isMeetingEndSaved={attend.attendHistory?.some(h => h.date === displayMeetingSettings?.date) || false}
