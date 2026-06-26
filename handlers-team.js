@@ -238,7 +238,7 @@ function makeTeamHandlers(ctx) {
         newTeams[teamIdx].members.splice(Math.max(0, finalIdx), 0, moved);
         newTeams[draggedItem.teamIdx].scoreSum = newTeams[draggedItem.teamIdx].members.reduce((s, m) => s + (m.points || 0), 0);
         if (draggedItem.teamIdx !== teamIdx) newTeams[teamIdx].scoreSum = newTeams[teamIdx].members.reduce((s, m) => s + (m.points || 0), 0);
-        setEditTeams(newTeams); setDraggedItem(null); setDropIndicator(null);
+        setEditTeams(newTeams); setDraggedItem(null); setDropIndicator(null); setEditIsConfirmed(false);
     };
 
     const tmMemberClick = (teamIdx, memberIdx) => {
@@ -252,7 +252,7 @@ function makeTeamHandlers(ctx) {
         newTeams[teamIdx].members[memberIdx] = a;
         newTeams[selectedMemberTM.teamIdx].scoreSum = newTeams[selectedMemberTM.teamIdx].members.reduce((s, m) => s + (m.points || 0), 0);
         if (teamIdx !== selectedMemberTM.teamIdx) newTeams[teamIdx].scoreSum = newTeams[teamIdx].members.reduce((s, m) => s + (m.points || 0), 0);
-        setEditTeams(newTeams); setSelectedMemberTM(null);
+        setEditTeams(newTeams); setSelectedMemberTM(null); setEditIsConfirmed(false);
     };
 
     const tmMoveToTeam = (targetTeamIdx) => {
@@ -263,7 +263,7 @@ function makeTeamHandlers(ctx) {
         newTeams[targetTeamIdx].members.push(moved);
         newTeams[selectedMemberTM.teamIdx].scoreSum = newTeams[selectedMemberTM.teamIdx].members.reduce((s, m) => s + (m.points || 0), 0);
         newTeams[targetTeamIdx].scoreSum = newTeams[targetTeamIdx].members.reduce((s, m) => s + (m.points || 0), 0);
-        setEditTeams(newTeams); setSelectedMemberTM(null);
+        setEditTeams(newTeams); setSelectedMemberTM(null); setEditIsConfirmed(false);
     };
 
     const tmTeamBadgeClick = (e, teamIdx) => {
@@ -275,7 +275,7 @@ function makeTeamHandlers(ctx) {
         newTeams[selectedTeamTM].members = newTeams[teamIdx].members;
         newTeams[selectedTeamTM].scoreSum = newTeams[teamIdx].scoreSum;
         newTeams[teamIdx].members = tmp.members; newTeams[teamIdx].scoreSum = tmp.scoreSum;
-        setEditTeams(newTeams); setSelectedTeamTM(null);
+        setEditTeams(newTeams); setSelectedTeamTM(null); setEditIsConfirmed(false);
     };
 
     const tmCapture = async () => {
