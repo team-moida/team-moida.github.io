@@ -18,7 +18,7 @@ const fmtNoticeDate = (iso) => {
 // 공지 분류 배지 (모임/공지/중요). 옛 공지는 category 없음 → 기본 '공지'
 const NOTICE_CAT = {
     '공지': 'bg-teal-50 text-teal-600',       // 인디고(앱 메인)
-    '소식': 'bg-slate-100 text-slate-500',    // 중립
+    '일반': 'bg-slate-100 text-slate-500',    // 중립
     '모임': 'bg-emerald-50 text-emerald-600', // 성공색
     '중요': 'bg-red-50 text-red-500',         // 위험색
 };
