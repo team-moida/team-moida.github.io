@@ -1128,6 +1128,49 @@ const DuesHistoryCard = ({ memberInfo }) => {
         </div>
     );
 };
+// ─── 개발 모드 전용: 내 회비 상태 빠른 토글 (확인용 — 내 계정·최근 7개월만 실제로 씀) ──
+//   운영진은 회비 면제라 monthly_checks에 기록이 없다 → 회원 모드에서 회비 화면을 확인하려면 임시로 채운다.
+//   [납부완료]=최근7개월 paid / [이번달 휴식]=이번달 rest / [전부 미납]=내 statuses 삭제(면제 원상복구).
+const DevDuesToggle = ({ memberInfo }) => {
+    const { useState } = React;
+    const [busy, setBusy] = useState(false);
+    const [msg, setMsg] = useState('');
+    const id = memberInfo?.id || null;
+    const monthKeys = () => {
+        const now = new Date(); const arr = [];
+        for (let i = 0; i <= 6; i++) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); arr.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); }
+        return arr;
+    };
+    const apply = async (mode) => {
+        if (!id || busy) return;
+        setBusy(true); setMsg('');
+        try {
+            const FV = firebase.firestore.FieldValue;
+            const batch = db.batch();
+            monthKeys().forEach((k, idx) => {
+                const ref = getMonthlyCol().doc(k);
+                if (mode === 'clear') batch.set(ref, { statuses: { [id]: FV.delete() }, updatedAt: new Date().toISOString() }, { merge: true });
+                else if (mode === 'paid') batch.set(ref, { statuses: { [id]: 'paid' }, updatedAt: new Date().toISOString() }, { merge: true });
+                else if (mode === 'rest_this' && idx === 0) batch.set(ref, { statuses: { [id]: 'rest' }, updatedAt: new Date().toISOString() }, { merge: true });
+            });
+            await batch.commit();
+            setMsg(mode === 'clear' ? '전부 미납(면제)으로 되돌렸어요' : mode === 'paid' ? '최근 7개월 납부완료로 채웠어요 — 회원 모드에서 확인' : '이번 달 휴식으로 표시했어요');
+        } catch (e) { setMsg('실패: ' + (e?.message || e)); }
+        setBusy(false);
+    };
+    return (
+        <div className="rounded-2xl p-3 border border-amber-200 bg-amber-50/60">
+            <p className="text-[11px] font-black text-amber-700 mb-1 flex items-center gap-1"><Icon.Wrench size={12} />회비 상태 테스트 (개발 모드 · 내 계정만)</p>
+            <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">최근 7개월 내 회비 상태를 바꿔 [회원] 모드에서 어떻게 보이는지 확인하세요. 끝나면 [전부 미납]으로 되돌리면 면제 상태로 원상복구됩니다.</p>
+            <div className="flex gap-2">
+                <button disabled={busy} onClick={() => apply('paid')} className="flex-1 py-2 rounded-xl bg-emerald-500 text-white font-black text-xs active:scale-95 transition-all disabled:opacity-50">납부완료</button>
+                <button disabled={busy} onClick={() => apply('rest_this')} className="flex-1 py-2 rounded-xl bg-sky-500 text-white font-black text-xs active:scale-95 transition-all disabled:opacity-50">이번 달 휴식</button>
+                <button disabled={busy} onClick={() => apply('clear')} className="flex-1 py-2 rounded-xl bg-slate-100 text-slate-500 font-black text-xs active:scale-95 transition-all border border-slate-200 disabled:opacity-50">전부 미납</button>
+            </div>
+            {msg && <p className="text-[10px] font-bold text-slate-500 mt-2">{msg}</p>}
+        </div>
+    );
+};
 // ─── 회비 탭: 벌금 내역 (납부완료된 지난 벌금) ─────────────────────────────────
 // penalties에서 내 status='paid'만 모음. 미납은 위 PenaltyPayCard가 처리. 읽기만 함(쓰기 0).
 const PenaltyHistoryCard = ({ memberInfo }) => {

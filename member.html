@@ -953,6 +953,7 @@ function App() {
                         <PenaltyPayCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} managers={managers} />
                         {!isAdminMode && <PenaltyHistoryCard memberInfo={memberInfo} />}
                         {!isAdminMode && <DuesHistoryCard memberInfo={memberInfo} />}
+                        {isDevMode && <DevDuesToggle memberInfo={memberInfo} />}
                     </div>
                 )}
                 {tab === 'rules' && (
