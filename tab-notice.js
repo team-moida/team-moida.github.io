@@ -17,14 +17,15 @@ const fmtNoticeDate = (iso) => {
 
 // 공지 분류 배지 (모임/공지/중요). 옛 공지는 category 없음 → 기본 '공지'
 const NOTICE_CAT = {
-    '모임': 'bg-teal-100 text-teal-600',
-    '중요': 'bg-red-100 text-red-600',
-    '공지': 'bg-slate-200 text-slate-600',
+    '공지': 'bg-teal-50 text-teal-600',       // 인디고(앱 메인)
+    '소식': 'bg-slate-100 text-slate-500',    // 중립
+    '모임': 'bg-emerald-50 text-emerald-600', // 성공색
+    '중요': 'bg-red-50 text-red-500',         // 위험색
 };
 const NoticeBadge = ({ category }) => {
     const cat = category || '공지';
     const cls = NOTICE_CAT[cat] || NOTICE_CAT['공지'];
-    return <span className={`shrink-0 text-[10px] font-black px-2 py-0.5 rounded-lg ${cls}`}>{cat}</span>;
+    return <span className={`shrink-0 text-[10px] font-black px-2.5 py-0.5 rounded-full ${cls}`}>{cat}</span>;
 };
 
 // 연결된 모임이 종료됐는지 ([완료] 배지용). 모임이 삭제됐거나 못 찾으면 false(오판 방지).
@@ -164,29 +165,27 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                     <p className="font-black text-sm">등록된 공지가 없습니다</p>
                 </div>
             ) : (
-                <div className="space-y-2">
-                    {list.map(a => (
+                <div className="card rounded-2xl overflow-hidden">
+                    {list.map((a, i) => (
                         <button key={a.id}
                             onClick={() => selectMode ? toggleCheck(a.id) : setSelectedId(a.id)}
-                            className="w-full card rounded-2xl p-4 text-left active:scale-98 transition-all">
-                            <div className="flex items-center gap-3">
-                                {selectMode && (
-                                    <span className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center border-2 transition-all ${checkedIds.includes(a.id) ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-300'}`}>
-                                        {checkedIds.includes(a.id) && <Icon.Check size={12}/>}
-                                    </span>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-1.5 min-w-0">
-                                            <NoticeBadge category={a.category} />
-                                            {isAnnDone(a) && <NoticeDoneBadge />}
-                                            <p className="font-black text-sm text-slate-800 truncate">{a.title}</p>
-                                        </div>
-                                        <span className="text-[10px] text-slate-400 whitespace-nowrap flex-shrink-0">{fmtNoticeDate(a.sentAt)}</span>
-                                    </div>
-                                    <p className="text-xs text-slate-500 mt-1 truncate">{a.body}</p>
+                            className={`w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 transition-colors ${i > 0 ? 'border-t border-slate-100' : ''}`}>
+                            {selectMode && (
+                                <span className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center border-2 transition-all ${checkedIds.includes(a.id) ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-300'}`}>
+                                    {checkedIds.includes(a.id) && <Icon.Check size={12}/>}
+                                </span>
+                            )}
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    <NoticeBadge category={a.category} />
+                                    {isAnnDone(a) && <NoticeDoneBadge />}
+                                    <p className="font-black text-[14.5px] text-slate-800 truncate">{a.title}</p>
                                 </div>
-                                {!selectMode && <Icon.ChevronRight size={16} className="text-slate-300 flex-shrink-0"/>}
+                                <p className="text-[11.5px] text-slate-400 mt-1.5 truncate font-bold">{a.sentBy || '관리자'}</p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                <span className="text-[10.5px] text-slate-400 font-bold whitespace-nowrap">{fmtNoticeDate(a.sentAt)}</span>
+                                {!selectMode && <Icon.ChevronRight size={16} className="text-slate-300"/>}
                             </div>
                         </button>
                     ))}
