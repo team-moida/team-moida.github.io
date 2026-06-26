@@ -114,23 +114,6 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                 <h2 className="font-black text-lg text-slate-800 min-w-0 truncate">공지사항{list.length > 0 && <span className="text-base text-slate-400"> · {list.length}건</span>}</h2>
             </div>
 
-            {/* 알림 설정 안내 (고정) — 홈 배너와 같은 내용. 권한·기기 상태와 무관하게 항상 노출 */}
-            {!selectMode && (
-                <div className="card rounded-2xl p-4 border-teal-100 mb-3">
-                    <button onClick={() => setShowGuide(v => !v)} className="w-full flex items-center gap-3 text-left active:scale-98 transition-all">
-                        <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                            <Icon.Bell size={18} className="text-teal-500"/>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="font-black text-sm text-teal-600">알림이 조용히 오나요?</p>
-                            <p className="text-xs text-slate-400 mt-0.5">{showGuide ? '내 폰에 맞게 한 번만 설정하면 배너로 떠요' : '탭하면 설정 방법을 알려드려요'}</p>
-                        </div>
-                        <Icon.ChevronRight size={18} className={`text-slate-300 flex-shrink-0 transition-transform ${showGuide ? 'rotate-90' : ''}`}/>
-                    </button>
-                    {showGuide && <div className="mt-3"><NotifGuideBody /></div>}
-                </div>
-            )}
-
             {/* 관리자 도구 */}
             {isAdminMode && (
                 <div className="flex items-center gap-2 mb-3">
@@ -158,15 +141,33 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                 </div>
             )}
 
-            {/* 목록 */}
-            {list.length === 0 ? (
-                <div className="card rounded-2xl p-8 text-center text-slate-400">
-                    <div className="flex justify-center mb-2 opacity-30"><Icon.Bell size={32}/></div>
-                    <p className="font-black text-sm">등록된 공지가 없습니다</p>
-                </div>
-            ) : (
-                <div className="card rounded-2xl overflow-hidden">
-                    {list.map((a, i) => (
+            {/* 목록 카드 — 알림 설정 안내 + 공지글을 한 카드에 */}
+            <div className="card rounded-2xl overflow-hidden">
+                {/* 알림 설정 안내 (게시글처럼 카드 안 첫 줄). 권한·기기 상태와 무관하게 항상 노출 */}
+                {!selectMode && (
+                    <div className="border-b border-slate-100">
+                        <button onClick={() => setShowGuide(v => !v)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 transition-colors">
+                            <div className="w-9 h-9 bg-teal-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <Icon.Bell size={16} className="text-teal-500"/>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="font-black text-[14.5px] text-teal-600 truncate">알림이 조용히 오나요?</p>
+                                <p className="text-[11.5px] text-slate-400 mt-0.5 truncate">{showGuide ? '내 폰에 맞게 한 번만 설정하면 배너로 떠요' : '탭하면 설정 방법을 알려드려요'}</p>
+                            </div>
+                            <Icon.ChevronRight size={16} className={`text-slate-300 flex-shrink-0 transition-transform ${showGuide ? 'rotate-90' : ''}`}/>
+                        </button>
+                        {showGuide && <div className="px-4 pb-4"><NotifGuideBody /></div>}
+                    </div>
+                )}
+
+                {/* 공지 목록 / 빈 상태 */}
+                {list.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-slate-400">
+                        <div className="flex justify-center mb-2 opacity-30"><Icon.Bell size={28}/></div>
+                        <p className="font-black text-sm">등록된 공지가 없습니다</p>
+                    </div>
+                ) : (
+                    list.map((a, i) => (
                         <button key={a.id}
                             onClick={() => selectMode ? toggleCheck(a.id) : setSelectedId(a.id)}
                             className={`w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 transition-colors ${i > 0 ? 'border-t border-slate-100' : ''}`}>
@@ -188,9 +189,9 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                                 {!selectMode && <Icon.ChevronRight size={16} className="text-slate-300"/>}
                             </div>
                         </button>
-                    ))}
-                </div>
-            )}
+                    ))
+                )}
+            </div>
         </div>
     );
 };
