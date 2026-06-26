@@ -112,6 +112,18 @@ function App() {
     const [viewMeetingId, setViewMeetingId] = useState(() => {
         try { return sessionStorage.getItem('moida_view_meeting') || null; } catch(e) { return null; }
     });
+    // 모임 상세 섹션 다중 펼침: meetingSubTab(주 펼침)에 더해 추가로 펼친 섹션들을 함께 펼친다
+    const [openExtra, setOpenExtra] = useState([]);
+    React.useEffect(() => { setOpenExtra([]); }, [viewMeetingId]);
+    const isSecOpen = (k) => meetingSubTab === k || openExtra.includes(k);
+    const toggleSection = (k) => {
+        if (meetingSubTab === k || openExtra.includes(k)) {
+            if (meetingSubTab === k) setMeetingSubTab('');
+            setOpenExtra(a => a.filter(x => x !== k));
+        } else {
+            setOpenExtra(a => [...a, k]);
+        }
+    };
     // 상세 화면 [수정] 버튼 → 목록의 모임 관리에서 수정 폼 자동 오픈
     const [pendingEditMeeting, setPendingEditMeeting] = useState(null);
     // 현재 탭/하위 탭 기억 → 새로고침(당겨서/F5) 후 같은 위치로 복원. 앱을 완전히 닫으면 초기화(홈).
@@ -814,7 +826,7 @@ function App() {
                 )}
                 {/* 회원=지금 할 일(맨 위) / 관리자=출석 서브탭 */}
                 {tab === 'meeting' && viewMeeting && (
-                  <MeetingSection title="출석" open={meetingSubTab === 'attend'} onToggle={() => setMeetingSubTab(s => s === 'attend' ? '' : 'attend')}>
+                  <MeetingSection title="출석" open={isSecOpen('attend')} onToggle={() => toggleSection('attend')}>
                     <TabAttend
                         viewMeeting={viewMeeting} isViewActive={isViewActive}
                         onEditMeeting={(m) => { setPendingEditMeeting(m); setViewMeetingId(null); }}
@@ -881,7 +893,7 @@ function App() {
                 )}
                 {/* 회원=내 팀 / 관리자=팀 편성 */}
                 {tab === 'meeting' && viewMeeting && (
-                  <MeetingSection title={viewKind === 'match' ? '명단' : '팀'} open={meetingSubTab === 'team'} onToggle={() => setMeetingSubTab(s => s === 'team' ? '' : 'team')}>
+                  <MeetingSection title={viewKind === 'match' ? '명단' : '팀'} open={isSecOpen('team')} onToggle={() => toggleSection('team')}>
                     <TabTeam
                         isAdminMode={isAdminMode} isTeamPanelOpen={team.isTeamPanelOpen} setIsTeamPanelOpen={team.setIsTeamPanelOpen}
                         teamMakerTab={team.teamMakerTab} setTeamMakerTab={team.setTeamMakerTab}
@@ -914,7 +926,7 @@ function App() {
                 )}
                 {/* 회원=경기 / 관리자=매치 관리 (매칭 모임 제외) */}
                 {tab === 'meeting' && viewMeeting && viewKind !== 'match' && (
-                  <MeetingSection title="매치" open={meetingSubTab === 'match'} onToggle={() => setMeetingSubTab(s => s === 'match' ? '' : 'match')}>
+                  <MeetingSection title="매치" open={isSecOpen('match')} onToggle={() => toggleSection('match')}>
                     <TabMatch
                         isAdminMode={isAdminMode} isMatchPanelOpen={match.isMatchPanelOpen} setIsMatchPanelOpen={match.setIsMatchPanelOpen}
                         matchAdminView={match.matchAdminView} setMatchAdminView={match.setMatchAdminView}
