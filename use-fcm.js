@@ -1,17 +1,23 @@
 function useFCM({ memberData, showToast }) {
     const { useState, useEffect } = React;
 
+    // announcements = 게시판 목록(pushOnly 제외). notifFeed = 알림 센터(pushOnly 포함, 내 대상만).
+    // 한 번의 구독으로 둘 다 계산 — Firestore 리스너 1개만 사용.
     const [announcements, setAnnouncements] = useState([]);
+    const [notifFeed, setNotifFeed] = useState([]);
     useEffect(() => {
         const myId = memberData?.memberId;
-        const unsub = getCol('notifications').orderBy('sentAt', 'desc').limit(20).onSnapshot(snap => {
-            const list = [];
-            snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-            // 테스트(type:'test')·푸시전용(pushOnly, 예: 회비 신고 알림)은 공지 목록에 표시하지 않음
-            // 대상 지정 공지(targetMemberIds)는 대상 회원에게만 표시 — 전체 공지는 targetMemberIds 없음
-            setAnnouncements(list.filter(a => a.type !== 'test' && !a.pushOnly && (
+        // sentAt이 ISO 문자열(클라 작성)/Timestamp(서버 작성) 혼재 → ms로 정규화해 최신순 재정렬
+        const ms = (v) => (v && typeof v.toMillis === 'function') ? v.toMillis() : (v ? (Date.parse(v) || 0) : 0);
+        const unsub = getCol('notifications').orderBy('sentAt', 'desc').limit(30).onSnapshot(snap => {
+            const all = [];
+            snap.forEach(doc => all.push({ id: doc.id, ...doc.data() }));
+            // 테스트(type:'test') 제외. 대상 지정(targetMemberIds)은 대상 회원에게만.
+            const mine = all.filter(a => a.type !== 'test' && (
                 !a.targetMemberIds || a.targetMemberIds.length === 0 || (myId && a.targetMemberIds.includes(myId))
-            )));
+            )).sort((a, b) => ms(b.sentAt) - ms(a.sentAt));
+            setNotifFeed(mine);                                  // 알림 센터: pushOnly 포함
+            setAnnouncements(mine.filter(a => !a.pushOnly));     // 게시판: pushOnly 제외
         }, () => {});
         return () => unsub();
     }, [memberData?.memberId]);
@@ -108,5 +114,5 @@ function useFCM({ memberData, showToast }) {
         })();
     }, [memberData?.memberId]);
 
-    return { notifPermission, registerFcmToken, announcements };
+    return { notifPermission, registerFcmToken, announcements, notifFeed };
 }

@@ -254,16 +254,38 @@ function App() {
     useEffect(() => { const t = setInterval(() => setNowTime(new Date()), 30000); return () => clearInterval(t); }, []);
 
     // 기능별 훅
-    const { notifPermission, registerFcmToken, announcements } = useFCM({ memberData, showToast });
+    const { notifPermission, registerFcmToken, announcements, notifFeed } = useFCM({ memberData, showToast });
 
-    // ── 공지 게시판 진입 + 안읽음 배지 ─────────────────────────────────────────
-    // 안읽음 판정: localStorage에 '마지막으로 본 최신 공지 sentAt'을 저장하고
-    // 그보다 새 공지 수를 배지로. 한계: 기기/브라우저별로 따로 관리되고 캐시 삭제 시 초기화됨.
+    // ── 알림 센터(종) + 게시판 진입 + 안읽음 배지 ─────────────────────────────────
+    // sentAt이 ISO 문자열(클라)/Timestamp(서버) 혼재 → ms로 정규화해 비교.
+    // 안읽음 기준은 localStorage(기기/브라우저별, 캐시 삭제 시 초기화).
+    const notifMs = (v) => (v && typeof v.toMillis === 'function') ? v.toMillis() : (v ? (Date.parse(v) || 0) : 0);
+
+    // (A) 종/알림 센터: 전체 알림 피드(pushOnly 포함) 기준 안읽음
+    const [lastSeenNotif, setLastSeenNotif] = useState(() => {
+        try { return Number(localStorage.getItem('moida_lastSeenNotif')) || 0; } catch { return 0; }
+    });
+    const unreadCount = notifFeed.filter(a => notifMs(a.sentAt) > lastSeenNotif).length;
+    const markAllNotifSeen = () => {
+        const newest = notifFeed.length ? notifMs(notifFeed[0].sentAt) : 0;
+        if (newest > lastSeenNotif) {
+            try { localStorage.setItem('moida_lastSeenNotif', String(newest)); } catch {}
+            setLastSeenNotif(newest);
+        }
+    };
+    // 알림 센터 항목 클릭 → 종류별 화면 이동
+    const onNotifNavigate = (item) => {
+        if (!item) return;
+        if (item.type === 'dues' || item.type === 'penalty' || item.category === '벌금') { navTab('dues'); return; }
+        if (item.linkMeetingId) { navTab('attend', item.linkKind === 'match' ? 'match' : 'self', item.linkMeetingId); return; }
+        if (item.type === 'recurring_reminder' || item.category === '모임') { setViewMeetingId(null); setTab('meeting'); return; }
+        setTab('notice'); // 게시글(공지/일반/중요)
+    };
+
+    // (B) 게시판 순환 띠/배너 → 공지 게시판 화면 이동. 게시글(announcements) 기준 안읽음(기존 유지).
     const [lastSeenAnnounce, setLastSeenAnnounce] = useState(() => {
         try { return localStorage.getItem('moida_lastSeenAnnounce') || ''; } catch { return ''; }
     });
-    const unreadCount = announcements.filter(a => a.sentAt && a.sentAt > lastSeenAnnounce).length;
-    // 종/순환 띠 → 공지 게시판 화면으로 이동(모달 대신 탭 전환). 진입 시 안읽음 갱신.
     const openAnnouncements = () => {
         setTab('notice');
         const newest = announcements[0]?.sentAt; // 최신순이라 [0]이 가장 새 공지
@@ -764,6 +786,7 @@ function App() {
                 onEndMeeting={attendHandleEndMeeting}
                 isMeetingEndSaved={attend.attendHistory?.some(h => h.date === displayMeetingSettings?.date) || false}
                 unreadCount={unreadCount} onOpenAnnouncements={openAnnouncements}
+                notifications={notifFeed} onNotifNavigate={onNotifNavigate} onBellOpen={markAllNotifSeen}
                 onOpenProfile={() => setIsProfileModalOpen(true)} profileImage={memberInfo?.profileImage || memberInfo?.kakaoProfileImage}
             />
             <div className="px-4 pt-4">

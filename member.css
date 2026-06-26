@@ -14,6 +14,9 @@ body {
 @keyframes moidaTickerUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
 .pulse-ring { animation: pulseRing 2s infinite; }
 @keyframes pulseRing { 0%{transform:scale(1);opacity:1} 70%{transform:scale(1.4);opacity:0} 100%{transform:scale(1.4);opacity:0} }
+/* 알림 센터(종 드롭다운) 열림 — 위에서 페이드+슬라이드 */
+.alert-pop { animation: alertPop .16s ease-out; transform-origin: top right; }
+@keyframes alertPop { from{opacity:0;transform:translateY(-6px) scale(.98)} to{opacity:1;transform:none} }
 button:active { transform: scale(0.96); opacity: 0.85; }
 input:focus { outline: none; }
 .card { background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 4px 14px rgba(0,0,0,0.05); }
@@ -26,7 +29,7 @@ input:focus { outline: none; }
 .stagger > *:nth-child(5){animation-delay:.22s} .stagger > *:nth-child(6){animation-delay:.27s}
 .stagger > *:nth-child(7){animation-delay:.32s} .stagger > *:nth-child(n+8){animation-delay:.37s}
 @media (prefers-reduced-motion: reduce){
-  .reveal,.stagger > *,.animate-in,.moida-ticker-up,.pulse-ring{animation:none!important}
+  .reveal,.stagger > *,.animate-in,.moida-ticker-up,.pulse-ring,.alert-pop{animation:none!important}
   button:active{transform:none!important}
 }
 /* ── B+ 공지 띠 (어두운 띠 + 라임칩 / 고정→위로, 다음 공지 아래에서 위로 세로 교체) ── */

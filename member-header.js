@@ -1,15 +1,40 @@
+// ─── 알림 센터(종 드롭다운) 헬퍼 ──────────────────────────────────────────────
+// 알림 종류별 아이콘/색 (회비·벌금·모임·중요·게시글)
+const NOTIF_META = (item) => {
+    const t = item.type, c = item.category;
+    if (t === 'dues') return { Cmp: Icon.CreditCard, color: 'text-teal-500', bg: 'bg-teal-50' };
+    if (t === 'penalty' || c === '벌금') return { Cmp: Icon.AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-50' };
+    if (t === 'recurring_reminder' || c === '모임' || item.linkMeetingId) return { Cmp: Icon.Calendar, color: 'text-emerald-500', bg: 'bg-emerald-50' };
+    if (c === '중요') return { Cmp: Icon.Bell, color: 'text-red-500', bg: 'bg-red-50' };
+    return { Cmp: Icon.Clipboard, color: 'text-slate-500', bg: 'bg-slate-100' }; // 게시글(공지/일반)
+};
+// sentAt(ISO/Timestamp) → "방금/N분 전/N시간 전/N일 전/MM.DD"
+const fmtNotifAgo = (v) => {
+    const ms = (v && typeof v.toMillis === 'function') ? v.toMillis() : (v ? (Date.parse(v) || 0) : 0);
+    if (!ms) return '';
+    const min = Math.floor((Date.now() - ms) / 60000);
+    if (min < 1) return '방금';
+    if (min < 60) return `${min}분 전`;
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return `${hr}시간 전`;
+    const day = Math.floor(hr / 24);
+    if (day < 7) return `${day}일 전`;
+    const d = new Date(ms);
+    return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+};
+
 function MemberHeader({
     testMode, memberName, meetingSettings, mySession, teamReady, allowFromDisplay,
     myTeamInfo, myTeamIdx, handleLogout, toggleTheme, darkMode,
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
     unreadCount = 0, onOpenAnnouncements,
+    notifications = [], onNotifNavigate, onBellOpen,
     onOpenProfile, profileImage, children,
     isDeveloper, viewMode, onChangeViewMode, onLockDeveloper, onLogoHold
 }) {
     const showOverlay = isAdminMode && isMeetingOver && !isMeetingEndSaved;
-    // 종 클릭 → 전체 공지 모달 (2단계에서 실제 연결). 미연결 시 콘솔 로그만.
-    const openAnn = onOpenAnnouncements || (() => console.log('전체 공지 모달 (2단계에서 연결)'));
     const [menuOpen, setMenuOpen] = React.useState(false);
+    const [alertOpen, setAlertOpen] = React.useState(false);
     // 로고 길게 누르면(650ms) 개발자 PIN 진입 — 평소엔 보이지 않는 은밀한 트리거
     const holdRef = React.useRef(null);
     const cancelHold = () => { if (holdRef.current) { clearTimeout(holdRef.current); holdRef.current = null; } };
@@ -28,12 +53,52 @@ function MemberHeader({
                 </div>
                 {/* 아이콘 — 좁은 화면에서 줄바꿈/우측 정렬 (홈·새로고침 버튼 제거: 새로고침은 화면을 당겨서) */}
                 <div className="flex items-center justify-end gap-1.5 flex-shrink-0">
-                    <button onClick={openAnn} className="relative p-2 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all text-slate-500" title="공지">
-                        <Icon.Bell size={15}/>
-                        {unreadCount > 0 && (
-                            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center leading-none">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                    {/* 종 → 알림 센터 드롭다운 (게시글·회비·벌금·모임 알림 모아보기) */}
+                    <div className="relative">
+                        <button onClick={() => { const willOpen = !alertOpen; setAlertOpen(willOpen); if (willOpen && onBellOpen) onBellOpen(); }}
+                            className="relative p-2 rounded-lg bg-slate-200/70 hover:bg-slate-200 transition-all text-slate-500" title="알림">
+                            <Icon.Bell size={15}/>
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center leading-none">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                            )}
+                        </button>
+                        {alertOpen && (
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setAlertOpen(false)}/>
+                                <div className="absolute right-0 top-11 z-50 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden alert-pop">
+                                    <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+                                        <span className="font-black text-sm text-slate-800">알림</span>
+                                        <button onClick={() => setAlertOpen(false)} className="p-1 -mr-1 rounded-lg text-slate-400 active:bg-slate-100"><Icon.X size={16}/></button>
+                                    </div>
+                                    <div className="overflow-y-auto" style={{maxHeight:'60vh'}}>
+                                        {(!notifications || notifications.length === 0) ? (
+                                            <div className="px-4 py-10 text-center text-slate-400">
+                                                <div className="flex justify-center mb-2 opacity-30"><Icon.Bell size={28}/></div>
+                                                <p className="font-black text-sm">새 알림이 없어요</p>
+                                            </div>
+                                        ) : notifications.map((a, i) => {
+                                            const meta = NOTIF_META(a);
+                                            return (
+                                                <button key={a.id || i} onClick={() => { setAlertOpen(false); onNotifNavigate && onNotifNavigate(a); }}
+                                                    className={`w-full flex items-start gap-3 px-4 py-3 text-left active:bg-slate-50 transition-colors ${i > 0 ? 'border-t border-slate-100' : ''}`}>
+                                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${meta.bg}`}>
+                                                        <meta.Cmp size={16} className={meta.color}/>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-black text-[13.5px] text-slate-800 truncate">{a.title || '알림'}</p>
+                                                        {a.body && <p className="text-[12px] text-slate-500 mt-0.5" style={{display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{a.body}</p>}
+                                                        <p className="text-[10.5px] text-slate-400 mt-1 font-bold">{fmtNotifAgo(a.sentAt)}</p>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <button onClick={() => { setAlertOpen(false); onOpenAnnouncements && onOpenAnnouncements(); }}
+                                        className="w-full py-2.5 text-center text-xs font-black text-teal-600 border-t border-slate-100 active:bg-slate-50">게시판 전체 보기</button>
+                                </div>
+                            </>
                         )}
-                    </button>
+                    </div>
                     {isDeveloper && (
                         <div className="flex items-center gap-0.5 bg-slate-200/70 rounded-lg p-0.5" title="개발자 전용 — 보기 모드 전환">
                             {[['dev','개발'],['staff','운영'],['member','회원']].map(([v,l]) => (
