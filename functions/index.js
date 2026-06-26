@@ -17,6 +17,7 @@ exports.sendPushNotification = onDocumentCreated(
     const { title, body, targetMemberId, targetMemberIds } = data;
 
     if (!title || !body) return;
+    if (data.noPush) return;   // 소식 등 게시판 전용 글 → FCM 발송 안 함
 
     const tokensSnap = await admin.firestore()
       .collection(`${DB_PATH}/fcm_tokens`)

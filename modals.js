@@ -19,7 +19,7 @@ function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSave
     const isAdd = announcementModal.mode === 'add';
     const sortedMembers = (activeMembers || []).slice().sort((a,b) => a.name.localeCompare(b.name));
     const allSelected = sortedMembers.length > 0 && selectedMemberIds.length === sortedMembers.length;
-    const canSend = form.title.trim() && (targetMode === 'all' || selectedMemberIds.length > 0);
+    const canSend = form.title.trim() && (form.category === '소식' || targetMode === 'all' || selectedMemberIds.length > 0);
     const autoSelectEligible = () => {
         const eligible = sortedMembers.filter(m =>
             ['staff','monthly','half','full'].includes(getMemberStatusType(m, monthlyStatuses || {}, monthlyReasons || {}, targetMonth))
@@ -50,7 +50,7 @@ function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSave
                     <div>
                         <p className="text-xs font-black text-slate-500 mb-1">분류</p>
                         <div className="flex gap-2">
-                            {[['모임','bg-teal-500'],['공지','bg-slate-600'],['중요','bg-red-500']].map(([cat,activeBg]) => (
+                            {[['공지','bg-teal-500'],['소식','bg-slate-500'],['모임','bg-emerald-500'],['중요','bg-red-500']].map(([cat,activeBg]) => (
                                 <button key={cat} onClick={()=>setForm(p=>({...p,category:cat}))}
                                     className={`flex-1 py-2 rounded-xl font-black text-sm transition-all ${form.category===cat?`${activeBg} text-white`:'bg-slate-100 text-slate-500'}`}>
                                     {cat}
@@ -71,7 +71,7 @@ function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSave
                             rows={4} value={form.body} onChange={e=>setForm(p=>({...p,body:e.target.value}))}/>
                     </div>
                 </div>
-                {isAdd && (
+                {isAdd && form.category !== '소식' && (
                     <div className="mb-3">
                         <p className="text-xs font-black text-slate-500 mb-2">발송 대상</p>
                         <div className="flex gap-2 mb-2">
@@ -120,11 +120,16 @@ function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSave
                         )}
                     </div>
                 )}
+                {isAdd && form.category === '소식' && (
+                    <div className="mb-3">
+                        <p className="text-xs font-black text-slate-500 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 leading-relaxed">🔕 소식은 알림 없이 게시판에만 올라가요.</p>
+                    </div>
+                )}
                 <div className="flex gap-2 mt-2">
                     <button onClick={close} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm">취소</button>
                     <button onClick={handleSave} disabled={isSaving || !canSend}
                         className={`flex-1 py-3 rounded-2xl font-black text-sm transition-all ${(isSaving||!canSend)?'bg-teal-200 text-white':'bg-teal-500 text-white'}`}>
-                        {isSaving ? '저장 중...' : isAdd ? '발송' : '저장'}
+                        {isSaving ? '저장 중...' : isAdd ? (form.category === '소식' ? '올리기' : '발송') : '저장'}
                     </button>
                 </div>
             </div>

@@ -561,7 +561,8 @@ function App() {
         const cat = category || '공지';
         if (mode === 'add') {
             const notifDoc = { title, body, category: cat, sentAt: new Date().toISOString(), sentBy: senderName };
-            if (targetMode === 'select') notifDoc.targetMemberIds = selectedMemberIds;
+            if (cat === '소식') notifDoc.noPush = true;              // 소식 = 알림 없이 게시판에만
+            else if (targetMode === 'select') notifDoc.targetMemberIds = selectedMemberIds;
             await getCol('notifications').add(notifDoc);
         } else {
             await getCol('notifications').doc(id).update({ title, body, category: cat, updatedAt: new Date().toISOString() });
