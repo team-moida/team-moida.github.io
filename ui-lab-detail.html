@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>모임 상세 구조 비교 — 모이다</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css" type="text/css"/>
+<style>
+  :root{ --indigo:#183FB0; --deep:#122E78; --lime:#C2F94A; --ink:#0f172a; --sub:#475569; --mute:#94A3B8; --pink:#ec4899; --sky:#38bdf8; --green:#a3e635; }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  body{ font-family:'Paperlogy',-apple-system,sans-serif; background:radial-gradient(140% 100% at 50% 0%, #eef2ff 0%, #f8fafc 46%); color:var(--ink); padding-bottom:60px; }
+  .wrap{ max-width:440px; margin:0 auto; }
+  .topbar{ position:sticky; top:0; z-index:30; background:rgba(248,250,252,0.92); backdrop-filter:blur(10px); padding:12px 14px; border-bottom:1px solid #e2e8f0; }
+  .topbar h2{ font-size:13px; font-weight:800; color:var(--mute); text-align:center; margin-bottom:8px; }
+  .seg{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:5px; }
+  .seg button{ padding:9px 4px; border:1.5px solid #dbe3f5; border-radius:11px; font-weight:800; font-size:11px; background:#fff; color:#64748b; cursor:pointer; font-family:inherit; transition:.15s; }
+  .seg button.on{ background:var(--indigo); color:#fff; border-color:var(--indigo); }
+  .body{ padding:14px; }
+  .hint{ font-size:11px; font-weight:600; color:var(--sub); background:#eef2ff; border-radius:10px; padding:8px 11px; margin-bottom:12px; line-height:1.5; }
+
+  /* 모임 헤더 */
+  .mh{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .mh .back{ width:36px; height:36px; border-radius:11px; background:#e2e8f0; color:#475569; border:0; font-size:17px; cursor:pointer; }
+  .mh .info .badge{ display:inline-block; font-size:10px; font-weight:800; color:#fff; background:var(--indigo); padding:2px 8px; border-radius:7px; }
+  .mh .info .ttl{ font-weight:900; font-size:15px; margin-top:3px; }
+  .mh .info .meta{ font-size:11px; color:var(--mute); }
+
+  .card{ background:#fff; border-radius:18px; box-shadow:0 4px 14px rgba(0,0,0,.05); }
+  .btnq{ font-size:11px; font-weight:800; padding:6px 11px; border-radius:9px; border:0; cursor:pointer; font-family:inherit; }
+  .b-indigo{ background:var(--indigo); color:#fff; } .b-soft{ background:#eef2ff; color:var(--indigo); } .b-slate{ background:#f1f5f9; color:#64748b; }
+
+  /* 콘텐츠 블록 */
+  .att-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .att-grid span{ background:#f0fdf4; color:#15803d; font-weight:800; font-size:12px; text-align:center; padding:9px 0; border-radius:10px; }
+  .teams{ display:flex; gap:8px; }
+  .team{ flex:1; border-radius:14px; padding:10px; color:#fff; }
+  .team h4{ font-size:13px; font-weight:900; } .team p{ font-size:10px; opacity:.9; margin-top:3px; line-height:1.5; }
+  .tA{ background:var(--pink); } .tB{ background:var(--sky); } .tC{ background:var(--green); color:#1e293b; }
+  .match-row{ display:flex; align-items:center; gap:8px; padding:9px 11px; border-radius:11px; background:#f8fafc; margin-bottom:6px; font-weight:800; font-size:13px; }
+  .match-row .r{ font-size:10px; font-weight:900; color:var(--indigo); background:#eef2ff; padding:2px 7px; border-radius:6px; }
+  .match-row .rest{ margin-left:auto; font-size:10px; color:var(--mute); font-weight:700; }
+
+  .sec-head{ display:flex; align-items:center; gap:8px; padding:13px 15px; cursor:pointer; }
+  .sec-head .chev{ font-size:12px; color:var(--mute); transition:.2s; }
+  .sec-head .chev.open{ transform:rotate(90deg); }
+  .sec-head .name{ font-weight:900; font-size:15px; }
+  .sec-head .acts{ margin-left:auto; display:flex; gap:6px; }
+  .sec-body{ padding:0 15px 15px; }
+  .sec-wrap{ margin-bottom:11px; }
+
+  .anchor{ position:sticky; top:101px; z-index:20; display:flex; gap:6px; background:rgba(248,250,252,0.92); backdrop-filter:blur(6px); padding:8px 0; margin-bottom:6px; }
+  .anchor button{ flex:1; padding:8px; border-radius:11px; border:0; background:#e9eefb; color:#475569; font-weight:800; font-size:12px; font-family:inherit; cursor:pointer; }
+  .anchor button.on{ background:var(--indigo); color:#fff; }
+  .blk{ scroll-margin-top:160px; }
+  .blk h3{ font-weight:900; font-size:14px; margin:0 0 9px; display:flex; align-items:center; gap:7px; }
+  .blk h3 .acts{ margin-left:auto; display:flex; gap:6px; }
+
+  /* 위저드 */
+  .steps{ display:flex; align-items:center; gap:4px; margin-bottom:14px; }
+  .steps .st{ flex:1; text-align:center; }
+  .steps .dot{ width:26px; height:26px; border-radius:50%; margin:0 auto 4px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900; background:#e2e8f0; color:#94a3b8; }
+  .steps .st.on .dot{ background:var(--indigo); color:#fff; }
+  .steps .st.done .dot{ background:var(--lime); color:#1e293b; }
+  .steps .lbl{ font-size:10px; font-weight:800; color:var(--mute); }
+  .steps .st.on .lbl{ color:var(--indigo); }
+  .steps .bar{ flex:0 0 14px; height:2px; background:#e2e8f0; margin-bottom:18px; }
+  .wiz-nav{ display:flex; gap:10px; margin-top:14px; }
+  .wiz-nav button{ flex:1; padding:12px; border-radius:13px; border:0; font-weight:800; font-size:14px; font-family:inherit; cursor:pointer; }
+
+  /* 3탭 */
+  .tabs{ display:flex; gap:6px; background:#e9eefb; padding:5px; border-radius:14px; margin-bottom:12px; }
+  .tabs button{ flex:1; padding:9px; border-radius:10px; border:0; background:transparent; color:#64748b; font-weight:800; font-size:13px; font-family:inherit; cursor:pointer; }
+  .tabs button.on{ background:#fff; color:var(--indigo); box-shadow:0 2px 6px rgba(0,0,0,.08); }
+  .hidden{ display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <h2>모임 상세 — 구조 비교 (관리자 시점 · 더미)</h2>
+    <div class="seg">
+      <button class="on" data-v="A" onclick="show('A')">세로 섹션</button>
+      <button data-v="B" onclick="show('B')">앵커 칩</button>
+      <button data-v="C" onclick="show('C')">위저드</button>
+      <button data-v="D" onclick="show('D')">현재(3탭)</button>
+    </div>
+  </div>
+  <div class="body">
+
+    <!-- 공통 모임 헤더 -->
+    <div class="mh">
+      <button class="back">←</button>
+      <div class="info">
+        <span class="badge">정기</span><span style="font-size:10px;font-weight:800;color:#94a3b8;margin-left:6px">D-3</span>
+        <div class="ttl">6월 28일(일) · 08:00~10:00</div>
+        <div class="meta">플랩 스타디움 수원 실내</div>
+      </div>
+    </div>
+
+    <!-- ===== A. 세로 섹션 (탭 제거, 접이식) ===== -->
+    <div id="view-A">
+      <div class="hint">탭이 없어요. 한 화면을 위→아래로 스크롤하며 보고, 각 섹션 제목을 누르면 접고 펼쳐요. 회원 화면과 같은 흐름이고, 관리자는 각 섹션에 작업 버튼이 붙어요.</div>
+      <div class="sec-wrap card">
+        <div class="sec-head" onclick="toggleSec(this)">
+          <span class="chev open">▶</span><span class="name">출석 현황</span>
+          <span class="acts"><button class="btnq b-indigo">출석 체크</button><button class="btnq b-slate">QR</button></span>
+        </div>
+        <div class="sec-body"><div class="att-grid"><span>김민수</span><span>이서연</span><span>박지훈</span><span>최유진</span><span>정우성</span><span>강하늘</span><span>+12명</span></div></div>
+      </div>
+      <div class="sec-wrap card">
+        <div class="sec-head" onclick="toggleSec(this)">
+          <span class="chev open">▶</span><span class="name">팀</span>
+          <span class="acts"><button class="btnq b-soft">팀 편성</button></span>
+        </div>
+        <div class="sec-body"><div class="teams"><div class="team tA"><h4>A팀</h4><p>핑크 조끼<br>6명</p></div><div class="team tB"><h4>B팀</h4><p>하늘 조끼<br>6명</p></div><div class="team tC"><h4>C팀</h4><p>연두 조끼<br>6명</p></div></div></div>
+      </div>
+      <div class="sec-wrap card">
+        <div class="sec-head" onclick="toggleSec(this)">
+          <span class="chev open">▶</span><span class="name">매치</span>
+          <span class="acts"><button class="btnq b-soft">매치 생성</button></span>
+        </div>
+        <div class="sec-body"><div class="match-row"><span class="r">1R</span>A vs B<span class="rest">C 휴식</span></div><div class="match-row"><span class="r">2R</span>A vs C<span class="rest">B 휴식</span></div><div class="match-row"><span class="r">3R</span>B vs C<span class="rest">A 휴식</span></div></div>
+      </div>
+    </div>
+
+    <!-- ===== B. 앵커 칩 + 세로 ===== -->
+    <div id="view-B" class="hidden">
+      <div class="hint">상단 칩 [출석][팀][매치]를 누르면 화면이 바뀌는 게 아니라 그 섹션으로 스르륵 이동해요. 탭처럼 보이지만 실제로는 한 화면이라 전체 흐름이 끊기지 않아요.</div>
+      <div class="anchor">
+        <button class="on" onclick="anchor('B','att',this)">출석</button>
+        <button onclick="anchor('B','team',this)">팀</button>
+        <button onclick="anchor('B','mat',this)">매치</button>
+      </div>
+      <div class="blk card" id="B-att" style="padding:14px;margin-bottom:11px"><h3>출석 현황 <span class="acts"><button class="btnq b-indigo">출석 체크</button><button class="btnq b-slate">QR</button></span></h3><div class="att-grid"><span>김민수</span><span>이서연</span><span>박지훈</span><span>최유진</span><span>정우성</span><span>+13명</span></div></div>
+      <div class="blk card" id="B-team" style="padding:14px;margin-bottom:11px"><h3>팀 <span class="acts"><button class="btnq b-soft">팀 편성</button></span></h3><div class="teams"><div class="team tA"><h4>A팀</h4><p>핑크·6명</p></div><div class="team tB"><h4>B팀</h4><p>하늘·6명</p></div><div class="team tC"><h4>C팀</h4><p>연두·6명</p></div></div></div>
+      <div class="blk card" id="B-mat" style="padding:14px;min-height:260px"><h3>매치 <span class="acts"><button class="btnq b-soft">매치 생성</button></span></h3><div class="match-row"><span class="r">1R</span>A vs B<span class="rest">C 휴식</span></div><div class="match-row"><span class="r">2R</span>A vs C<span class="rest">B 휴식</span></div><div class="match-row"><span class="r">3R</span>B vs C<span class="rest">A 휴식</span></div></div>
+    </div>
+
+    <!-- ===== C. 위저드 ===== -->
+    <div id="view-C" class="hidden">
+      <div class="hint">모임 준비를 ①명단 →②팀 →③매치 →④출석 순서로 안내해요. 지금 어느 단계인지, 다음에 뭘 할지 한눈에 보여요. 대신 아무 단계나 바로 가긴 살짝 불편해요.</div>
+      <div class="steps">
+        <div class="st done" onclick="wiz(0)"><div class="dot">✓</div><div class="lbl">명단</div></div><div class="bar"></div>
+        <div class="st on" onclick="wiz(1)"><div class="dot">2</div><div class="lbl">팀</div></div><div class="bar"></div>
+        <div class="st" onclick="wiz(2)"><div class="dot">3</div><div class="lbl">매치</div></div><div class="bar"></div>
+        <div class="st" onclick="wiz(3)"><div class="dot">4</div><div class="lbl">출석</div></div>
+      </div>
+      <div class="card" style="padding:15px;min-height:230px" id="wiz-content"></div>
+      <div class="wiz-nav"><button class="b-slate" onclick="wizMove(-1)" style="background:#f1f5f9;color:#64748b">← 이전</button><button class="b-indigo" onclick="wizMove(1)" style="background:var(--indigo);color:#fff">다음 →</button></div>
+    </div>
+
+    <!-- ===== D. 현재(3탭) ===== -->
+    <div id="view-D" class="hidden">
+      <div class="hint">지금 쓰는 방식이에요. [출석][팀][매치] 탭을 눌러 하나씩 봐요. 비교 기준으로 넣었어요.</div>
+      <div class="tabs"><button class="on" onclick="d_tab('att',this)">출석</button><button onclick="d_tab('team',this)">팀</button><button onclick="d_tab('mat',this)">매치</button></div>
+      <div id="D-att" class="card" style="padding:15px"><div style="display:flex;gap:6px;margin-bottom:11px"><button class="btnq b-indigo">출석 체크</button><button class="btnq b-slate">QR</button><button class="btnq b-slate">모임 종료</button></div><div class="att-grid"><span>김민수</span><span>이서연</span><span>박지훈</span><span>최유진</span><span>정우성</span><span>+13명</span></div></div>
+      <div id="D-team" class="card hidden" style="padding:15px"><button class="btnq b-soft" style="margin-bottom:11px">팀 편성</button><div class="teams"><div class="team tA"><h4>A팀</h4><p>핑크·6명</p></div><div class="team tB"><h4>B팀</h4><p>하늘·6명</p></div><div class="team tC"><h4>C팀</h4><p>연두·6명</p></div></div></div>
+      <div id="D-mat" class="card hidden" style="padding:15px"><button class="btnq b-soft" style="margin-bottom:11px">매치 생성</button><div class="match-row"><span class="r">1R</span>A vs B<span class="rest">C 휴식</span></div><div class="match-row"><span class="r">2R</span>A vs C<span class="rest">B 휴식</span></div><div class="match-row"><span class="r">3R</span>B vs C<span class="rest">A 휴식</span></div></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function show(v){
+    ['A','B','C','D'].forEach(k => document.getElementById('view-'+k).classList.toggle('hidden', k!==v));
+    document.querySelectorAll('.seg button').forEach(b => b.classList.toggle('on', b.dataset.v===v));
+    if(v==='C') wiz(1);
+    window.scrollTo(0,0);
+  }
+  function toggleSec(h){
+    const chev = h.querySelector('.chev'); const body = h.nextElementSibling;
+    const open = chev.classList.toggle('open'); body.style.display = open ? '' : 'none';
+  }
+  function anchor(v,id,btn){
+    document.querySelectorAll('#view-B .anchor button').forEach(b=>b.classList.remove('on')); btn.classList.add('on');
+    document.getElementById('B-'+id).scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  // 위저드
+  var WIZ = [
+    {t:'① 명단 — 누가 오나', h:'<div class="att-grid"><span>김민수</span><span>이서연</span><span>박지훈</span><span>최유진</span><span>정우성</span><span>+13명</span></div><p style="font-size:11px;color:#94a3b8;margin-top:10px;font-weight:700">참여 18명 확정됨</p>'},
+    {t:'② 팀 편성', h:'<button class="btnq b-soft" style="margin-bottom:11px">자동 편성</button><div class="teams"><div class="team tA"><h4>A팀</h4><p>핑크·6명</p></div><div class="team tB"><h4>B팀</h4><p>하늘·6명</p></div><div class="team tC"><h4>C팀</h4><p>연두·6명</p></div></div>'},
+    {t:'③ 매치표', h:'<div class="match-row"><span class="r">1R</span>A vs B<span class="rest">C 휴식</span></div><div class="match-row"><span class="r">2R</span>A vs C<span class="rest">B 휴식</span></div><div class="match-row"><span class="r">3R</span>B vs C<span class="rest">A 휴식</span></div>'},
+    {t:'④ 출석 체크 (당일)', h:'<div style="display:flex;gap:6px;margin-bottom:11px"><button class="btnq b-indigo">출석 체크</button><button class="btnq b-slate">QR</button></div><p style="font-size:11px;color:#94a3b8;font-weight:700">모임 당일 키오스크/QR로 체크</p>'}
+  ];
+  var wizI = 1;
+  function wiz(i){
+    wizI = i;
+    var w = WIZ[i];
+    document.getElementById('wiz-content').innerHTML = '<h3 style="font-weight:900;font-size:15px;margin-bottom:12px">'+w.t+'</h3>'+w.h;
+    var sts = document.querySelectorAll('#view-C .steps .st');
+    sts.forEach((s,idx)=>{ s.classList.toggle('on',idx===i); s.classList.toggle('done',idx<i);
+      var d=s.querySelector('.dot'); d.textContent = idx<i ? '✓' : (idx+1); });
+  }
+  function wizMove(d){ var n=wizI+d; if(n<0)n=0; if(n>3)n=3; wiz(n); }
+  // 3탭
+  function d_tab(id,btn){
+    ['att','team','mat'].forEach(k=>document.getElementById('D-'+k).classList.toggle('hidden',k!==id));
+    document.querySelectorAll('#view-D .tabs button').forEach(b=>b.classList.remove('on')); btn.classList.add('on');
+  }
+</script>
+</body>
+</html>
