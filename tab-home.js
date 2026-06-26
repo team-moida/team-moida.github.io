@@ -1386,6 +1386,9 @@ const TabHome = ({
     duesReports, onConfirmDuesReport, onRejectDuesReport, onGoDuesTab,
     generateAttendQRCode, onEditMeeting, onDeleteMeeting, onOpenAttendModal,
     onInlineGPS, onInlineQR, onOpenKiosk,
+    regMeeting, myRegistration, regConfirmedCount, myWaitingPosition,
+    handleRegister, handleCancel, handleAbsent, handleUndoAbsent,
+    regDuesUnpaid, regDuesBlock, regPenaltyUnpaid, regPenaltyTotal, regIsPreview,
 }) => {
     // 정기/매칭 다음 모임 분리 (회원이 둘 다 참여할 수 있어 종류별 카드로 표시)
     // 종료(done) + 지난 날짜 모임은 홈 '다음 모임'에서 제외 (끝난 모임은 기록 탭에서만)
@@ -1450,6 +1453,26 @@ const TabHome = ({
                     <p className="text-xs mt-0.5 opacity-80">모임 탭에서 등록할 수 있어요</p>
                 </div>
             </button>
+        )}
+
+        {/* 모임 신청 — 홈에서 바로 신청/취소 (모임 탭과 동일 카드). 신청 받는 모임일 때만 표시.
+            담당자(이 모임 managerId == 나)는 자동 등록되므로 숨김 */}
+        {!(memberInfo?.id && regMeeting?.managerId && regMeeting.managerId === memberInfo.id) && (
+            <RegistrationCard
+                meetingSettings={regMeeting}
+                myRegistration={myRegistration}
+                regConfirmedCount={regConfirmedCount}
+                myWaitingPosition={myWaitingPosition}
+                handleRegister={handleRegister}
+                handleCancel={handleCancel}
+                handleAbsent={handleAbsent}
+                handleUndoAbsent={handleUndoAbsent}
+                duesUnpaid={regDuesUnpaid}
+                duesBlock={regDuesBlock}
+                penaltyUnpaid={regPenaltyUnpaid}
+                penaltyTotal={regPenaltyTotal}
+                isPreview={regIsPreview}
+            />
         )}
 
         {/* 내 출석 현황 (history 집계 · 기록 있으면 표시) */}

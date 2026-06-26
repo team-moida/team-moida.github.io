@@ -357,7 +357,37 @@ function App() {
         meetingSettings: displayMeetingSettings,
         showToast,
         showAlert,
+        showConfirm,
     });
+
+    // 홈 신청 카드 게이트(벌금/회비 미납) — 모임 탭 RegistrationCard와 동일 규칙
+    const [regDuesBlock, setRegDuesBlock] = useState(false);
+    useEffect(() => {
+        const unsub = getCol('settings').doc('club_account').onSnapshot(d => setRegDuesBlock(d.exists ? !!d.data().blockUnpaid : false), () => {});
+        return () => unsub();
+    }, []);
+    const [regPenalty, setRegPenalty] = useState({ count: 0, total: 0 });
+    useEffect(() => {
+        const meId = memberInfo?.id;
+        if (!meId) { setRegPenalty({ count: 0, total: 0 }); return; }
+        const unsub = getCol('penalties').where('memberId', '==', meId).onSnapshot(s => {
+            const list = s.docs.map(d => d.data()).filter(p => p.status !== 'paid');
+            setRegPenalty({ count: list.length, total: list.reduce((a, p) => a + (p.amount || 0), 0) });
+        }, () => {});
+        return () => unsub();
+    }, [memberInfo?.id]);
+    const regDuesUnpaid = useMemo(() => {
+        const me = memberInfo;
+        if (!me) return false;
+        if (ADMIN_ROLES.includes(me.role) || STAFF_ROLES.includes(me.role)) return false;
+        if (me.isSpecialRest) return false;
+        const monthStr = displayMeetingSettings?.date?.substring(0, 7) || '';
+        const st = (team.tmMonthlyStatuses || {})[me.id];
+        if (st === 'paid' || st === 'rest') return false;
+        const info = (typeof getMembershipStatus === 'function') ? getMembershipStatus(me, monthStr) : null;
+        if (info?.active) return false;
+        return true;
+    }, [memberInfo, team.tmMonthlyStatuses, displayMeetingSettings?.date]);
 
     useEffect(() => {
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
@@ -856,6 +886,15 @@ function App() {
                         onOpenKiosk={() => attend.setIsKioskOpen(true)}
                         onEditMeeting={(m) => { setPendingEditMeeting(m); navTab('meeting-list'); }}
                         onDeleteMeeting={handleDeleteMeeting}
+                        regMeeting={displayMeetingSettings}
+                        myRegistration={attend.myRegistration}
+                        regConfirmedCount={attend.regConfirmedCount}
+                        myWaitingPosition={attend.myWaitingPosition}
+                        handleRegister={handleRegister} handleCancel={handleCancel}
+                        handleAbsent={handleAbsent} handleUndoAbsent={handleUndoAbsent}
+                        regDuesUnpaid={regDuesUnpaid} regDuesBlock={regDuesBlock}
+                        regPenaltyUnpaid={regPenalty.count} regPenaltyTotal={regPenalty.total}
+                        regIsPreview={testMode}
                     />
                 )}
                 {tab === 'notice' && (

@@ -27,12 +27,12 @@ const getAbsentType = (meetingDate, meetingEnd) => {
     return null;
 };
 
-function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, showToast, showAlert }) {
+function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, showToast, showAlert, showConfirm }) {
     const meetingId = meetingSettings ? getMeetingId(meetingSettings) : meetingDate;
     const mType = meetingSettings?.meetingType || 'self';
     const mirrorDocId = mType === 'match' ? 'meeting_schedule_match' : 'meeting_schedule_v2';
 
-    const handleRegister = async () => {
+    const _doRegister = async () => {
         if (!meetingDate || !memberData?.memberId) return;
 
         // 미납 벌금(지각/노쇼)이 있으면 신청 완전 차단
@@ -144,6 +144,17 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
                 console.error('신청 오류:', e);
                 showAlert && showAlert('오류', '신청 중 오류가 발생했습니다. 다시 시도해주세요.');
             }
+        }
+    };
+
+    // 신청 시 확인 팝업을 한 번 더 띄운다 (홈/모임 탭 공통). showConfirm 없으면 바로 신청.
+    const handleRegister = () => {
+        if (!meetingDate || !memberData?.memberId) return;
+        if (typeof showConfirm === 'function') {
+            const label = mType === 'match' ? '매칭 모임' : '모임';
+            showConfirm('모임 신청', `${meetingDate} ${label}에 신청할까요?`, _doRegister);
+        } else {
+            _doRegister();
         }
     };
 
