@@ -590,7 +590,7 @@ const normUrl = (u) => { const s = (u||'').trim(); return s ? (/^https?:\/\//i.t
 const DUES_FEE_DEFAULTS = { monthlyFee:30000, restFee:10000, halfYearFee:150000, fullYearFee:300000 };
 const DUES_LABELS = { monthly:'월납', rest:'휴식', half_year:'반년납', full_year:'1년납' };
 const wonFmt = (n) => (Number(n)||0).toLocaleString('ko-KR');
-const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', onGoDues }) => {
+const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', onGoDues, previewAsMember = false }) => {
     const { useState, useEffect } = React;
     const [acc, setAcc] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
@@ -663,7 +663,8 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
         full_year: fee('fullYearFee', DUES_FEE_DEFAULTS.fullYearFee),
     };
     const ms = memberInfo ? getMembershipStatus(memberInfo, targetMonth) : null;
-    const isExempt = memberInfo ? STAFF_ROLES.includes(memberInfo.role) : false;
+    // 개발자가 [회원] 모드로 미리볼 땐 운영진 면제를 풀어 일반 회원처럼 회비 화면(미납/납부)을 표시
+    const isExempt = (memberInfo ? STAFF_ROLES.includes(memberInfo.role) : false) && !previewAsMember;
     const feeFor = (k) => { if (k === 'rest') { return (ms && ms.active && ms.remainingRest > 0) ? 0 : fees.rest; } return fees[k] || 0; };
     // 입금자명: 회원명 (O월 회비 / O월 휴식비 / 반년납 / 1년납)
     const cleanMemberName = (memberName || '').replace(/[\u{1F300}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B50}-\u{2BFF}\u{FE00}-\u{FE0F}]/gu, '').replace(/\s+/g, ' ').trim();
