@@ -115,26 +115,26 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                 <h2 className="font-black text-lg text-slate-800 min-w-0 truncate">공지사항{list.length > 0 && <span className="text-base text-slate-400"> · {list.length}건</span>}</h2>
             </div>
 
-            {/* 관리자 도구 */}
+            {/* 관리자 도구 — 작은 버튼(오른쪽 정렬) */}
             {isAdminMode && (
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center justify-end gap-1.5 mb-3">
                     {selectMode ? (
                         <>
                             <button onClick={handleDeleteSelected} disabled={checkedIds.length === 0}
-                                className={`flex-1 py-2 rounded-xl font-black text-sm transition-all ${checkedIds.length === 0 ? 'bg-slate-100 text-slate-400' : 'bg-red-500 text-white active:scale-95'}`}>
+                                className={`px-3 py-1.5 rounded-lg font-black text-xs transition-all ${checkedIds.length === 0 ? 'bg-slate-100 text-slate-400' : 'bg-red-500 text-white active:scale-95'}`}>
                                 삭제{checkedIds.length > 0 ? ` (${checkedIds.length})` : ''}
                             </button>
-                            <button onClick={exitSelectMode} className="px-4 py-2 rounded-xl bg-slate-100 text-slate-500 font-black text-sm active:scale-95 transition-all">취소</button>
+                            <button onClick={exitSelectMode} className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-500 font-black text-xs active:scale-95 transition-all">취소</button>
                         </>
                     ) : (
                         <>
-                            <button onClick={onAdd} className="flex-1 py-2 rounded-xl bg-teal-500 text-white font-black text-sm active:scale-95 transition-all flex items-center justify-center gap-1">
-                                <Icon.Plus size={15}/> 새 공지 작성
+                            <button onClick={onAdd} className="px-3 py-1.5 rounded-lg bg-teal-500 text-white font-black text-xs active:scale-95 transition-all flex items-center gap-1">
+                                <Icon.Plus size={13}/> 새 공지
                             </button>
                             {list.length > 0 && (
                                 <>
-                                    <button onClick={() => setSelectMode(true)} className="px-3 py-2 rounded-xl bg-slate-100 text-slate-500 font-black text-sm active:scale-95 transition-all">선택삭제</button>
-                                    <button onClick={() => onDeleteMany(list.map(a => a.id))} className="px-3 py-2 rounded-xl bg-red-50 text-red-500 font-black text-sm active:scale-95 transition-all">전체삭제</button>
+                                    <button onClick={() => setSelectMode(true)} className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-500 font-black text-xs active:scale-95 transition-all">선택삭제</button>
+                                    <button onClick={() => onDeleteMany(list.map(a => a.id))} className="px-3 py-1.5 rounded-lg bg-red-50 text-red-500 font-black text-xs active:scale-95 transition-all">전체삭제</button>
                                 </>
                             )}
                         </>
