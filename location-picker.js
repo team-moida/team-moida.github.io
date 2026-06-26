@@ -11,6 +11,8 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
     const [searching, setSearching] = React.useState(false);
     const [locating, setLocating] = React.useState(false);
     const [geocodeFailed, setGeocodeFailed] = React.useState(false);
+    const [favorites, setFavorites] = React.useState([]);   // 장소 즐겨찾기 (settings/location_favorites · 운영진 공유)
+    const [favManage, setFavManage] = React.useState(false); // 관리(수정/삭제) 모드
     const reverseGeocode = async (y, x) => {
         try {
             const url = `https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${x}&y=${y}`;
@@ -64,6 +66,39 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
             setLocating(false);
         }, () => { alert('위치 정보를 가져올 수 없습니다.'); setLocating(false); }, { enableHighAccuracy: true, timeout: 10000 });
     };
+    // ── 장소 즐겨찾기 (등록/적용/수정/삭제) — settings/location_favorites 에 목록으로 저장 ──
+    const saveFavorites = async (next) => {
+        setFavorites(next);
+        try { if (typeof getCol === 'function') await getCol('settings').doc('location_favorites').set({ list: next, updatedAt: new Date().toISOString() }); }
+        catch (_) { alert('즐겨찾기 저장에 실패했습니다.'); }
+    };
+    const addFavorite = () => {
+        const nm = (placeName || '').trim();
+        if (!nm) { alert('먼저 장소를 선택하거나 장소명을 입력해주세요.'); return; }
+        if (favorites.some(f => f.name === nm && Math.abs((f.lat || 0) - lat) < 1e-5 && Math.abs((f.lng || 0) - lng) < 1e-5)) { alert('이미 즐겨찾기에 등록된 장소예요.'); return; }
+        saveFavorites([...favorites, { id: 'fav_' + Date.now(), name: nm, lat, lng }]);
+    };
+    const applyFavorite = (f) => {
+        moveMarker(f.lat, f.lng);
+        if (mapRef.current) mapRef.current.setView([f.lat, f.lng], 17);
+        setPlaceName(f.name || ''); setResults([]); setQuery('');
+    };
+    const renameFavorite = (f) => {
+        const nm = window.prompt('즐겨찾기 이름 수정', f.name || '');
+        if (nm == null) return;
+        const t = nm.trim(); if (!t) return;
+        saveFavorites(favorites.map(x => x.id === f.id ? { ...x, name: t } : x));
+    };
+    const deleteFavorite = (f) => { saveFavorites(favorites.filter(x => x.id !== f.id)); };
+    React.useEffect(() => {
+        if (!isOpen || typeof getCol !== 'function') return;
+        let active = true;
+        getCol('settings').doc('location_favorites').get()
+            .then(d => { if (active && d.exists && Array.isArray(d.data().list)) setFavorites(d.data().list); })
+            .catch(() => {});
+        setFavManage(false);
+        return () => { active = false; };
+    }, [isOpen]);
     React.useEffect(() => {
         if (!isOpen) return;
         setPlaceName(initialName || ''); setQuery(''); setResults([]); setGeocodeFailed(false);
@@ -103,6 +138,20 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLat, initialLn
                         style={{ flex:1, background:'var(--t-surface)', border:'1px solid var(--t-border)', borderRadius:12, padding:'8px 12px', fontSize:12, fontFamily:'inherit', fontWeight:700, outline:'none', userSelect:'text', WebkitUserSelect:'text', color:'var(--t-text)' }} />
                     <button onClick={doSearch} disabled={searching} style={{ padding:'8px 16px', background:searching?'var(--c-sub)':'var(--t-btn)', color:'#fff', border:'none', borderRadius:12, fontSize:12, fontWeight:700, cursor:searching?'default':'pointer', fontFamily:'inherit' }}>{searching?'...':'검색'}</button>
                     <button onClick={goCurrentLocation} style={{ padding:'8px 12px', background:'#fff0f6', border:'none', borderRadius:12, cursor:'pointer', display:'flex', alignItems:'center', color:'#ec4899' }}><Icon.MapPin size={16} /></button>
+                </div>
+                {/* 장소 즐겨찾기 — 칩 누르면 적용 / [관리]에서 이름수정·삭제 / [+ 저장]은 현재 장소 등록 */}
+                <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:8, overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
+                    <span style={{ flexShrink:0, fontSize:11, fontWeight:700, color:'#ec4899' }}>⭐ 즐겨찾기</span>
+                    {favorites.map(f => (
+                        <span key={f.id} style={{ flexShrink:0, display:'flex', alignItems:'center', background:'var(--t-surface)', border:'1px solid var(--t-border)', borderRadius:999, padding:'4px 10px' }}>
+                            <button onClick={() => favManage ? renameFavorite(f) : applyFavorite(f)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:12, fontWeight:700, color:'var(--t-text)', fontFamily:'inherit', whiteSpace:'nowrap', padding:0 }}>{f.name}</button>
+                            {favManage && <button onClick={() => deleteFavorite(f)} title="삭제" style={{ background:'none', border:'none', cursor:'pointer', color:'var(--c-danger)', display:'flex', padding:0, marginLeft:6 }}><Icon.X size={12} /></button>}
+                        </span>
+                    ))}
+                    <button onClick={addFavorite} style={{ flexShrink:0, background:'#fff0f6', border:'1px solid #fbcfe8', borderRadius:999, padding:'4px 10px', fontSize:12, fontWeight:700, color:'#ec4899', cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap' }}>+ 저장</button>
+                    {favorites.length > 0 && (
+                        <button onClick={() => setFavManage(v => !v)} style={{ flexShrink:0, background:'var(--t-s2)', border:'1px solid var(--t-border)', borderRadius:999, padding:'4px 10px', fontSize:12, fontWeight:700, color:'var(--c-sub)', cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap' }}>{favManage ? '완료' : '관리'}</button>
+                    )}
                 </div>
                 {results.length > 0 && (
                     <div style={{ position:'absolute', top:'100%', left:12, right:12, background:'var(--t-surface)', border:'1px solid var(--t-border)', borderRadius:16, boxShadow:'0 8px 24px rgba(0,0,0,0.18)', zIndex:20, overflow:'hidden', maxHeight:280, overflowY:'auto' }}>
