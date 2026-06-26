@@ -68,6 +68,27 @@ const RosterStatsView = ({ activeMembers, attendHistory, monthlyStatuses }) => {
         const [l, c] = map[s] || ['-', 'bg-slate-100 text-slate-400'];
         return <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${c}`}>{l}</span>;
     };
+    const parseSec = (t) => { const x = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(t || ''); return x ? (+x[1]) * 3600 + (+x[2]) * 60 + (+(x[3] || 0)) : null; };
+    const ymLabel = (ym) => { const [y, mo] = (ym || '').split('-'); return (y && mo) ? `${y}년 ${+mo}월` : ym; };
+    // 월별 모음 + 월별 개근왕: 그 달 정상 출석 많은순 → 지각+노쇼 적은순 → 평균 출석시간 빠른순
+    const monthGroups = useMemo(() => {
+        const groups = {};
+        meetingRows.forEach(m => { const ym = (m.date || '').slice(0, 7); (groups[ym] || (groups[ym] = [])).push(m); });
+        return Object.keys(groups).sort((a, b) => b.localeCompare(a)).map(ym => {
+            const items = groups[ym];
+            const agg = {};
+            items.forEach(m => (m.records || []).forEach(r => {
+                if (!r.memberId) return;
+                const a = agg[r.memberId] || (agg[r.memberId] = { name: r.name, go: 0, late: 0, no: 0, ciSum: 0, ciCount: 0 });
+                if (r.status === '정상') a.go++; else if (r.status === '지각') a.late++; else if (r.status === '노쇼') a.no++;
+                if (r.status === '정상' || r.status === '지각') { const t = parseSec(r.checkInTime); if (t != null) { a.ciSum += t; a.ciCount++; } }
+            }));
+            const king = Object.keys(agg).map(id => { const a = agg[id]; return { id, name: a.name, go: a.go, late: a.late, no: a.no, avgCi: a.ciCount ? a.ciSum / a.ciCount : Infinity }; })
+                .filter(c => c.go >= 1)
+                .sort((a, b) => b.go - a.go || (a.late + a.no) - (b.late + b.no) || a.avgCi - b.avgCi)[0] || null;
+            return { ym, items, king, count: items.length };
+        });
+    }, [meetingRows]);
 
     const roleOf = (role) => (typeof ADMIN_ROLES !== 'undefined' && ADMIN_ROLES.includes(role)) ? role : '';
 
@@ -130,52 +151,62 @@ const RosterStatsView = ({ activeMembers, attendHistory, monthlyStatuses }) => {
                 meetingRows.length === 0 ? (
                     <div className="card rounded-2xl p-8 text-center text-slate-400"><p className="font-black text-sm">종료된 정기모임 기록이 없습니다</p></div>
                 ) : (<>
-                    <p className="text-[11.5px] font-bold text-slate-500 bg-teal-50 rounded-2xl px-3 py-2.5 mb-3.5 leading-relaxed">정기모임만 · 종료된 모임 {meetingRows.length}회 · 모임을 누르면 출석 명단</p>
-                    <div className="card rounded-2xl overflow-hidden">
-                        {meetingRows.map((m, i) => {
-                            const open = openId === m.key;
-                            const d = fmtMD(m.date);
-                            return (
-                                <div key={m.key} className={i>0?'border-t border-slate-100':''}>
-                                    <button onClick={() => setOpenId(open ? null : m.key)} className="w-full px-3.5 py-3 text-left active:bg-slate-50 transition-colors">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex-shrink-0 w-11 text-center">
-                                                <p className="text-[19px] font-black text-slate-800 leading-none tabular-nums">{d.dd}</p>
-                                                <p className="text-[10px] font-black text-slate-400 mt-0.5">{d.sub}</p>
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-[13px] font-black text-slate-700 truncate">{m.location}</p>
-                                                <p className="text-[11px] font-bold text-slate-400 truncate">{m.time}{m.manager && m.manager!=='미지정' ? ` · ${m.manager}` : ''}</p>
-                                            </div>
-                                            <div className="flex items-center gap-1.5 flex-shrink-0">
-                                                <span className="text-[15px] font-black text-teal-600 tabular-nums">{m.present}<span className="text-[11px] text-slate-400">/{m.total}</span></span>
-                                                <Icon.ChevronRight size={16} className={`text-slate-300 transition-transform ${open?'rotate-90':''}`}/>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-1.5 mt-2 ml-14">
-                                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">출석 {m.go}</span>
-                                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">지각 {m.late}</span>
-                                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-50 text-rose-500">노쇼 {m.no}</span>
-                                        </div>
-                                    </button>
-                                    {open && (
-                                        <div className="px-3.5 pb-3 pt-0.5 ml-14">
-                                            {m.records.length === 0 ? (
-                                                <p className="text-[11.5px] font-bold text-slate-400 py-2">참가 기록이 없습니다</p>
-                                            ) : m.records.map((r, j) => (
-                                                <div key={j} className="flex items-center gap-2 py-1.5 border-t border-slate-50 first:border-t-0">
-                                                    <span className="text-[12.5px] font-black text-slate-700 truncate flex-1 min-w-0">{r.name}</span>
-                                                    <span className="text-[11px] font-bold text-slate-400 flex-shrink-0 tabular-nums">{r.checkInTime && r.checkInTime!=='미출석' ? r.checkInTime : ''}</span>
-                                                    {stBadge(r.status)}
+                    <p className="text-[11.5px] font-bold text-slate-500 bg-teal-50 rounded-2xl px-3 py-2.5 mb-3.5 leading-relaxed">정기모임만 · 월별 모음 · 달마다 개근왕 · 모임을 누르면 출석 명단</p>
+                    {monthGroups.map(g => (
+                        <div key={g.ym} className="mb-4">
+                            <div className="flex items-center gap-2 mb-2 px-1">
+                                <h3 className="font-black text-base text-slate-800">{ymLabel(g.ym)}</h3>
+                                <span className="text-[11px] font-black text-slate-400">{g.count}회</span>
+                                {g.king && <span className="ml-auto text-[10.5px] font-black px-2.5 py-1 rounded-full bg-live text-[#15171E]">👑 개근왕 {g.king.name}</span>}
+                            </div>
+                            <div className="card rounded-2xl overflow-hidden">
+                                {g.items.map((m, i) => {
+                                    const open = openId === m.key;
+                                    const d = fmtMD(m.date);
+                                    return (
+                                        <div key={m.key} className={i>0?'border-t border-slate-100':''}>
+                                            <button onClick={() => setOpenId(open ? null : m.key)} className="w-full px-3.5 py-3 text-left active:bg-slate-50 transition-colors">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex-shrink-0 w-11 text-center">
+                                                        <p className="text-[19px] font-black text-slate-800 leading-none tabular-nums">{d.dd}</p>
+                                                        <p className="text-[10px] font-black text-slate-400 mt-0.5">{d.sub}</p>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-[13px] font-black text-slate-700 truncate">{m.location}</p>
+                                                        <p className="text-[11px] font-bold text-slate-400 truncate">{m.time}{m.manager && m.manager!=='미지정' ? ` · ${m.manager}` : ''}</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                        <span className="text-[15px] font-black text-teal-600 tabular-nums">{m.present}<span className="text-[11px] text-slate-400">/{m.total}</span></span>
+                                                        <Icon.ChevronRight size={16} className={`text-slate-300 transition-transform ${open?'rotate-90':''}`}/>
+                                                    </div>
                                                 </div>
-                                            ))}
+                                                <div className="flex gap-1.5 mt-2 ml-14">
+                                                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">출석 {m.go}</span>
+                                                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">지각 {m.late}</span>
+                                                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-50 text-rose-500">노쇼 {m.no}</span>
+                                                </div>
+                                            </button>
+                                            {open && (
+                                                <div className="px-3.5 pb-3 pt-0.5 ml-14">
+                                                    {m.records.length === 0 ? (
+                                                        <p className="text-[11.5px] font-bold text-slate-400 py-2">참가 기록이 없습니다</p>
+                                                    ) : m.records.map((r, j) => (
+                                                        <div key={j} className="flex items-center gap-2 py-1.5 border-t border-slate-50 first:border-t-0">
+                                                            <span className="text-[12.5px] font-black text-slate-700 truncate flex-1 min-w-0">{r.name}</span>
+                                                            <span className="text-[11px] font-bold text-slate-400 flex-shrink-0 tabular-nums">{r.checkInTime && r.checkInTime!=='미출석' ? r.checkInTime : ''}</span>
+                                                            {stBadge(r.status)}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                    <p className="text-[10.5px] text-slate-400 font-bold mt-2 px-1 leading-relaxed">매칭모임은 제외 · 출석/지각/노쇼는 모임 종료 저장 시점 기준</p>
+                                    );
+                                })}
+                            </div>
+                            {g.king && <p className="text-[10.5px] text-slate-400 font-bold mt-1.5 px-1">👑 {g.king.name} · 이 달 정상 출석 {g.king.go}회{(g.king.late + g.king.no) > 0 ? ` · 지각·노쇼 ${g.king.late + g.king.no}` : ' · 지각·노쇼 0'}</p>}
+                        </div>
+                    ))}
+                    <p className="text-[10.5px] text-slate-400 font-bold mt-1 px-1 leading-relaxed">매칭모임은 제외 · 개근왕은 그 달 정상 출석이 가장 많고 지각·노쇼가 적은 회원(동률 시 출석 시간 빠른 순)</p>
                 </>)
             )}
         </div>
