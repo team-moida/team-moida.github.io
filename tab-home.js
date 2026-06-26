@@ -1292,10 +1292,76 @@ const DuesReportsHomeCard = ({ duesReports, onConfirm, onReject, onGoDuesTab }) 
         </div>
     );
 };
+// ─── 홈: 내 출석 현황 카드 (history 집계 · 모든 회원이 자기 것만) ─────────────────
+// history.records[].status = 정상/지각/노쇼/대기. 내 memberId 기록만 모아 집계.
+// 출석률 = (정상+지각) ÷ 참가확정(정상+지각+노쇼). '대기' 제외. 기록 없으면 카드 숨김.
+const MyAttendanceCard = ({ attendHistory, memberInfo, memberName }) => {
+    const myId = memberInfo?.id;
+    const mine = React.useMemo(() => {
+        if (!myId) return [];
+        const out = [];
+        (attendHistory || []).forEach(h => {
+            const rec = (h.records || []).find(r => r.memberId === myId);
+            if (rec && rec.status && rec.status !== '대기') out.push({ date: h.date || '', status: rec.status });
+        });
+        return out.sort((a, b) => (b.date || '').localeCompare(a.date || '')); // 최신순
+    }, [attendHistory, myId]);
+
+    if (!myId || mine.length === 0) return null;
+
+    const go = mine.filter(m => m.status === '정상').length;
+    const late = mine.filter(m => m.status === '지각').length;
+    const no = mine.filter(m => m.status === '노쇼').length;
+    const confirmed = go + late + no;
+    const rate = confirmed ? Math.round((go + late) / confirmed * 100) : 0;
+    let streak = 0;
+    for (const m of mine) { if (m.status === '정상' || m.status === '지각') streak++; else break; }
+    const recent = mine.slice(0, 10).reverse(); // 오래된→최근
+    const dotCls = (s) => s === '정상' ? 'bg-emerald-500' : s === '지각' ? 'bg-amber-500' : 'bg-rose-500';
+    const dotTxt = (s) => s === '정상' ? '출' : s === '지각' ? '지' : '노';
+
+    return (
+        <div>
+            <h3 className="font-black text-base text-slate-800 px-1 mb-2">내 출석 현황</h3>
+            <div className="card rounded-2xl p-5">
+                <div className="flex items-center gap-4">
+                    <div className="w-[116px] h-[116px] rounded-full flex-shrink-0 flex items-center justify-center"
+                        style={{ background: `conic-gradient(#183FB0 0% ${rate}%, #e6ebf5 ${rate}% 100%)` }}>
+                        <div className="w-[88px] h-[88px] rounded-full bg-white flex flex-col items-center justify-center">
+                            <span className="text-[27px] font-black text-teal-600 leading-none">{rate}%</span>
+                            <span className="text-[10px] font-black text-slate-400 mt-0.5">출석률</span>
+                        </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{new Date().getFullYear()} 시즌</p>
+                        <p className="text-lg font-black text-slate-800 leading-tight truncate">{memberName || ''} 님</p>
+                        <p className="text-[11.5px] font-bold text-slate-400 mt-0.5">참가확정 {confirmed}회 중 {go + late}회 출석</p>
+                        {streak >= 2 && <span className="inline-flex items-center gap-1 mt-2.5 text-[11.5px] font-black px-2.5 py-1 rounded-full bg-live text-[#15171E]">🔥 {streak}회 연속 출석 중</span>}
+                    </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 mt-4">
+                    <div className="rounded-xl py-2.5 text-center bg-emerald-50"><p className="text-xl font-black text-emerald-600 leading-none">{go}</p><p className="text-[10.5px] font-black text-emerald-600 mt-1">출석</p></div>
+                    <div className="rounded-xl py-2.5 text-center bg-amber-50"><p className="text-xl font-black text-amber-600 leading-none">{late}</p><p className="text-[10.5px] font-black text-amber-600 mt-1">지각</p></div>
+                    <div className="rounded-xl py-2.5 text-center bg-rose-50"><p className="text-xl font-black text-rose-500 leading-none">{no}</p><p className="text-[10.5px] font-black text-rose-500 mt-1">노쇼</p></div>
+                </div>
+                {recent.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                        <p className="text-[11px] font-black text-slate-400 mb-2">최근 모임</p>
+                        <div className="flex gap-1.5 flex-wrap">
+                            {recent.map((m, i) => (
+                                <span key={i} className={`w-[30px] h-[30px] rounded-lg flex items-center justify-center text-[11px] font-black text-white ${dotCls(m.status)}`}>{dotTxt(m.status)}</span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 const TabHome = ({
     notifPermission, registerFcmToken, onTabChange,
     meetingDayInfo, teamReady, allowFromDisplay,
-    myTeamInfo, myTeamIdx, memberData, memberInfo, meetings, members, participantCount, scheduleData,
+    myTeamInfo, myTeamIdx, memberData, memberInfo, meetings, members, participantCount, scheduleData, attendHistory,
     mySession, meetingSettings, meetingSettingsMatch, darkMode,
     memberName, announcements, onOpenAnnouncements,
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
@@ -1367,6 +1433,9 @@ const TabHome = ({
                 </div>
             </button>
         )}
+
+        {/* 내 출석 현황 (history 집계 · 기록 있으면 표시) */}
+        <MyAttendanceCard attendHistory={attendHistory} memberInfo={memberInfo} memberName={memberName} />
 
 
         {/* iOS PWA 설치 안내 */}
