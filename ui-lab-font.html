@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>SUITE 폰트 미리보기 — 모이다</title>
+<!-- 현재 앱 폰트(Pretendard) -->
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@1.3.9/dist/web/static/pretendard-dynamic-subset.css" />
+<style>
+  /* ── SUITE (눈누 font_page/1150) ── */
+  @font-face { font-family:'SUITE'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Light.woff2') format('woff2'); font-weight:300; font-display:swap; }
+  @font-face { font-family:'SUITE'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Regular.woff2') format('woff2'); font-weight:400; font-display:swap; }
+  @font-face { font-family:'SUITE'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Medium.woff2') format('woff2'); font-weight:500; font-display:swap; }
+  @font-face { font-family:'SUITE'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-SemiBold.woff2') format('woff2'); font-weight:600; font-display:swap; }
+  @font-face { font-family:'SUITE'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Bold.woff2') format('woff2'); font-weight:700; font-display:swap; }
+  @font-face { font-family:'SUITE'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-ExtraBold.woff2') format('woff2'); font-weight:800; font-display:swap; }
+  @font-face { font-family:'SUITE'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Heavy.woff2') format('woff2'); font-weight:900; font-display:swap; }
+
+  :root{ --indigo:#183FB0; --deep:#122E78; --lime:#C2F94A; --ink:#0f172a; --sub:#475569; --mute:#94A3B8; }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  body{ font-family:'Pretendard Variable',Pretendard,-apple-system,sans-serif; background:radial-gradient(140% 100% at 50% 0%, #eef2ff 0%, #f8fafc 46%); color:var(--ink); padding:0 0 60px; -webkit-text-size-adjust:100%; }
+  /* 토글로 전체 폰트 전환 */
+  body.suite{ font-family:'SUITE','Pretendard Variable',sans-serif; }
+
+  .wrap{ max-width:440px; margin:0 auto; padding:16px; }
+  .topbar{ position:sticky; top:0; z-index:20; background:rgba(248,250,252,0.86); backdrop-filter:blur(10px); padding:12px 16px; border-bottom:1px solid #e2e8f0; }
+  .seg{ display:flex; gap:6px; background:#e9eefb; padding:5px; border-radius:16px; max-width:440px; margin:0 auto; }
+  .seg button{ flex:1; padding:11px; border:0; border-radius:12px; font-weight:800; font-size:14px; background:transparent; color:#64748b; cursor:pointer; font-family:inherit; transition:.2s; }
+  .seg button.on{ background:#fff; color:var(--indigo); box-shadow:0 2px 8px rgba(0,0,0,.08); }
+  .now{ text-align:center; font-size:12px; font-weight:700; color:var(--mute); margin-top:8px; }
+
+  .sec{ font-size:12px; font-weight:800; color:var(--mute); letter-spacing:.1em; text-transform:uppercase; margin:26px 4px 12px; }
+
+  /* 헤더 로고 비교 */
+  .logo-row{ background:#fff; border-radius:20px; padding:18px 20px; box-shadow:0 4px 14px rgba(0,0,0,.05); margin-bottom:10px; }
+  .logo-label{ font-size:11px; font-weight:700; color:var(--mute); margin-bottom:4px; }
+  .logo{ font-size:34px; font-weight:900; color:var(--indigo); letter-spacing:-0.04em; line-height:1; }
+  .logo.pre{ font-family:'Pretendard Variable',Pretendard,sans-serif; }
+  .logo.sui{ font-family:'SUITE',sans-serif; }
+
+  .card{ background:#fff; border-radius:20px; box-shadow:0 4px 14px rgba(0,0,0,.05); overflow:hidden; margin-bottom:12px; }
+  .mcard-btn{ width:100%; display:flex; align-items:center; gap:12px; padding:14px; text-align:left; background:none; border:0; font-family:inherit; }
+  .chip{ flex:0 0 auto; width:58px; height:58px; border-radius:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .chip.self{ background:var(--indigo); color:#fff; }
+  .chip.match{ background:var(--lime); color:#15171E; }
+  .chip .d{ font-size:23px; font-weight:900; line-height:1; }
+  .chip .m{ font-size:10px; font-weight:800; margin-top:2px; letter-spacing:.06em; opacity:.9; }
+  .mbody{ flex:1; min-width:0; }
+  .mtitle{ font-size:15px; font-weight:900; color:var(--ink); }
+  .badge{ font-size:10px; font-weight:800; padding:2px 9px; border-radius:999px; margin-left:6px; vertical-align:middle; }
+  .badge.live{ background:#f43f5e; color:#fff; }
+  .badge.dday{ background:#eef2ff; color:var(--indigo); }
+  .meta{ font-size:12.5px; font-weight:600; color:var(--sub); margin-top:5px; }
+  .cnt{ flex:0 0 auto; text-align:center; }
+  .cnt .n{ font-size:20px; font-weight:900; color:var(--indigo); line-height:1; }
+  .cnt .l{ font-size:10px; font-weight:800; color:var(--mute); margin-top:3px; }
+
+  /* 4색 큰 숫자 */
+  .grid4{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .stat{ border-radius:18px; padding:16px; color:#fff; }
+  .stat .n{ font-size:38px; font-weight:900; line-height:1; }
+  .stat .l{ font-size:12px; font-weight:700; opacity:.92; margin-top:4px; }
+  .s1{ background:var(--lime); color:#15171E; }
+  .s2{ background:var(--indigo); }
+  .s3{ background:#10B981; }
+  .s4{ background:#F59E0B; }
+
+  /* 본문 */
+  .para{ background:#fff; border-radius:18px; padding:16px 18px; box-shadow:0 4px 14px rgba(0,0,0,.05); }
+  .para h3{ font-size:16px; font-weight:800; margin-bottom:8px; }
+  .para p{ font-size:14.5px; font-weight:500; color:var(--sub); line-height:1.65; }
+  .para .small{ font-size:12.5px; color:var(--mute); margin-top:8px; }
+
+  .btns{ display:flex; gap:10px; margin-top:14px; }
+  .btn{ flex:1; padding:14px; border-radius:14px; border:0; font-size:15px; font-weight:800; font-family:inherit; cursor:pointer; }
+  .btn.fill{ background:var(--indigo); color:#fff; }
+  .btn.soft{ background:#eef2ff; color:var(--indigo); }
+
+  /* 굵기 견본 */
+  .weights{ background:#fff; border-radius:18px; padding:8px 18px; box-shadow:0 4px 14px rgba(0,0,0,.05); }
+  .wrow{ font-family:'SUITE',sans-serif; padding:11px 0; border-bottom:1px solid #f1f5f9; font-size:21px; display:flex; justify-content:space-between; align-items:baseline; }
+  .wrow:last-child{ border-bottom:0; }
+  .wrow span{ font-family:'Pretendard Variable',sans-serif; font-size:11px; font-weight:600; color:var(--mute); }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="seg">
+      <button id="bPre" class="on" onclick="setFont('pre')">현재 폰트 (Pretendard)</button>
+      <button id="bSui" onclick="setFont('sui')">SUITE 폰트</button>
+    </div>
+    <div class="now" id="now">아래 전체가 <b>현재 폰트</b>로 보입니다 — 버튼으로 전환해 비교하세요</div>
+  </div>
+
+  <div class="wrap">
+    <!-- 헤더 로고 직접 비교 -->
+    <div class="sec">헤더 '모이다' 로고 — 위/아래 직접 비교</div>
+    <div class="logo-row"><div class="logo-label">현재 (Pretendard)</div><div class="logo pre">모이다</div></div>
+    <div class="logo-row"><div class="logo-label">SUITE</div><div class="logo sui">모이다</div></div>
+
+    <!-- 모임 카드 -->
+    <div class="sec">모임 카드</div>
+    <div class="card">
+      <button class="mcard-btn">
+        <div class="chip self"><div class="d">28</div><div class="m">JUN</div></div>
+        <div class="mbody">
+          <div class="mtitle">정기모임<span class="badge live">LIVE</span></div>
+          <div class="meta">일 08:00 · 플랩 스타디움 수원 실내</div>
+        </div>
+        <div class="cnt"><div class="n">18</div><div class="l">정원</div></div>
+      </button>
+    </div>
+    <div class="card">
+      <button class="mcard-btn">
+        <div class="chip match"><div class="d">05</div><div class="m">JUL</div></div>
+        <div class="mbody">
+          <div class="mtitle">매칭<span class="badge dday">D-3</span></div>
+          <div class="meta">토 19:00 · 광교 풋살파크 · vs FC번개</div>
+        </div>
+        <div class="cnt"><div class="n">12</div><div class="l">정원</div></div>
+      </button>
+    </div>
+
+    <!-- 4색 큰 숫자 -->
+    <div class="sec">큰 숫자 (대시보드)</div>
+    <div class="grid4">
+      <div class="stat s1"><div class="n">18</div><div class="l">참여 인원</div></div>
+      <div class="stat s2"><div class="n">92%</div><div class="l">출석률</div></div>
+      <div class="stat s3"><div class="n">출석</div><div class="l">오늘 상태</div></div>
+      <div class="stat s4"><div class="n">3.5만</div><div class="l">이번 달 회비</div></div>
+    </div>
+
+    <!-- 본문 + 버튼 -->
+    <div class="sec">본문 · 안내 · 버튼</div>
+    <div class="para">
+      <h3>모임 종료 안내</h3>
+      <p>모임 종료 시간이 지나면 출석 기록이 자동으로 저장됩니다. 지각·노쇼 벌금은 관리자가 확정한 뒤 회비 탭에서 납부할 수 있어요.</p>
+      <p class="small">회장 · 매니저 · 총무 · 부총무만 기록을 볼 수 있습니다.</p>
+      <div class="btns">
+        <button class="btn soft">취소</button>
+        <button class="btn fill">출석 체크</button>
+      </div>
+    </div>
+
+    <!-- 굵기 견본 -->
+    <div class="sec">SUITE 굵기 (7종)</div>
+    <div class="weights">
+      <div class="wrow" style="font-weight:300">모이다 OTP FC 풋살 <span>Light 300</span></div>
+      <div class="wrow" style="font-weight:400">모이다 OTP FC 풋살 <span>Regular 400</span></div>
+      <div class="wrow" style="font-weight:500">모이다 OTP FC 풋살 <span>Medium 500</span></div>
+      <div class="wrow" style="font-weight:600">모이다 OTP FC 풋살 <span>SemiBold 600</span></div>
+      <div class="wrow" style="font-weight:700">모이다 OTP FC 풋살 <span>Bold 700</span></div>
+      <div class="wrow" style="font-weight:800">모이다 OTP FC 풋살 <span>ExtraBold 800</span></div>
+      <div class="wrow" style="font-weight:900">모이다 OTP FC 풋살 <span>Heavy 900</span></div>
+    </div>
+  </div>
+
+<script>
+  function setFont(m){
+    document.body.classList.toggle('suite', m==='sui');
+    document.getElementById('bPre').classList.toggle('on', m==='pre');
+    document.getElementById('bSui').classList.toggle('on', m==='sui');
+    document.getElementById('now').innerHTML = m==='sui'
+      ? '아래 전체가 <b>SUITE 폰트</b>로 보입니다 (위 비교줄·굵기견본 제외)'
+      : '아래 전체가 <b>현재 폰트</b>로 보입니다 — 버튼으로 전환해 비교하세요';
+  }
+</script>
+</body>
+</html>
