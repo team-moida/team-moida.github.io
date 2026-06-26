@@ -490,29 +490,6 @@ function App() {
         });
         return () => unsub();
     }, []);
-    // 보관함 모임 복원(deleted 해제 + 그 모임 출석기록 통계 복귀) / 영구삭제(모임·신청·명단·기록 완전 제거)
-    const restoreMeeting = (m) => showConfirm('모임 복원', `${m.date} 모임을 복원할까요?`, async () => {
-        try {
-            await getCol('meetings').doc(m.id).update({ deleted: false, deletedAt: null });
-            const hs = await getHistoryCol().where('meetingId', '==', m.id).get();
-            if (!hs.empty) { const b = db.batch(); hs.docs.forEach(d => b.update(d.ref, { trashed: false, trashedAt: null })); await b.commit(); }
-        } catch (e) { showAlert('오류', '복원 실패: ' + e.message); }
-    });
-    const purgeMeeting = (m) => showConfirm('영구 삭제', `${m.date} 모임을 완전히 삭제할까요?\n신청·출석 기록까지 모두 사라지고 복원할 수 없어요.`, async () => {
-        try {
-            const [regs, sess, hist] = await Promise.all([
-                getCol('registrations').where('meetingId', '==', m.id).get(),
-                getCol('weekly_session').where('meetingId', '==', m.id).get(),
-                getHistoryCol().where('meetingId', '==', m.id).get(),
-            ]);
-            const b = db.batch();
-            b.delete(getCol('meetings').doc(m.id));
-            regs.docs.forEach(d => b.delete(d.ref));
-            sess.docs.forEach(d => b.delete(d.ref));
-            hist.docs.forEach(d => b.delete(d.ref));
-            await b.commit();
-        } catch (e) { showAlert('오류', '삭제 실패: ' + e.message); }
-    });
 
     useEffect(() => {
         if (!memberData?.memberId || !displayMeetingSettings?.date) return;
@@ -745,7 +722,7 @@ function App() {
         meetings
     });
 
-    const { activeMeeting, activeSelf, activeMatch, handleSaveMeeting, handleDeleteMeeting } = makeMeetingHandlers({ meetings, showAlert, showConfirm });
+    const { activeMeeting, activeSelf, activeMatch, handleSaveMeeting, handleDeleteMeeting, restoreMeeting, purgeMeeting } = makeMeetingHandlers({ meetings, showAlert, showConfirm });
     // 기록 탭 삭제 — 모임 문서 + 저장된 출석 기록(history) + 잔여 신청/세션 함께 삭제
     const handleDeleteMeetingRecord = (meeting, hist) => {
         const kindLabel = (meeting.meetingType === 'match') ? '매칭' : '정기';

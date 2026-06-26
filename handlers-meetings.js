@@ -258,7 +258,39 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
         });
     };
 
-    return { activeMeeting, activeSelf, activeMatch, handleSaveMeeting, handleDeleteMeeting };
+    // 보관함 모임 복원 — deleted 해제 + 출석기록 휴지통 복귀 + (현재 모임이면) 미러 재동기화.
+    // 미러를 안 맞추면 키오스크 미표시·선정명단이 엉뚱한 모임에 기록되는 문제가 생긴다.
+    const restoreMeeting = (m) => showConfirm('모임 복원', `${m.date} 모임을 복원할까요?`, async () => {
+        try {
+            await getMeetingsCol().doc(m.id).update({ deleted: false, deletedAt: null });
+            const hs = await getHistoryCol().where('meetingId', '==', m.id).get();
+            if (!hs.empty) { const b = db.batch(); hs.docs.forEach(d => b.update(d.ref, { trashed: false, trashedAt: null })); await b.commit(); }
+            const mType = (m.meetingType || 'self');
+            const restored = { ...m, deleted: false };
+            const pool = [...(meetings || []).filter(x => x.id !== m.id), restored]
+                .filter(x => mType === 'match' ? (x.meetingType || 'self') === 'match' : (x.meetingType || 'self') !== 'match');
+            const active = getActiveMeeting(pool);
+            const past = (() => { const d = new Date((m.date || '') + 'T23:59:59'); return !isNaN(d.getTime()) && d < new Date(); })();
+            if (!past && active && active.id === m.id) await syncMirror(restored);   // 복원 모임이 현재 모임이면 미러 갱신
+        } catch (e) { showAlert('오류', '복원 실패: ' + e.message); }
+    });
+    const purgeMeeting = (m) => showConfirm('영구 삭제', `${m.date} 모임을 완전히 삭제할까요?\n신청·출석 기록까지 모두 사라지고 복원할 수 없어요.`, async () => {
+        try {
+            const [regs, sess, hist] = await Promise.all([
+                getCol('registrations').where('meetingId', '==', m.id).get(),
+                getCol('weekly_session').where('meetingId', '==', m.id).get(),
+                getHistoryCol().where('meetingId', '==', m.id).get(),
+            ]);
+            const b = db.batch();
+            b.delete(getMeetingsCol().doc(m.id));
+            regs.docs.forEach(d => b.delete(d.ref));
+            sess.docs.forEach(d => b.delete(d.ref));
+            hist.docs.forEach(d => b.delete(d.ref));
+            await b.commit();
+        } catch (e) { showAlert('오류', '삭제 실패: ' + e.message); }
+    });
+
+    return { activeMeeting, activeSelf, activeMatch, handleSaveMeeting, handleDeleteMeeting, restoreMeeting, purgeMeeting };
 }
 
 // ── 정기 모임 자동 생성 설정 (전역 헬퍼: member.html · attendance.html 공유) ──
