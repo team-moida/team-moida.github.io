@@ -1,6 +1,6 @@
 CLAUDE.md — OTP FC 모이다 프로젝트
-Version: 3.6
-Last Updated: 2026-06-23
+Version: 3.7
+Last Updated: 2026-06-27
 
 프로젝트 개요
 아마추어 혼성 풋살팀 OTP FC 운영 관리 웹앱 "모이다"
@@ -123,6 +123,16 @@ QR 코드 생성 → handlers-attend-qr.js
 기존 기능을 깨지 않는다. 새 기능보다 기존 기능 안정성을 우선한다.
 추측으로 구현하지 않는다. 파일/구조는 실제 디스크 기준으로 확인한다.
 기능 변경 가능성이 있으면 먼저 설명한다.
+
+
+이전 실수 방지 (반복 금지)
+아래는 과거에 실제로 낸 실수다. 같은 류를 반복하지 않는다.
+
+- 공용 에셋·공통 컴포넌트를 교체/수정하기 전, 그 파일이 어디에 쓰이는지 먼저 grep으로 확인한다.
+  특히 아이콘은 분리돼 있다: icon.png = 인앱 엠블럼(OTP 팀 로고 — 헤더·첫화면·푸시), app-icon.png = 휴대폰 런처/홈추가 아이콘(모이다). "앱 아이콘만" 바꾸라면 app-icon.png만 건드린다. (실수: icon.png를 덮어 인앱 엠블럼까지 바뀜)
+- "삭제된 X를 보관/복원" 류 요청은 X의 데이터 단위를 먼저 확정한다 — 모임 문서 자체인지, 그 부산물(출석기록 history)인지. 모임 삭제는 영구삭제가 아니라 soft-delete(meetings.deleted=true), 보관함=삭제된 모임, 통계 제외=history.trashed. (실수: 보관함을 history 기반으로 만들어 예정 모임이 안 떴음)
+- 모임 상태(생성/삭제/복원)를 바꾸면 미러(현재 모임 = settings/meeting_schedule_v2 · meeting_schedule_match) 재동기화(syncMirror)를 항상 함께 고려한다. 미러를 안 맞추면 홈 키오스크(isActive)·운영진 선정(displayMeetingSettings 기준)·출석이 엉뚱한 모임을 가리킨다. (실수: 복원이 deleted만 풀고 미러를 안 맞춰 키오스크 미표시·선정 누락)
+- 커밋 메시지에 큰따옴표가 있으면 PowerShell here-string이 깨진다 → 메시지를 파일로 쓰고 git commit -F 로 커밋한다.
 
 
 크로스 플랫폼 호환 (PC · Android · iOS)
