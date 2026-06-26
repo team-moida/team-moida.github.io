@@ -1022,6 +1022,9 @@ const TabAttend = ({
 
     // 현재 모임이면 회원은 항상, 관리자는 '출석체크' 서브탭일 때 체크인 UI 표시
     const showCheckin = isViewActive && (!isAdminMode || attendSubTab === 'checkin');
+    // 운영진도 회원과 동등하게 신청(선착순 등) 가능 — 단 이 모임 담당자는 제외(생성 시 자동 등록됨).
+    const isMeetingManager = !!(memberInfo?.id && meetingSettings?.managerId && meetingSettings.managerId === memberInfo.id);
+    const showRegister = showCheckin || (isViewActive && isAdminMode && !isMeetingManager);
 
     return (
     <div className="animate-in space-y-4">
@@ -1536,8 +1539,8 @@ const TabAttend = ({
             </div>
         )}
 
-        {/* 선착순 신청 카드 (관리자 패널 닫혔을 때만) */}
-        {showCheckin && (
+        {/* 선착순 신청 카드 — 회원 + 운영진(담당자 제외)도 동등하게 신청 */}
+        {showRegister && (
             <RegistrationCard
                 meetingSettings={meetingSettings}
                 myRegistration={myRegistration}
