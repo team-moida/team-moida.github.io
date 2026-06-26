@@ -724,7 +724,6 @@ const MeetingListScreen = ({
     attendHistory, darkMode, onDeleteRecord, generateAttendQRCode, onFinalizePenalty,
     onCreateTestMeeting, onDeleteTestMeeting,
 }) => {
-    const [isManageOpen, setIsManageOpen] = React.useState(false);
     const [testOpen, setTestOpen] = React.useState(false);
     const [listView, setListView] = React.useState('upcoming'); // upcoming | ended(기록)
     // 테스트 모임 = 개발자 모드 전용 (운영진 모드에선 숨김). localStorage 직접 판정 — 모드 전환 시 reload되므로 항상 최신.
@@ -747,27 +746,18 @@ const MeetingListScreen = ({
                 <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-black text-slate-500 uppercase tracking-widest shrink-0">모임</p>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
-                        {!isManageOpen && (
-                            <>
-                                <button onClick={() => setPendingAction('recurring')}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-xl font-black text-[11px] active:scale-95 transition-all"><Icon.Refresh size={13}/> 정기</button>
-                                <button onClick={() => setPendingAction('add')}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-teal-500 text-white rounded-xl font-black text-[11px] active:scale-95 transition-all shadow-sm"><Icon.Plus size={13}/> 추가</button>
-                            </>
-                        )}
-                        <button onClick={() => setIsManageOpen(o => !o)}
-                            className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 rounded-xl transition-all active:scale-95"
-                            style={isManageOpen ? {background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
-                            <Icon.Settings size={13}/>{isManageOpen ? '관리 ON' : '관리'}
-                        </button>
-                        {!isManageOpen && isDevMode && (
+                        <button onClick={() => setPendingAction('recurring')}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-xl font-black text-[11px] active:scale-95 transition-all"><Icon.Refresh size={13}/> 정기</button>
+                        <button onClick={() => setPendingAction('add')}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-teal-500 text-white rounded-xl font-black text-[11px] active:scale-95 transition-all shadow-sm"><Icon.Plus size={13}/> 추가</button>
+                        {isDevMode && (
                             <button onClick={() => setTestOpen(o => !o)}
                                 className="flex items-center gap-1 text-[11px] font-black px-2.5 py-1.5 rounded-xl bg-amber-50 text-amber-600 active:scale-95 transition-all"><Icon.Beaker size={14}/></button>
                         )}
                     </div>
                 </div>
             )}
-            {isDevMode && !isManageOpen && testOpen && (
+            {isDevMode && testOpen && (
                 <div className="rounded-2xl p-3 border border-amber-200 bg-amber-50/50">
                     <p className="text-[11px] font-black text-amber-700 mb-1 flex items-center gap-1"><Icon.Beaker size={12}/>테스트 모임</p>
                     <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">버튼 한 번으로 현재 시각 기준 모임 + 나 포함 랜덤 인원으로 팀편성·매치표까지 자동 생성합니다. [테스트 삭제]를 누르면 기록이 남지 않습니다.</p>
@@ -777,16 +767,7 @@ const MeetingListScreen = ({
                     </div>
                 </div>
             )}
-            {isAdminMode && isManageOpen ? (
-                <MeetingsTab
-                    meetings={meetings} activeMeeting={activeMeeting}
-                    handleSaveMeeting={handleSaveMeeting} handleDeleteMeeting={handleDeleteMeeting}
-                    managers={managers} showAlert={showAlert}
-                    onSelectMeeting={onSelect}
-                    pendingEditMeeting={pendingEditMeeting} onPendingEditHandled={onPendingEditHandled}
-                />
-            ) : (
-              <>
+            <>
                 {/* 예정 / 기록 전환 (관리자 전용) */}
                 {isAdminMode && (
                     <>
@@ -876,7 +857,6 @@ const MeetingListScreen = ({
                         managers={managers} showAlert={showAlert} onSelectMeeting={onSelect} />
                 )}
               </>
-            )}
         </div>
     );
 };
