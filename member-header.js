@@ -111,15 +111,7 @@ function MemberHeader({
                             </>
                         )}
                     </div>
-                    {isDeveloper && (
-                        <div className="flex items-center gap-0.5 bg-slate-200/70 rounded-lg p-0.5" title="개발자 전용 — 보기 모드 전환">
-                            {[['dev','개발'],['staff','운영'],['member','회원']].map(([v,l]) => (
-                                <button key={v} onClick={() => v !== viewMode && onChangeViewMode && onChangeViewMode(v)}
-                                    className={`px-1.5 py-1 rounded-md text-[10px] font-black leading-none transition-all ${viewMode === v ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500'}`}>{l}</button>
-                            ))}
-                        </div>
-                    )}
-                    {/* 프로필 아바타(LAB형) → 내 프로필 · 라이트/다크 · 로그아웃 */}
+                    {/* 프로필 아바타(LAB형) → 보기모드(개발자) · 내 프로필 · 라이트/다크 · 로그아웃 */}
                     <div className="relative">
                         <button onClick={()=>setMenuOpen(o=>!o)} className="w-9 h-9 rounded-full bg-teal-500 text-white font-black text-sm flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden" title="프로필">
                             {profileImage ? <img src={profileImage} alt="" className="w-full h-full object-cover"/> : avatarChar}
@@ -127,7 +119,18 @@ function MemberHeader({
                         {menuOpen && (
                             <>
                                 <div className="fixed inset-0 z-40" onClick={()=>setMenuOpen(false)}/>
-                                <div className="absolute right-0 top-11 z-50 w-44 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden py-1">
+                                <div className="absolute right-0 top-11 z-50 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden py-1">
+                                    {isDeveloper && (
+                                        <div className="px-3 pt-1.5 pb-2 mb-1 border-b border-slate-100">
+                                            <p className="text-[10px] font-black text-slate-400 mb-1.5 px-0.5">보기 모드</p>
+                                            <div className="flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5">
+                                                {[['dev','개발'],['staff','운영'],['member','회원']].map(([v,l]) => (
+                                                    <button key={v} onClick={() => { if (v !== viewMode && onChangeViewMode) onChangeViewMode(v); }}
+                                                        className={`flex-1 px-1 py-1.5 rounded-md text-[11px] font-black leading-none transition-all ${viewMode === v ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500'}`}>{l}</button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                     <button onClick={()=>{ setMenuOpen(false); onOpenProfile && onOpenProfile(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-black text-slate-700">
                                         <Icon.User size={16}/> 내 프로필
                                     </button>
