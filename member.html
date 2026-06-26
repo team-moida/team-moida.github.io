@@ -884,6 +884,7 @@ function App() {
                         pendingEditMeeting={pendingEditMeeting} onPendingEditHandled={() => setPendingEditMeeting(null)}
                         onCreateTestMeeting={() => createTestMeeting({ me: memberInfo ? { id: memberInfo.id, name: memberInfo.name, gender: memberInfo.gender, level: memberInfo.level } : { id: memberData?.memberId, name: memberData?.name || '나', gender: '남성', level: 4 }, activeMembers: roster.activeMembers, showAlert, showConfirm })}
                         onDeleteTestMeeting={() => deleteTestMeeting({ showAlert, showConfirm })}
+                        onDeleteOneTest={(m) => deleteOneTestMeeting({ meeting: m, showAlert, showConfirm })}
                     />
                 )}
                 {tab === 'meeting' && viewMeeting && (

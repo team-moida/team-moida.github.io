@@ -722,9 +722,8 @@ const MeetingListScreen = ({
     activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers, showAlert,
     pendingEditMeeting, onPendingEditHandled,
     attendHistory, darkMode, onDeleteRecord, generateAttendQRCode, onFinalizePenalty,
-    onCreateTestMeeting, onDeleteTestMeeting,
+    onCreateTestMeeting, onDeleteTestMeeting, onDeleteOneTest,
 }) => {
-    const [testOpen, setTestOpen] = React.useState(false);
     const [listView, setListView] = React.useState('upcoming'); // upcoming | ended(기록)
     // 테스트 모임 = 개발자 모드 전용 (운영진 모드에선 숨김). localStorage 직접 판정 — 모드 전환 시 reload되므로 항상 최신.
     const isDevMode = (() => { try { return localStorage.getItem('moida_dev') === '1' && (localStorage.getItem('moida_view_mode') || 'dev') === 'dev'; } catch(e) { return false; } })();
@@ -751,21 +750,17 @@ const MeetingListScreen = ({
                         <button onClick={() => setPendingAction('add')}
                             className="flex items-center gap-1 px-3 py-1.5 bg-teal-500 text-white rounded-xl font-black text-[11px] active:scale-95 transition-all shadow-sm"><Icon.Plus size={13}/> 추가</button>
                         {isDevMode && (
-                            <button onClick={() => setTestOpen(o => !o)}
-                                className="flex items-center gap-1 text-[11px] font-black px-2.5 py-1.5 rounded-xl bg-amber-50 text-amber-600 active:scale-95 transition-all"><Icon.Beaker size={14}/></button>
+                            <button onClick={onCreateTestMeeting}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 text-white rounded-xl font-black text-[11px] active:scale-95 transition-all shadow-sm"><Icon.Beaker size={13}/> 테스트</button>
                         )}
                     </div>
                 </div>
             )}
-            {isDevMode && testOpen && (
-                <div className="rounded-2xl p-3 border border-amber-200 bg-amber-50/50">
-                    <p className="text-[11px] font-black text-amber-700 mb-1 flex items-center gap-1"><Icon.Beaker size={12}/>테스트 모임</p>
-                    <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">버튼 한 번으로 현재 시각 기준 모임 + 나 포함 랜덤 인원으로 팀편성·매치표까지 자동 생성합니다. [테스트 삭제]를 누르면 기록이 남지 않습니다.</p>
-                    <div className="flex gap-2">
-                        <button onClick={onCreateTestMeeting} className="flex-1 py-2 rounded-xl bg-amber-500 text-white font-black text-xs active:scale-95 transition-all">생성</button>
-                        <button onClick={onDeleteTestMeeting} className="flex-1 py-2 rounded-xl bg-rose-50 text-rose-500 font-black text-xs active:scale-95 transition-all border border-rose-200">테스트 삭제</button>
-                    </div>
-                </div>
+            {isDevMode && (meetings || []).some(m => m.isTest) && (
+                <button onClick={onDeleteTestMeeting}
+                    className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-rose-50 text-rose-500 font-black text-[11px] border border-rose-200 active:scale-95 transition-all">
+                    <Icon.Trash size={12}/> 테스트 모임 모두 삭제 ({(meetings || []).filter(m => m.isTest).length}개)
+                </button>
             )}
             <>
                 {/* 예정 / 기록 전환 (관리자 전용) */}
@@ -840,7 +835,7 @@ const MeetingListScreen = ({
                                     )}
                                     <span role="button" onClick={(e) => { e.stopPropagation(); setEmbeddedEdit(m); }}
                                         className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-slate-100 text-slate-500 active:scale-95 cursor-pointer"><Icon.Edit size={12}/> 수정</span>
-                                    <span role="button" onClick={(e) => { e.stopPropagation(); handleDeleteMeeting(m); }}
+                                    <span role="button" onClick={(e) => { e.stopPropagation(); (m.isTest && onDeleteOneTest) ? onDeleteOneTest(m) : handleDeleteMeeting(m); }}
                                         className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-rose-50 text-rose-500 active:scale-95 cursor-pointer"><Icon.Trash size={12}/> 삭제</span>
                                 </div>
                             )}

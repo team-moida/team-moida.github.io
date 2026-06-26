@@ -262,3 +262,51 @@ async function deleteTestMeeting({ showAlert, showConfirm }) {
             }
         });
 }
+
+// 개별 테스트 모임 삭제 — 모임 카드 [삭제]에서 호출. 그 모임에 속한 기록(참가자·팀편성·
+// 매치표·출석)까지 함께 지우고, 현재 모임 미러가 이 테스트를 가리키면 원래대로 복원한다.
+async function deleteOneTestMeeting({ meeting, showAlert, showConfirm }) {
+    if (!meeting || !meeting.id) return;
+    const mid = meeting.id, meetingDate = meeting.date;
+    showConfirm('🧪 테스트 모임 삭제',
+        '이 테스트 모임을 삭제합니다.\n참가자·팀편성·매치표·출석 기록이 모두 사라집니다.',
+        async () => {
+            try {
+                // 미러 복원용 백업(생성 때 보관한 원래 현재모임)
+                let mirrorBackup = null, markerTestId = null;
+                try { const md = await getCol('settings').doc('test_meeting').get(); if (md.exists) { const mdd = md.data() || {}; mirrorBackup = mdd.mirrorBackup || null; markerTestId = mdd.testId || null; } } catch (_) {}
+
+                // 이 모임에 속한 문서 정리 (meetingId 기준)
+                const [wsS, regS, tdS, msS] = await Promise.all([
+                    getCol('weekly_session').where('meetingId', '==', mid).get().catch(() => null),
+                    getCol('registrations').where('meetingId', '==', mid).get().catch(() => null),
+                    getCol('team_drafts').where('meetingId', '==', mid).get().catch(() => null),
+                    getCol('match_schedules').where('meetingId', '==', mid).get().catch(() => null),
+                ]);
+                const batch = db.batch();
+                batch.delete(getCol('meetings').doc(mid));
+                [wsS, regS, tdS, msS].forEach(snap => { if (snap) snap.docs.forEach(d => batch.delete(d.ref)); });
+                await batch.commit();
+
+                // 출석 기록(history)은 날짜 기준 정리 — 테스트는 빈 날짜라 다른 모임과 안 겹침
+                try { const hS = await getCol('history').where('date', '==', meetingDate).get(); if (hS && !hS.empty) { const hb = db.batch(); hS.docs.forEach(d => hb.delete(d.ref)); await hb.commit(); } } catch (_) {}
+
+                // 현재 모임 미러가 이 테스트를 가리키면 원래대로 복원
+                const _isTestMirror = (d) => d.location === '🧪 테스트 모임' || d.location === '테스트 현재위치' || d.location === '📍 테스트 현재위치' || (meetingDate && d.date === meetingDate);
+                try {
+                    const mref = getCol('settings').doc('meeting_schedule_v2');
+                    const ms = await mref.get();
+                    if (ms.exists && _isTestMirror(ms.data() || {})) {
+                        if (mirrorBackup) await mref.set(mirrorBackup);
+                        else await mref.set({ date: '', start: '', end: '', location: '', locationLat: null, locationLng: null, locationRadius: 100, maxLimit: 18, enableQR: false, managerId: '', managerName: '', meetingType: 'self' });
+                    }
+                } catch (_) {}
+                // 마커가 이 모임을 가리키면 제거
+                if (markerTestId === mid) { await getCol('settings').doc('test_meeting').delete().catch(() => {}); }
+
+                showAlert('삭제 완료', '테스트 모임과 기록을 삭제했습니다.');
+            } catch (e) {
+                showAlert('오류', '삭제 실패: ' + (e?.message || e));
+            }
+        });
+}
