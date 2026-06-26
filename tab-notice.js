@@ -129,7 +129,7 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                     ) : (
                         <>
                             <button onClick={onAdd} className="px-3 py-1.5 rounded-lg bg-teal-500 text-white font-black text-xs active:scale-95 transition-all flex items-center gap-1">
-                                <Icon.Plus size={13}/> 새 공지
+                                <Icon.Plus size={13}/> 글쓰기
                             </button>
                             {list.length > 0 && (
                                 <>
