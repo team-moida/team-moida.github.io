@@ -111,8 +111,7 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
             {/* 상단: 간결한 헤더 (뒤로 + 종 + 작은 제목) — 다른 탭과 통일 */}
             <div className="flex items-center gap-2.5 mb-4">
                 <button onClick={onBack} className="p-2 rounded-xl bg-slate-100 text-slate-600 shrink-0 active:scale-95 transition-all"><Icon.ChevronLeft size={18}/></button>
-                <Icon.Bell size={20} className="text-amber-500 shrink-0"/>
-                <h2 className="font-black text-lg text-slate-800 min-w-0 truncate">공지사항{list.length > 0 && <span className="text-base text-slate-400"> · {list.length}건</span>}</h2>
+                <h2 className="font-black text-lg text-slate-800 min-w-0 truncate">게시판{list.length > 0 && <span className="text-base text-slate-400"> · {list.length}건</span>}</h2>
             </div>
 
             {/* 관리자 도구 — 작은 버튼(오른쪽 정렬) */}
