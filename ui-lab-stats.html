@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>출석·참여 통계 미리보기 — 모이다</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css" type="text/css"/>
+<style>
+  :root{ --indigo:#183FB0; --deep:#122E78; --lime:#C2F94A; --ink:#0f172a; --sub:#475569; --mute:#94A3B8;
+         --success:#10B981; --warn:#F59E0B; --danger:#EF4444; --line:#eef2f7; }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  body{ font-family:'Paperlogy',-apple-system,sans-serif; background:radial-gradient(140% 100% at 50% 0%, #eef2ff 0%, #f8fafc 46%); color:var(--ink); padding-bottom:60px; }
+  .wrap{ max-width:440px; margin:0 auto; }
+  .topbar{ position:sticky; top:0; z-index:30; background:rgba(248,250,252,0.92); backdrop-filter:blur(10px); padding:12px 14px; border-bottom:1px solid #e2e8f0; }
+  .topbar h2{ font-size:13px; font-weight:800; color:var(--mute); text-align:center; margin-bottom:8px; }
+  .seg{ display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+  .seg button{ padding:9px 4px; border:1.5px solid #dbe3f5; border-radius:11px; font-weight:800; font-size:12px; background:#fff; color:#64748b; cursor:pointer; font-family:inherit; transition:.15s; }
+  .seg button.on{ background:var(--indigo); color:#fff; border-color:var(--indigo); }
+  .body{ padding:16px; }
+  .hint{ font-size:11px; font-weight:700; color:var(--sub); background:#eef2ff; border-radius:12px; padding:9px 12px; margin-bottom:14px; line-height:1.5; }
+  .hint b{ color:var(--indigo); }
+
+  .card{ background:#fff; border-radius:20px; box-shadow:0 4px 14px rgba(0,0,0,.05); }
+  .kicker{ font-size:10px; font-weight:800; letter-spacing:.12em; color:var(--mute); text-transform:uppercase; }
+
+  /* ── 개인 뷰 ── */
+  .me-card{ padding:18px; margin-bottom:14px; }
+  .me-top{ display:flex; align-items:center; gap:16px; }
+  .ring{ width:118px; height:118px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+  .ring .inner{ width:90px; height:90px; border-radius:50%; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .ring .pct{ font-size:27px; font-weight:900; color:var(--indigo); line-height:1; }
+  .ring .lbl{ font-size:10px; font-weight:800; color:var(--mute); margin-top:3px; }
+  .me-side{ flex:1; min-width:0; }
+  .me-side .name{ font-size:17px; font-weight:900; }
+  .me-side .season{ font-size:11px; font-weight:700; color:var(--mute); margin-top:2px; }
+  .streak{ display:inline-flex; align-items:center; gap:5px; margin-top:10px; background:#eef9e0; color:#3f6212; font-size:11.5px; font-weight:800; padding:5px 10px; border-radius:999px; }
+
+  .statgrid{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-top:16px; }
+  .stat{ border-radius:14px; padding:11px 6px; text-align:center; }
+  .stat .n{ font-size:20px; font-weight:900; line-height:1; }
+  .stat .t{ font-size:10.5px; font-weight:800; margin-top:4px; }
+  .s-go{ background:#e7f8f1; } .s-go .n{ color:var(--success); } .s-go .t{ color:#0f9b6c; }
+  .s-late{ background:#fef6e7; } .s-late .n{ color:var(--warn); } .s-late .t{ color:#b9791a; }
+  .s-abs{ background:#f1f5f9; } .s-abs .n{ color:#64748b; } .s-abs .t{ color:#64748b; }
+  .s-no{ background:#fdecec; } .s-no .n{ color:var(--danger); } .s-no .t{ color:#c93a3a; }
+
+  .recent{ padding:16px 18px; }
+  .recent .ttl{ font-size:13px; font-weight:900; margin-bottom:12px; }
+  .dots{ display:flex; gap:7px; flex-wrap:wrap; }
+  .dot{ width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:900; color:#fff; }
+  .d-go{ background:var(--success); } .d-late{ background:var(--warn); } .d-abs{ background:#cbd5e1; color:#475569; } .d-no{ background:var(--danger); }
+  .legend{ display:flex; gap:12px; flex-wrap:wrap; margin-top:14px; }
+  .lg{ display:flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; color:var(--sub); }
+  .lg i{ width:11px; height:11px; border-radius:3px; display:inline-block; }
+
+  /* ── 운영진 뷰 ── */
+  .sumrow{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; margin-bottom:14px; }
+  .sum{ padding:14px 10px; text-align:center; }
+  .sum .n{ font-size:22px; font-weight:900; color:var(--indigo); line-height:1; }
+  .sum .t{ font-size:10.5px; font-weight:800; color:var(--mute); margin-top:5px; }
+
+  .ranktools{ display:flex; align-items:center; gap:7px; margin-bottom:10px; flex-wrap:wrap; }
+  .chip{ font-size:11px; font-weight:800; padding:5px 11px; border-radius:999px; background:#eaeffb; color:var(--indigo); }
+  .sorts{ margin-left:auto; display:flex; gap:5px; }
+  .sorts button{ font-size:10.5px; font-weight:800; padding:5px 9px; border-radius:9px; border:1px solid #e2e8f0; background:#fff; color:#64748b; cursor:pointer; font-family:inherit; }
+  .sorts button.on{ background:var(--deep); color:#fff; border-color:var(--deep); }
+
+  .rrow{ display:flex; align-items:center; gap:11px; padding:12px 14px; border-top:1px solid var(--line); }
+  .rrow:first-child{ border-top:0; }
+  .rank{ width:22px; font-size:13px; font-weight:900; color:var(--mute); text-align:center; flex-shrink:0; }
+  .rank.top{ color:var(--indigo); }
+  .rinfo{ flex:1; min-width:0; }
+  .rname{ font-size:14px; font-weight:900; display:flex; align-items:center; gap:6px; }
+  .rrole{ font-size:10px; font-weight:800; color:var(--mute); }
+  .king{ font-size:9.5px; font-weight:900; color:#3f6212; background:var(--lime); padding:2px 7px; border-radius:999px; }
+  .warnbdg{ font-size:9.5px; font-weight:900; color:#fff; background:var(--danger); padding:2px 7px; border-radius:999px; }
+  .bar{ height:7px; border-radius:999px; background:#eef2f7; margin-top:7px; overflow:hidden; }
+  .bar i{ display:block; height:100%; border-radius:999px; background:linear-gradient(90deg,var(--deep),var(--indigo)); }
+  .rmeta{ display:flex; gap:10px; margin-top:6px; }
+  .rmeta span{ font-size:10.5px; font-weight:800; }
+  .m-late{ color:var(--warn); } .m-abs{ color:#64748b; } .m-no{ color:var(--danger); }
+  .rpct{ font-size:17px; font-weight:900; color:var(--indigo); flex-shrink:0; width:48px; text-align:right; }
+
+  .sechead{ font-size:13px; font-weight:900; margin:0 2px 10px; display:flex; align-items:center; gap:7px; }
+  .sechead .cnt{ color:var(--indigo); }
+  .note{ font-size:10.5px; color:var(--mute); font-weight:700; margin-top:10px; padding:0 2px; line-height:1.5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <h2>📊 출석·참여 통계 — 시안</h2>
+    <div class="seg">
+      <button id="t-me" class="on" onclick="show('me')">개인 보기 (홈 탭)</button>
+      <button id="t-admin" onclick="show('admin')">운영진 보기 (명단 탭)</button>
+    </div>
+  </div>
+
+  <!-- ───────── 개인 뷰 ───────── -->
+  <div class="body" id="v-me">
+    <div class="hint">모든 회원이 <b>자기 출석 현황</b>을 홈 탭에서 봐요. 시즌 누적 기준이에요.</div>
+
+    <div class="card me-card">
+      <div class="me-top">
+        <div class="ring" style="background:conic-gradient(var(--indigo) 0% 86%, #e6ebf5 86% 100%)">
+          <div class="inner"><span class="pct">86%</span><span class="lbl">출석률</span></div>
+        </div>
+        <div class="me-side">
+          <div class="kicker">2026 시즌</div>
+          <div class="name">이성훈 님</div>
+          <div class="season">신청 28회 중 24회 출석</div>
+          <span class="streak">🔥 현재 5회 연속 출석</span>
+        </div>
+      </div>
+      <div class="statgrid">
+        <div class="stat s-go"><div class="n">24</div><div class="t">출석</div></div>
+        <div class="stat s-late"><div class="n">2</div><div class="t">지각</div></div>
+        <div class="stat s-abs"><div class="n">3</div><div class="t">결석</div></div>
+        <div class="stat s-no"><div class="n">1</div><div class="t">노쇼</div></div>
+      </div>
+    </div>
+
+    <div class="card recent">
+      <div class="ttl">최근 모임</div>
+      <div class="dots">
+        <div class="dot d-go">출</div><div class="dot d-go">출</div><div class="dot d-late">지</div>
+        <div class="dot d-go">출</div><div class="dot d-go">출</div><div class="dot d-abs">결</div>
+        <div class="dot d-go">출</div><div class="dot d-go">출</div><div class="dot d-no">노</div>
+        <div class="dot d-go">출</div>
+      </div>
+      <div class="legend">
+        <span class="lg"><i style="background:var(--success)"></i>출석</span>
+        <span class="lg"><i style="background:var(--warn)"></i>지각</span>
+        <span class="lg"><i style="background:#cbd5e1"></i>결석(불참)</span>
+        <span class="lg"><i style="background:var(--danger)"></i>노쇼</span>
+      </div>
+    </div>
+    <div class="note">※ 지각/결석/노쇼 기준은 현재 앱의 벌금 규정과 동일하게 집계해요(통보 노쇼·무통보 노쇼 등).</div>
+  </div>
+
+  <!-- ───────── 운영진 뷰 ───────── -->
+  <div class="body" id="v-admin" style="display:none">
+    <div class="hint"><b>회비 납부자</b> 기준 통계예요. (휴식·미납·탈퇴 회원은 제외) · 운영진만 볼 수 있어요.</div>
+
+    <div class="sumrow">
+      <div class="card sum"><div class="n">78%</div><div class="t">평균 출석률</div></div>
+      <div class="card sum"><div class="n">22명</div><div class="t">회비 납부자</div></div>
+      <div class="card sum"><div class="n">9건</div><div class="t">이번달 노쇼</div></div>
+    </div>
+
+    <div class="ranktools">
+      <span class="chip">2026 시즌</span>
+      <div class="sorts">
+        <button class="on">출석률</button>
+        <button>지각</button>
+        <button>노쇼</button>
+      </div>
+    </div>
+
+    <div class="sechead">회원별 통계 <span class="cnt">· 22명</span></div>
+    <div class="card">
+      <div class="rrow">
+        <div class="rank top">1</div>
+        <div class="rinfo">
+          <div class="rname">김민준 <span class="rrole">회장</span> <span class="king">개근왕</span></div>
+          <div class="bar"><i style="width:95%"></i></div>
+          <div class="rmeta"><span class="m-late">지각 1</span><span class="m-abs">결석 0</span><span class="m-no">노쇼 0</span></div>
+        </div>
+        <div class="rpct">95%</div>
+      </div>
+      <div class="rrow">
+        <div class="rank top">2</div>
+        <div class="rinfo">
+          <div class="rname">이서연 <span class="rrole">매니저</span></div>
+          <div class="bar"><i style="width:92%"></i></div>
+          <div class="rmeta"><span class="m-late">지각 0</span><span class="m-abs">결석 1</span><span class="m-no">노쇼 0</span></div>
+        </div>
+        <div class="rpct">92%</div>
+      </div>
+      <div class="rrow">
+        <div class="rank top">3</div>
+        <div class="rinfo">
+          <div class="rname">박지후</div>
+          <div class="bar"><i style="width:88%"></i></div>
+          <div class="rmeta"><span class="m-late">지각 2</span><span class="m-abs">결석 1</span><span class="m-no">노쇼 0</span></div>
+        </div>
+        <div class="rpct">88%</div>
+      </div>
+      <div class="rrow">
+        <div class="rank">4</div>
+        <div class="rinfo">
+          <div class="rname">최유나</div>
+          <div class="bar"><i style="width:84%"></i></div>
+          <div class="rmeta"><span class="m-late">지각 1</span><span class="m-abs">결석 2</span><span class="m-no">노쇼 0</span></div>
+        </div>
+        <div class="rpct">84%</div>
+      </div>
+      <div class="rrow">
+        <div class="rank">5</div>
+        <div class="rinfo">
+          <div class="rname">정도윤 <span class="rrole">총무</span></div>
+          <div class="bar"><i style="width:80%"></i></div>
+          <div class="rmeta"><span class="m-late">지각 3</span><span class="m-abs">결석 1</span><span class="m-no">노쇼 1</span></div>
+        </div>
+        <div class="rpct">80%</div>
+      </div>
+      <div class="rrow">
+        <div class="rank">6</div>
+        <div class="rinfo">
+          <div class="rname">한지우</div>
+          <div class="bar"><i style="width:72%"></i></div>
+          <div class="rmeta"><span class="m-late">지각 2</span><span class="m-abs">결석 3</span><span class="m-no">노쇼 1</span></div>
+        </div>
+        <div class="rpct">72%</div>
+      </div>
+      <div class="rrow">
+        <div class="rank">7</div>
+        <div class="rinfo">
+          <div class="rname">오세훈 <span class="warnbdg">노쇼 주의</span></div>
+          <div class="bar"><i style="width:65%"></i></div>
+          <div class="rmeta"><span class="m-late">지각 1</span><span class="m-abs">결석 4</span><span class="m-no">노쇼 2</span></div>
+        </div>
+        <div class="rpct">65%</div>
+      </div>
+      <div class="rrow">
+        <div class="rank">8</div>
+        <div class="rinfo">
+          <div class="rname">강하은 <span class="warnbdg">노쇼 주의</span></div>
+          <div class="bar"><i style="width:58%"></i></div>
+          <div class="rmeta"><span class="m-late">지각 0</span><span class="m-abs">결석 5</span><span class="m-no">노쇼 2</span></div>
+        </div>
+        <div class="rpct">58%</div>
+      </div>
+    </div>
+    <div class="note">※ 출석률 = 출석 ÷ 참가확정 모임. 정렬(출석률/지각/노쇼)·기간(시즌/이번달) 전환 가능. 한 명을 누르면 그 회원의 모임별 상세가 펼쳐지게 할 수 있어요.</div>
+  </div>
+</div>
+
+<script>
+  function show(v){
+    document.getElementById('v-me').style.display    = v==='me'    ? 'block':'none';
+    document.getElementById('v-admin').style.display = v==='admin' ? 'block':'none';
+    document.getElementById('t-me').classList.toggle('on', v==='me');
+    document.getElementById('t-admin').classList.toggle('on', v==='admin');
+    window.scrollTo(0,0);
+  }
+</script>
+</body>
+</html>
