@@ -170,7 +170,7 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
                     list.map((a, i) => (
                         <button key={a.id}
                             onClick={() => selectMode ? toggleCheck(a.id) : setSelectedId(a.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 transition-colors ${i > 0 ? 'border-t border-slate-100' : ''}`}>
+                            className={`w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 transition-colors ${i > 0 ? 'border-t border-slate-100' : ''} ${isAnnDone(a) ? 'opacity-60' : ''}`}>
                             {selectMode && (
                                 <span className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center border-2 transition-all ${checkedIds.includes(a.id) ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-300'}`}>
                                     {checkedIds.includes(a.id) && <Icon.Check size={12}/>}

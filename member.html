@@ -261,13 +261,53 @@ function App() {
     // 안읽음 기준은 localStorage(기기/브라우저별, 캐시 삭제 시 초기화).
     const notifMs = (v) => (v && typeof v.toMillis === 'function') ? v.toMillis() : (v ? (Date.parse(v) || 0) : 0);
 
-    // (A) 종/알림 센터: 전체 알림 피드(pushOnly 포함) 기준 안읽음
+    // (A) 종/알림 센터: 전체 알림 피드(pushOnly 포함)
+    // ※ 확인/삭제는 공유 문서(notifications)를 건드리지 않고 기기별 localStorage로 처리 → 다른 회원에게 영향 없음
+    const [notifConfirmed, setNotifConfirmed] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('moida_notifConfirmed') || '[]'); } catch { return []; }
+    });
+    const [notifDismissed, setNotifDismissed] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('moida_notifDismissed') || '[]'); } catch { return []; }
+    });
+    const visibleNotifs = notifFeed.filter(a => !notifDismissed.includes(a.id));
+    // 완료(불투명) 판정: 직접 '확인'했거나, 연결된 모임이 종료됐으면 완료
+    const isNotifDone = (a) => {
+        if (!a) return false;
+        if (notifConfirmed.includes(a.id)) return true;
+        if (a.linkMeetingId && typeof isMeetingEnded === 'function') {
+            const mt = (meetings || []).find(m => m.id === a.linkMeetingId);
+            if (mt && isMeetingEnded(mt)) return true;
+        }
+        return false;
+    };
+    const confirmNotif = (id) => setNotifConfirmed(prev => {
+        if (prev.includes(id)) return prev;
+        const next = [...prev, id];
+        try { localStorage.setItem('moida_notifConfirmed', JSON.stringify(next)); } catch {}
+        return next;
+    });
+    const dismissNotif = (id) => setNotifDismissed(prev => {
+        if (prev.includes(id)) return prev;
+        const next = [...prev, id];
+        try { localStorage.setItem('moida_notifDismissed', JSON.stringify(next)); } catch {}
+        return next;
+    });
+    const clearDoneNotifs = () => {
+        const doneIds = visibleNotifs.filter(isNotifDone).map(a => a.id);
+        if (!doneIds.length) return;
+        setNotifDismissed(prev => {
+            const next = [...new Set([...prev, ...doneIds])];
+            try { localStorage.setItem('moida_notifDismissed', JSON.stringify(next)); } catch {}
+            return next;
+        });
+    };
+
     const [lastSeenNotif, setLastSeenNotif] = useState(() => {
         try { return Number(localStorage.getItem('moida_lastSeenNotif')) || 0; } catch { return 0; }
     });
-    const unreadCount = notifFeed.filter(a => notifMs(a.sentAt) > lastSeenNotif).length;
+    const unreadCount = visibleNotifs.filter(a => notifMs(a.sentAt) > lastSeenNotif).length;
     const markAllNotifSeen = () => {
-        const newest = notifFeed.length ? notifMs(notifFeed[0].sentAt) : 0;
+        const newest = visibleNotifs.length ? notifMs(visibleNotifs[0].sentAt) : 0;
         if (newest > lastSeenNotif) {
             try { localStorage.setItem('moida_lastSeenNotif', String(newest)); } catch {}
             setLastSeenNotif(newest);
@@ -786,7 +826,8 @@ function App() {
                 onEndMeeting={attendHandleEndMeeting}
                 isMeetingEndSaved={attend.attendHistory?.some(h => h.date === displayMeetingSettings?.date) || false}
                 unreadCount={unreadCount} onOpenAnnouncements={openAnnouncements}
-                notifications={notifFeed} onNotifNavigate={onNotifNavigate} onBellOpen={markAllNotifSeen}
+                notifications={visibleNotifs} onNotifNavigate={onNotifNavigate} onBellOpen={markAllNotifSeen}
+                isNotifDone={isNotifDone} onConfirmNotif={confirmNotif} onDismissNotif={dismissNotif} onClearDoneNotifs={clearDoneNotifs}
                 onOpenProfile={() => setIsProfileModalOpen(true)} profileImage={memberInfo?.profileImage || memberInfo?.kakaoProfileImage}
             />
             <div className="px-4 pt-4">

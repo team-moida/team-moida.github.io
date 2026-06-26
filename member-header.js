@@ -29,6 +29,7 @@ function MemberHeader({
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
     unreadCount = 0, onOpenAnnouncements,
     notifications = [], onNotifNavigate, onBellOpen,
+    isNotifDone, onConfirmNotif, onDismissNotif, onClearDoneNotifs,
     onOpenProfile, profileImage, children,
     isDeveloper, viewMode, onChangeViewMode, onLockDeveloper, onLogoHold
 }) {
@@ -78,23 +79,40 @@ function MemberHeader({
                                             </div>
                                         ) : notifications.map((a, i) => {
                                             const meta = NOTIF_META(a);
+                                            const done = isNotifDone ? isNotifDone(a) : false;
                                             return (
-                                                <button key={a.id || i} onClick={() => { setAlertOpen(false); onNotifNavigate && onNotifNavigate(a); }}
-                                                    className={`w-full flex items-start gap-3 px-4 py-3 text-left active:bg-slate-50 transition-colors ${i > 0 ? 'border-t border-slate-100' : ''}`}>
-                                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${meta.bg}`}>
-                                                        <meta.Cmp size={16} className={meta.color}/>
+                                                <div key={a.id || i}
+                                                    className={`flex items-start gap-2 px-3 py-3 ${i > 0 ? 'border-t border-slate-100' : ''} ${done ? 'opacity-60' : ''}`}>
+                                                    <button onClick={() => { setAlertOpen(false); onNotifNavigate && onNotifNavigate(a); }}
+                                                        className="flex items-start gap-3 flex-1 min-w-0 text-left active:opacity-70 transition-opacity">
+                                                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${meta.bg}`}>
+                                                            <meta.Cmp size={16} className={meta.color}/>
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="font-black text-[13.5px] text-slate-800 truncate">{a.title || '알림'}</p>
+                                                            {a.body && <p className="text-[12px] text-slate-500 mt-0.5" style={{display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{a.body}</p>}
+                                                            <p className="text-[10.5px] text-slate-400 mt-1 font-bold">{fmtNotifAgo(a.sentAt)}</p>
+                                                        </div>
+                                                    </button>
+                                                    <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                                                        {!done && (
+                                                            <button onClick={(e) => { e.stopPropagation(); onConfirmNotif && onConfirmNotif(a.id); }}
+                                                                title="확인" className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center active:scale-90 transition-transform"><Icon.Check size={14}/></button>
+                                                        )}
+                                                        <button onClick={(e) => { e.stopPropagation(); onDismissNotif && onDismissNotif(a.id); }}
+                                                            title="삭제" className="w-7 h-7 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center active:scale-90 transition-transform"><Icon.X size={14}/></button>
                                                     </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-black text-[13.5px] text-slate-800 truncate">{a.title || '알림'}</p>
-                                                        {a.body && <p className="text-[12px] text-slate-500 mt-0.5" style={{display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{a.body}</p>}
-                                                        <p className="text-[10.5px] text-slate-400 mt-1 font-bold">{fmtNotifAgo(a.sentAt)}</p>
-                                                    </div>
-                                                </button>
+                                                </div>
                                             );
                                         })}
                                     </div>
-                                    <button onClick={() => { setAlertOpen(false); onOpenAnnouncements && onOpenAnnouncements(); }}
-                                        className="w-full py-2.5 text-center text-xs font-black text-teal-600 border-t border-slate-100 active:bg-slate-50">게시판 전체 보기</button>
+                                    <div className="flex items-center border-t border-slate-100">
+                                        <button onClick={() => { onClearDoneNotifs && onClearDoneNotifs(); }}
+                                            className="flex-1 py-2.5 text-center text-xs font-black text-slate-500 active:bg-slate-50">완료 알림 지우기</button>
+                                        <div className="w-px h-5 bg-slate-100"/>
+                                        <button onClick={() => { setAlertOpen(false); onOpenAnnouncements && onOpenAnnouncements(); }}
+                                            className="flex-1 py-2.5 text-center text-xs font-black text-teal-600 active:bg-slate-50">게시판</button>
+                                    </div>
                                 </div>
                             </>
                         )}
