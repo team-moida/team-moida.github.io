@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>게시판(공지+소식) 미리보기 — 모이다</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css" type="text/css"/>
+<style>
+  :root{ --indigo:#183FB0; --deep:#122E78; --lime:#C2F94A; --ink:#0f172a; --sub:#475569; --mute:#94A3B8; --warn:#F59E0B; }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  body{ font-family:'Paperlogy',-apple-system,sans-serif; background:radial-gradient(140% 100% at 50% 0%, #eef2ff 0%, #f8fafc 46%); color:var(--ink); padding-bottom:60px; }
+  .wrap{ max-width:440px; margin:0 auto; }
+  .topbar{ position:sticky; top:0; z-index:30; background:rgba(248,250,252,0.92); backdrop-filter:blur(10px); padding:12px 14px; border-bottom:1px solid #e2e8f0; }
+  .topbar h2{ font-size:13px; font-weight:800; color:var(--mute); text-align:center; margin-bottom:8px; }
+  .seg{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; }
+  .seg button{ padding:9px 4px; border:1.5px solid #dbe3f5; border-radius:11px; font-weight:800; font-size:12px; background:#fff; color:#64748b; cursor:pointer; font-family:inherit; transition:.15s; }
+  .seg button.on{ background:var(--indigo); color:#fff; border-color:var(--indigo); }
+  .body{ padding:14px; }
+  .hint{ font-size:11px; font-weight:600; color:var(--sub); background:#eef2ff; border-radius:10px; padding:8px 11px; margin-bottom:12px; line-height:1.5; }
+
+  /* 간결 헤더 */
+  .head{ display:flex; align-items:center; gap:9px; margin-bottom:14px; }
+  .head .back{ width:36px; height:36px; border-radius:11px; background:#e2e8f0; color:#475569; border:0; font-size:17px; cursor:pointer; }
+  .head .bell{ color:var(--warn); font-size:20px; }
+  .head h1{ font-weight:900; font-size:19px; }
+  .head .cnt{ font-size:15px; color:var(--mute); font-weight:800; }
+  .write-btn{ margin-left:auto; background:var(--indigo); color:#fff; border:0; border-radius:11px; padding:8px 13px; font-weight:800; font-size:12px; font-family:inherit; cursor:pointer; }
+
+  /* 종류 배지 */
+  .bdg{ font-size:10px; font-weight:800; padding:2px 8px; border-radius:7px; }
+  .b-notice{ background:#fef3c7; color:#b45309; }       /* 공지 */
+  .b-news{ background:#e0e7ff; color:var(--indigo); }    /* 소식 */
+  .b-imp{ background:#fee2e2; color:#dc2626; }           /* 중요 */
+  .b-meet{ background:#ccfbf1; color:#0d9488; }          /* 모임 */
+  .pushed{ font-size:9px; font-weight:800; color:#16a34a; background:#f0fdf4; padding:1px 6px; border-radius:6px; }
+
+  /* 글 카드 */
+  .post{ background:#fff; border-radius:16px; box-shadow:0 4px 14px rgba(0,0,0,.05); padding:14px; margin-bottom:9px; cursor:pointer; text-align:left; width:100%; border:0; font-family:inherit; display:block; }
+  .post.pin{ border:1.5px solid #fde68a; }
+  .post .row1{ display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+  .post .pinico{ font-size:11px; }
+  .post .date{ margin-left:auto; font-size:10px; color:var(--mute); font-weight:700; }
+  .post .ttl{ font-weight:900; font-size:15px; color:var(--ink); line-height:1.3; }
+  .post .body{ font-size:12.5px; color:var(--sub); margin-top:4px; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .post .meta{ font-size:11px; color:var(--mute); margin-top:7px; font-weight:700; }
+
+  /* 작성 */
+  .field{ margin-bottom:13px; }
+  .field label{ display:block; font-size:12px; font-weight:800; color:var(--sub); margin-bottom:6px; }
+  .type-seg{ display:flex; gap:8px; }
+  .type-seg button{ flex:1; padding:13px; border-radius:13px; border:2px solid #e2e8f0; background:#fff; font-weight:800; font-size:13px; font-family:inherit; cursor:pointer; color:#64748b; text-align:center; }
+  .type-seg button.on{ border-color:var(--indigo); background:#eef2ff; color:var(--indigo); }
+  .type-seg button small{ display:block; font-size:10px; font-weight:600; color:var(--mute); margin-top:3px; }
+  .type-seg button.on small{ color:var(--indigo); }
+  input.tin, textarea.tin{ width:100%; border:1.5px solid #e2e8f0; border-radius:12px; padding:12px; font-size:14px; font-family:inherit; resize:none; }
+  textarea.tin{ min-height:140px; line-height:1.5; }
+  .push-note{ font-size:12px; font-weight:700; border-radius:11px; padding:10px 13px; line-height:1.5; }
+  .push-on{ background:#fffbeb; color:#b45309; }
+  .push-off{ background:#f1f5f9; color:#64748b; }
+  .submit{ width:100%; padding:14px; border-radius:14px; border:0; background:var(--indigo); color:#fff; font-weight:800; font-size:15px; font-family:inherit; cursor:pointer; margin-top:4px; }
+
+  /* 상세 */
+  .det-ttl{ font-weight:900; font-size:21px; line-height:1.3; margin:9px 0 8px; }
+  .det-meta{ font-size:12px; color:var(--mute); font-weight:700; padding-bottom:13px; border-bottom:1px solid #eef2ff; }
+  .det-body{ font-size:14.5px; color:#334155; line-height:1.7; margin-top:15px; white-space:pre-line; }
+  .det-cmt{ margin-top:22px; padding:16px; border-radius:14px; background:#f8fafc; text-align:center; color:var(--mute); font-size:12.5px; font-weight:700; }
+  .hidden{ display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <h2>게시판(공지+소식) — 미리보기</h2>
+    <div class="seg">
+      <button class="on" data-v="list" onclick="show('list')">목록</button>
+      <button data-v="write" onclick="show('write')">글쓰기(운영진)</button>
+      <button data-v="detail" onclick="show('detail')">글 상세</button>
+    </div>
+  </div>
+  <div class="body">
+
+    <!-- ===== 목록 ===== -->
+    <div id="view-list">
+      <div class="hint">공지와 소식이 한 게시판에 시간순으로 쌓여요. 공지/중요는 위에 핀으로 고정. 운영진만 [글쓰기]가 보여요(회원은 읽기).</div>
+      <div class="head">
+        <span class="bell">🔔</span>
+        <h1>게시판 <span class="cnt">· 6</span></h1>
+        <button class="write-btn" onclick="show('write')">＋ 글쓰기</button>
+      </div>
+
+      <button class="post pin" onclick="show('detail')">
+        <div class="row1"><span class="pinico">📌</span><span class="bdg b-imp">중요</span><span class="pushed">알림 발송됨</span><span class="date">26.06.20</span></div>
+        <div class="ttl">6월 회비 납부 안내</div>
+        <div class="body">6월 회비 납부 기간입니다. 회비 탭에서 토스/계좌이체로 납부 부탁드립니다. 미납 시 모임 신청이 제한될 수 있어요.</div>
+        <div class="meta">회장 이성훈</div>
+      </button>
+
+      <button class="post pin" onclick="show('detail')">
+        <div class="row1"><span class="pinico">📌</span><span class="bdg b-notice">공지</span><span class="pushed">알림 발송됨</span><span class="date">26.06.25</span></div>
+        <div class="ttl">6/28 정기모임 장소 변경 안내</div>
+        <div class="body">이번 주 정기모임 장소가 플랩 스타디움 수원으로 변경되었습니다. 시간은 동일하게 오전 8시입니다.</div>
+        <div class="meta">매니저 박지훈</div>
+      </button>
+
+      <button class="post" onclick="show('detail')">
+        <div class="row1"><span class="bdg b-news">소식</span><span class="date">26.06.26</span></div>
+        <div class="ttl">지난 주 풋살 후기 📸</div>
+        <div class="body">지난 주 모임 정말 즐거웠습니다! 다들 고생 많으셨어요. 다음 주도 화이팅 💪 (사진 첨부는 다음 단계에서)</div>
+        <div class="meta">총무 최유진</div>
+      </button>
+
+      <button class="post" onclick="show('detail')">
+        <div class="row1"><span class="bdg b-news">소식</span><span class="date">26.06.24</span></div>
+        <div class="ttl">신규 회원 환영합니다 👋</div>
+        <div class="body">이번 달 새로 가입하신 두 분 환영합니다! 모임에서 반갑게 맞아주세요.</div>
+        <div class="meta">매니저 박지훈</div>
+      </button>
+
+      <button class="post" onclick="show('detail')">
+        <div class="row1"><span class="bdg b-meet">모임</span><span class="date">26.06.21</span></div>
+        <div class="ttl">6/21 매칭 결과</div>
+        <div class="body">FC번개와의 매칭 결과 공유합니다. 모두 수고하셨습니다!</div>
+        <div class="meta">회장 이성훈</div>
+      </button>
+
+      <button class="post" onclick="show('detail')">
+        <div class="row1"><span class="bdg b-news">소식</span><span class="date">26.06.18</span></div>
+        <div class="ttl">조끼 세탁 당번 안내</div>
+        <div class="body">이번 주 조끼 세탁 당번은 A팀입니다. 다음 모임 전까지 부탁드려요.</div>
+        <div class="meta">총무 최유진</div>
+      </button>
+    </div>
+
+    <!-- ===== 글쓰기 ===== -->
+    <div id="view-write" class="hidden">
+      <div class="hint">운영진이 글을 올리는 화면이에요. 종류를 [공지]로 하면 전체에게 푸시 알림이 가고, [소식]으로 하면 게시판에만 조용히 올라와요.</div>
+      <div class="head"><button class="back">←</button><h1 style="font-size:17px">글쓰기</h1></div>
+
+      <div class="field">
+        <label>종류</label>
+        <div class="type-seg">
+          <button id="t-notice" class="on" onclick="setType('notice')">공지<small>전체 알림 발송</small></button>
+          <button id="t-news" onclick="setType('news')">소식<small>게시판에만</small></button>
+        </div>
+      </div>
+      <div class="field">
+        <label>제목</label>
+        <input class="tin" placeholder="제목을 입력하세요" value="6/28 정기모임 장소 변경 안내"/>
+      </div>
+      <div class="field">
+        <label>내용</label>
+        <textarea class="tin" placeholder="내용을 입력하세요">이번 주 정기모임 장소가 플랩 스타디움 수원으로 변경되었습니다. 시간은 동일하게 오전 8시입니다.</textarea>
+      </div>
+      <div class="field" id="pushnote"></div>
+      <button class="submit" id="submitBtn">올리기</button>
+    </div>
+
+    <!-- ===== 상세 ===== -->
+    <div id="view-detail" class="hidden">
+      <div class="hint">글 하나를 눌렀을 때 보이는 상세예요. 운영진은 여기서 수정·삭제도 할 수 있어요. (댓글은 2단계에서)</div>
+      <div class="head"><button class="back" onclick="show('list')">←</button><h1 style="font-size:17px">게시판</h1></div>
+      <div>
+        <div class="row1" style="display:flex;align-items:center;gap:6px"><span class="bdg b-notice">공지</span><span class="pushed">알림 발송됨</span></div>
+        <div class="det-ttl">6/28 정기모임 장소 변경 안내</div>
+        <div class="det-meta">매니저 박지훈 · 26.06.25</div>
+        <div class="det-body">이번 주 정기모임 장소가 플랩 스타디움 수원으로 변경되었습니다.
+
+시간은 동일하게 오전 8시입니다. 실내 구장이라 날씨 상관없이 진행됩니다.
+
+주차는 건물 지하를 이용해 주세요. 처음 오시는 분들은 1층 로비에서 모입니다.</div>
+        <div class="det-cmt">💬 댓글은 다음 단계(2단계)에서 추가할 수 있어요</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function show(v){
+    ['list','write','detail'].forEach(k => document.getElementById('view-'+k).classList.toggle('hidden', k!==v));
+    document.querySelectorAll('.seg button').forEach(b => b.classList.toggle('on', b.dataset.v===v));
+    if(v==='write') setType(curType);
+    window.scrollTo(0,0);
+  }
+  var curType='notice';
+  function setType(t){
+    curType=t;
+    document.getElementById('t-notice').classList.toggle('on', t==='notice');
+    document.getElementById('t-news').classList.toggle('on', t==='news');
+    var note=document.getElementById('pushnote');
+    if(t==='notice'){ note.innerHTML='<div class="push-note push-on">🔔 올리면 <b>전체 회원에게 푸시 알림</b>이 발송돼요. (대상 지정도 가능)</div>'; document.getElementById('submitBtn').textContent='공지 올리고 알림 보내기'; }
+    else { note.innerHTML='<div class="push-note push-off">🔕 알림 없이 <b>게시판에만</b> 조용히 올라가요.</div>'; document.getElementById('submitBtn').textContent='소식 올리기'; }
+  }
+</script>
+</body>
+</html>
