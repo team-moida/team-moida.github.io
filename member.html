@@ -810,21 +810,11 @@ function App() {
                 {tab === 'meeting' && viewMeeting && (
                     <div>
                         <MeetingDetailHeader meeting={viewMeeting} onBack={() => setViewMeetingId(null)} />
-                        {isAdminMode && (
-                        <div className="flex gap-1.5 mb-3 p-1 bg-slate-100 rounded-2xl">
-                            {(viewKind === 'match'
-                                ? [['attend','출석'],['team','명단']]
-                                : [['attend','출석'],['team','팀'],['match','매치']]
-                            ).map(([k,l]) => (
-                                <button key={k} onClick={()=>setMeetingSubTab(k)}
-                                    className={`flex-1 min-w-0 py-2 rounded-xl text-sm font-black truncate transition-all ${meetingSubTab===k?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>{l}</button>
-                            ))}
-                        </div>
-                        )}
                     </div>
                 )}
                 {/* 회원=지금 할 일(맨 위) / 관리자=출석 서브탭 */}
-                {tab === 'meeting' && viewMeeting && (isAdminMode ? meetingSubTab === 'attend' : true) && (
+                {tab === 'meeting' && viewMeeting && (
+                  <MeetingSection title="출석" open={meetingSubTab === 'attend'} onToggle={() => setMeetingSubTab(s => s === 'attend' ? '' : 'attend')}>
                     <TabAttend
                         viewMeeting={viewMeeting} isViewActive={isViewActive}
                         onEditMeeting={(m) => { setPendingEditMeeting(m); setViewMeetingId(null); }}
@@ -887,9 +877,11 @@ function App() {
                         handleAbsent={handleAbsent}
                         onOpenAttendModal={openAttendModal}
                     />
+                  </MeetingSection>
                 )}
                 {/* 회원=내 팀 / 관리자=팀 편성 */}
-                {tab === 'meeting' && viewMeeting && (isAdminMode ? meetingSubTab === 'team' : true) && (
+                {tab === 'meeting' && viewMeeting && (
+                  <MeetingSection title={viewKind === 'match' ? '명단' : '팀'} open={meetingSubTab === 'team'} onToggle={() => setMeetingSubTab(s => s === 'team' ? '' : 'team')}>
                     <TabTeam
                         isAdminMode={isAdminMode} isTeamPanelOpen={team.isTeamPanelOpen} setIsTeamPanelOpen={team.setIsTeamPanelOpen}
                         teamMakerTab={team.teamMakerTab} setTeamMakerTab={team.setTeamMakerTab}
@@ -918,9 +910,11 @@ function App() {
                         tmDeleteConfirmed={tmDeleteConfirmed} tmDeleteSelectedDrafts={tmDeleteSelectedDrafts}
                         embedded={!isAdminMode}
                     />
+                  </MeetingSection>
                 )}
                 {/* 회원=경기 / 관리자=매치 관리 (매칭 모임 제외) */}
-                {tab === 'meeting' && viewMeeting && viewKind !== 'match' && (isAdminMode ? meetingSubTab === 'match' : true) && (
+                {tab === 'meeting' && viewMeeting && viewKind !== 'match' && (
+                  <MeetingSection title="매치" open={meetingSubTab === 'match'} onToggle={() => setMeetingSubTab(s => s === 'match' ? '' : 'match')}>
                     <TabMatch
                         isAdminMode={isAdminMode} isMatchPanelOpen={match.isMatchPanelOpen} setIsMatchPanelOpen={match.setIsMatchPanelOpen}
                         matchAdminView={match.matchAdminView} setMatchAdminView={match.setMatchAdminView}
@@ -943,6 +937,7 @@ function App() {
                         setIsPresetModalOpen={match.setIsPresetModalOpen}
                         embedded={!isAdminMode}
                     />
+                  </MeetingSection>
                 )}
                 {/* (지금 할 일은 맨 위로 이동) */}
                 {tab === 'dues' && (

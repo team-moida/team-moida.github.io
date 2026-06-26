@@ -884,6 +884,17 @@ const MeetingDetailHeader = ({ meeting, onBack }) => {
     );
 };
 
+// ─── 모임 상세 접이식 섹션 (출석/팀/매치를 세로로 — 제목 누르면 펼침/접힘) ──────────
+const MeetingSection = ({ title, open, onToggle, children }) => (
+    <div className="card rounded-2xl overflow-hidden mb-3">
+        <button onClick={onToggle} className="w-full flex items-center gap-2 px-4 py-3.5 text-left active:bg-slate-50 transition-colors">
+            <span className="font-black text-[15px] text-slate-800">{title}</span>
+            <Icon.ChevronRight size={18} className={`ml-auto text-slate-400 shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} />
+        </button>
+        {open && <div className="px-2 pb-2">{children}</div>}
+    </div>
+);
+
 // ─── 출석 탭 ────────────────────────────────────────────────────────────────────
 const TabAttend = ({
     isAdminMode,
