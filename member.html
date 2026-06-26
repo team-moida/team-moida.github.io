@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#eef2fb">
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="apple-touch-icon" href="app-icon.png">
     <title>모이다 - 회원</title>
     <script>(function(){if(localStorage.getItem('moida_theme')==='dark')document.documentElement.classList.add('dark');})();</script>
     <script src="safety-net.js"></script>
@@ -886,15 +886,9 @@ function App() {
                         onOpenKiosk={() => attend.setIsKioskOpen(true)}
                         onEditMeeting={(m) => { setPendingEditMeeting(m); navTab('meeting-list'); }}
                         onDeleteMeeting={handleDeleteMeeting}
-                        regMeeting={displayMeetingSettings}
-                        myRegistration={attend.myRegistration}
-                        regConfirmedCount={attend.regConfirmedCount}
-                        myWaitingPosition={attend.myWaitingPosition}
-                        handleRegister={handleRegister} handleCancel={handleCancel}
-                        handleAbsent={handleAbsent} handleUndoAbsent={handleUndoAbsent}
+                        showToast={showToast} showAlert={showAlert} showConfirm={showConfirm}
                         regDuesUnpaid={regDuesUnpaid} regDuesBlock={regDuesBlock}
                         regPenaltyUnpaid={regPenalty.count} regPenaltyTotal={regPenalty.total}
-                        regIsPreview={testMode}
                     />
                 )}
                 {tab === 'notice' && (

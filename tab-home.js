@@ -369,8 +369,16 @@ const computeMeetingDay = (date, start) => {
     if (minsUntil > 0) return { type:'today', label:`${minsUntil}분 후 시작`, urgent: minsUntil <= 30 };
     return { type:'started', label:'모임 중' };
 };
+// 신청창 시작/마감 ISO → "M/D HH:MM"
+const fmtRegDT = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
 const NextMeetingCard = ({
     meeting, kind, isActive, dayInfo, darkMode, isAdminMode, onTabChange, members,
+    memberData, showToast, showAlert, showConfirm, regDuesUnpaid, regDuesBlock, regPenaltyUnpaid, regPenaltyTotal,
     mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount, scheduleData,
     isMeetingOver, isMeetingEndSaved, onEndMeeting, onGenerateQR, onEditMeeting, onDeleteMeeting,
     onOpenAttendModal, onInlineGPS, onInlineQR, enableQR, onOpenKiosk,
@@ -414,6 +422,33 @@ const NextMeetingCard = ({
         return () => unsub();
     }, [meeting?.date, meeting?.meetingType]);
     const curCount = (liveCount != null) ? liveCount : (participantCount || 0);
+
+    // ── 카드 안 모임 신청 (정기/매칭 공통) ──────────────────────────────────────
+    // 신청 받는 모임(isRegistrationEnabled)일 때만. 담당자(managerId==나)는 자동 등록되므로 제외.
+    const _meId = memberData?.memberId;
+    const regEnabled = !!meeting?.isRegistrationEnabled;
+    const isRegManager = !!(_meId && meeting?.managerId && meeting.managerId === _meId);
+    const showRegBlock = regEnabled && !isRegManager && !!_meId;
+    const [myReg, setMyReg] = React.useState(null);
+    React.useEffect(() => {
+        if (!showRegBlock || !meeting?.date) { setMyReg(null); return; }
+        const mid = (typeof getMeetingId === 'function') ? getMeetingId(meeting) : meeting.date;
+        const unsub = getCol('registrations').doc(`${mid}_${_meId}`)
+            .onSnapshot(d => setMyReg(d.exists ? (d.data() || null) : null), () => setMyReg(null));
+        return () => unsub();
+    }, [showRegBlock, _meId, meeting?.date, meeting?.meetingType]);
+    const regHandlers = React.useMemo(() => (showRegBlock && typeof makeRegistrationHandlers === 'function')
+        ? makeRegistrationHandlers({ meetingDate: meeting.date, memberData, meetingSettings: meeting, showToast, showAlert, showConfirm })
+        : null, [showRegBlock, _meId, meeting?.date, meeting?.meetingType]);
+    const _now = Date.now();
+    const _regOpenMs = meeting?.registrationOpenAt ? new Date(meeting.registrationOpenAt).getTime() : null;
+    const _regCloseMs = meeting?.registrationCloseAt ? new Date(meeting.registrationCloseAt).getTime() : null;
+    const regBeforeOpen = _regOpenMs && _now < _regOpenMs;
+    const regAfterClose = _regCloseMs && _now > _regCloseMs;
+    const regWindowOpen = !regBeforeOpen && !regAfterClose;
+    const regFCFS = meeting?.isFirstComeFirstServed ?? true;
+    const regBtnCls = dark ? 'bg-[#15171E] text-white' : 'bg-white text-teal-700';
+
     return (
         <div className="relative">
         <button onClick={()=> onTabChange('attend', kind, meeting.id || getMeetingId(meeting))}
@@ -470,6 +505,45 @@ const NextMeetingCard = ({
             {/* 실시간 날씨 (모임 좌표 기준) — 지난 모임에는 표시 안 함 */}
             {dayInfo && dayInfo.type !== 'past' && (
                 <MeetingWeather lat={meeting.locationLat} lng={meeting.locationLng} isAdminMode={isAdminMode} dark={dark} />
+            )}
+            {/* 모임 신청 — 카드 안에서 바로 신청/취소 (신청 받는 모임일 때만) */}
+            {showRegBlock && (
+                <div className="mt-3 pt-3 border-t" style={{borderColor: softBorder}}>
+                    {regBeforeOpen ? (
+                        <div className={`flex items-center gap-1.5 text-xs font-black ${ink70}`}>
+                            <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">신청 시작 전 · {fmtRegDT(meeting.registrationOpenAt)}부터</span>
+                        </div>
+                    ) : myReg?.status === 'confirmed' ? (
+                        <div className="flex items-center justify-between gap-2">
+                            <span className={`flex items-center gap-1.5 text-sm font-black ${ink} min-w-0`}><Icon.Check size={16} className="flex-shrink-0"/><span className="truncate">신청 완료</span></span>
+                            <span role="button" onClick={(e)=>{ e.stopPropagation(); regHandlers && regHandlers.handleCancel(); }} className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${chip} active:scale-95 cursor-pointer flex-shrink-0`}>신청 취소</span>
+                        </div>
+                    ) : myReg?.status === 'waiting' ? (
+                        <div className="flex items-center justify-between gap-2">
+                            <span className={`flex items-center gap-1.5 text-sm font-black ${ink} min-w-0`}><Icon.Clock size={16} className="flex-shrink-0"/><span className="truncate">대기 {myReg.waitingNumber || ''}번</span></span>
+                            <span role="button" onClick={(e)=>{ e.stopPropagation(); regHandlers && regHandlers.handleCancel(); }} className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${chip} active:scale-95 cursor-pointer flex-shrink-0`}>신청 취소</span>
+                        </div>
+                    ) : (myReg?.status === 'absent' || myReg?.status === 'noshow') ? (
+                        <div className={`flex items-center gap-1.5 text-xs font-black ${ink70}`}><Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">{myReg.status === 'noshow' ? '노쇼 처리됨' : '불참 처리됨'}</span></div>
+                    ) : regAfterClose ? (
+                        <div className={`flex items-center gap-1.5 text-xs font-black ${ink70}`}><Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">신청 마감</span></div>
+                    ) : (regPenaltyUnpaid > 0) ? (
+                        <div className={`text-xs font-black ${ink70} text-center py-1`}>미납 벌금이 있어 신청할 수 없어요</div>
+                    ) : (regDuesBlock && regDuesUnpaid) ? (
+                        <div className={`text-xs font-black ${ink70} text-center py-1`}>회비 미납 — 신청할 수 없어요</div>
+                    ) : (
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <span className={`text-xs font-black ${ink80}`}>{kind==='match' ? '매칭 신청' : (regFCFS ? '선착순 신청' : '모임 신청')}</span>
+                                {regFCFS && kind!=='match' && <span className={`text-xs font-black ${ink70}`}>{curCount} / {meeting.maxLimit||18}명</span>}
+                            </div>
+                            <span role="button" onClick={(e)=>{ e.stopPropagation(); regHandlers && regHandlers.handleRegister(); }}
+                                className={`w-full flex items-center justify-center gap-1.5 py-3 rounded-2xl font-black text-sm active:scale-95 transition-all cursor-pointer ${regBtnCls}`}>
+                                <Icon.CheckSq size={16}/> 신청하기
+                            </span>
+                        </div>
+                    )}
+                </div>
             )}
             {isActive ? (
                 <div className="mt-4 pt-4 border-t space-y-2.5" style={{borderColor: softBorder}}>
@@ -1386,9 +1460,8 @@ const TabHome = ({
     duesReports, onConfirmDuesReport, onRejectDuesReport, onGoDuesTab,
     generateAttendQRCode, onEditMeeting, onDeleteMeeting, onOpenAttendModal,
     onInlineGPS, onInlineQR, onOpenKiosk,
-    regMeeting, myRegistration, regConfirmedCount, myWaitingPosition,
-    handleRegister, handleCancel, handleAbsent, handleUndoAbsent,
-    regDuesUnpaid, regDuesBlock, regPenaltyUnpaid, regPenaltyTotal, regIsPreview,
+    showToast, showAlert, showConfirm,
+    regDuesUnpaid, regDuesBlock, regPenaltyUnpaid, regPenaltyTotal,
 }) => {
     // 정기/매칭 다음 모임 분리 (회원이 둘 다 참여할 수 있어 종류별 카드로 표시)
     // 종료(done) + 지난 날짜 모임은 홈 '다음 모임'에서 제외 (끝난 모임은 기록 탭에서만)
@@ -1444,7 +1517,9 @@ const TabHome = ({
                 isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting}
                 onGenerateQR={generateAttendQRCode} onEditMeeting={onEditMeeting} onDeleteMeeting={onDeleteMeeting}
                 onOpenAttendModal={onOpenAttendModal} onInlineGPS={onInlineGPS} onInlineQR={onInlineQR}
-                enableQR={meetingSettings?.enableQR} onOpenKiosk={onOpenKiosk} />
+                enableQR={meetingSettings?.enableQR} onOpenKiosk={onOpenKiosk}
+                memberData={memberData} showToast={showToast} showAlert={showAlert} showConfirm={showConfirm}
+                regDuesUnpaid={regDuesUnpaid} regDuesBlock={regDuesBlock} regPenaltyUnpaid={regPenaltyUnpaid} regPenaltyTotal={regPenaltyTotal} />
         )) : (
             <button onClick={()=>onTabChange('meeting-list')} className="w-full card rounded-2xl p-5 text-center active:scale-98 transition-all">
                 <div className="text-slate-400 py-3">
@@ -1453,26 +1528,6 @@ const TabHome = ({
                     <p className="text-xs mt-0.5 opacity-80">모임 탭에서 등록할 수 있어요</p>
                 </div>
             </button>
-        )}
-
-        {/* 모임 신청 — 홈에서 바로 신청/취소 (모임 탭과 동일 카드). 신청 받는 모임일 때만 표시.
-            담당자(이 모임 managerId == 나)는 자동 등록되므로 숨김 */}
-        {!(memberInfo?.id && regMeeting?.managerId && regMeeting.managerId === memberInfo.id) && (
-            <RegistrationCard
-                meetingSettings={regMeeting}
-                myRegistration={myRegistration}
-                regConfirmedCount={regConfirmedCount}
-                myWaitingPosition={myWaitingPosition}
-                handleRegister={handleRegister}
-                handleCancel={handleCancel}
-                handleAbsent={handleAbsent}
-                handleUndoAbsent={handleUndoAbsent}
-                duesUnpaid={regDuesUnpaid}
-                duesBlock={regDuesBlock}
-                penaltyUnpaid={regPenaltyUnpaid}
-                penaltyTotal={regPenaltyTotal}
-                isPreview={regIsPreview}
-            />
         )}
 
         {/* 내 출석 현황 (history 집계 · 기록 있으면 표시) */}
