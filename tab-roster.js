@@ -47,7 +47,7 @@ const RosterStatsView = ({ activeMembers, attendHistory, attendHistoryTrash = []
         .map(h => {
             const recs = h.records || [];
             return {
-                key: h.id || h.date, date: h.date, time: h.meetingTime || '',
+                key: h.id || h.date, id: h.id, date: h.date, time: h.meetingTime || '',
                 location: h.location || '장소 미지정', manager: h.managerName || '',
                 present: h.present != null ? h.present : recs.filter(r => r.status === '정상' || r.status === '지각').length,
                 total: h.total != null ? h.total : recs.length,
@@ -106,6 +106,13 @@ const RosterStatsView = ({ activeMembers, attendHistory, attendHistoryTrash = []
     const purgeTrash = (m) => {
         const go = () => getHistoryCol().doc(m.id).delete().catch(() => showAlert && showAlert('오류', '삭제 실패'));
         if (showConfirm) showConfirm('영구 삭제', `${m.date} 출석 기록을 완전히 삭제할까요?\n복원할 수 없어요.`, go);
+        else go();
+    };
+    // 모임별 기록을 통계에서 빼서 보관함(휴지통)으로 — 실험용 등 특정 기록 정리용. 복원 가능.
+    const trashRecord = (m) => {
+        if (!m.id) { showAlert && showAlert('처리 불가', '이 기록은 식별자가 없어 보관할 수 없어요.'); return; }
+        const go = () => getHistoryCol().doc(m.id).update({ trashed: true, trashedAt: new Date().toISOString() }).catch(() => showAlert && showAlert('오류', '처리 실패'));
+        if (showConfirm) showConfirm('기록 보관', `${m.date} 모임 기록을 통계에서 빼고 보관함으로 보낼까요?\n(아래 휴지통에서 복원할 수 있어요)`, go);
         else go();
     };
 
@@ -216,6 +223,7 @@ const RosterStatsView = ({ activeMembers, attendHistory, attendHistoryTrash = []
                                                             {stBadge(r.status)}
                                                         </div>
                                                     ))}
+                                                    <button onClick={() => trashRecord(m)} className="mt-2.5 w-full py-2 rounded-lg bg-rose-50 text-rose-500 font-black text-[11px] active:scale-95 transition-all">이 기록 통계에서 빼기 (보관함으로)</button>
                                                 </div>
                                             )}
                                         </div>
