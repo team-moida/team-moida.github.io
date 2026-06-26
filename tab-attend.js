@@ -862,7 +862,7 @@ const MeetingListScreen = ({
 };
 
 // ─── 모임 상세 상단 헤더 (뒤로가기 + 모임 요약) ──────────────────────────────────
-const MeetingDetailHeader = ({ meeting, onBack, onSettings }) => {
+const MeetingDetailHeader = ({ meeting, onBack }) => {
     const kind = (meeting.meetingType || 'self') === 'match' ? 'match' : 'self';
     const cfg = MEETING_KIND[kind];
     const dayInfo = computeMeetingDay(meeting.date, meeting.start);
@@ -880,11 +880,6 @@ const MeetingDetailHeader = ({ meeting, onBack, onSettings }) => {
                 <p className="font-black text-slate-800 truncate mt-0.5">{fmtMeetingDate(meeting.date)} · {meeting.start}~{meeting.end}</p>
                 {meeting.location && <p className="text-[11px] text-slate-400 truncate flex items-center gap-1"><Icon.MapPin size={11} className="flex-shrink-0"/><span className="truncate">{meeting.location}</span></p>}
             </div>
-            {onSettings && (
-                <button onClick={onSettings} className="flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 text-slate-600 shrink-0 active:scale-95 transition-all text-xs font-black" title="모임 설정">
-                    <Icon.Settings size={15}/> 설정
-                </button>
-            )}
         </div>
     );
 };

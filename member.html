@@ -809,8 +809,7 @@ function App() {
                 )}
                 {tab === 'meeting' && viewMeeting && (
                     <div>
-                        <MeetingDetailHeader meeting={viewMeeting} onBack={() => setViewMeetingId(null)}
-                            onSettings={isAdminMode ? () => { setPendingEditMeeting(viewMeeting); navTab('meeting-list'); } : null} />
+                        <MeetingDetailHeader meeting={viewMeeting} onBack={() => setViewMeetingId(null)} />
                         {isAdminMode && (
                         <div className="flex gap-1.5 mb-3 p-1 bg-slate-100 rounded-2xl">
                             {(viewKind === 'match'
