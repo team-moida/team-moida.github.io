@@ -106,18 +106,11 @@ const TabNotice = ({ announcements, isAdminMode, onBack, onAdd, onEdit, onDelete
     // ── 목록 화면 ──────────────────────────────────────────────────────────────
     return (
         <div className="animate-in">
-            {/* 상단: 홈 카드 스타일 hero (뒤로 + 제목) */}
-            <div className="rounded-2xl p-5 mb-4 text-white" style={{ background:'linear-gradient(135deg,var(--c-warn),#f97316)', boxShadow:'0 10px 28px -8px rgba(249,115,22,0.45)' }}>
-                <button onClick={onBack} className="flex items-center gap-1 text-white/85 font-black text-xs mb-2 active:scale-95 transition-all">
-                    <Icon.ChevronLeft size={16}/> 홈
-                </button>
-                <div className="flex items-center gap-3">
-                    <Icon.Bell size={26} className="text-white shrink-0"/>
-                    <div className="min-w-0">
-                        <p className="text-[11px] font-black uppercase tracking-widest text-white/80">공지 게시판</p>
-                        <p className="font-black text-xl leading-tight">공지사항{list.length > 0 && <span className="text-base font-black text-white/80"> · {list.length}건</span>}</p>
-                    </div>
-                </div>
+            {/* 상단: 간결한 헤더 (뒤로 + 종 + 작은 제목) — 다른 탭과 통일 */}
+            <div className="flex items-center gap-2.5 mb-4">
+                <button onClick={onBack} className="p-2 rounded-xl bg-slate-100 text-slate-600 shrink-0 active:scale-95 transition-all"><Icon.ChevronLeft size={18}/></button>
+                <Icon.Bell size={20} className="text-amber-500 shrink-0"/>
+                <h2 className="font-black text-lg text-slate-800 min-w-0 truncate">공지사항{list.length > 0 && <span className="text-base text-slate-400"> · {list.length}건</span>}</h2>
             </div>
 
             {/* 알림 설정 안내 (고정) — 홈 배너와 같은 내용. 권한·기기 상태와 무관하게 항상 노출 */}
