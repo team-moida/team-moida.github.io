@@ -244,11 +244,16 @@ function getKmaBaseDateTime() {
 const KMA_KEY = 'f9c8dbdd1d9d41fbcf71eac3d375f47b1cb34a4b36d4ed1cdafd91442c7653da';
 const _wxCache = new Map();
 const _addrCache = new Map();
-const MeetingWeather = ({ lat, lng, isAdminMode }) => {
+const MeetingWeather = ({ lat, lng, isAdminMode, dark }) => {
     const [wx, setWx] = React.useState(null);
     const [wState, setWState] = React.useState('idle'); // idle|loading|done|error
     const [wErr, setWErr] = React.useState('');
     const [addr, setAddr] = React.useState('');
+    // 매칭(라임) 카드 = 어두운 글자 / 정기(인디고) 카드 = 흰 글자
+    const wInk   = dark ? 'text-[#15171E]'    : 'text-white';
+    const wInk85 = dark ? 'text-[#15171E]/85' : 'text-white/85';
+    const wInk70 = dark ? 'text-[#15171E]/70' : 'text-white/70';
+    const wInk40 = dark ? 'text-[#15171E]/40' : 'text-white/40';
 
     // ① 날씨 (기상청 초단기실황) — 주소와 독립. 캐시 즉시 표시 후 백그라운드 갱신.
     React.useEffect(() => {
@@ -307,7 +312,7 @@ const MeetingWeather = ({ lat, lng, isAdminMode }) => {
 
     // 문제 상태는 회원에겐 깔끔히 숨기고, 관리자에게만 이유를 짧게 안내 (평상시엔 안 보임)
     const adminNote = (txt) => isAdminMode ? (
-        <div className="mt-3 flex items-center gap-1.5 text-[11px] font-black text-white/70 min-w-0">
+        <div className={`mt-3 flex items-center gap-1.5 text-[11px] font-black ${wInk70} min-w-0`}>
             <Icon.MapPin size={12} className="flex-shrink-0 opacity-60"/><span className="truncate">{txt}</span>
         </div>
     ) : null;
@@ -322,7 +327,7 @@ const MeetingWeather = ({ lat, lng, isAdminMode }) => {
     }
     if (wState !== 'done' || !wx) {
         return (
-            <div className="mt-3 flex items-center gap-2 text-xs font-black text-white/70">
+            <div className={`mt-3 flex items-center gap-2 text-xs font-black ${wInk70}`}>
                 <span className="animate-pulse">날씨 불러오는 중…</span>
             </div>
         );
@@ -332,11 +337,11 @@ const MeetingWeather = ({ lat, lng, isAdminMode }) => {
     return (
         <div className="mt-3 flex items-center gap-2 text-sm font-black min-w-0">
             <span className="flex-shrink-0 text-lg leading-none">{wxEmoji}</span>
-            <span className="text-white flex-shrink-0">{r(wx.temp)}°</span>
-            <span className="text-white/40 flex-shrink-0">·</span>
-            <span className="text-white/85 flex-shrink-0">{label}</span>
-            <span className="text-white/40 flex-shrink-0">·</span>
-            <span className="text-white/70 truncate">습도 {r(wx.humidity)}%</span>
+            <span className={`${wInk} flex-shrink-0`}>{r(wx.temp)}°</span>
+            <span className={`${wInk40} flex-shrink-0`}>·</span>
+            <span className={`${wInk85} flex-shrink-0`}>{label}</span>
+            <span className={`${wInk40} flex-shrink-0`}>·</span>
+            <span className={`${wInk70} truncate`}>습도 {r(wx.humidity)}%</span>
         </div>
     );
 };
@@ -433,11 +438,12 @@ const NextMeetingCard = ({
                         </span>
                     )}
                     {dayInfo && dayInfo.type !== 'past' && dayInfo.label && (
-                        <span className={`text-xs font-black px-3 py-1 ${
-                            dayInfo.type==='started'?(dark?'rounded-full bg-[#15171E] text-live moida-pulse-live':'rounded-full bg-live text-[#15171E] moida-pulse-live'):
-                            dayInfo.urgent?'rounded-xl bg-white text-rose-500':
-                            dayInfo.type==='today'?'rounded-xl bg-white text-slate-700':
-                            (dark?'rounded-xl bg-black/10 text-[#15171E]':'rounded-xl bg-white/25 text-white')}`}>{dayInfo.label}</span>
+                        dayInfo.type==='started' ? (
+                            <span className={`text-xs font-black px-3 py-1 rounded-full moida-pulse-live ${dark?'bg-[#15171E] text-live':'bg-live text-[#15171E]'}`}>{dayInfo.label}</span>
+                        ) : (
+                            // 남은 시간(카운트다운/D-day) — '지금 출석 체크하기' 박스와 같은 반투명 박스 색
+                            <span className={`text-xs font-black px-3 py-1 rounded-xl ${ink}`} style={{background: dark?'rgba(0,0,0,0.08)':'rgba(255,255,255,0.2)'}}>{dayInfo.label}</span>
+                        )
                     )}
                 </div>
             </div>
@@ -463,7 +469,7 @@ const NextMeetingCard = ({
             </div>
             {/* 실시간 날씨 (모임 좌표 기준) — 지난 모임에는 표시 안 함 */}
             {dayInfo && dayInfo.type !== 'past' && (
-                <MeetingWeather lat={meeting.locationLat} lng={meeting.locationLng} isAdminMode={isAdminMode} />
+                <MeetingWeather lat={meeting.locationLat} lng={meeting.locationLng} isAdminMode={isAdminMode} dark={dark} />
             )}
             {isActive ? (
                 <div className="mt-4 pt-4 border-t space-y-2.5" style={{borderColor: softBorder}}>
@@ -587,17 +593,17 @@ const NextMeetingCard = ({
                     )}
                 </div>
             ) : (
-                <div className="mt-4 pt-4 border-t" style={{borderColor:'rgba(255,255,255,0.22)'}}>
-                    <div className="flex items-center gap-1.5 text-xs text-white/70">
+                <div className="mt-4 pt-4 border-t" style={{borderColor: softBorder}}>
+                    <div className={`flex items-center gap-1.5 text-xs ${ink70}`}>
                         <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">모임이 가까워지면 출석·팀 정보가 표시됩니다</span>
                     </div>
                 </div>
             )}
             {/* 관리자: 카드에서 바로 수정/삭제 */}
             {isAdminMode && (onEditMeeting || onDeleteMeeting) && (
-                <div className="mt-3 pt-3 border-t flex items-center justify-end gap-1.5" style={{borderColor:'rgba(255,255,255,0.22)'}}>
+                <div className="mt-3 pt-3 border-t flex items-center justify-end gap-1.5" style={{borderColor: softBorder}}>
                     {onEditMeeting && <span role="button" onClick={(e)=>{ e.stopPropagation(); onEditMeeting(meeting); }}
-                        className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-white/25 text-white active:scale-95 cursor-pointer"><Icon.Edit size={12}/> 수정</span>}
+                        className={`flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg ${chip} active:scale-95 cursor-pointer`}><Icon.Edit size={12}/> 수정</span>}
                     {onDeleteMeeting && <span role="button" onClick={(e)=>{ e.stopPropagation(); onDeleteMeeting(meeting); }}
                         className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-rose-500/80 text-white active:scale-95 cursor-pointer"><Icon.Trash size={12}/> 삭제</span>}
                 </div>

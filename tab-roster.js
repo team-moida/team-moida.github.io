@@ -4,6 +4,8 @@
 const RosterStatsView = ({ activeMembers, attendHistory, monthlyStatuses }) => {
     const { useState, useMemo } = React;
     const [sortBy, setSortBy] = useState('rate'); // rate | late | no
+    const [view, setView] = useState('member'); // member(회원별) | meeting(모임일별 출석)
+    const [openId, setOpenId] = useState(null);
     const data = useMemo(() => {
         const parseT = (t) => { const m = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(t || ''); return m ? (+m[1]) * 3600 + (+m[2]) * 60 + (+(m[3] || 0)) : null; };
         const included = (activeMembers || []).filter(m => (monthlyStatuses ? monthlyStatuses[m.id] !== 'rest' : true));
@@ -39,10 +41,45 @@ const RosterStatsView = ({ activeMembers, attendHistory, monthlyStatuses }) => {
         return arr;
     }, [data, sortBy]);
 
+    // 모임일별(정기만) — 종료된 모임 1개 = 1행, 최신순. 펼치면 그날 출석/지각/노쇼 명단.
+    const meetingRows = useMemo(() => (attendHistory || [])
+        .filter(h => h.meetingType !== 'match')
+        .map(h => {
+            const recs = h.records || [];
+            return {
+                key: h.id || h.date, date: h.date, time: h.meetingTime || '',
+                location: h.location || '장소 미지정', manager: h.managerName || '',
+                present: h.present != null ? h.present : recs.filter(r => r.status === '정상' || r.status === '지각').length,
+                total: h.total != null ? h.total : recs.length,
+                go: recs.filter(r => r.status === '정상').length,
+                late: recs.filter(r => r.status === '지각').length,
+                no: recs.filter(r => r.status === '노쇼').length,
+                records: recs.filter(r => r.status !== '대기').sort((a, b) => (a.timestamp || '99:99:99').localeCompare(b.timestamp || '99:99:99')),
+            };
+        })
+        .sort((a, b) => (b.date || '').localeCompare(a.date || '')), [attendHistory]);
+    const fmtMD = (date) => {
+        const dt = date ? new Date(date + 'T00:00:00') : null;
+        if (!dt || isNaN(dt.getTime())) return { dd: '–', sub: '' };
+        return { dd: dt.getDate(), sub: `${dt.getMonth() + 1}월 ${['일','월','화','수','목','금','토'][dt.getDay()]}` };
+    };
+    const stBadge = (s) => {
+        const map = { '정상': ['출석', 'bg-emerald-50 text-emerald-600'], '지각': ['지각', 'bg-amber-50 text-amber-600'], '노쇼': ['노쇼', 'bg-rose-50 text-rose-500'] };
+        const [l, c] = map[s] || ['-', 'bg-slate-100 text-slate-400'];
+        return <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${c}`}>{l}</span>;
+    };
+
     const roleOf = (role) => (typeof ADMIN_ROLES !== 'undefined' && ADMIN_ROLES.includes(role)) ? role : '';
 
     return (
         <div>
+            {/* 보기 전환: 회원별 통계 / 모임일별 출석(정기만) */}
+            <div className="flex gap-1 bg-slate-100 rounded-xl p-1 mb-3.5">
+                {[['member','회원별'],['meeting','모임별']].map(([v,l]) => (
+                    <button key={v} onClick={() => setView(v)} className={`flex-1 text-[12.5px] font-black py-1.5 rounded-lg transition-all ${view===v?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>{l}</button>
+                ))}
+            </div>
+            {view === 'member' ? (<>
             <p className="text-[11.5px] font-bold text-slate-500 bg-teal-50 rounded-2xl px-3 py-2.5 mb-3.5 leading-relaxed">회비 납부 대상자 기준 · 휴식·탈퇴 제외 · 운영진만 보여요</p>
             <div className="grid grid-cols-3 gap-2.5 mb-4">
                 <div className="card rounded-2xl py-3.5 text-center"><p className="text-[22px] font-black text-teal-600 leading-none">{data.avg}%</p><p className="text-[10.5px] font-black text-slate-400 mt-1.5">평균 출석률</p></div>
@@ -89,6 +126,58 @@ const RosterStatsView = ({ activeMembers, attendHistory, monthlyStatuses }) => {
             )}
             {data.noRec > 0 && <p className="text-[11px] text-slate-400 font-bold mt-2.5 px-1">+ 출석 기록 없는 대상 회원 {data.noRec}명</p>}
             <p className="text-[10.5px] text-slate-400 font-bold mt-2 px-1 leading-relaxed">출석률 = (정상+지각) ÷ 참가확정 모임 · 결석(불참 통보)은 노쇼에 포함</p>
+            </>) : (
+                meetingRows.length === 0 ? (
+                    <div className="card rounded-2xl p-8 text-center text-slate-400"><p className="font-black text-sm">종료된 정기모임 기록이 없습니다</p></div>
+                ) : (<>
+                    <p className="text-[11.5px] font-bold text-slate-500 bg-teal-50 rounded-2xl px-3 py-2.5 mb-3.5 leading-relaxed">정기모임만 · 종료된 모임 {meetingRows.length}회 · 모임을 누르면 출석 명단</p>
+                    <div className="card rounded-2xl overflow-hidden">
+                        {meetingRows.map((m, i) => {
+                            const open = openId === m.key;
+                            const d = fmtMD(m.date);
+                            return (
+                                <div key={m.key} className={i>0?'border-t border-slate-100':''}>
+                                    <button onClick={() => setOpenId(open ? null : m.key)} className="w-full px-3.5 py-3 text-left active:bg-slate-50 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex-shrink-0 w-11 text-center">
+                                                <p className="text-[19px] font-black text-slate-800 leading-none tabular-nums">{d.dd}</p>
+                                                <p className="text-[10px] font-black text-slate-400 mt-0.5">{d.sub}</p>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[13px] font-black text-slate-700 truncate">{m.location}</p>
+                                                <p className="text-[11px] font-bold text-slate-400 truncate">{m.time}{m.manager && m.manager!=='미지정' ? ` · ${m.manager}` : ''}</p>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                <span className="text-[15px] font-black text-teal-600 tabular-nums">{m.present}<span className="text-[11px] text-slate-400">/{m.total}</span></span>
+                                                <Icon.ChevronRight size={16} className={`text-slate-300 transition-transform ${open?'rotate-90':''}`}/>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-1.5 mt-2 ml-14">
+                                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">출석 {m.go}</span>
+                                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">지각 {m.late}</span>
+                                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-50 text-rose-500">노쇼 {m.no}</span>
+                                        </div>
+                                    </button>
+                                    {open && (
+                                        <div className="px-3.5 pb-3 pt-0.5 ml-14">
+                                            {m.records.length === 0 ? (
+                                                <p className="text-[11.5px] font-bold text-slate-400 py-2">참가 기록이 없습니다</p>
+                                            ) : m.records.map((r, j) => (
+                                                <div key={j} className="flex items-center gap-2 py-1.5 border-t border-slate-50 first:border-t-0">
+                                                    <span className="text-[12.5px] font-black text-slate-700 truncate flex-1 min-w-0">{r.name}</span>
+                                                    <span className="text-[11px] font-bold text-slate-400 flex-shrink-0 tabular-nums">{r.checkInTime && r.checkInTime!=='미출석' ? r.checkInTime : ''}</span>
+                                                    {stBadge(r.status)}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <p className="text-[10.5px] text-slate-400 font-bold mt-2 px-1 leading-relaxed">매칭모임은 제외 · 출석/지각/노쇼는 모임 종료 저장 시점 기준</p>
+                </>)
+            )}
         </div>
     );
 };
