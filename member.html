@@ -161,6 +161,8 @@ function App() {
     const isAdmin = effAdmin;
     const isAdminMode = effAdmin;
     const isDevMode = isDeveloper && viewMode === 'dev';   // 개발 전용 기능(테스트 모임 등) 노출 여부
+    // 테스트 모임은 개발 모드에서만 보인다 — 운영진·회원 모드(및 실제 다른 회원)에겐 목록·홈·현재모임 전부 숨김
+    const _isTestMirror = (s) => !!s && (s.location === '🧪 테스트 모임' || s.location === '테스트 현재위치' || s.location === '📍 테스트 현재위치');
     const promptDeveloper = () => {
         if (devUnlocked) return;
         let pin; try { pin = window.prompt('개발자 PIN'); } catch(e) { return; }
@@ -183,6 +185,8 @@ function App() {
     const [meetingSettingsMatch, setMeetingSettingsMatch] = useState(null);
     const [activeMeetingKind, setActiveMeetingKind] = useState('self');
     const [meetings, setMeetings] = useState([]);
+    // 개발 모드가 아니면 테스트 모임(isTest)은 목록·홈·공지에서 숨긴다 (viewMeeting 등 내부 참조는 원본 meetings 유지)
+    const visibleMeetings = isDevMode ? meetings : meetings.filter(m => !m.isTest);
     const displayMeetingSettings = activeMeetingKind === 'match' ? meetingSettingsMatch : meetingSettings;
     // 모임 탭에서 보고 있는 모임 객체 (meetings 실시간 구독에서 파생 — 수정/삭제 즉시 반영)
     const viewMeeting = meetings.find(m => m.id === viewMeetingId) || null;
@@ -356,7 +360,11 @@ function App() {
 
     useEffect(() => {
         const unsub = getCol('settings').doc('meeting_schedule_v2').onSnapshot(doc => {
-            if (doc.exists) setMeetingSettings(doc.data());
+            if (!doc.exists) return;
+            const d = doc.data();
+            // 개발 모드가 아니면 테스트 모임이 현재 모임(미러)을 잡고 있어도 숨긴다 → 운영진·회원 홈/출석에 안 뜸
+            if (!isDevMode && _isTestMirror(d)) { setMeetingSettings(null); return; }
+            setMeetingSettings(d);
         });
         return () => unsub();
     }, []);
@@ -744,11 +752,11 @@ function App() {
                 onOpenProfile={() => setIsProfileModalOpen(true)} profileImage={memberInfo?.profileImage || memberInfo?.kakaoProfileImage}
             />
             <div className="px-4 pt-4">
-                {tab === 'home' && <div className="mb-3"><AnnounceTicker announcements={announcements} meetings={meetings} onOpen={openAnnouncements} onTabChange={navTab} /></div>}
+                {tab === 'home' && <div className="mb-3"><AnnounceTicker announcements={announcements} meetings={visibleMeetings} onOpen={openAnnouncements} onTabChange={navTab} /></div>}
                 {tab === 'home' && (
                     <TabHome
                         notifPermission={notifPermission} registerFcmToken={registerFcmToken}
-                        onTabChange={navTab} meetingDayInfo={meetingDayInfo} teamReady={teamReady} meetings={meetings}
+                        onTabChange={navTab} meetingDayInfo={meetingDayInfo} teamReady={teamReady} meetings={visibleMeetings}
                         participantCount={meetingParticipants.length}
                         allowFromDisplay={allowFromDisplay} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                         scheduleData={scheduleData}
@@ -774,7 +782,7 @@ function App() {
                 {tab === 'notice' && (
                     <TabNotice
                         announcements={announcements} isAdminMode={isAdminMode}
-                        meetings={meetings}
+                        meetings={visibleMeetings}
                         onBack={()=>setTab('home')}
                         onAdd={()=>setAnnouncementModal({open:true,mode:'add',data:null})}
                         onEdit={(a)=>setAnnouncementModal({open:true,mode:'edit',data:a})}
@@ -785,7 +793,7 @@ function App() {
                 )}
                 {tab === 'meeting' && !viewMeeting && (
                     <MeetingListScreen
-                        meetings={meetings} isAdminMode={isAdminMode}
+                        meetings={visibleMeetings} isAdminMode={isAdminMode}
                         onSelect={(m) => { setViewMeetingId(m.id); setMeetingSubTab('attend'); }}
                         activeMeeting={activeMeeting}
                         handleSaveMeeting={handleSaveMeeting} handleDeleteMeeting={handleDeleteMeeting}
@@ -920,7 +928,7 @@ function App() {
                         localSchedule={match.localSchedule} localCompletedMatches={match.localCompletedMatches}
                         setLocalCompletedMatches={match.setLocalCompletedMatches} localMatchIndex={match.localMatchIndex}
                         matchConfig={match.matchConfig} setMatchConfig={match.setMatchConfig}
-                        meetings={meetings}
+                        meetings={visibleMeetings}
                         matchIsSaving={match.matchIsSaving} matchIsCapturing={match.matchIsCapturing}
                         presets={match.presets} selectedPresetId={match.selectedPresetId}
                         setSelectedPresetId={match.setSelectedPresetId} presetToggles={match.presetToggles}
