@@ -509,6 +509,11 @@ const AppModals = ({
                                     value={f.fmt?f.fmt(newMemberForm[f.key]||''):newMemberForm[f.key]||''} onChange={e=>setNewMemberForm(p=>({...p,[f.key]:f.fmt?f.fmt(e.target.value):e.target.value}))}/>
                             </div>
                         ))}
+                        <label className="flex items-center gap-2 px-1 cursor-pointer" style={{userSelect:'none'}}>
+                            <input type="checkbox" className="w-4 h-4 accent-teal-500" checked={!!newMemberForm.isFastYear}
+                                onChange={e=>setNewMemberForm(p=>({...p,isFastYear:e.target.checked}))}/>
+                            <span className="text-xs font-black text-slate-600">빠른 년생 <span className="text-slate-300 font-bold">· 빠른으로 지내면 체크</span></span>
+                        </label>
                         <div>
                             <p className="text-xs font-black text-slate-500 mb-1">가입일</p>
                             <input type="date" style={{userSelect:'text'}} className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black ${newMemberForm.isFounder?'opacity-30':''}`}
@@ -573,6 +578,11 @@ const AppModals = ({
                                     value={f.fmt?f.fmt(editingMember[f.key]||''):editingMember[f.key]||''} onChange={e=>setEditingMember(p=>({...p,[f.key]:f.fmt?f.fmt(e.target.value):e.target.value}))}/>
                             </div>
                         ))}
+                        <label className="flex items-center gap-2 px-1 cursor-pointer" style={{userSelect:'none'}}>
+                            <input type="checkbox" className="w-4 h-4 accent-teal-500" checked={!!editingMember.isFastYear}
+                                onChange={e=>setEditingMember(p=>({...p,isFastYear:e.target.checked}))}/>
+                            <span className="text-xs font-black text-slate-600">빠른 년생 <span className="text-slate-300 font-bold">· 빠른으로 지내면 체크</span></span>
+                        </label>
                         <div>
                             <p className="text-xs font-black text-slate-500 mb-1">가입일</p>
                             <input type="date" style={{userSelect:'text'}} className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black ${editingMember.isFounder?'opacity-30':''}`}

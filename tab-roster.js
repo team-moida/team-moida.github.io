@@ -325,6 +325,7 @@ const TabRoster = ({
                                 </div>
                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                                     <span className="text-[10px] text-slate-400">{formatBirth(m.birth)}</span>
+                                    {m.isFastYear&&<span className="text-[9px] font-black px-1.5 py-0.5 bg-sky-100 text-sky-600 rounded-lg">빠른</span>}
                                     {m.position&&m.position!=='all'&&<span className="text-[10px] text-slate-400">{m.position}</span>}
                                     {m.address&&<span className="text-[10px] text-slate-400">{m.address}</span>}
                                 </div>

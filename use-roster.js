@@ -18,7 +18,7 @@ function useRoster({ isAdminMode }) {
     const [monthlyPaymentDates, setMonthlyPaymentDates] = useState({});
     const [duesReports, setDuesReports] = useState({});
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [newMemberForm, setNewMemberForm] = useState({name:'',birth:'',gender:'남성',position:'all',level:'4',role:'회원',coupleId:'',joinDate:'',address:'',phone:'',duesStartMonth:thisMonthStr()});
+    const [newMemberForm, setNewMemberForm] = useState({name:'',birth:'',gender:'남성',position:'all',level:'4',role:'회원',coupleId:'',joinDate:'',address:'',phone:'',duesStartMonth:thisMonthStr(),isFastYear:false});
     const [editingMember, setEditingMember] = useState(null);
     const [resigningMember, setResigningMember] = useState(null);
     const [resignForm, setResignForm] = useState({date:'',reason:'',isForced:false});
