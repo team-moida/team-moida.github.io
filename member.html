@@ -383,6 +383,7 @@ function App() {
         if (ADMIN_ROLES.includes(me.role) || STAFF_ROLES.includes(me.role)) return false;
         if (me.isSpecialRest) return false;
         const monthStr = displayMeetingSettings?.date?.substring(0, 7) || '';
+        if (!joinedByMonth(me, monthStr)) return false;   // 가입월(duesStartMonth) 이전이면 미납 아님 → 신청 차단 안 함
         const st = (team.tmMonthlyStatuses || {})[me.id];
         if (st === 'paid' || st === 'rest') return false;
         const info = (typeof getMembershipStatus === 'function') ? getMembershipStatus(me, monthStr) : null;

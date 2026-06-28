@@ -22,6 +22,7 @@ function AnnouncementModal({ announcementModal, setAnnouncementModal, handleSave
     const canSend = form.title.trim() && (form.category === '일반' || targetMode === 'all' || selectedMemberIds.length > 0);
     const autoSelectEligible = () => {
         const eligible = sortedMembers.filter(m =>
+            joinedByMonth(m, targetMonth) &&
             ['staff','monthly','half','full'].includes(getMemberStatusType(m, monthlyStatuses || {}, monthlyReasons || {}, targetMonth))
         );
         setSelectedMemberIds(eligible.map(m => m.id));
@@ -514,9 +515,14 @@ const AppModals = ({
                                 disabled={!!newMemberForm.isFounder} value={newMemberForm.joinDate||''} onChange={e=>setNewMemberForm(p=>({...p,joinDate:e.target.value}))}/>
                             <label className="flex items-center gap-2 mt-2 cursor-pointer" style={{userSelect:'none'}}>
                                 <input type="checkbox" className="w-4 h-4 accent-amber-500" checked={!!newMemberForm.isFounder}
-                                    onChange={e=>setNewMemberForm(p=>({...p,isFounder:e.target.checked,joinDate:e.target.checked?'':p.joinDate}))}/>
+                                    onChange={e=>setNewMemberForm(p=>({...p,isFounder:e.target.checked,joinDate:e.target.checked?'':p.joinDate,duesStartMonth:e.target.checked?'':p.duesStartMonth}))}/>
                                 <span className="text-xs font-black text-amber-600">원년 멤버 (OTP FC 창단 멤버)</span>
                             </label>
+                        </div>
+                        <div>
+                            <p className="text-xs font-black text-slate-500 mb-1">회비 시작 월 <span className="text-slate-300 font-bold">· 이 달부터 회비에 표시</span></p>
+                            <input type="month" style={{userSelect:'text'}} className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black ${newMemberForm.isFounder?'opacity-30':''}`}
+                                disabled={!!newMemberForm.isFounder} value={newMemberForm.duesStartMonth||''} onChange={e=>setNewMemberForm(p=>({...p,duesStartMonth:e.target.value}))}/>
                         </div>
                         {[
                             {label:'성별',key:'gender',opts:['남성','여성']},
@@ -573,9 +579,14 @@ const AppModals = ({
                                 disabled={!!editingMember.isFounder} value={editingMember.joinDate||''} onChange={e=>setEditingMember(p=>({...p,joinDate:e.target.value}))}/>
                             <label className="flex items-center gap-2 mt-2 cursor-pointer" style={{userSelect:'none'}}>
                                 <input type="checkbox" className="w-4 h-4 accent-amber-500" checked={!!editingMember.isFounder}
-                                    onChange={e=>setEditingMember(p=>({...p,isFounder:e.target.checked,joinDate:e.target.checked?'':p.joinDate}))}/>
+                                    onChange={e=>setEditingMember(p=>({...p,isFounder:e.target.checked,joinDate:e.target.checked?'':p.joinDate,duesStartMonth:e.target.checked?'':p.duesStartMonth}))}/>
                                 <span className="text-xs font-black text-amber-600">원년 멤버 (OTP FC 창단 멤버)</span>
                             </label>
+                        </div>
+                        <div>
+                            <p className="text-xs font-black text-slate-500 mb-1">회비 시작 월 <span className="text-slate-300 font-bold">· 이 달부터 회비에 표시</span></p>
+                            <input type="month" style={{userSelect:'text'}} className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-black ${editingMember.isFounder?'opacity-30':''}`}
+                                disabled={!!editingMember.isFounder} value={editingMember.duesStartMonth||''} onChange={e=>setEditingMember(p=>({...p,duesStartMonth:e.target.value}))}/>
                         </div>
                         {[
                             {label:'성별',key:'gender',opts:['남성','여성']},

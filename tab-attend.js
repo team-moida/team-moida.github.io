@@ -1035,6 +1035,7 @@ const TabAttend = ({
         const monthStr = selectedMeeting?.date?.substring(0,7) || '';
         const normal = [], rest = [];
         (activeMembers || []).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).forEach(member => {
+            if (!joinedByMonth(member, monthStr)) return;   // 그 달 가입월(duesStartMonth) 이전 회원은 선정 대상에서 제외
             if (ADMIN_ROLES.includes(member.role)) { normal.push(member); return; }
             if (member.isSpecialRest) { rest.push(member); return; }
             const isResting = selMonthlyStatuses[member.id] === 'rest';

@@ -24,7 +24,7 @@ function makeRosterHandlers(ctx) {
         if (!newMemberForm.name.trim()) return showAlert('알림', '이름을 입력해주세요.');
         try {
             await getMemberCol().add({...newMemberForm, birth: String(newMemberForm.birth).replace(/[^0-9]/g, ''), createdAt: new Date().toISOString()});
-            setNewMemberForm({name: '', birth: '', gender: '남성', position: 'all', level: '4', role: '회원', coupleId: '', joinDate: '', address: '', phone: ''});
+            setNewMemberForm({name: '', birth: '', gender: '남성', position: 'all', level: '4', role: '회원', coupleId: '', joinDate: '', address: '', phone: '', duesStartMonth: thisMonthStr()});
             setIsAddModalOpen(false);
             showAlert('성공', '회원이 등록되었습니다.');
         } catch(e) { showAlert('오류', '등록 실패'); }

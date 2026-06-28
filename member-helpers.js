@@ -32,6 +32,18 @@ const getMembershipStatus = (member, targetMonthStr) => {
     const endDateFormatted=`${end.getFullYear().toString().slice(2)}.${String(end.getMonth()+1).padStart(2,'0')}.${String(end.getDate()).padStart(2,'0')}`;
     return{active:true,remaining:monthsRemaining,type:member.membershipType==='half_year'?'반년':'1년',endDate:member.membershipEndDate,endDateFormatted,maxRest,usedRest,remainingRest:maxRest-usedRest};
 };
+// 회원이 '그 달(YYYY-MM)'에 이미 회비 대상 회원으로 시작됐는지.
+// 가입월(duesStartMonth) 없거나 원년멤버면 항상 true(하위호환 — 기존 회원 영향 0).
+// 보는 달이 가입월보다 이전이면 false → 그 달엔 회원으로 안 침(미납으로도 안 뜸, 목록·통계·대상에서 제외).
+const joinedByMonth = (member, targetMonthStr) => {
+    if (!member) return false;
+    if (member.isFounder) return true;
+    const start = member.duesStartMonth;
+    if (!start) return true;
+    return !targetMonthStr || targetMonthStr >= start;   // 'YYYY-MM' 문자열 비교 OK
+};
+// 이번 달(로컬) 'YYYY-MM' — 신규 회원 가입월 기본값 등에 사용.
+const thisMonthStr = () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`; };
 const STAFF_ROLES_CONST = ['회장','매니저','총무','부총무'];
 const getMemberStatusType = (member, statuses, reasons, targetMonthStr) => {
     if(STAFF_ROLES_CONST.includes(member.role))return 'staff';

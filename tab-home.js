@@ -910,7 +910,9 @@ const DuesAccountCard = ({ isAdminMode, memberName, memberInfo, mode = 'full', o
     // ── 회비 납부 상태 영역 계산 ──
     let dues = null, showPayPrompt = false;
     if (memberInfo) {
-        if (isExempt) {
+        if (!joinedByMonth(memberInfo, targetMonth)) {
+            dues = null;   // 가입월(duesStartMonth) 이전 — 아직 회비 대상 아님(미납/납부유도 안 뜸)
+        } else if (isExempt) {
             dues = null;
         } else if (ms && ms.active && ms.remaining > 1) {
             dues = (
@@ -1216,7 +1218,7 @@ const DuesHistoryCard = ({ memberInfo }) => {
         Promise.all(months.map(m => getMonthlyCol().doc(m.key).get()
             .then(s => ({ ...m, status: (s.exists && s.data().statuses) ? s.data().statuses[memberId] : null }))
             .catch(() => ({ ...m, status: null }))))
-            .then(res => { if (alive) setRows(res.filter(r => r.status === 'paid' || r.status === 'rest')); });
+            .then(res => { if (alive) setRows(res.filter(r => (r.status === 'paid' || r.status === 'rest') && joinedByMonth(memberInfo, r.key))); });
         return () => { alive = false; };
     }, [memberId]);
     return (
