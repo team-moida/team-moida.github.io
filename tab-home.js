@@ -1554,6 +1554,98 @@ const RecurringPreviewCard = ({ onTabChange }) => {
 // ─── 홈 '내 활동' 간략 카드 ──────────────────────────────────────────────────
 // 예정 모임이 없을 때 홈이 휑하지 않도록 채우는 요약 카드(자세히는 MY 탭).
 // 계산은 MyAttendanceCard와 동일(attendHistory에서 내 기록만). 기록 없으면 첫 참여 유도.
+// 진입 시 0→1 로 올라가는 진행도(easeOutCubic). 마운트 시 1회 실행(데이터 준비 후 본문 마운트 기준).
+const actEaseOutCubic = (x) => 1 - Math.pow(1 - x, 3);
+const useActCountUp = (duration) => {
+    const [t, setT] = React.useState(0);
+    React.useEffect(() => {
+        let raf; const start = performance.now();
+        const tick = (now) => {
+            const p = Math.min(1, (now - start) / duration);
+            setT(actEaseOutCubic(p));
+            if (p < 1) raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(raf);
+    }, []);
+    return t;
+};
+// 출석률(0~100) → 빨강(0)·주황(50)·초록(100) 보간 (노쇼#EF4444·지각#F59E0B·출석#059669 팔레트)
+const actRateColor = (rate) => {
+    const r = Math.max(0, Math.min(100, rate)) / 100;
+    const red = [239, 68, 68], amber = [245, 158, 11], green = [5, 150, 105];
+    let a, b, tt;
+    if (r < 0.5) { a = red; b = amber; tt = r / 0.5; }
+    else { a = amber; b = green; tt = (r - 0.5) / 0.5; }
+    const m = a.map((v, i) => Math.round(v + (b[i] - v) * tt));
+    return `rgb(${m[0]}, ${m[1]}, ${m[2]})`;
+};
+// 슬롯머신 숫자: 0~9 릴이 여러 바퀴 빠르게 돌다가 ease-out으로 최종 숫자에 서서히 멈춤
+const ACT_SLOT_EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
+const ActSlotDigit = ({ d, delay, duration }) => {
+    const LOOPS = 5;
+    const cells = [];
+    for (let l = 0; l < LOOPS; l++) for (let n = 0; n < 10; n++) cells.push(n);
+    for (let n = 0; n <= d; n++) cells.push(n);
+    const finalIndex = LOOPS * 10 + d;
+    const [y, setY] = React.useState(0);
+    React.useEffect(() => {
+        let r1, r2;
+        r1 = requestAnimationFrame(() => { r2 = requestAnimationFrame(() => setY(finalIndex)); });
+        return () => { cancelAnimationFrame(r1); cancelAnimationFrame(r2); };
+    }, []);
+    return (
+        <span style={{ display: 'inline-block', height: '1em', lineHeight: '1em', overflow: 'hidden', verticalAlign: 'bottom' }}>
+            <span style={{ display: 'flex', flexDirection: 'column', transform: `translateY(-${y}em)`, transition: `transform ${duration}ms ${ACT_SLOT_EASE} ${delay}ms` }}>
+                {cells.map((n, i) => <span key={i} style={{ height: '1em', textAlign: 'center' }}>{n}</span>)}
+            </span>
+        </span>
+    );
+};
+const ActSlotNumber = ({ value, baseDelay = 0, baseDuration = 1100 }) => {
+    const digits = String(Math.max(0, Math.round(value || 0))).split('');
+    return (
+        <span style={{ fontVariantNumeric: 'tabular-nums', display: 'inline-flex' }}>
+            {digits.map((ch, i) => <ActSlotDigit key={i} d={parseInt(ch, 10)} delay={baseDelay + i * 90} duration={baseDuration + i * 160} />)}
+        </span>
+    );
+};
+
+// 내 활동 본문(데이터 준비 후 마운트 → 진입 애니메이션). 도넛=출석/지각/노쇼 비율 세그먼트(초록·노랑·빨강),
+// 가운데 %=출석률(값에 따라 빨강→노랑→초록 색변화 카운트업), 출석/지각/노쇼 숫자=슬롯머신.
+const MyActivityBody = ({ go, late, no, confirmed, rate, streak, onTabChange }) => {
+    const t = useActCountUp(1100);
+    const dRate = Math.round(rate * t);
+    const segGo = confirmed ? go / confirmed * 100 : 0;
+    const segLate = confirmed ? (go + late) / confirmed * 100 : 0;
+    const sweep = 100 * t, g = Math.min(segGo, sweep), y = Math.min(segLate, sweep);
+    const ringBg = `conic-gradient(#059669 0 ${g}%, #F59E0B ${g}% ${y}%, #EF4444 ${y}% ${sweep}%, #eef2f7 ${sweep}% 100%)`;
+    const numCol = actRateColor(dRate);
+    return (
+        <button onClick={() => onTabChange && onTabChange('my')} className="w-full card rounded-2xl p-5 text-left active:scale-98 transition-all">
+            <div className="flex items-center justify-between mb-4">
+                <p className="font-black text-base text-slate-800">내 활동</p>
+                <span className="inline-flex items-center gap-0.5 text-xs font-black text-slate-400">자세히 <Icon.ChevronRight size={14}/></span>
+            </div>
+            <div className="relative flex flex-col items-center">
+                {streak >= 2 && (
+                    <span className="absolute top-0 right-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-live text-[#15171E] text-xs font-black">🔥 {streak}연속</span>
+                )}
+                <div className="relative rounded-full flex items-center justify-center" style={{ width: 168, height: 168, background: ringBg }}>
+                    <div className="absolute rounded-full bg-white flex items-center justify-center" style={{ width: 122, height: 122 }}>
+                        <span className="font-black leading-none" style={{ color: numCol, fontSize: 46 }}>{dRate}<span style={{ fontSize: 26 }}>%</span></span>
+                    </div>
+                </div>
+            </div>
+            <div className="mt-5 flex items-center justify-around">
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: '#059669' }}/><span className="text-xs font-black text-slate-500">출석</span><span className="text-sm font-black text-slate-800"><ActSlotNumber value={go} baseDelay={0}/></span></div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: '#F59E0B' }}/><span className="text-xs font-black text-slate-500">지각</span><span className="text-sm font-black text-slate-800"><ActSlotNumber value={late} baseDelay={140}/></span></div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: '#EF4444' }}/><span className="text-xs font-black text-slate-500">노쇼</span><span className="text-sm font-black text-slate-800"><ActSlotNumber value={no} baseDelay={280}/></span></div>
+            </div>
+        </button>
+    );
+};
+
 const MyActivitySummaryCard = ({ attendHistory, memberInfo, onTabChange }) => {
     const myId = memberInfo?.id;
     const mine = React.useMemo(() => {
@@ -1584,27 +1676,8 @@ const MyActivitySummaryCard = ({ attendHistory, memberInfo, onTabChange }) => {
     let streak = 0;
     for (const m of mine) { if (m.status === '정상' || m.status === '지각') streak++; else break; }
 
-    return (
-        <button onClick={() => onTabChange && onTabChange('my')} className="w-full card rounded-2xl p-5 text-left active:scale-98 transition-all">
-            <div className="flex items-center justify-between mb-3">
-                <p className="font-black text-base text-slate-800">내 활동</p>
-                <span className="inline-flex items-center gap-0.5 text-xs font-black text-slate-400">자세히 <Icon.ChevronRight size={14}/></span>
-            </div>
-            <div className="flex items-center gap-3">
-                <div className="w-16 h-16 rounded-full flex-shrink-0 flex items-center justify-center" style={{ background: `conic-gradient(#183FB0 0% ${rate}%, #e6ebf5 ${rate}% 100%)` }}>
-                    <div className="w-12 h-12 rounded-full bg-white flex flex-col items-center justify-center">
-                        <span className="text-base font-black text-teal-600 leading-none">{rate}%</span>
-                    </div>
-                </div>
-                <div className="flex-1 grid grid-cols-3 gap-2 min-w-0">
-                    <div className="rounded-xl py-2 text-center bg-emerald-50"><p className="text-lg font-black text-emerald-600 leading-none">{go}</p><p className="text-[10px] font-black text-emerald-600 mt-1">출석</p></div>
-                    <div className="rounded-xl py-2 text-center bg-amber-50"><p className="text-lg font-black text-amber-600 leading-none">{late}</p><p className="text-[10px] font-black text-amber-600 mt-1">지각</p></div>
-                    <div className="rounded-xl py-2 text-center bg-rose-50"><p className="text-lg font-black text-rose-500 leading-none">{no}</p><p className="text-[10px] font-black text-rose-500 mt-1">노쇼</p></div>
-                </div>
-            </div>
-            {streak >= 2 && <span className="inline-flex items-center gap-1 mt-3 text-[11.5px] font-black px-2.5 py-1 rounded-full bg-live text-[#15171E]">🔥 {streak}회 연속 출석 중</span>}
-        </button>
-    );
+    // 본문은 데이터 준비된 지금 마운트 → 진입 애니메이션(도넛 채움·% 카운트·슬롯) 실행
+    return <MyActivityBody go={go} late={late} no={no} confirmed={confirmed} rate={rate} streak={streak} onTabChange={onTabChange} />;
 };
 
 const TabHome = ({
