@@ -534,10 +534,20 @@ const NextMeetingCard = ({
                             <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">신청 시작 전 · {fmtRegDT(meeting.registrationOpenAt)}부터</span>
                         </div>
                     ) : myReg?.status === 'confirmed' ? (
-                        <div className="flex items-center justify-between gap-2">
-                            <span className={`flex items-center gap-1.5 text-sm font-black ${ink} min-w-0`}><Icon.Check size={16} className="flex-shrink-0"/><span className="truncate">신청 완료</span></span>
-                            <span role="button" onClick={(e)=>{ e.stopPropagation(); regHandlers && regHandlers.handleCancel(); }} className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${chip} active:scale-95 cursor-pointer flex-shrink-0`}>신청 취소</span>
-                        </div>
+                        (fillOn && !(teamReady && myTeamInfo)) ? (
+                            <div className="flex flex-col items-center justify-center gap-3 py-2 text-center">
+                                <div className="flex items-center justify-center rounded-full" style={{width:96, height:96, background: dark?'rgba(0,0,0,0.10)':'rgba(255,255,255,0.16)'}}>
+                                    <Icon.Check size={52} className={ink}/>
+                                </div>
+                                <span className={`text-2xl font-black ${ink}`}>신청 완료</span>
+                                <span role="button" onClick={(e)=>{ e.stopPropagation(); regHandlers && regHandlers.handleCancel(); }} className={`text-xs font-black px-4 py-2 rounded-full ${chip} active:scale-95 cursor-pointer`}>신청 취소</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-between gap-2">
+                                <span className={`flex items-center gap-1.5 text-sm font-black ${ink} min-w-0`}><Icon.Check size={16} className="flex-shrink-0"/><span className="truncate">신청 완료</span></span>
+                                <span role="button" onClick={(e)=>{ e.stopPropagation(); regHandlers && regHandlers.handleCancel(); }} className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${chip} active:scale-95 cursor-pointer flex-shrink-0`}>신청 취소</span>
+                            </div>
+                        )
                     ) : myReg?.status === 'waiting' ? (
                         <div className="flex items-center justify-between gap-2">
                             <span className={`flex items-center gap-1.5 text-sm font-black ${ink} min-w-0`}><Icon.Clock size={16} className="flex-shrink-0"/><span className="truncate">대기 {myReg.waitingNumber || ''}번</span></span>
@@ -673,13 +683,25 @@ const NextMeetingCard = ({
                             })()
                         )
                     ) : teamReady && myTeamInfo ? (
-                        <div className="flex items-center justify-between gap-2">
-                            <span className="flex items-center gap-1.5 text-sm font-black text-white min-w-0">
-                                <span className={`w-5 h-5 rounded-md flex items-center justify-center text-white text-[11px] font-black flex-shrink-0 ${getTeamBadge(myTeamIdx)}`}>{myTeamInfo.jerseyNumber}</span>
-                                <span className="truncate">내 팀 · {myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</span>
-                            </span>
-                            <span className="text-xs text-white/70 flex-shrink-0">{getTeamColorName(myTeamIdx)} 조끼</span>
-                        </div>
+                        fillOn ? (
+                            <div className="flex flex-col items-center gap-3 py-1 text-center">
+                                <div className={`flex items-center justify-center rounded-3xl ${getTeamBadge(myTeamIdx)}`} style={{width:104, height:104}}>
+                                    <span className="font-black text-white leading-none" style={{fontSize:52}}>{myTeamInfo.jerseyNumber}</span>
+                                </div>
+                                <div>
+                                    <p className="text-lg font-black text-white leading-tight">내 팀 · {myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</p>
+                                    <p className="text-xs font-black text-white/70 mt-1">{getTeamColorName(myTeamIdx)} 조끼</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="flex items-center gap-1.5 text-sm font-black text-white min-w-0">
+                                    <span className={`w-5 h-5 rounded-md flex items-center justify-center text-white text-[11px] font-black flex-shrink-0 ${getTeamBadge(myTeamIdx)}`}>{myTeamInfo.jerseyNumber}</span>
+                                    <span className="truncate">내 팀 · {myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</span>
+                                </span>
+                                <span className="text-xs text-white/70 flex-shrink-0">{getTeamColorName(myTeamIdx)} 조끼</span>
+                            </div>
+                        )
                     ) : (
                         <div className="flex items-center gap-1.5 text-xs text-white/70">
                             <Icon.Users size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">팀 편성 비공개 중{allowFromDisplay?` · ${allowFromDisplay}부터 공개`:''}</span>
@@ -693,6 +715,8 @@ const NextMeetingCard = ({
                     </div>
                 </div>
             )}
+            {/* (fill) 아래 스페이서 — 위 콘텐츠(신청/팀)를 세로 가운데로. 관리자 버튼은 맨 아래 유지 */}
+            {fillOn && <div className="flex-1" aria-hidden="true" />}
             {/* 관리자: 카드에서 바로 수정/삭제 */}
             {isAdminMode && (onEditMeeting || onDeleteMeeting) && (
                 <div className="mt-3 pt-3 border-t flex items-center justify-end gap-1.5" style={{borderColor: softBorder}}>
