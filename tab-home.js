@@ -1457,6 +1457,62 @@ const MyAttendanceCard = ({ attendHistory, memberInfo, memberName, embedded = fa
         </div>
     );
 };
+// ─── 홈 '내 활동' 간략 카드 ──────────────────────────────────────────────────
+// 예정 모임이 없을 때 홈이 휑하지 않도록 채우는 요약 카드(자세히는 MY 탭).
+// 계산은 MyAttendanceCard와 동일(attendHistory에서 내 기록만). 기록 없으면 첫 참여 유도.
+const MyActivitySummaryCard = ({ attendHistory, memberInfo, onTabChange }) => {
+    const myId = memberInfo?.id;
+    const mine = React.useMemo(() => {
+        if (!myId) return [];
+        const out = [];
+        (attendHistory || []).forEach(h => {
+            const rec = (h.records || []).find(r => r.memberId === myId);
+            if (rec && rec.status && rec.status !== '대기') out.push({ date: h.date || '', status: rec.status });
+        });
+        return out.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    }, [attendHistory, myId]);
+
+    // 활동 기록 없음 → 가벼운 첫 참여 유도(빈 화면 방지)
+    if (!myId || mine.length === 0) {
+        return (
+            <div className="card rounded-2xl p-5 text-center">
+                <p className="font-black text-sm text-slate-700">아직 활동 기록이 없어요</p>
+                <p className="text-xs text-slate-400 mt-1">첫 모임에 참여하면 여기에 내 출석이 쌓여요</p>
+            </div>
+        );
+    }
+
+    const go = mine.filter(m => m.status === '정상').length;
+    const late = mine.filter(m => m.status === '지각').length;
+    const no = mine.filter(m => m.status === '노쇼').length;
+    const confirmed = go + late + no;
+    const rate = confirmed ? Math.round((go + late) / confirmed * 100) : 0;
+    let streak = 0;
+    for (const m of mine) { if (m.status === '정상' || m.status === '지각') streak++; else break; }
+
+    return (
+        <button onClick={() => onTabChange && onTabChange('my')} className="w-full card rounded-2xl p-5 text-left active:scale-98 transition-all">
+            <div className="flex items-center justify-between mb-3">
+                <p className="font-black text-base text-slate-800">내 활동</p>
+                <span className="inline-flex items-center gap-0.5 text-xs font-black text-slate-400">자세히 <Icon.ChevronRight size={14}/></span>
+            </div>
+            <div className="flex items-center gap-3">
+                <div className="w-16 h-16 rounded-full flex-shrink-0 flex items-center justify-center" style={{ background: `conic-gradient(#183FB0 0% ${rate}%, #e6ebf5 ${rate}% 100%)` }}>
+                    <div className="w-12 h-12 rounded-full bg-white flex flex-col items-center justify-center">
+                        <span className="text-base font-black text-teal-600 leading-none">{rate}%</span>
+                    </div>
+                </div>
+                <div className="flex-1 grid grid-cols-3 gap-2 min-w-0">
+                    <div className="rounded-xl py-2 text-center bg-emerald-50"><p className="text-lg font-black text-emerald-600 leading-none">{go}</p><p className="text-[10px] font-black text-emerald-600 mt-1">출석</p></div>
+                    <div className="rounded-xl py-2 text-center bg-amber-50"><p className="text-lg font-black text-amber-600 leading-none">{late}</p><p className="text-[10px] font-black text-amber-600 mt-1">지각</p></div>
+                    <div className="rounded-xl py-2 text-center bg-rose-50"><p className="text-lg font-black text-rose-500 leading-none">{no}</p><p className="text-[10px] font-black text-rose-500 mt-1">노쇼</p></div>
+                </div>
+            </div>
+            {streak >= 2 && <span className="inline-flex items-center gap-1 mt-3 text-[11.5px] font-black px-2.5 py-1 rounded-full bg-live text-[#15171E]">🔥 {streak}회 연속 출석 중</span>}
+        </button>
+    );
+};
+
 const TabHome = ({
     notifPermission, registerFcmToken, onTabChange,
     meetingDayInfo, teamReady, allowFromDisplay,
@@ -1528,13 +1584,17 @@ const TabHome = ({
                 memberData={memberData} showToast={showToast} showAlert={showAlert} showConfirm={showConfirm}
                 regDuesUnpaid={regDuesUnpaid} regDuesBlock={regDuesBlock} regPenaltyUnpaid={regPenaltyUnpaid} regPenaltyTotal={regPenaltyTotal} />
         )) : (
-            <button onClick={()=>onTabChange('meeting-list')} className="w-full card rounded-2xl p-5 text-center active:scale-98 transition-all">
-                <div className="text-slate-400 py-3">
-                    <div className="flex justify-center mb-2 opacity-30"><Icon.Calendar size={32}/></div>
-                    <p className="font-black text-sm">예정된 모임이 없습니다</p>
-                    <p className="text-xs mt-0.5 opacity-80">모임 탭에서 등록할 수 있어요</p>
-                </div>
-            </button>
+            <>
+                <button onClick={()=>onTabChange('meeting-list')} className="w-full card rounded-2xl p-5 text-center active:scale-98 transition-all">
+                    <div className="text-slate-400 py-3">
+                        <div className="flex justify-center mb-2 opacity-30"><Icon.Calendar size={32}/></div>
+                        <p className="font-black text-sm">예정된 모임이 없습니다</p>
+                        <p className="text-xs mt-0.5 opacity-80">모임 탭에서 등록할 수 있어요</p>
+                    </div>
+                </button>
+                {/* 휑한 홈 채우기 — 예정 모임 없을 때만 내 활동 요약(자세히는 MY 탭) */}
+                <MyActivitySummaryCard attendHistory={attendHistory} memberInfo={memberInfo} onTabChange={onTabChange} />
+            </>
         )}
 
         {/* 내 출석 현황 카드는 MY 탭으로 이동(정의는 위 MyAttendanceCard, 호출은 tab-my.js) */}
