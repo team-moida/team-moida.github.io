@@ -524,23 +524,21 @@ const NextMeetingCard = ({
             {dayInfo && dayInfo.type !== 'past' && (
                 <MeetingWeather lat={meeting.locationLat} lng={meeting.locationLng} isAdminMode={isAdminMode} dark={dark} />
             )}
-            {/* (fill) 위 정보와 아래 신청/출석 영역 사이를 늘려 카드를 하단탭 근처까지 채움 */}
-            {fillOn && <div className="flex-1" aria-hidden="true" />}
-            {/* 모임 신청 — 카드 안에서 바로 신청/취소 (신청 받는 모임일 때만) */}
+            {/* 모임 신청 — 카드 안에서 바로 신청/취소 (신청 받는 모임일 때만). fill: 영역을 늘려 안을 채움 */}
             {showRegBlock && (
-                <div className="mt-3 pt-3 border-t" style={{borderColor: softBorder}}>
+                <div className={`mt-3 pt-3 border-t ${fillOn ? 'flex-1 flex flex-col justify-center' : ''}`} style={{borderColor: softBorder}}>
                     {regBeforeOpen ? (
                         <div className={`flex items-center gap-1.5 text-xs font-black ${ink70}`}>
                             <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">신청 시작 전 · {fmtRegDT(meeting.registrationOpenAt)}부터</span>
                         </div>
                     ) : myReg?.status === 'confirmed' ? (
                         (fillOn && !(teamReady && myTeamInfo)) ? (
-                            <div className="flex flex-col items-center justify-center gap-3 py-2 text-center">
-                                <div className="flex items-center justify-center rounded-full" style={{width:96, height:96, background: dark?'rgba(0,0,0,0.10)':'rgba(255,255,255,0.16)'}}>
-                                    <Icon.Check size={52} className={ink}/>
+                            <div className="flex flex-col items-center justify-center gap-4 py-2 text-center">
+                                <div className="flex items-center justify-center rounded-full" style={{width:120, height:120, background: dark?'rgba(0,0,0,0.10)':'rgba(255,255,255,0.16)'}}>
+                                    <Icon.Check size={64} className={ink}/>
                                 </div>
-                                <span className={`text-2xl font-black ${ink}`}>신청 완료</span>
-                                <span role="button" onClick={(e)=>{ e.stopPropagation(); regHandlers && regHandlers.handleCancel(); }} className={`text-xs font-black px-4 py-2 rounded-full ${chip} active:scale-95 cursor-pointer`}>신청 취소</span>
+                                <span className={`text-3xl font-black ${ink}`}>신청 완료</span>
+                                <span role="button" onClick={(e)=>{ e.stopPropagation(); regHandlers && regHandlers.handleCancel(); }} className={`text-sm font-black px-5 py-2.5 rounded-full ${chip} active:scale-95 cursor-pointer`}>신청 취소</span>
                             </div>
                         ) : (
                             <div className="flex items-center justify-between gap-2">
@@ -562,21 +560,22 @@ const NextMeetingCard = ({
                     ) : (regDuesBlock && regDuesUnpaid) ? (
                         <div className={`text-xs font-black ${ink70} text-center py-1`}>회비 미납 — 신청할 수 없어요</div>
                     ) : (
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <span className={`text-xs font-black ${ink80}`}>{kind==='match' ? '매칭 신청' : (regFCFS ? '선착순 신청' : '모임 신청')}</span>
-                                {regFCFS && kind!=='match' && <span className={`text-xs font-black ${ink70}`}>{curCount} / {meeting.maxLimit||18}명</span>}
+                        <div className={fillOn ? 'w-full flex flex-col flex-1' : ''}>
+                            <div className={`flex items-center justify-between ${fillOn ? 'mb-3' : 'mb-2'}`}>
+                                <span className={`font-black ${ink80} ${fillOn ? 'text-sm' : 'text-xs'}`}>{kind==='match' ? '매칭 신청' : (regFCFS ? '선착순 신청' : '모임 신청')}</span>
+                                {regFCFS && kind!=='match' && <span className={`font-black ${ink70} ${fillOn ? 'text-base' : 'text-xs'}`}>{curCount} / {meeting.maxLimit||18}명</span>}
                             </div>
                             <span role="button" onClick={(e)=>{ e.stopPropagation(); regHandlers && regHandlers.handleRegister(); }}
-                                className={`btn-apply w-full flex items-center justify-center gap-1.5 rounded-2xl font-black cursor-pointer ${fillOn ? 'py-5 text-base' : 'py-3 text-sm'}`}>
-                                <Icon.CheckSq size={fillOn ? 18 : 16}/> 신청하기
+                                className={`btn-apply w-full flex items-center justify-center gap-2 rounded-2xl font-black cursor-pointer ${fillOn ? 'flex-1 text-lg' : 'py-3 text-sm'}`}
+                                style={fillOn ? {minHeight:120} : undefined}>
+                                <Icon.CheckSq size={fillOn ? 22 : 16}/> 신청하기
                             </span>
                         </div>
                     )}
                 </div>
             )}
             {isActive ? (
-                <div className="mt-4 pt-4 border-t space-y-2.5" style={{borderColor: softBorder}}>
+                <div className={`mt-4 pt-4 border-t space-y-2.5 ${fillOn ? 'flex-1 flex flex-col justify-center' : ''}`} style={{borderColor: softBorder}}>
                     {/* 출석 상태 — 출석체크 시점(당일/모임중)이 되면 체크 버튼, 완료 시 완료 표시 */}
                     {mySession?.checkedIn ? (
                         <div className="flex items-center gap-2">
@@ -684,13 +683,13 @@ const NextMeetingCard = ({
                         )
                     ) : teamReady && myTeamInfo ? (
                         fillOn ? (
-                            <div className="flex flex-col items-center gap-3 py-1 text-center">
-                                <div className={`flex items-center justify-center rounded-3xl ${getTeamBadge(myTeamIdx)}`} style={{width:104, height:104}}>
-                                    <span className="font-black text-white leading-none" style={{fontSize:52}}>{myTeamInfo.jerseyNumber}</span>
+                            <div className="flex flex-col items-center gap-4 py-1 text-center">
+                                <div className={`flex items-center justify-center rounded-3xl ${getTeamBadge(myTeamIdx)}`} style={{width:132, height:132}}>
+                                    <span className="font-black text-white leading-none" style={{fontSize:66}}>{myTeamInfo.jerseyNumber}</span>
                                 </div>
                                 <div>
-                                    <p className="text-lg font-black text-white leading-tight">내 팀 · {myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</p>
-                                    <p className="text-xs font-black text-white/70 mt-1">{getTeamColorName(myTeamIdx)} 조끼</p>
+                                    <p className="text-xl font-black text-white leading-tight">내 팀 · {myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</p>
+                                    <p className="text-sm font-black text-white/70 mt-1">{getTeamColorName(myTeamIdx)} 조끼</p>
                                 </div>
                             </div>
                         ) : (
@@ -715,8 +714,6 @@ const NextMeetingCard = ({
                     </div>
                 </div>
             )}
-            {/* (fill) 아래 스페이서 — 위 콘텐츠(신청/팀)를 세로 가운데로. 관리자 버튼은 맨 아래 유지 */}
-            {fillOn && <div className="flex-1" aria-hidden="true" />}
             {/* 관리자: 카드에서 바로 수정/삭제 */}
             {isAdminMode && (onEditMeeting || onDeleteMeeting) && (
                 <div className="mt-3 pt-3 border-t flex items-center justify-end gap-1.5" style={{borderColor: softBorder}}>
