@@ -123,8 +123,7 @@ const TabMy = ({
                     <p className="font-black text-base text-slate-800 truncate">{memberName} <span className="text-slate-400 text-sm">님</span></p>
                     <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
                         <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500">{role}</span>
-                        {/* 레벨(등급)은 운영진만 — 회원 본인에겐 숨김(관리자 모드일 때만 표시) */}
-                        {level && isAdminMode && <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500">Lv.{level}</span>}
+                        {/* 레벨(등급)은 운영진이 '다른' 회원을 평가할 때 쓰는 값 — 본인 프로필(MY)에는 운영진이라도 표시하지 않음 */}
                         {ms && (ms.active
                             ? <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600">{ms.type}납 · ~{ms.endDateFormatted}</span>
                             : <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-500">{ms.type}납 만료</span>)}
