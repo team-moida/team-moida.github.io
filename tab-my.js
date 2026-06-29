@@ -3,7 +3,32 @@
 // 설정/계정/보기모드는 그 자리에서 토글·표시(이동 없음).
 // 모든 동작은 기존 상태/핸들러를 '전달받아 호출'만 한다 — 새 로직·상태 정의 없음.
 // (회칙은 게시판 탭에 있으므로 MY에는 두지 않는다.)
-const APP_VERSION = 'v286';   // SW 캐시(moida-vNNN)와 맞춤
+const APP_VERSION = 'v287';   // SW 캐시(moida-vNNN)와 맞춤
+
+// 벌금 상세 — 카드는 비면 스스로 null. 둘 다 비면(내 벌금 0건) "없어요" 안내.
+// 구독은 이 화면(벌금 상세)이 떠 있을 때만 살아있음(컴포넌트 분리). 관리자 모드는 카드가 전체관리 목록을 보여주므로 빈 안내 제외.
+const PenaltyDetail = ({ isAdminMode, memberName, memberInfo, managers }) => {
+    const { useState, useEffect } = React;
+    const [count, setCount] = useState(null);   // null=로딩(깜빡임 방지), number=내 벌금 문서 수
+    const memberId = memberInfo?.id || null;
+    useEffect(() => {
+        if (!memberId) { setCount(0); return; }
+        const unsub = getCol('penalties').where('memberId', '==', memberId).onSnapshot(s => setCount(s.docs.length));
+        return () => unsub();
+    }, [memberId]);
+    const showEmpty = !isAdminMode && count === 0;
+    return (
+        <div className="space-y-3">
+            <PenaltyPayCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} managers={managers} />
+            <PenaltyHistoryCard memberInfo={memberInfo} />
+            {showEmpty && (
+                <div className="card rounded-2xl p-10 flex flex-col items-center justify-center text-center">
+                    <p className="font-black text-sm text-slate-400">벌금 내역이 없어요</p>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const TabMy = ({
     memberInfo, memberName, isAdminMode, onOpenProfile,
@@ -60,10 +85,7 @@ const TabMy = ({
                 )}
 
                 {myView === 'penalty' && (
-                    <div className="space-y-3">
-                        <PenaltyPayCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} managers={managers} />
-                        <PenaltyHistoryCard memberInfo={memberInfo} />
-                    </div>
+                    <PenaltyDetail isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} managers={managers} />
                 )}
 
                 {myView === 'attend' && (
