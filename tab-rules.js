@@ -7,6 +7,8 @@ const TabRules = ({ isAdminMode, showAlert, memberName }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [effectiveDate, setEffectiveDate] = useState('');     // 시행일자(YYYY-MM-DD) — 관리자가 설정
+    const [editEffectiveDate, setEditEffectiveDate] = useState('');
 
     useEffect(() => {
         const unsub = getCol('settings').doc('club_rules').onSnapshot(doc => {
@@ -15,10 +17,12 @@ const TabRules = ({ isAdminMode, showAlert, memberName }) => {
                 setContent(d.content || '');
                 setUpdatedAt(d.updatedAt || '');
                 setUpdatedBy(d.updatedBy || '');
+                setEffectiveDate(d.effectiveDate || '');
             } else {
                 setContent('');
                 setUpdatedAt('');
                 setUpdatedBy('');
+                setEffectiveDate('');
             }
         });
         return () => unsub();
@@ -31,6 +35,7 @@ const TabRules = ({ isAdminMode, showAlert, memberName }) => {
                 content: editContent,
                 updatedAt: new Date().toISOString(),
                 updatedBy: memberName || '관리자',
+                effectiveDate: editEffectiveDate || '',
             });
             setIsEditing(false);
             showAlert('완료', '회칙이 저장되었습니다.');
@@ -78,16 +83,19 @@ const TabRules = ({ isAdminMode, showAlert, memberName }) => {
 
     return (
         <div className="animate-in">
-            {/* 헤더(B+): 큰 "회칙" 제목 + 개정일 칩 + (관리자) 편집 */}
-            <div className="flex items-end justify-between gap-3 mb-4 reveal">
-                <div className="flex items-baseline gap-2.5 flex-wrap min-w-0">
-                    <h2 className="font-black text-2xl text-slate-900 leading-none">회칙</h2>
-                    {updatedAt && !isEditing && (
-                        <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">{formatDate(updatedAt)} 개정</span>
+            {/* 헤더(B+): "O.T.P FC 회칙" 제목 + 시행·개정일 칩 + (관리자) 편집 */}
+            <div className="flex items-start justify-between gap-3 mb-4 reveal">
+                <div className="min-w-0">
+                    <h2 className="font-black text-2xl text-slate-900 leading-tight">O.T.P FC 회칙</h2>
+                    {!isEditing && (effectiveDate || updatedAt) && (
+                        <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                            {effectiveDate && <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">{formatDate(effectiveDate)} 시행</span>}
+                            {updatedAt && <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">{formatDate(updatedAt)} 개정</span>}
+                        </div>
                     )}
                 </div>
                 {isAdminMode && !isEditing && (
-                    <button onClick={()=>{setEditContent(content);setIsEditing(true);}}
+                    <button onClick={()=>{setEditContent(content);setEditEffectiveDate(effectiveDate||'');setIsEditing(true);}}
                         className="p-2 rounded-xl bg-slate-100 text-slate-500 shrink-0 active:scale-95 transition-all">
                         <Icon.Edit size={15}/>
                     </button>
@@ -96,6 +104,11 @@ const TabRules = ({ isAdminMode, showAlert, memberName }) => {
 
             {isEditing ? (
                 <div className="reveal">
+                    <div className="mb-3">
+                        <label className="block text-[11px] font-black text-slate-500 mb-1 px-1">시행일자</label>
+                        <input type="date" value={editEffectiveDate} onChange={e=>setEditEffectiveDate(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-700"/>
+                    </div>
                     <textarea
                         value={editContent}
                         onChange={e=>setEditContent(e.target.value)}

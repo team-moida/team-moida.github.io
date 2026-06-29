@@ -168,7 +168,7 @@ const TabNotice = ({ announcements, isAdminMode, isDeveloper, canManage = () => 
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 min-w-0">
                                     <NoticeBadge category="정보" />
-                                    <p className="font-black text-[14.5px] text-teal-600 truncate">회칙</p>
+                                    <p className="font-black text-[14.5px] text-teal-600 truncate">O.T.P FC 회칙</p>
                                 </div>
                                 <p className="text-[11.5px] text-slate-400 mt-1.5 truncate font-bold">우리 팀 회칙을 확인해요</p>
                             </div>
