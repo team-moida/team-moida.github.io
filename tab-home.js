@@ -1457,6 +1457,74 @@ const MyAttendanceCard = ({ attendHistory, memberInfo, memberName, embedded = fa
         </div>
     );
 };
+// ─── 홈 '다음 정기모임 미리보기' / '예정 모임 없음(작게)' ───────────────────────
+// 예정 모임 문서가 없을 때(=홈 빈자리) 정기모임 설정이 켜져 있으면 다음 회차 정보를 미리 보여준다.
+// computeUpcomingMeetingDates(handlers-meetings.js)는 member.html에 없을 수 있어 의존하지 않고 직접 계산.
+const _WD_KR = ['일','월','화','수','목','금','토'];
+const _nextWeekdayDate = (weekday) => {   // 오늘이 그 요일이면 오늘부터
+    const base = new Date(); base.setHours(0, 0, 0, 0);
+    const d0 = (Number(weekday) - base.getDay() + 7) % 7;
+    const t = new Date(base); t.setDate(base.getDate() + d0);
+    const mo = String(t.getMonth() + 1).padStart(2, '0'), da = String(t.getDate()).padStart(2, '0');
+    return `${t.getFullYear()}-${mo}-${da}`;
+};
+const RecurringPreviewCard = ({ onTabChange }) => {
+    const { useState, useEffect } = React;
+    const [cfg, setCfg] = useState(undefined);   // undefined=로딩, null=없음/꺼짐, object=설정됨
+    const [ovr, setOvr] = useState(null);        // 다음 회차 날짜별 지정(구장 우선용)
+    useEffect(() => {
+        const unsub = getCol('settings').doc('recurring_meeting').onSnapshot(d => {
+            const data = d.exists ? d.data() : null;
+            setCfg(data && data.enabled ? data : null);
+        }, () => setCfg(null));
+        return () => unsub();
+    }, []);
+    const nextDate = cfg ? _nextWeekdayDate(cfg.weekday ?? 0) : null;
+    useEffect(() => {
+        if (!nextDate) { setOvr(null); return; }
+        let alive = true;
+        getCol('recurring_overrides').doc(nextDate).get()
+            .then(s => { if (alive) setOvr(s.exists ? s.data() : null); }).catch(() => {});
+        return () => { alive = false; };
+    }, [nextDate]);
+
+    if (cfg === undefined) return null;   // 로딩 중엔 아무 것도(깜빡임 방지)
+
+    // 정기모임 미설정/꺼짐 → 작은 '예정 모임 없음' 한 줄 카드
+    if (!cfg) {
+        return (
+            <button onClick={() => onTabChange('meeting-list')} className="w-full card rounded-2xl px-4 py-3.5 flex items-center gap-3 text-left active:scale-98 transition-all">
+                <Icon.Calendar size={18} className="text-slate-300 flex-shrink-0"/>
+                <div className="flex-1 min-w-0">
+                    <p className="font-black text-sm text-slate-500">예정된 모임이 없어요</p>
+                    <p className="text-[11.5px] text-slate-400 font-bold mt-0.5">모임 탭에서 등록할 수 있어요</p>
+                </div>
+                <Icon.ChevronRight size={18} className="text-slate-300 flex-shrink-0"/>
+            </button>
+        );
+    }
+
+    // 정기모임 설정됨 → 다음 회차 미리보기
+    const wd = _WD_KR[Number(cfg.weekday) || 0];
+    const loc = (ovr && ovr.location) || cfg.defaultLocation || '';
+    const [, mo, da] = (nextDate || '').split('-');
+    const dateLabel = (mo && da) ? `${Number(mo)}월 ${Number(da)}일` : '';
+    return (
+        <button onClick={() => onTabChange('meeting-list')} className="w-full card rounded-2xl p-4 text-left active:scale-98 transition-all border border-teal-100">
+            <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0"><Icon.Refresh size={18} className="text-teal-500"/></div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-black text-teal-600">다음 정기모임</p>
+                    <p className="font-black text-sm text-slate-800 mt-0.5 truncate">{dateLabel} {wd}요일 · {cfg.start}~{cfg.end}</p>
+                    {loc && <p className="text-[11.5px] text-slate-400 font-bold truncate mt-0.5">{loc}</p>}
+                </div>
+                <Icon.ChevronRight size={18} className="text-slate-300 flex-shrink-0"/>
+            </div>
+            <p className="text-[10.5px] text-slate-400 mt-2.5 leading-relaxed">모임 날짜가 되면 자동으로 열려요. 신청은 모임 탭에서 확인하세요.</p>
+        </button>
+    );
+};
+
 // ─── 홈 '내 활동' 간략 카드 ──────────────────────────────────────────────────
 // 예정 모임이 없을 때 홈이 휑하지 않도록 채우는 요약 카드(자세히는 MY 탭).
 // 계산은 MyAttendanceCard와 동일(attendHistory에서 내 기록만). 기록 없으면 첫 참여 유도.
@@ -1585,13 +1653,8 @@ const TabHome = ({
                 regDuesUnpaid={regDuesUnpaid} regDuesBlock={regDuesBlock} regPenaltyUnpaid={regPenaltyUnpaid} regPenaltyTotal={regPenaltyTotal} />
         )) : (
             <>
-                <button onClick={()=>onTabChange('meeting-list')} className="w-full card rounded-2xl p-5 text-center active:scale-98 transition-all">
-                    <div className="text-slate-400 py-3">
-                        <div className="flex justify-center mb-2 opacity-30"><Icon.Calendar size={32}/></div>
-                        <p className="font-black text-sm">예정된 모임이 없습니다</p>
-                        <p className="text-xs mt-0.5 opacity-80">모임 탭에서 등록할 수 있어요</p>
-                    </div>
-                </button>
+                {/* 정기모임 켜져 있으면 다음 회차 미리보기, 아니면 작은 '없음' 카드 */}
+                <RecurringPreviewCard onTabChange={onTabChange} />
                 {/* 휑한 홈 채우기 — 예정 모임 없을 때만 내 활동 요약(자세히는 MY 탭) */}
                 <MyActivitySummaryCard attendHistory={attendHistory} memberInfo={memberInfo} onTabChange={onTabChange} />
             </>
