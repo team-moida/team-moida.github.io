@@ -1527,7 +1527,7 @@ const RecurringPreviewCard = ({ onTabChange }) => {
             style={{ background: accent, boxShadow: `0 16px 34px -6px ${accent}66` }}>
             <div className="flex items-center justify-between gap-2 mb-2.5">
                 <p className="text-xs font-black uppercase tracking-widest text-white/80">정기모임</p>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-white/25 text-white flex-shrink-0">예정</span>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-white text-[#122E78] flex-shrink-0">예정</span>
             </div>
             <div className="flex items-end gap-3 mb-3">
                 <span className="text-[44px] font-black leading-none">{dDay}</span>
