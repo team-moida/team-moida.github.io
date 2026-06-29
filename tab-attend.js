@@ -35,11 +35,13 @@ const KioskModal = ({
     attendHandleCheckIn, attendHandleUncheckIn, setAttendModal,
 }) => {
     const [confirmTarget, setConfirmTarget] = React.useState(null);
+    const [cancelStep, setCancelStep] = React.useState(false);   // 출석한 회원: '출석 취소'를 2단계로(실수 방지)
     if (!isKioskOpen) return null;
 
+    const closePopup = () => { setConfirmTarget(null); setCancelStep(false); };
     const handleConfirm = () => {
         attendHandleCheckIn(confirmTarget);
-        setConfirmTarget(null);
+        closePopup();
     };
     const teamBadgeClass = confirmTarget?.teamIdx != null ? getTeamBadge(confirmTarget.teamIdx) : 'bg-teal-500';
     const teamColorLabel = confirmTarget?.teamIdx != null ? getTeamColorName(confirmTarget.teamIdx) : '';
@@ -162,7 +164,7 @@ const KioskModal = ({
                 const shadow = lightTeam ? 'none' : '0 2px 12px rgba(0,0,0,0.25)';
                 return (
                 <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,zIndex:10,background:'rgba(0,0,0,0.55)',display:'flex',alignItems:'center',justifyContent:'center',padding:'24px'}}
-                    onClick={() => setConfirmTarget(null)}>
+                    onClick={closePopup}>
                     <div className={teamBadgeClass} style={{borderRadius:'28px',overflow:'hidden',width:'100%',maxWidth:'340px',boxShadow:'0 25px 50px rgba(0,0,0,0.4)'}}
                         onClick={e => e.stopPropagation()}>
                         <div style={{padding:'30px 24px 24px',textAlign:'center',userSelect:'none'}}>
@@ -182,27 +184,39 @@ const KioskModal = ({
                             {isIn && (
                                 <p style={{fontSize:'0.95rem',fontWeight:900,color:txtSoft,marginBottom:'24px'}}>출석 완료{confirmTarget.checkInTime?` · ${confirmTarget.checkInTime}`:''}</p>
                             )}
-                            <div style={{display:'flex',gap:'10px'}}>
-                                {isIn ? (
-                                    <>
-                                        <button onClick={() => { attendHandleUncheckIn && attendHandleUncheckIn(confirmTarget); setConfirmTarget(null); }}
-                                            style={{flex:1,height:'56px',borderRadius:'16px',background:subBg,color:txt,fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
-                                            className="active:scale-95 transition-all">출석 취소</button>
-                                        <button onClick={() => setConfirmTarget(null)}
-                                            style={{flex:1,height:'56px',borderRadius:'16px',background:okBg,color:okFg,fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
-                                            className="active:scale-95 transition-all">확인</button>
-                                    </>
+                            {isIn ? (
+                                cancelStep ? (
+                                    <div>
+                                        <p style={{fontSize:'0.9rem',fontWeight:900,color:txtSoft,marginBottom:'12px'}}>출석을 취소할까요?</p>
+                                        <div style={{display:'flex',gap:'10px'}}>
+                                            <button onClick={() => setCancelStep(false)}
+                                                style={{flex:1,height:'56px',borderRadius:'16px',background:subBg,color:txt,fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
+                                                className="active:scale-95 transition-all">돌아가기</button>
+                                            <button onClick={() => { attendHandleUncheckIn && attendHandleUncheckIn(confirmTarget); closePopup(); }}
+                                                style={{flex:1,height:'56px',borderRadius:'16px',background:okBg,color:okFg,fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
+                                                className="active:scale-95 transition-all">출석 취소</button>
+                                        </div>
+                                    </div>
                                 ) : (
-                                    <>
-                                        <button onClick={() => setConfirmTarget(null)}
-                                            style={{flex:1,height:'56px',borderRadius:'16px',background:subBg,color:txt,fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
-                                            className="active:scale-95 transition-all">취소</button>
-                                        <button onClick={handleConfirm}
-                                            style={{flex:1,height:'56px',borderRadius:'16px',background:okBg,color:okFg,fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
+                                    <div>
+                                        <button onClick={closePopup}
+                                            style={{width:'100%',height:'56px',borderRadius:'16px',background:okBg,color:okFg,fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
                                             className="active:scale-95 transition-all">확인</button>
-                                    </>
-                                )}
-                            </div>
+                                        <button onClick={() => setCancelStep(true)}
+                                            style={{marginTop:'14px',background:'none',border:'none',cursor:'pointer',color:txtSoft,fontWeight:800,fontSize:'0.8rem',textDecoration:'underline',width:'100%'}}
+                                            className="active:scale-95 transition-all">잘못 눌렀나요? 출석 취소</button>
+                                    </div>
+                                )
+                            ) : (
+                                <div style={{display:'flex',gap:'10px'}}>
+                                    <button onClick={closePopup}
+                                        style={{flex:1,height:'56px',borderRadius:'16px',background:subBg,color:txt,fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
+                                        className="active:scale-95 transition-all">취소</button>
+                                    <button onClick={handleConfirm}
+                                        style={{flex:1,height:'56px',borderRadius:'16px',background:okBg,color:okFg,fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
+                                        className="active:scale-95 transition-all">확인</button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -2,7 +2,7 @@
 // 프로필 · 설정(알림/다크모드) · 계정(로그아웃/버전) · (개발자)보기모드를 한 화면에 모음.
 // 모든 동작은 기존 상태/핸들러를 '전달받아 호출'만 한다 — 새 로직·상태 정의 없음.
 // (회칙은 게시판 탭에 있으므로 MY에는 두지 않는다.)
-const APP_VERSION = 'v281';   // SW 캐시(moida-vNNN)와 맞춤
+const APP_VERSION = 'v282';   // SW 캐시(moida-vNNN)와 맞춤
 
 const TabMy = ({
     memberInfo, memberName, isAdminMode, onOpenProfile,
