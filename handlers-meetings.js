@@ -119,6 +119,7 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
                 updatedAt: new Date().toISOString(),
                 isRegistrationEnabled: formData.isRegistrationEnabled || false,
                 isFirstComeFirstServed: formData.isFirstComeFirstServed ?? true,
+                autoRegisterManager: formData.autoRegisterManager ?? true,
                 registrationOpenAt: formData.registrationOpenAt || '',
                 registrationCloseAt: formData.registrationCloseAt || '',
                 confirmedCount: originalMeeting?.confirmedCount || 0,
@@ -167,7 +168,7 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
             }
 
             // 새 선착순 정기모임: 담당자를 자동으로 선착순 1번으로 등록
-            if (!editingId && meetingType === 'self' && (formData.isFirstComeFirstServed ?? true) && data.managerId) {
+            if (!editingId && meetingType === 'self' && (formData.isFirstComeFirstServed ?? true) && data.managerId && (data.autoRegisterManager !== false)) {
                 try {
                     const managerDoc = await getCol('members').doc(data.managerId).get();
                     if (managerDoc.exists) {

@@ -424,11 +424,11 @@ const NextMeetingCard = ({
     const curCount = (liveCount != null) ? liveCount : (participantCount || 0);
 
     // ── 카드 안 모임 신청 (정기/매칭 공통) ──────────────────────────────────────
-    // 신청 받는 모임(isRegistrationEnabled)일 때만. 담당자(managerId==나)는 자동 등록되므로 제외.
+    // 신청 받는 모임(isRegistrationEnabled)일 때만. 담당자도 표시한다 —
+    // 자동 등록됐으면 '신청 완료/취소', 안 됐으면 '신청하기'로 myReg(등록상태)가 알아서 분기.
     const _meId = memberData?.memberId;
     const regEnabled = !!meeting?.isRegistrationEnabled;
-    const isRegManager = !!(_meId && meeting?.managerId && meeting.managerId === _meId);
-    const showRegBlock = regEnabled && !isRegManager && !!_meId;
+    const showRegBlock = regEnabled && !!_meId;
     const [myReg, setMyReg] = React.useState(null);
     React.useEffect(() => {
         if (!showRegBlock || !meeting?.date) { setMyReg(null); return; }

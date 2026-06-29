@@ -421,6 +421,7 @@ exports.generateRecurringMeeting = onSchedule(
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
       isRegistrationEnabled: true,
       isFirstComeFirstServed: pick("isFirstComeFirstServed", cfg.defaultFCFS !== false),
+      autoRegisterManager: cfg.autoRegisterManager !== false,
       registrationOpenAt: nowLocal,
       registrationCloseAt,
       confirmedCount: 0, waitingCount: 0,
@@ -429,6 +430,34 @@ exports.generateRecurringMeeting = onSchedule(
     };
 
     await meetingRef.set(data);
+
+    // 담당자 자동 1번 등록(옵션) — 설정에서 켜져 있고 선착순·담당자 지정 시.
+    // 수동 생성(handlers-meetings.js)과 동일한 등록 형태. confirmedCount=1까지 맞춘다.
+    let autoRegistered = false;
+    if (data.managerId && data.isFirstComeFirstServed && data.autoRegisterManager !== false) {
+      try {
+        const mgrSnap = await db.doc(`${DB_PATH}/members/${data.managerId}`).get();
+        if (mgrSnap.exists) {
+          const mgr = mgrSnap.data();
+          const regBatch = db.batch();
+          regBatch.set(db.doc(`${DB_PATH}/registrations/${meetingId}_${data.managerId}`), {
+            meetingDate: data.date, meetingId, meetingType: "self",
+            memberId: data.managerId, name: mgr.name || data.managerName || "",
+            gender: mgr.gender || "", level: mgr.level || "",
+            registeredAt: FV.serverTimestamp(), status: "confirmed", waitingNumber: null,
+          });
+          regBatch.set(db.doc(`${DB_PATH}/weekly_session/${meetingId}_${data.managerId}`), {
+            memberId: data.managerId, name: mgr.name || data.managerName || "",
+            gender: mgr.gender || "", level: mgr.level || "",
+            date: data.date, meetingId, checkedIn: false, checkInTime: null,
+            status: "active", isGuest: false, team: null, createdAt: FV.serverTimestamp(),
+          });
+          regBatch.update(meetingRef, { confirmedCount: 1 });
+          await regBatch.commit();
+          autoRegistered = true;
+        }
+      } catch (e) { console.error("담당자 자동 등록 실패:", e); }
+    }
 
     // 새 모임이 활성(오늘 이후 같은 종류 중 가장 가까운 미종료) 모임이면 mirror 동기화
     try {
@@ -452,7 +481,7 @@ exports.generateRecurringMeeting = onSchedule(
           isRegistrationEnabled: data.isRegistrationEnabled,
           isFirstComeFirstServed: data.isFirstComeFirstServed,
           registrationOpenAt: data.registrationOpenAt, registrationCloseAt: data.registrationCloseAt,
-          confirmedCount: 0, waitingCount: 0,
+          confirmedCount: autoRegistered ? 1 : 0, waitingCount: 0,
         };
         await db.doc(`${DB_PATH}/settings/${mirrorKey}`).set(mirrorData);
       }

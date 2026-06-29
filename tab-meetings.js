@@ -3,13 +3,13 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
     const { useState } = React;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', meetingType:'self', opponentName:'', maxMale:12, maxFemale:6, maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false, editPin:'' });
+    const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', meetingType:'self', opponentName:'', maxMale:12, maxFemale:6, maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, autoRegisterManager:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false, editPin:'' });
     const [isSaving, setIsSaving] = useState(false);
     const [isLocPickerOpen, setIsLocPickerOpen] = useState(false);
 
     // ── 정기 모임 설정 ──
     const DOW = ['일','월','화','수','목','금','토'];
-    const RECUR_DEFAULT = { enabled:false, weekday:0, start:'08:00', end:'10:00', uploadWeekday:1, uploadHour:20, regCloseWeekday:null, regCloseHour:null, defaultLocation:'', defaultLat:null, defaultLng:null, defaultRadius:100, defaultEnableQR:false, defaultFCFS:true, defaultMaxLimit:18, managerId:'', managerName:'', autoAnnounce:true };
+    const RECUR_DEFAULT = { enabled:false, weekday:0, start:'08:00', end:'10:00', uploadWeekday:1, uploadHour:20, regCloseWeekday:null, regCloseHour:null, defaultLocation:'', defaultLat:null, defaultLng:null, defaultRadius:100, defaultEnableQR:false, defaultFCFS:true, defaultMaxLimit:18, managerId:'', managerName:'', autoRegisterManager:true, autoAnnounce:true };
     const [isRecModalOpen, setIsRecModalOpen] = useState(false);
     const [recCfg, setRecCfg] = useState(null);
     const [isRecSaving, setIsRecSaving] = useState(false);
@@ -57,6 +57,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                 defaultFCFS: !!recCfg.defaultFCFS,
                 defaultMaxLimit: Number(recCfg.defaultMaxLimit) || 18,
                 managerId: recCfg.managerId || '', managerName: recCfg.managerName || '',
+                autoRegisterManager: recCfg.autoRegisterManager !== false,
                 autoAnnounce: !!recCfg.autoAnnounce,
             });
             setIsRecModalOpen(false);
@@ -125,7 +126,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
 
     const openAdd = () => {
         setEditingId(null);
-        setForm({ date:'', start:'08:00', end:'10:00', location:'', meetingType:'self', opponentName:'', maxMale:12, maxFemale:6, maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false, editPin:'' });
+        setForm({ date:'', start:'08:00', end:'10:00', location:'', meetingType:'self', opponentName:'', maxMale:12, maxFemale:6, maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, autoRegisterManager:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false, editPin:'' });
         setIsModalOpen(true);
     };
 
@@ -152,6 +153,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
             editPin: m.editPin || '',
             isRegistrationEnabled: m.isRegistrationEnabled || false,
             isFirstComeFirstServed: m.isFirstComeFirstServed ?? true,
+            autoRegisterManager: m.autoRegisterManager ?? true,
             regOpenDate: openDT.date, regOpenHour: openDT.hour, regOpenMinute: openDT.minute,
             regCloseDate: closeDT.date, regCloseHour: closeDT.hour, regCloseMinute: closeDT.minute,
             sendPush: false,
@@ -410,6 +412,18 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                     {managers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                                 </select>
                             </div>
+                            {form.managerId && form.meetingType !== 'match' && (
+                                <div className="flex items-center justify-between">
+                                    <div className="min-w-0 pr-2">
+                                        <label className="text-xs font-black text-slate-500">담당자 자동 1번 등록</label>
+                                        <p className="text-[11px] text-slate-400 mt-0.5">ON: 담당자를 명단 1번으로 자동 신청 · OFF: 담당자도 직접 신청</p>
+                                    </div>
+                                    <button type="button" onClick={() => setForm(f => ({...f, autoRegisterManager: !(f.autoRegisterManager !== false)}))}
+                                        className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${form.autoRegisterManager !== false ? 'bg-teal-500' : 'bg-slate-200'}`}>
+                                        <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${form.autoRegisterManager !== false ? 'left-6' : 'left-0.5'}`}/>
+                                    </button>
+                                </div>
+                            )}
                             <div>
                                 <label className="text-xs font-black text-slate-500 mb-1 block">수정 잠금 PIN (4자리, 선택)</label>
                                 <input type="text" inputMode="numeric" maxLength={4} value={form.editPin}
@@ -658,6 +672,16 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                     <option value="">담당자 없음</option>
                                     {managers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                                 </select>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="min-w-0 pr-2">
+                                    <label className="text-xs font-black text-slate-500">담당자 자동 1번 등록</label>
+                                    <p className="text-[11px] text-slate-400 mt-0.5">ON: 담당자를 명단 1번으로 자동 신청 · OFF: 담당자도 직접 신청</p>
+                                </div>
+                                <button type="button" onClick={() => setRecCfg(c => ({...c, autoRegisterManager: !(c.autoRegisterManager !== false)}))}
+                                    className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${recCfg.autoRegisterManager !== false ? 'bg-teal-500' : 'bg-slate-200'}`}>
+                                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${recCfg.autoRegisterManager !== false ? 'left-6' : 'left-0.5'}`}/>
+                                </button>
                             </div>
                             <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                                 <div className="min-w-0 pr-2">
