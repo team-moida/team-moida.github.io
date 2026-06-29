@@ -927,6 +927,7 @@ function App() {
                         announcements={announcements} isAdminMode={isAdminMode}
                         isDeveloper={isDeveloper} canManage={canManageAnnouncement}
                         meetings={visibleMeetings}
+                        showAlert={showAlert} memberName={memberName}
                         onBack={()=>setTab('home')}
                         onAdd={()=>setAnnouncementModal({open:true,mode:'add',data:null})}
                         onEdit={(a)=>setAnnouncementModal({open:true,mode:'edit',data:a})}
@@ -1128,7 +1129,6 @@ function App() {
                         {key:'home',    label:'홈',   Comp:Icon.Home},
                         {key:'meeting', label:'모임', Comp:Icon.Calendar},
                         {key:'dues',    label:'회비', Comp:Icon.CreditCard},
-                        {key:'rules',   label:'회칙', Comp:Icon.ShieldCheck},
                         {key:'notice',  label:'게시판', Comp:Icon.Clipboard},
                         ...(isAdminMode ? [{key:'roster', label:'명단', Comp:Icon.List}] : []),
                     ].map(({key,label,Comp})=>{

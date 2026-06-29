@@ -34,12 +34,13 @@ const NoticeDoneBadge = () => (
     <span className="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-lg bg-slate-200 text-slate-500">완료</span>
 );
 
-const TabNotice = ({ announcements, isAdminMode, isDeveloper, canManage = () => true, onBack, onAdd, onEdit, onDeleteOne, onDeleteMany, onNavigateMeeting, meetings }) => {
+const TabNotice = ({ announcements, isAdminMode, isDeveloper, canManage = () => true, onBack, onAdd, onEdit, onDeleteOne, onDeleteMany, onNavigateMeeting, meetings, showAlert, memberName }) => {
     const { useState, useEffect } = React;
     const [selectedId, setSelectedId] = useState(null);   // 상세 보기 대상 (null이면 목록)
     const [selectMode, setSelectMode] = useState(false);  // 선택 삭제 모드
     const [checkedIds, setCheckedIds] = useState([]);     // 선택된 공지 id
     const [showGuide, setShowGuide] = useState(false);    // '알림 설정 안내' 고정 항목 펼침
+    const [rulesOpen, setRulesOpen] = useState(false);    // 회칙 보기(게시판 안 하위 화면)
 
     const list = announcements || [];
     // 모임 연결 공지(linkMeetingId)인데 그 모임이 종료됐으면 '완료'로 표시
@@ -65,6 +66,20 @@ const TabNotice = ({ announcements, isAdminMode, isDeveloper, canManage = () => 
         onDeleteMany(checkedIds);
         exitSelectMode();
     };
+
+    // ── 회칙 화면 (게시판 안 하위 화면 — 하단 탭 대신 게시판 입구로 통합) ──────────
+    if (rulesOpen) {
+        return (
+            <div className="animate-in">
+                <div className="flex items-center gap-2 mb-4">
+                    <button onClick={() => setRulesOpen(false)} className="p-2 -ml-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-all flex items-center gap-1 font-black text-sm">
+                        <Icon.ChevronLeft size={18}/> 게시판
+                    </button>
+                </div>
+                <TabRules isAdminMode={isAdminMode} showAlert={showAlert} memberName={memberName} />
+            </div>
+        );
+    }
 
     // ── 상세 화면 ──────────────────────────────────────────────────────────────
     if (selected) {
@@ -146,6 +161,21 @@ const TabNotice = ({ announcements, isAdminMode, isDeveloper, canManage = () => 
 
             {/* 목록 카드 — 알림 설정 안내 + 공지글을 한 카드에 */}
             <div className="card rounded-2xl overflow-hidden">
+                {/* 회칙 (게시글처럼 카드 안 첫 줄) — 하단 탭 대신 게시판 입구로 통합 */}
+                {!selectMode && (
+                    <div className="border-b border-slate-100">
+                        <button onClick={() => setRulesOpen(true)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 transition-colors">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    <NoticeBadge category="정보" />
+                                    <p className="font-black text-[14.5px] text-teal-600 truncate">회칙</p>
+                                </div>
+                                <p className="text-[11.5px] text-slate-400 mt-1.5 truncate font-bold">우리 팀 회칙을 확인해요</p>
+                            </div>
+                            <Icon.ChevronRight size={16} className="text-slate-300 flex-shrink-0"/>
+                        </button>
+                    </div>
+                )}
                 {/* 알림 설정 안내 (게시글처럼 카드 안 첫 줄). 권한·기기 상태와 무관하게 항상 노출 */}
                 {!selectMode && (
                     <div className="border-b border-slate-100">
