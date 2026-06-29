@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>내 활동 카드 — lab (세그먼트 도넛 시안)</title>
+<title>내 활동 카드 — lab (비율색 도넛 + 애니메이션)</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css" type="text/css">
 <link rel="stylesheet" href="common.css">
@@ -30,22 +30,51 @@
 <body class="min-h-screen">
   <div class="lab-wrap">
     <div class="lab-top">
-      <h1>🧪 "내 활동" · 세그먼트 도넛 시안</h1>
-      <p>도넛을 키우고 출석/지각/노쇼를 도넛 색 구간으로 녹인 변형 3종 + 현재 카드(맨 위). 같은 데이터(출석10·지각2·노쇼1·92%)로 비교. 마음에 드는 번호/조합을 알려주세요.</p>
+      <h1>🧪 "내 활동" · 비율색 도넛 + 애니메이션</h1>
+      <p>도넛 색이 출석률에 따라 초록(높음)↔빨강(낮음)으로 변합니다. % 는 도넛 정중앙(라벨 제거), 진입 시 그래프 채움 + 숫자 카운트업. "다시 보기"로 애니메이션 재생.</p>
     </div>
-    <section class="lab-item"><div class="lab-cap"><span class="lab-no">현재</span><span class="lab-name">지금 쓰는 카드 (기준)</span></div><div id="card-orig"></div></section>
-    <section class="lab-item"><div class="lab-cap"><span class="lab-no">A</span><span class="lab-name">큰 도넛 좌측 + 세로 범례</span></div><div id="card-A"></div></section>
-    <section class="lab-item"><div class="lab-cap"><span class="lab-no">B</span><span class="lab-name">중앙 대형 도넛 + 가로 범례</span></div><div id="card-B"></div></section>
-    <section class="lab-item"><div class="lab-cap"><span class="lab-no">C</span><span class="lab-name">도넛 + 세그먼트 바</span></div><div id="card-C"></div></section>
+    <section class="lab-item"><div class="lab-cap"><span class="lab-no">새안 1</span><span class="lab-name">가운데 대형 도넛</span></div><div id="card-centered"></div></section>
+    <section class="lab-item"><div class="lab-cap"><span class="lab-no">새안 2</span><span class="lab-name">좌측 도넛 + 세로 범례</span></div><div id="card-side"></div></section>
+    <section class="lab-item"><div class="lab-cap"><span class="lab-no">현재</span><span class="lab-name">지금 쓰는 카드 (참고)</span></div><div id="card-orig"></div></section>
     <section class="lab-item"><div class="lab-cap"><span class="lab-no">빈 상태</span><span class="lab-name">활동 기록 없을 때</span></div><div id="card-empty"></div></section>
     <p class="lab-foot">미리보기 전용(noindex) · 확정 후 실제 카드에 적용하고 이 페이지는 제거합니다</p>
   </div>
+
 <script type="text/babel">
+const { useState, useEffect, useMemo } = React;
 
-const CardOriginal = ({ attendHistory, memberInfo, onTabChange }) => {
+// 진입 시 0→1 로 올라가는 진행도(easeOutCubic). 마운트될 때마다 1회 실행.
+function easeOutCubic(x){ return 1 - Math.pow(1 - x, 3); }
+function useCountUp(duration){
+    const [t, setT] = useState(0);
+    useEffect(() => {
+        let raf; const start = performance.now();
+        const tick = (now) => {
+            const p = Math.min(1, (now - start) / duration);
+            setT(easeOutCubic(p));
+            if (p < 1) raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(raf);
+    }, []);
+    return t;
+}
 
+// 출석률(0~100) → 빨강(0)·주황(50)·초록(100) 보간. 색은 팔레트(노쇼#EF4444·지각#F59E0B·출석#059669)와 맞춤.
+function rateColor(rate){
+    const r = Math.max(0, Math.min(100, rate)) / 100;
+    const red = [239,68,68], amber = [245,158,11], green = [5,150,105];
+    let a, b, tt;
+    if (r < 0.5) { a = red; b = amber; tt = r / 0.5; }
+    else { a = amber; b = green; tt = (r - 0.5) / 0.5; }
+    const m = a.map((v,i) => Math.round(v + (b[i] - v) * tt));
+    return `rgb(${m[0]}, ${m[1]}, ${m[2]})`;
+}
+
+// 공통 계산 (원본과 동일)
+function useActivity(attendHistory, memberInfo){
     const myId = memberInfo?.id;
-    const mine = React.useMemo(() => {
+    const mine = useMemo(() => {
         if (!myId) return [];
         const out = [];
         (attendHistory || []).forEach(h => {
@@ -54,14 +83,6 @@ const CardOriginal = ({ attendHistory, memberInfo, onTabChange }) => {
         });
         return out.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     }, [attendHistory, myId]);
-    if (!myId || mine.length === 0) {
-        return (
-            <div className="card rounded-2xl p-5 text-center">
-                <p className="font-black text-sm text-slate-700">아직 활동 기록이 없어요</p>
-                <p className="text-xs text-slate-400 mt-1">첫 모임에 참여하면 여기에 내 출석이 쌓여요</p>
-            </div>
-        );
-    }
     const go = mine.filter(m => m.status === '정상').length;
     const late = mine.filter(m => m.status === '지각').length;
     const no = mine.filter(m => m.status === '노쇼').length;
@@ -69,15 +90,97 @@ const CardOriginal = ({ attendHistory, memberInfo, onTabChange }) => {
     const rate = confirmed ? Math.round((go + late) / confirmed * 100) : 0;
     let streak = 0;
     for (const m of mine) { if (m.status === '정상' || m.status === '지각') streak++; else break; }
-    const segGo = confirmed ? Math.round(go / confirmed * 100) : 0;
-    const segLate = confirmed ? Math.round((go + late) / confirmed * 100) : 0;
+    return { hasData: !!myId && mine.length > 0, go, late, no, confirmed, rate, streak };
+}
 
+const EmptyCard = () => (
+    <div className="card rounded-2xl p-5 text-center">
+        <p className="font-black text-sm text-slate-700">아직 활동 기록이 없어요</p>
+        <p className="text-xs text-slate-400 mt-1">첫 모임에 참여하면 여기에 내 출석이 쌓여요</p>
+    </div>
+);
+
+const Header = () => (
+    <div className="flex items-center justify-between mb-4">
+        <p className="font-black text-base text-slate-800">내 활동</p>
+        <span className="inline-flex items-center gap-0.5 text-xs font-black text-slate-400">자세히 <Icon.ChevronRight size={14}/></span>
+    </div>
+);
+
+// ── 새안 1: 가운데 대형 도넛 ──
+const CardCentered = ({ attendHistory, memberInfo, onTabChange }) => {
+    const t = useCountUp(950);
+    const a = useActivity(attendHistory, memberInfo);
+    if (!a.hasData) return <EmptyCard/>;
+    const col = rateColor(a.rate);
+    const prog = a.rate * t;
+    const dRate = Math.round(a.rate * t), dGo = Math.round(a.go * t), dLate = Math.round(a.late * t), dNo = Math.round(a.no * t);
     return (
         <button onClick={() => onTabChange && onTabChange('my')} className="w-full card rounded-2xl p-5 text-left active:scale-98 transition-all">
-            <div className="flex items-center justify-between mb-3">
-                <p className="font-black text-base text-slate-800">내 활동</p>
-                <span className="inline-flex items-center gap-0.5 text-xs font-black text-slate-400">자세히 <Icon.ChevronRight size={14}/></span>
+            <Header/>
+            <div className="relative flex flex-col items-center">
+                {a.streak >= 2 && (
+                    <span className="absolute top-0 right-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-live text-[#15171E] text-xs font-black">🔥 {a.streak}연속</span>
+                )}
+                <div className="relative rounded-full flex items-center justify-center" style={{ width:140, height:140, background:`conic-gradient(${col} 0 ${prog}%, #eef2f7 ${prog}% 100%)` }}>
+                    <div className="absolute rounded-full bg-white flex items-center justify-center" style={{ width:102, height:102 }}>
+                        <span className="font-black leading-none" style={{ color:col, fontSize:38 }}>{dRate}<span style={{ fontSize:22 }}>%</span></span>
+                    </div>
+                </div>
             </div>
+            <div className="mt-5 flex items-center justify-around">
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background:'#059669' }}/><span className="text-xs font-black text-slate-500">출석</span><span className="text-sm font-black text-slate-800 tabular-nums">{dGo}</span></div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background:'#F59E0B' }}/><span className="text-xs font-black text-slate-500">지각</span><span className="text-sm font-black text-slate-800 tabular-nums">{dLate}</span></div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background:'#EF4444' }}/><span className="text-xs font-black text-slate-500">노쇼</span><span className="text-sm font-black text-slate-800 tabular-nums">{dNo}</span></div>
+            </div>
+        </button>
+    );
+};
+
+// ── 새안 2: 좌측 도넛 + 세로 범례 ──
+const CardSide = ({ attendHistory, memberInfo, onTabChange }) => {
+    const t = useCountUp(950);
+    const a = useActivity(attendHistory, memberInfo);
+    if (!a.hasData) return <EmptyCard/>;
+    const col = rateColor(a.rate);
+    const prog = a.rate * t;
+    const dRate = Math.round(a.rate * t), dGo = Math.round(a.go * t), dLate = Math.round(a.late * t), dNo = Math.round(a.no * t);
+    const Row = ({ c, label, val }) => (
+        <div className="flex items-center justify-between">
+            <span className="flex items-center gap-2 text-sm font-black text-slate-500"><span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background:c }}/>{label}</span>
+            <span className="text-sm font-black text-slate-800 tabular-nums">{val}</span>
+        </div>
+    );
+    return (
+        <button onClick={() => onTabChange && onTabChange('my')} className="w-full card rounded-2xl p-5 text-left active:scale-98 transition-all">
+            <Header/>
+            <div className="flex items-center gap-5">
+                <div className="relative shrink-0 rounded-full flex items-center justify-center" style={{ width:116, height:116, background:`conic-gradient(${col} 0 ${prog}%, #eef2f7 ${prog}% 100%)` }}>
+                    <div className="absolute rounded-full bg-white flex items-center justify-center" style={{ width:84, height:84 }}>
+                        <span className="font-black leading-none" style={{ color:col, fontSize:26 }}>{dRate}<span style={{ fontSize:16 }}>%</span></span>
+                    </div>
+                </div>
+                <div className="flex-1 min-w-0 flex flex-col gap-2.5">
+                    <Row c="#059669" label="출석" val={dGo}/>
+                    <Row c="#F59E0B" label="지각" val={dLate}/>
+                    <Row c="#EF4444" label="노쇼" val={dNo}/>
+                </div>
+            </div>
+            {a.streak >= 2 && (
+                <div className="mt-4 flex items-center justify-center gap-1.5 rounded-full bg-live py-1.5 text-[13px] font-black text-[#15171E]">🔥 연속 출석 {a.streak}회</div>
+            )}
+        </button>
+    );
+};
+
+// ── 현재 카드(참고, 애니메이션 없음) ──
+const CardOriginal = ({ attendHistory, memberInfo, onTabChange }) => {
+    const a = useActivity(attendHistory, memberInfo);
+    if (!a.hasData) return <EmptyCard/>;
+    const { go, late, no, rate, streak } = a;
+    return (
+        <button onClick={() => onTabChange && onTabChange('my')} className="w-full card rounded-2xl p-5 text-left active:scale-98 transition-all">
+            <Header/>
             <div className="flex items-center gap-3">
                 <div className="w-16 h-16 rounded-full flex-shrink-0 flex items-center justify-center" style={{ background: `conic-gradient(#183FB0 0% ${rate}%, #e6ebf5 ${rate}% 100%)` }}>
                     <div className="w-12 h-12 rounded-full bg-white flex flex-col items-center justify-center">
@@ -95,257 +198,6 @@ const CardOriginal = ({ attendHistory, memberInfo, onTabChange }) => {
     );
 };
 
-const CardA = ({ attendHistory, memberInfo, onTabChange }) => {
-
-    const myId = memberInfo?.id;
-    const mine = React.useMemo(() => {
-        if (!myId) return [];
-        const out = [];
-        (attendHistory || []).forEach(h => {
-            const rec = (h.records || []).find(r => r.memberId === myId);
-            if (rec && rec.status && rec.status !== '대기') out.push({ date: h.date || '', status: rec.status });
-        });
-        return out.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    }, [attendHistory, myId]);
-    if (!myId || mine.length === 0) {
-        return (
-            <div className="card rounded-2xl p-5 text-center">
-                <p className="font-black text-sm text-slate-700">아직 활동 기록이 없어요</p>
-                <p className="text-xs text-slate-400 mt-1">첫 모임에 참여하면 여기에 내 출석이 쌓여요</p>
-            </div>
-        );
-    }
-    const go = mine.filter(m => m.status === '정상').length;
-    const late = mine.filter(m => m.status === '지각').length;
-    const no = mine.filter(m => m.status === '노쇼').length;
-    const confirmed = go + late + no;
-    const rate = confirmed ? Math.round((go + late) / confirmed * 100) : 0;
-    let streak = 0;
-    for (const m of mine) { if (m.status === '정상' || m.status === '지각') streak++; else break; }
-    const segGo = confirmed ? Math.round(go / confirmed * 100) : 0;
-    const segLate = confirmed ? Math.round((go + late) / confirmed * 100) : 0;
-
-    return (
-  <button onClick={() => onTabChange && onTabChange('my')} className="w-full card rounded-2xl p-5 text-left active:scale-98 transition-all">
-    <div className="flex items-center justify-between mb-4">
-      <h3 className="text-base font-bold text-slate-900">내 활동</h3>
-      <span className="flex items-center gap-0.5 text-xs font-semibold text-teal-600">자세히 <Icon.ChevronRight size={14} /></span>
-    </div>
-
-    <div className="flex items-center gap-5">
-      <div className="relative shrink-0" style={{ width: 116, height: 116 }}>
-        <div
-          className="w-full h-full rounded-full"
-          style={{ background: `conic-gradient(#059669 0 ${segGo}%, #F59E0B ${segGo}% ${segLate}%, #EF4444 ${segLate}% 100%)` }}
-        />
-        <div className="absolute inset-0 m-auto flex flex-col items-center justify-center rounded-full bg-white" style={{ width: 80, height: 80 }}>
-          <span className="text-2xl font-extrabold leading-none" style={{ color: '#122E78' }}>{rate}<span className="text-base font-bold">%</span></span>
-          <span className="mt-0.5 text-[11px] font-medium text-slate-400">출석률</span>
-        </div>
-      </div>
-
-      <div className="flex-1 min-w-0 flex flex-col gap-2.5">
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-2 text-sm text-slate-600">
-            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: '#059669' }} />출석
-          </span>
-          <span className="text-sm font-bold text-slate-900">{go}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-2 text-sm text-slate-600">
-            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: '#F59E0B' }} />지각
-          </span>
-          <span className="text-sm font-bold text-slate-900">{late}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-2 text-sm text-slate-600">
-            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: '#EF4444' }} />노쇼
-          </span>
-          <span className="text-sm font-bold text-slate-900">{no}</span>
-        </div>
-      </div>
-    </div>
-
-    {streak >= 2 && (
-      <div className="mt-4 flex items-center justify-center gap-1.5 rounded-full bg-live py-1.5 text-[13px] font-bold text-[#15171E]">
-        🔥 연속 출석 {streak}회
-      </div>
-    )}
-  </button>
-);
-};
-
-const CardB = ({ attendHistory, memberInfo, onTabChange }) => {
-
-    const myId = memberInfo?.id;
-    const mine = React.useMemo(() => {
-        if (!myId) return [];
-        const out = [];
-        (attendHistory || []).forEach(h => {
-            const rec = (h.records || []).find(r => r.memberId === myId);
-            if (rec && rec.status && rec.status !== '대기') out.push({ date: h.date || '', status: rec.status });
-        });
-        return out.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    }, [attendHistory, myId]);
-    if (!myId || mine.length === 0) {
-        return (
-            <div className="card rounded-2xl p-5 text-center">
-                <p className="font-black text-sm text-slate-700">아직 활동 기록이 없어요</p>
-                <p className="text-xs text-slate-400 mt-1">첫 모임에 참여하면 여기에 내 출석이 쌓여요</p>
-            </div>
-        );
-    }
-    const go = mine.filter(m => m.status === '정상').length;
-    const late = mine.filter(m => m.status === '지각').length;
-    const no = mine.filter(m => m.status === '노쇼').length;
-    const confirmed = go + late + no;
-    const rate = confirmed ? Math.round((go + late) / confirmed * 100) : 0;
-    let streak = 0;
-    for (const m of mine) { if (m.status === '정상' || m.status === '지각') streak++; else break; }
-    const segGo = confirmed ? Math.round(go / confirmed * 100) : 0;
-    const segLate = confirmed ? Math.round((go + late) / confirmed * 100) : 0;
-
-    return (
-  <button onClick={() => onTabChange && onTabChange('my')} className="w-full card rounded-2xl p-5 text-left active:scale-98 transition-all">
-    <div className="flex items-center justify-between mb-4">
-      <h3 className="text-base font-bold text-slate-900">내 활동</h3>
-      <span className="inline-flex items-center gap-0.5 text-xs font-medium text-teal-600">
-        자세히
-        <Icon.ChevronRight size={14} />
-      </span>
-    </div>
-
-    <div className="relative flex flex-col items-center">
-      {streak >= 2 && (
-        <span className="absolute top-0 right-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-live text-[#15171E] text-xs font-bold">
-          🔥 {streak}연속
-        </span>
-      )}
-
-      <div
-        className="relative rounded-full flex items-center justify-center"
-        style={{ width: 144, height: 144, background: `conic-gradient(#059669 0 ${segGo}%, #F59E0B ${segGo}% ${segLate}%, #EF4444 ${segLate}% 100%)` }}
-      >
-        <div className="absolute rounded-full bg-white flex flex-col items-center justify-center" style={{ width: 104, height: 104 }}>
-          <span className="text-4xl font-extrabold leading-none text-teal-600">{rate}%</span>
-          <span className="mt-1 text-[11px] text-slate-400 font-medium">출석률</span>
-        </div>
-      </div>
-    </div>
-
-    <div className="mt-5 flex items-center justify-around">
-      <div className="flex items-center gap-2">
-        <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#059669' }} />
-        <span className="text-xs text-slate-500">출석</span>
-        <span className="text-sm font-bold text-slate-900">{go}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#F59E0B' }} />
-        <span className="text-xs text-slate-500">지각</span>
-        <span className="text-sm font-bold text-slate-900">{late}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#EF4444' }} />
-        <span className="text-xs text-slate-500">노쇼</span>
-        <span className="text-sm font-bold text-slate-900">{no}</span>
-      </div>
-    </div>
-  </button>
-);
-};
-
-const CardC = ({ attendHistory, memberInfo, onTabChange }) => {
-
-    const myId = memberInfo?.id;
-    const mine = React.useMemo(() => {
-        if (!myId) return [];
-        const out = [];
-        (attendHistory || []).forEach(h => {
-            const rec = (h.records || []).find(r => r.memberId === myId);
-            if (rec && rec.status && rec.status !== '대기') out.push({ date: h.date || '', status: rec.status });
-        });
-        return out.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    }, [attendHistory, myId]);
-    if (!myId || mine.length === 0) {
-        return (
-            <div className="card rounded-2xl p-5 text-center">
-                <p className="font-black text-sm text-slate-700">아직 활동 기록이 없어요</p>
-                <p className="text-xs text-slate-400 mt-1">첫 모임에 참여하면 여기에 내 출석이 쌓여요</p>
-            </div>
-        );
-    }
-    const go = mine.filter(m => m.status === '정상').length;
-    const late = mine.filter(m => m.status === '지각').length;
-    const no = mine.filter(m => m.status === '노쇼').length;
-    const confirmed = go + late + no;
-    const rate = confirmed ? Math.round((go + late) / confirmed * 100) : 0;
-    let streak = 0;
-    for (const m of mine) { if (m.status === '정상' || m.status === '지각') streak++; else break; }
-    const segGo = confirmed ? Math.round(go / confirmed * 100) : 0;
-    const segLate = confirmed ? Math.round((go + late) / confirmed * 100) : 0;
-
-    return (
-  <button onClick={() => onTabChange && onTabChange('my')} className="w-full card rounded-2xl p-5 text-left active:scale-98 transition-all">
-    <div className="flex items-center justify-between mb-4">
-      <div className="flex items-center gap-2">
-        <h3 className="text-base font-bold text-slate-900">내 활동</h3>
-        {streak >= 2 && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-live text-[#15171E] text-xs font-bold">
-            🔥 {streak}연속
-          </span>
-        )}
-      </div>
-      <span className="flex items-center gap-0.5 text-xs font-medium text-slate-400">
-        자세히 <Icon.ChevronRight size={14} />
-      </span>
-    </div>
-
-    <div className="flex items-center gap-5">
-      <div
-        className="relative shrink-0 rounded-full"
-        style={{ width: 110, height: 110, background: `conic-gradient(#059669 0 ${segGo}%, #F59E0B ${segGo}% ${segLate}%, #EF4444 ${segLate}% 100%)` }}
-      >
-        <div className="absolute inset-[14px] rounded-full bg-white flex flex-col items-center justify-center">
-          <span className="text-3xl font-extrabold leading-none text-teal-600">{rate}<span className="text-base font-bold align-top">%</span></span>
-          <span className="text-[11px] font-medium text-slate-400 mt-0.5">출석률</span>
-        </div>
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-100">
-          <div style={{ width: `${segGo}%`, background: '#059669' }} />
-          <div style={{ width: `${Math.max(segLate - segGo, 0)}%`, background: '#F59E0B' }} />
-          <div style={{ width: `${Math.max(100 - segLate, 0)}%`, background: '#EF4444' }} />
-        </div>
-
-        <div className="mt-3 flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-sm text-slate-600">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#059669' }} />
-              출석
-            </span>
-            <span className="text-sm font-bold text-slate-900">{go}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-sm text-slate-600">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#F59E0B' }} />
-              지각
-            </span>
-            <span className="text-sm font-bold text-slate-900">{late}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-sm text-slate-600">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#EF4444' }} />
-              노쇼
-            </span>
-            <span className="text-sm font-bold text-slate-900">{no}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </button>
-);
-};
 const HIST = [
     { date:'2026-06-28', records:[{memberId:'me', status:'정상'}] },
     { date:'2026-06-21', records:[{memberId:'me', status:'정상'}] },
@@ -362,12 +214,24 @@ const HIST = [
     { date:'2026-04-05', records:[{memberId:'me', status:'정상'}] },
 ];
 const P = { attendHistory: HIST, memberInfo:{ id:'me' }, onTabChange:()=>{} };
-ReactDOM.createRoot(document.getElementById('card-orig')).render(<CardOriginal {...P} />);
-ReactDOM.createRoot(document.getElementById('card-A')).render(<CardA {...P} />);
-ReactDOM.createRoot(document.getElementById('card-B')).render(<CardB {...P} />);
-ReactDOM.createRoot(document.getElementById('card-C')).render(<CardC {...P} />);
-ReactDOM.createRoot(document.getElementById('card-empty')).render(<CardOriginal attendHistory={[]} memberInfo={{id:'me'}} onTabChange={()=>{}} />);
 
+// 마운트마다 애니메이션 재생되도록 key 증가시키는 래퍼 + 다시보기 버튼
+const Replayable = ({ comp:Comp }) => {
+    const [k, setK] = useState(0);
+    return (
+        <div>
+            <Comp key={k} {...P} />
+            <div className="mt-2 text-center">
+                <button onClick={() => setK(k + 1)} className="text-xs font-black text-slate-500 px-3 py-1.5 rounded-full bg-white border border-slate-200 active:scale-95">▶ 다시 보기</button>
+            </div>
+        </div>
+    );
+};
+
+ReactDOM.createRoot(document.getElementById('card-centered')).render(<Replayable comp={CardCentered}/>);
+ReactDOM.createRoot(document.getElementById('card-side')).render(<Replayable comp={CardSide}/>);
+ReactDOM.createRoot(document.getElementById('card-orig')).render(<CardOriginal {...P}/>);
+ReactDOM.createRoot(document.getElementById('card-empty')).render(<CardOriginal attendHistory={[]} memberInfo={{id:'me'}} onTabChange={()=>{}}/>);
 </script>
 </body>
 </html>
