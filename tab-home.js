@@ -1142,7 +1142,7 @@ const PenaltyPayCard = ({ isAdminMode, memberName, memberInfo, managers = [], mo
         <div className="card rounded-2xl p-5 border-2 border-rose-100">
             <div className="flex items-center gap-2 mb-3">
                 <Icon.Banknote size={18} className="text-rose-500 flex-shrink-0"/>
-                <h3 className="font-black text-slate-800">지각 · 노쇼 벌금</h3>
+                <h3 className="font-black text-base text-slate-800">지각 · 노쇼 벌금</h3>
             </div>
             {showMember && (
                 <>
@@ -1202,7 +1202,7 @@ const PenaltyPayCard = ({ isAdminMode, memberName, memberInfo, managers = [], mo
 };
 // ─── 회비 탭: 회비 납부 내역 (최근 6개월) ─────────────────────────────────────
 // monthly_checks/{월}.statuses[회원ID] = 'paid'(정상)/'rest'(휴식). 저장된 값을 읽기만 함(쓰기 0).
-const DuesHistoryCard = ({ memberInfo, isExempt = false }) => {
+const DuesHistoryCard = ({ memberInfo, isExempt = false, embedded = false }) => {
     const { useState, useEffect } = React;
     const [rows, setRows] = useState(null); // null=불러오는 중, []=없음
     const memberId = memberInfo?.id || null;
@@ -1223,7 +1223,7 @@ const DuesHistoryCard = ({ memberInfo, isExempt = false }) => {
     }, [memberId, isExempt]);
     return (
         <div>
-            <h3 className="font-black text-base text-slate-800 px-1 mb-2">회비 납부 내역</h3>
+            {!embedded && <h3 className="font-black text-base text-slate-800 px-1 mb-2">회비 납부 내역</h3>}
             <div className="card rounded-2xl px-4 divide-y divide-slate-100">
                 {isExempt ? (
                     <div className="flex items-center justify-center gap-1.5 py-4">
@@ -1394,7 +1394,7 @@ const DuesReportsHomeCard = ({ duesReports, onConfirm, onReject, onGoDuesTab }) 
 // ─── 홈: 내 출석 현황 카드 (history 집계 · 모든 회원이 자기 것만) ─────────────────
 // history.records[].status = 정상/지각/노쇼/대기. 내 memberId 기록만 모아 집계.
 // 출석률 = (정상+지각) ÷ 참가확정(정상+지각+노쇼). '대기' 제외. 기록 없으면 카드 숨김.
-const MyAttendanceCard = ({ attendHistory, memberInfo, memberName }) => {
+const MyAttendanceCard = ({ attendHistory, memberInfo, memberName, embedded = false }) => {
     const myId = memberInfo?.id;
     const mine = React.useMemo(() => {
         if (!myId) return [];
@@ -1421,7 +1421,7 @@ const MyAttendanceCard = ({ attendHistory, memberInfo, memberName }) => {
 
     return (
         <div>
-            <h3 className="font-black text-base text-slate-800 px-1 mb-2">내 출석 현황</h3>
+            {!embedded && <h3 className="font-black text-base text-slate-800 px-1 mb-2">내 출석 현황</h3>}
             <div className="card rounded-2xl p-5">
                 <div className="flex items-center gap-4">
                     <div className="w-[116px] h-[116px] rounded-full flex-shrink-0 flex items-center justify-center"

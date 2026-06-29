@@ -2,7 +2,7 @@
 // 프로필 · 설정(알림/다크모드) · 계정(로그아웃/버전) · (개발자)보기모드를 한 화면에 모음.
 // 모든 동작은 기존 상태/핸들러를 '전달받아 호출'만 한다 — 새 로직·상태 정의 없음.
 // (회칙은 게시판 탭에 있으므로 MY에는 두지 않는다.)
-const APP_VERSION = 'v280';   // SW 캐시(moida-vNNN)와 맞춤
+const APP_VERSION = 'v281';   // SW 캐시(moida-vNNN)와 맞춤
 
 const TabMy = ({
     memberInfo, memberName, isAdminMode, onOpenProfile,
@@ -21,6 +21,9 @@ const TabMy = ({
     const previewAsMember = isDeveloper && viewMode === 'member';
     const duesExempt = !!(memberInfo && STAFF_ROLES.includes(memberInfo.role)) && !previewAsMember;
     const isDevMode = isDeveloper && viewMode === 'dev';   // 개발 전용(DevDuesToggle) 노출
+    // [내 기록] 섹션 표시 조건 — 이미 받는 attendHistory에서 파생(새 구독 없음). 빈 헤더 방지.
+    const _myId = memberInfo?.id;
+    const hasAttendance = !!_myId && (attendHistory || []).some(h => (h.records || []).some(r => r.memberId === _myId && r.status && r.status !== '대기'));
 
     // 알림 권한(보정 3) — 앱에서 권한 회수 불가. 끄려면 기기 설정으로 안내.
     const [reqBusy, setReqBusy] = useState(false);
@@ -54,12 +57,26 @@ const TabMy = ({
                 <Icon.ChevronRight size={18} className="text-slate-300 flex-shrink-0"/>
             </button>
 
-            {/* 내 활동 · 회비/벌금 — 카드 정의는 tab-home.js, 여기선 호출만(home과 공유) */}
-            <MyAttendanceCard attendHistory={attendHistory} memberInfo={memberInfo} memberName={memberName} />
-            <DuesAccountCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} previewAsMember={previewAsMember} />
-            <DuesHistoryCard memberInfo={memberInfo} isExempt={duesExempt} />
+            {/* 회비 — 섹션 h3 + 계좌(full) + 납부내역(embedded: 자체 제목 숨김 → 회비 h3로 단일화) */}
+            <div>
+                <h3 className="font-black text-base text-slate-800 px-1 mb-2">회비</h3>
+                <div className="space-y-3">
+                    <DuesAccountCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} previewAsMember={previewAsMember} />
+                    <DuesHistoryCard memberInfo={memberInfo} isExempt={duesExempt} embedded />
+                </div>
+            </div>
+
+            {/* 벌금 — 카드 자체 제목이 섹션 제목 역할(빈 경우 카드째 사라짐). 제목 위계(text-base/font-black/slate-800)는 회비 h3와 동일 */}
             <PenaltyPayCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} managers={managers} />
             <PenaltyHistoryCard memberInfo={memberInfo} />
+
+            {/* 내 기록 — 내 출석 있을 때만 섹션 표시(빈 헤더 방지) */}
+            {hasAttendance && (
+                <div>
+                    <h3 className="font-black text-base text-slate-800 px-1 mb-2">내 기록</h3>
+                    <MyAttendanceCard attendHistory={attendHistory} memberInfo={memberInfo} memberName={memberName} embedded />
+                </div>
+            )}
 
             {/* 설정 */}
             <div>
