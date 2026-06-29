@@ -132,6 +132,11 @@ const TabMy = ({
                 <Icon.ChevronRight size={18} className="text-slate-300 flex-shrink-0"/>
             </button>
 
+            {/* 내 활동 요약(홈과 동일한 비율색 도넛 카드, tab-home.js 정의) — 기록 있을 때만. 누르면 '내 출석' 상세로 */}
+            {hasAttendance && (
+                <MyActivitySummaryCard attendHistory={attendHistory} memberInfo={memberInfo} onTabChange={() => setMyView('attend')} />
+            )}
+
             {/* 내 정보 — 회비/벌금/출석 메뉴 행(누르면 상세 진입) */}
             <div>
                 <h3 className="font-black text-base text-slate-800 px-1 mb-2">내 정보</h3>
