@@ -402,7 +402,7 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
                         <button disabled className="w-full py-3.5 bg-slate-200 text-slate-400 rounded-2xl font-black text-sm cursor-not-allowed">회비 미납 — 신청 불가</button>
                     ) : (
                         <button onClick={isPreview ? () => alert('미리보기에서는 실제로 신청되지 않아요.') : handleRegister}
-                            className="w-full py-3.5 bg-orange-500 text-white rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all">
+                            className="btn-apply w-full py-3.5 rounded-2xl font-black text-sm">
                             신청하기{isPreview ? ' (미리보기)' : ''}
                         </button>
                     )}

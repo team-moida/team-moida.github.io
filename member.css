@@ -38,6 +38,15 @@ input:focus { outline: none; }
 @keyframes moidaPulseLive{0%,100%{box-shadow:0 0 0 0 rgba(194,249,74,.5)} 70%{box-shadow:0 0 0 11px rgba(194,249,74,0)}}
 .moida-pulse-live{ animation:moidaPulseLive 2s infinite; }
 @media (prefers-reduced-motion: reduce){ .moida-pulse-live{ animation:none!important } }
+/* ── 신청 버튼(R1): 주황 솔리드 + 외곽 글로우 링이 퍼졌다 사라짐(크기 고정). 시인성 강조 ── */
+@keyframes moidaApplyRing{
+  0%{box-shadow:0 0 0 0 rgba(249,115,22,.55), 0 10px 22px -8px rgba(249,115,22,.5)}
+  70%{box-shadow:0 0 0 13px rgba(249,115,22,0), 0 10px 22px -8px rgba(249,115,22,.5)}
+  100%{box-shadow:0 0 0 0 rgba(249,115,22,0), 0 10px 22px -8px rgba(249,115,22,.5)}
+}
+.btn-apply{ background:#f97316; color:#fff; animation:moidaApplyRing 1.8s infinite; }
+.btn-apply:active{ transform:scale(.96); opacity:.9; }
+@media (prefers-reduced-motion: reduce){ .btn-apply{ animation:none!important; box-shadow:0 10px 22px -8px rgba(249,115,22,.5); } }
 .card-white { background: white; }
 select { appearance: none; }
 .tab-bar { background: rgba(255,255,255,0.95); border-top: 1px solid #e2e8f0; backdrop-filter: blur(10px); }

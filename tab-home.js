@@ -447,7 +447,6 @@ const NextMeetingCard = ({
     const regAfterClose = _regCloseMs && _now > _regCloseMs;
     const regWindowOpen = !regBeforeOpen && !regAfterClose;
     const regFCFS = meeting?.isFirstComeFirstServed ?? true;
-    const regBtnCls = dark ? 'bg-[#15171E] text-white' : 'bg-white text-teal-700';
 
     return (
         <div className="relative">
@@ -538,7 +537,7 @@ const NextMeetingCard = ({
                                 {regFCFS && kind!=='match' && <span className={`text-xs font-black ${ink70}`}>{curCount} / {meeting.maxLimit||18}명</span>}
                             </div>
                             <span role="button" onClick={(e)=>{ e.stopPropagation(); regHandlers && regHandlers.handleRegister(); }}
-                                className={`w-full flex items-center justify-center gap-1.5 py-3 rounded-2xl font-black text-sm active:scale-95 transition-all cursor-pointer ${regBtnCls}`}>
+                                className="btn-apply w-full flex items-center justify-center gap-1.5 py-3 rounded-2xl font-black text-sm cursor-pointer">
                                 <Icon.CheckSq size={16}/> 신청하기
                             </span>
                         </div>
@@ -1504,8 +1503,7 @@ const RecurringPreviewCard = ({ onTabChange }) => {
         );
     }
 
-    // 정기모임 설정됨 → 다음 회차를 '실제 모임 카드'처럼 표시(신청만 시간 게이트)
-    const accent = '#183FB0';
+    // 정기모임 설정됨 → 다음 회차를 '옅은 정보 카드'로 표시(신청 전이라 차분하게, 진짜 신청 버튼과 위계 구분)
     const _md = nextDate ? new Date(nextDate + 'T00:00:00') : null;
     const ok = _md && !isNaN(_md.getTime());
     const dDay = ok ? _md.getDate() : '';
@@ -1523,30 +1521,29 @@ const RecurringPreviewCard = ({ onTabChange }) => {
     }
     return (
         <button onClick={() => onTabChange('meeting-list')}
-            className="w-full rounded-3xl p-5 text-left text-white active:scale-98 transition-all"
-            style={{ background: accent, boxShadow: `0 16px 34px -6px ${accent}66` }}>
+            className="w-full card rounded-3xl p-5 text-left active:scale-98 transition-all">
             <div className="flex items-center justify-between gap-2 mb-2.5">
-                <p className="text-xs font-black uppercase tracking-widest text-white/80">정기모임</p>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-white text-[#122E78] flex-shrink-0">예정</span>
+                <p className="text-xs font-black uppercase tracking-widest text-teal-600">정기모임</p>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-teal-50 text-teal-600 flex-shrink-0">신청 전</span>
             </div>
             <div className="flex items-end gap-3 mb-3">
-                <span className="text-[44px] font-black leading-none">{dDay}</span>
+                <span className="text-[44px] font-black leading-none text-teal-600">{dDay}</span>
                 <div className="pb-1 min-w-0">
-                    <p className="text-[11px] font-black uppercase tracking-widest text-white/70">{dMon}</p>
-                    <p className="text-sm font-black text-white/90">{dDow}요일</p>
+                    <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">{dMon}</p>
+                    <p className="text-sm font-black text-slate-500">{dDow}요일</p>
                 </div>
             </div>
             <div className="space-y-1">
-                <p className="text-sm font-black text-white/90 flex items-center gap-1.5"><Icon.Clock size={14} className="flex-shrink-0"/>{cfg.start} ~ {cfg.end}</p>
-                {loc && <p className="text-sm font-bold text-white/85 flex items-center gap-1.5 min-w-0"><Icon.MapPin size={14} className="flex-shrink-0"/><span className="truncate">{loc}</span></p>}
+                <p className="text-sm font-black text-slate-600 flex items-center gap-1.5"><Icon.Clock size={14} className="text-slate-400 flex-shrink-0"/>{cfg.start} ~ {cfg.end}</p>
+                {loc && <p className="text-sm font-bold text-slate-500 flex items-center gap-1.5 min-w-0"><Icon.MapPin size={14} className="text-slate-400 flex-shrink-0"/><span className="truncate">{loc}</span></p>}
             </div>
-            <div className="mt-4 rounded-2xl bg-white/15 px-4 py-3 text-center">
+            <div className="mt-4 pt-3.5 border-t border-slate-100 text-center">
                 {openPassed ? (
-                    <p className="text-sm font-black text-white">곧 신청이 열려요</p>
+                    <p className="text-sm font-black text-teal-600">곧 신청이 열려요</p>
                 ) : (
                     <>
-                        <p className="text-sm font-black text-white">신청 시작 전</p>
-                        <p className="text-xs text-white/75 mt-0.5">{hasOpen ? `${openLabel} 부터 신청 가능` : '모임 날짜가 되면 자동으로 열려요'}</p>
+                        <p className="text-sm font-black text-slate-500">신청 시작 전</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{hasOpen ? `${openLabel} 부터 신청 가능` : '모임 날짜가 되면 자동으로 열려요'}</p>
                     </>
                 )}
             </div>
