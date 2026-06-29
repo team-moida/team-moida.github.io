@@ -127,9 +127,9 @@ const CardCentered = ({ attendHistory, memberInfo, onTabChange }) => {
                 {a.streak >= 2 && (
                     <span className="absolute top-0 right-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-live text-[#15171E] text-xs font-black">🔥 {a.streak}연속</span>
                 )}
-                <div className="relative rounded-full flex items-center justify-center" style={{ width:140, height:140, background:ringBg }}>
-                    <div className="absolute rounded-full bg-white flex items-center justify-center" style={{ width:102, height:102 }}>
-                        <span className="font-black leading-none" style={{ color:numCol, fontSize:38 }}>{dRate}<span style={{ fontSize:22 }}>%</span></span>
+                <div className="relative rounded-full flex items-center justify-center" style={{ width:168, height:168, background:ringBg }}>
+                    <div className="absolute rounded-full bg-white flex items-center justify-center" style={{ width:122, height:122 }}>
+                        <span className="font-black leading-none" style={{ color:numCol, fontSize:46 }}>{dRate}<span style={{ fontSize:26 }}>%</span></span>
                     </div>
                 </div>
             </div>
@@ -165,9 +165,9 @@ const CardSide = ({ attendHistory, memberInfo, onTabChange }) => {
         <button onClick={() => onTabChange && onTabChange('my')} className="w-full card rounded-2xl p-5 text-left active:scale-98 transition-all">
             <Header/>
             <div className="flex items-center gap-5">
-                <div className="relative shrink-0 rounded-full flex items-center justify-center" style={{ width:116, height:116, background:ringBg }}>
-                    <div className="absolute rounded-full bg-white flex items-center justify-center" style={{ width:84, height:84 }}>
-                        <span className="font-black leading-none" style={{ color:numCol, fontSize:26 }}>{dRate}<span style={{ fontSize:16 }}>%</span></span>
+                <div className="relative shrink-0 rounded-full flex items-center justify-center" style={{ width:140, height:140, background:ringBg }}>
+                    <div className="absolute rounded-full bg-white flex items-center justify-center" style={{ width:100, height:100 }}>
+                        <span className="font-black leading-none" style={{ color:numCol, fontSize:32 }}>{dRate}<span style={{ fontSize:20 }}>%</span></span>
                     </div>
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col gap-2.5">
