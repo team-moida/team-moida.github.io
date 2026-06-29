@@ -35,12 +35,16 @@ const KioskModal = ({
     attendHandleCheckIn, attendHandleUncheckIn, setAttendModal,
 }) => {
     const [confirmTarget, setConfirmTarget] = React.useState(null);
+    const [flash, setFlash] = React.useState(null);   // 출석 완료 휘발성 표시(잠깐 떴다 자동으로 사라짐)
     if (!isKioskOpen) return null;
 
     const closePopup = () => setConfirmTarget(null);
     const handleConfirm = () => {
-        attendHandleCheckIn(confirmTarget, {silent:true});   // 키오스크는 자체 팝업으로 끝 — '출석 완료' 모달 중복 방지
+        const who = confirmTarget;
+        attendHandleCheckIn(who, {silent:true});   // 키오스크는 자체 팝업으로 끝 — '출석 완료' 모달 중복 방지
         closePopup();
+        setFlash(who);
+        setTimeout(() => setFlash(cur => cur === who ? null : cur), 1600);   // 1.6초 뒤 자동 사라짐(이후 다른 체크인이면 유지)
     };
     const teamBadgeClass = confirmTarget?.teamIdx != null ? getTeamBadge(confirmTarget.teamIdx) : 'bg-teal-500';
     const teamColorLabel = confirmTarget?.teamIdx != null ? getTeamColorName(confirmTarget.teamIdx) : '';
@@ -205,6 +209,29 @@ const KioskModal = ({
                         </div>
                     </div>
                 </div>
+                );
+            })()}
+            {/* 출석 완료 휘발성 표시 — 확인 직후 잠깐 떴다 자동으로 사라짐(닫기 버튼 없음) */}
+            {flash && (() => {
+                const fBadge = flash.teamIdx != null ? getTeamBadge(flash.teamIdx) : 'bg-teal-500';
+                const fLight = /text-slate/.test(fBadge);
+                const fTxt = fLight ? '#1e293b' : '#ffffff';
+                const fSoft = fLight ? 'rgba(30,41,59,0.78)' : 'rgba(255,255,255,0.92)';
+                const fColor = flash.teamIdx != null ? getTeamColorName(flash.teamIdx) : '';
+                return (
+                    <div style={{position:'absolute',inset:0,zIndex:9,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'center',justifyContent:'center',padding:'24px',pointerEvents:'none'}}
+                        className="animate-fade-in">
+                        <div className={fBadge} style={{borderRadius:'28px',width:'100%',maxWidth:'320px',padding:'36px 24px',textAlign:'center',boxShadow:'0 25px 50px rgba(0,0,0,0.4)'}}>
+                            <div style={{width:'76px',height:'76px',borderRadius:'50%',background:fLight?'rgba(0,0,0,0.12)':'rgba(255,255,255,0.25)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>
+                                <Icon.Check size={46} style={{color:fTxt}}/>
+                            </div>
+                            <p style={{fontSize:'2rem',fontWeight:900,color:fTxt,lineHeight:1.2,marginBottom:'6px',wordBreak:'keep-all'}}>{flash.name}</p>
+                            {flash.teamName
+                                ? <p style={{fontSize:'1.05rem',fontWeight:900,color:fSoft}}>{flash.teamName}팀 · {fColor} 조끼{flash.jerseyNumber?` · ${flash.jerseyNumber}번`:''}</p>
+                                : (flash.jerseyNumber ? <p style={{fontSize:'1.05rem',fontWeight:900,color:fSoft}}>{flash.jerseyNumber}번</p> : null)}
+                            <p style={{fontSize:'1.15rem',fontWeight:900,color:fTxt,marginTop:'10px'}}>출석 완료!</p>
+                        </div>
+                    </div>
                 );
             })()}
         </div>
