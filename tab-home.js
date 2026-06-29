@@ -1202,12 +1202,12 @@ const PenaltyPayCard = ({ isAdminMode, memberName, memberInfo, managers = [], mo
 };
 // ─── 회비 탭: 회비 납부 내역 (최근 6개월) ─────────────────────────────────────
 // monthly_checks/{월}.statuses[회원ID] = 'paid'(정상)/'rest'(휴식). 저장된 값을 읽기만 함(쓰기 0).
-const DuesHistoryCard = ({ memberInfo }) => {
+const DuesHistoryCard = ({ memberInfo, isExempt = false }) => {
     const { useState, useEffect } = React;
     const [rows, setRows] = useState(null); // null=불러오는 중, []=없음
     const memberId = memberInfo?.id || null;
     useEffect(() => {
-        if (!memberId) { setRows([]); return; }
+        if (!memberId || isExempt) { setRows([]); return; }   // 운영진(면제)이면 조회 안 함
         const now = new Date();
         const months = [];
         for (let i = 1; i <= 6; i++) {
@@ -1220,12 +1220,17 @@ const DuesHistoryCard = ({ memberInfo }) => {
             .catch(() => ({ ...m, status: null }))))
             .then(res => { if (alive) setRows(res.filter(r => (r.status === 'paid' || r.status === 'rest') && joinedByMonth(memberInfo, r.key))); });
         return () => { alive = false; };
-    }, [memberId]);
+    }, [memberId, isExempt]);
     return (
         <div>
             <h3 className="font-black text-base text-slate-800 px-1 mb-2">회비 납부 내역</h3>
             <div className="card rounded-2xl px-4 divide-y divide-slate-100">
-                {rows === null ? (
+                {isExempt ? (
+                    <div className="flex items-center justify-center gap-1.5 py-4">
+                        <Icon.Check size={15} className="text-emerald-500 flex-shrink-0"/>
+                        <span className="text-sm font-black text-slate-500">운영진은 회비 면제 대상이에요</span>
+                    </div>
+                ) : rows === null ? (
                     <p className="text-sm text-slate-400 font-bold py-4 text-center">불러오는 중…</p>
                 ) : rows.length === 0 ? (
                     <p className="text-sm text-slate-400 font-bold py-4 text-center">최근 납부 내역이 없습니다</p>

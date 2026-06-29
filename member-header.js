@@ -31,7 +31,8 @@ function MemberHeader({
     notifications = [], onNotifNavigate, onBellOpen,
     isNotifDone, onConfirmNotif, onDismissNotif, onClearDoneNotifs,
     onOpenProfile, profileImage, children,
-    isDeveloper, viewMode, onChangeViewMode, onLockDeveloper, onLogoHold
+    isDeveloper, viewMode, onChangeViewMode, onLockDeveloper, onLogoHold,
+    hasTopBanner = false
 }) {
     const showOverlay = isAdminMode && isMeetingOver && !isMeetingEndSaved;
     const [menuOpen, setMenuOpen] = React.useState(false);
@@ -42,7 +43,7 @@ function MemberHeader({
     const startHold = () => { if (!onLogoHold) return; cancelHold(); holdRef.current = setTimeout(() => { holdRef.current = null; onLogoHold(); }, 650); };
     const avatarChar = (memberName || '').trim().slice(-1) || '?';
     return (
-        <div className="px-5 pb-4 member-header-bg" style={{paddingTop:'max(2.5rem, calc(env(safe-area-inset-top) + 1rem))'}}>
+        <div className="px-5 pb-4 member-header-bg" style={{paddingTop: hasTopBanner ? '1.5rem' : 'max(2.5rem, calc(env(safe-area-inset-top) + 1rem))'}}>
             <div className="flex items-center justify-between gap-2 mb-0">
                 {/* 브랜드: 모이다(크게) + OTP FC·이름(작게) 병기 — 엠블럼은 왼쪽 유지 */}
                 <div className="flex items-center gap-2.5 min-w-0">

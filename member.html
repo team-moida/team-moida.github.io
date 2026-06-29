@@ -844,31 +844,38 @@ function App() {
         : (tab === 'meeting' && meetingSubTab === 'match' && match.isMatchPanelOpen) ? '매치 관리 모드'
         : null;
 
+    // 상단 안내 띠(테스트/관리/미리보기/정리) 중 화면 최상단에 실제로 뜨는 첫 번째 것에만 노치(안전영역) 패딩을 준다.
+    // iOS 카메라 홀/상태바와 겹쳐 버튼이 안 눌리던 문제 방지. 띠가 있으면 헤더의 안전영역 패딩은 뺀다(빈틈 중복 방지).
+    const _topBanner = testMode ? 'test' : adminModeLabel ? 'admin' : inTestPreview ? 'preview' : (testExists && !inTestPreview) ? 'exists' : null;
+    const hasTopBanner = !!_topBanner;
+    const _bannerSafeTop = { paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)' };
+
     return (
         <div className="min-h-screen content-pb text-slate-800">
             {testMode && (
-                <div style={{background:'#fbbf24',position:'sticky',top:0,zIndex:50}} className="text-amber-900 text-xs font-black text-center py-2 px-4">
+                <div style={{background:'#fbbf24',position:'sticky',top:0,zIndex:50, ...(_topBanner==='test' ? _bannerSafeTop : {})}} className="text-amber-900 text-xs font-black text-center py-2 px-4">
                     <Icon.Beaker size={13} style={{display:'inline',verticalAlign:'-2px',marginRight:'4px'}}/>테스트 모드 — GPS·QR 시간·거리 제한이 해제된 상태입니다.
                 </div>
             )}
             {adminModeLabel && (
-                <div style={{position:'sticky',top:0,zIndex:55}} className="bg-indigo-600 text-white text-[11px] font-black text-center py-2 px-4">
+                <div style={{position:'sticky',top:0,zIndex:55, ...(_topBanner==='admin' ? _bannerSafeTop : {})}} className="bg-indigo-600 text-white text-[11px] font-black text-center py-2 px-4">
                     <Icon.Settings size={13} style={{display:'inline',verticalAlign:'-2px',marginRight:'4px'}}/>{adminModeLabel}에 들어와 있습니다 · 다른 탭으로 이동하면 해제됩니다
                 </div>
             )}
             {inTestPreview && (
-                <div style={{position:'sticky',top:0,zIndex:56}} className="bg-rose-600 text-white text-[11px] font-black flex items-center justify-center gap-2 py-2 px-4">
+                <div style={{position:'sticky',top:0,zIndex:56, ...(_topBanner==='preview' ? _bannerSafeTop : {})}} className="bg-rose-600 text-white text-[11px] font-black flex items-center justify-center gap-2 py-2 px-4">
                     <span className="inline-flex items-center gap-1"><Icon.Wrench size={13}/>테스트(회원) 화면 보는 중</span>
                     <button onClick={exitTestPreview} className="px-2 py-0.5 rounded-md bg-white/25 hover:bg-white/35 underline">관리자로 복귀</button>
                 </div>
             )}
             {testExists && !inTestPreview && (
-                <div style={{position:'sticky',top:0,zIndex:56}} className="bg-amber-500 text-white text-[11px] font-black flex items-center justify-center gap-2 py-2 px-4">
+                <div style={{position:'sticky',top:0,zIndex:56, ...(_topBanner==='exists' ? _bannerSafeTop : {})}} className="bg-amber-500 text-white text-[11px] font-black flex items-center justify-center gap-2 py-2 px-4">
                     <span className="inline-flex items-center gap-1"><Icon.Wrench size={13}/>테스트 계정·기록이 남아 있어요</span>
                     <button onClick={cleanupTestData} className="px-2 py-0.5 rounded-md bg-white/25 hover:bg-white/35 underline">정리</button>
                 </div>
             )}
             <MemberHeader
+                hasTopBanner={hasTopBanner}
                 testMode={testMode} memberName={memberName} meetingSettings={meetingSettings}
                 mySession={mySession} teamReady={teamReady} allowFromDisplay={allowFromDisplay}
                 myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
@@ -1085,8 +1092,8 @@ function App() {
                         <h2 className="font-black text-lg text-slate-800 px-1">회비 납부</h2>
                         <DuesAccountCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} previewAsMember={isDeveloper && viewMode === 'member'} />
                         <PenaltyPayCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} managers={managers} />
-                        {!isAdminMode && <PenaltyHistoryCard memberInfo={memberInfo} />}
-                        {!isAdminMode && <DuesHistoryCard memberInfo={memberInfo} />}
+                        <PenaltyHistoryCard memberInfo={memberInfo} />
+                        <DuesHistoryCard memberInfo={memberInfo} isExempt={!!(memberInfo && STAFF_ROLES.includes(memberInfo.role)) && !(isDeveloper && viewMode === 'member')} />
                         {isDevMode && <DevDuesToggle memberInfo={memberInfo} />}
                     </div>
                 )}
