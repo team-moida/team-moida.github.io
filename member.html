@@ -49,6 +49,7 @@
     <script type="text/babel" src="tab-attend.js"></script>
     <script type="text/babel" src="tab-roster.js"></script>
     <script type="text/babel" src="tab-rules.js"></script>
+    <script type="text/babel" src="tab-my.js"></script>
     <script type="text/babel" src="modals.js"></script>
     <script type="text/babel" src="member-header.js"></script>
     <script type="text/babel" src="use-roster.js"></script>
@@ -1101,6 +1102,15 @@ function App() {
                 {tab === 'rules' && (
                     <TabRules isAdminMode={isAdminMode} showAlert={showAlert} memberName={memberName}/>
                 )}
+                {tab === 'my' && (
+                    <TabMy
+                        memberInfo={memberInfo} memberName={memberName} isAdminMode={isAdminMode}
+                        onOpenProfile={() => setIsProfileModalOpen(true)}
+                        notifPermission={notifPermission} registerFcmToken={registerFcmToken}
+                        darkMode={darkMode} toggleTheme={toggleTheme} handleLogout={handleLogout}
+                        isDeveloper={isDeveloper} viewMode={viewMode} onChangeViewMode={changeViewMode} onLockDeveloper={lockDeveloper}
+                    />
+                )}
                 {tab === 'roster' && isAdminMode && (
                     <TabRoster
                         rosterSubTab={roster.rosterSubTab} setRosterSubTab={roster.setRosterSubTab}
@@ -1130,6 +1140,7 @@ function App() {
                         {key:'meeting', label:'모임', Comp:Icon.Calendar},
                         {key:'dues',    label:'회비', Comp:Icon.CreditCard},
                         {key:'notice',  label:'게시판', Comp:Icon.Clipboard},
+                        {key:'my',      label:'MY', Comp:Icon.User},
                         ...(isAdminMode ? [{key:'roster', label:'명단', Comp:Icon.List}] : []),
                     ].map(({key,label,Comp})=>{
                         const active = tab===key;
