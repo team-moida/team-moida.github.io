@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="robots" content="noindex"/>
+<title>내 활동 카드 — 팝아트 시안 미리보기</title>
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0;background:#e9edf3;font-family:system-ui,-apple-system,"Segoe UI","Pretendard",sans-serif;color:#0f172a;
+    padding:max(16px,env(safe-area-inset-top)) 0 max(40px,env(safe-area-inset-bottom));}
+  .lab-wrap{max-width:420px;margin:0 auto;padding:0 16px;}
+  .lab-top{padding:8px 4px 4px;}
+  .lab-top h1{font-size:18px;font-weight:900;margin:0 0 4px;letter-spacing:-.5px;}
+  .lab-top p{font-size:12px;color:#64748b;margin:0;line-height:1.5;font-weight:700;}
+  .lab-data{display:inline-block;margin-top:8px;font-size:11px;font-weight:800;color:#475569;background:#fff;border:1px solid #cbd5e1;border-radius:999px;padding:5px 11px;}
+  .lab-item{margin-top:22px;}
+  .lab-cap{margin:0 2px 9px;}
+  .lab-no{display:inline-block;font-size:11px;font-weight:900;color:#fff;background:#122E78;border-radius:6px;padding:2px 7px;margin-right:6px;vertical-align:middle;}
+  .lab-name{font-size:15px;font-weight:900;letter-spacing:-.3px;vertical-align:middle;}
+  .lab-vibe{font-size:11.5px;color:#64748b;margin:5px 2px 0;line-height:1.5;font-weight:600;}
+  .lab-stage{ }
+  .lab-foot{margin-top:34px;text-align:center;font-size:11px;color:#94a3b8;font-weight:700;}
+</style>
+<style>
+/* ===== 시안별 스코프 스타일 ===== */
+
+/* ===== 시안 1 · 코믹 펀치 (cv1) ===== */
+.cv1-card{
+  position:relative;
+  display:block;
+  width:100%;
+  box-sizing:border-box;
+  padding:18px 16px 20px;
+  border:4px solid #000;
+  border-radius:20px;
+  background:#183FB0;
+  background-image:
+    radial-gradient(rgba(0,0,0,.18) 2px, transparent 2.4px),
+    radial-gradient(rgba(255,255,255,.10) 2px, transparent 2.4px);
+  background-size:14px 14px, 14px 14px;
+  background-position:0 0, 7px 7px;
+  box-shadow:8px 8px 0 #000;
+  font-family:system-ui, -apple-system, "Segoe UI", sans-serif;
+  color:#0f172a;
+  cursor:pointer;
+  overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .08s ease, box-shadow .08s ease;
+}
+.cv1-card:active{
+  transform:translate(4px,4px);
+  box-shadow:4px 4px 0 #000;
+}
+
+/* 폭발 광선 배경 (코믹 burst) */
+.cv1-card::before{
+  content:"";
+  position:absolute;
+  top:-40%;
+  right:-30%;
+  width:220px;
+  height:220px;
+  background:
+    repeating-conic-gradient(from 0deg at 50% 50%,
+      rgba(255,255,255,.10) 0deg 9deg,
+      transparent 9deg 18deg);
+  border-radius:50%;
+  pointer-events:none;
+  z-index:0;
+}
+
+/* ===== 헤더 ===== */
+.cv1-head{
+  position:relative;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:14px;
+}
+.cv1-title{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:#C2F94A;
+  color:#15171E;
+  font-size:18px;
+  font-weight:900;
+  letter-spacing:-.5px;
+  padding:5px 12px;
+  border:3px solid #000;
+  border-radius:12px;
+  box-shadow:3px 3px 0 #000;
+  transform:rotate(-2deg);
+}
+.cv1-title-star{
+  font-size:14px;
+  line-height:1;
+}
+.cv1-more{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  background:#fff;
+  color:#122E78;
+  font-size:12px;
+  font-weight:900;
+  padding:5px 11px;
+  border:3px solid #000;
+  border-radius:999px;
+  box-shadow:2px 2px 0 #000;
+  white-space:nowrap;
+}
+.cv1-more-arrow{
+  font-size:13px;
+  font-weight:900;
+}
+
+/* ===== 메인: 출석률 ===== */
+.cv1-main{
+  position:relative;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:14px;
+}
+/* POW 폭발 도형 안에 큰 수치 */
+.cv1-pow{
+  position:relative;
+  flex:0 0 auto;
+  width:128px;
+  height:118px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  filter:drop-shadow(4px 4px 0 #000);
+}
+.cv1-burst{
+  position:absolute;
+  inset:0;
+  background:#F59E0B;
+  clip-path:polygon(
+    50% 0%, 60% 16%, 78% 8%, 74% 27%, 95% 25%,
+    82% 41%, 100% 50%, 82% 59%, 95% 75%, 74% 73%,
+    78% 92%, 60% 84%, 50% 100%, 40% 84%, 22% 92%,
+    26% 73%, 5% 75%, 18% 59%, 0% 50%, 18% 41%,
+    5% 25%, 26% 27%, 22% 8%, 40% 16%
+  );
+}
+.cv1-burst-inner{
+  position:absolute;
+  inset:14px;
+  background:#EF4444;
+  clip-path:polygon(
+    50% 0%, 60% 16%, 78% 8%, 74% 27%, 95% 25%,
+    82% 41%, 100% 50%, 82% 59%, 95% 75%, 74% 73%,
+    78% 92%, 60% 84%, 50% 100%, 40% 84%, 22% 92%,
+    26% 73%, 5% 75%, 18% 59%, 0% 50%, 18% 41%,
+    5% 25%, 26% 27%, 22% 8%, 40% 16%
+  );
+}
+.cv1-rate{
+  position:relative;
+  z-index:2;
+  display:flex;
+  align-items:baseline;
+  color:#fff;
+  font-weight:900;
+  font-style:italic;
+  text-shadow:2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+}
+.cv1-rate-num{
+  font-size:46px;
+  line-height:.9;
+  letter-spacing:-2px;
+}
+.cv1-rate-pct{
+  font-size:22px;
+  margin-left:1px;
+}
+.cv1-rate-side{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.cv1-rate-label{
+  display:inline-block;
+  background:#fff;
+  color:#000;
+  font-size:13px;
+  font-weight:900;
+  letter-spacing:-.3px;
+  padding:4px 10px;
+  border:3px solid #000;
+  border-radius:10px;
+  box-shadow:2px 2px 0 #000;
+  transform:rotate(2deg);
+  align-self:flex-start;
+}
+.cv1-bang{
+  display:inline-block;
+  color:#C2F94A;
+  font-size:20px;
+  font-weight:900;
+  font-style:italic;
+  letter-spacing:-1px;
+  text-shadow:1.5px 1.5px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+  transform:rotate(-3deg);
+}
+
+/* ===== 통계 3종 ===== */
+.cv1-stats{
+  position:relative;
+  z-index:2;
+  display:flex;
+  gap:8px;
+  margin-bottom:12px;
+}
+.cv1-stat{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:1px;
+  padding:9px 4px 8px;
+  border:3px solid #000;
+  border-radius:12px;
+  box-shadow:3px 3px 0 #000;
+  background:#fff;
+}
+.cv1-stat-go{ background:#10B981; }
+.cv1-stat-warn{ background:#F59E0B; }
+.cv1-stat-bad{ background:#EF4444; }
+.cv1-stat-num{
+  font-size:30px;
+  font-weight:900;
+  font-style:italic;
+  line-height:1;
+  color:#fff;
+  letter-spacing:-1px;
+  text-shadow:1.5px 1.5px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+}
+.cv1-stat-label{
+  font-size:12px;
+  font-weight:900;
+  color:#000;
+  letter-spacing:-.3px;
+}
+
+/* ===== 연속 출석 배지 ===== */
+.cv1-streak{
+  position:relative;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:9px 12px;
+  background:#C2F94A;
+  background-image:
+    repeating-linear-gradient(45deg,
+      rgba(0,0,0,.06) 0 6px, transparent 6px 12px);
+  border:3px solid #000;
+  border-radius:999px;
+  box-shadow:4px 4px 0 #000;
+}
+.cv1-streak-fire{
+  font-size:18px;
+  line-height:1;
+  filter:drop-shadow(1px 1px 0 rgba(0,0,0,.4));
+}
+.cv1-streak-text{
+  font-size:15px;
+  font-weight:900;
+  font-style:italic;
+  color:#15171E;
+  letter-spacing:-.4px;
+}
+.cv1-streak-text b{
+  font-size:18px;
+  color:#122E78;
+  -webkit-text-stroke:.5px #000;
+}
+
+/* ===== 시안 2 · 워홀 컬러블록 (cv2) ===== */
+
+.cv2-card{
+  position:relative;
+  display:block;
+  width:100%;
+  box-sizing:border-box;
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  color:#0f172a;
+  background:#fff;
+  border:5px solid #0f172a;
+  border-radius:22px;
+  padding:0;
+  overflow:hidden;
+  cursor:pointer;
+  text-align:left;
+  box-shadow:8px 8px 0 #122E78, 8px 8px 0 0 rgba(0,0,0,.05);
+  transition:transform .08s ease, box-shadow .08s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.cv2-card:hover{ transform:translate(-2px,-2px); box-shadow:11px 11px 0 #122E78; }
+.cv2-card:active{ transform:translate(4px,4px); box-shadow:3px 3px 0 #122E78; }
+
+/* ===== 헤더 띠 (지그재그 하단) ===== */
+.cv2-head{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:14px 18px 18px;
+  background:#183FB0;
+  color:#fff;
+}
+.cv2-head::after{
+  content:"";
+  position:absolute;
+  left:0; right:0; bottom:-1px;
+  height:9px;
+  background:
+    linear-gradient(135deg,#183FB0 50%,transparent 51%) 0 0/14px 9px repeat-x,
+    linear-gradient(-135deg,#183FB0 50%,transparent 51%) 0 0/14px 9px repeat-x;
+  filter:drop-shadow(0 1px 0 #0f172a);
+}
+.cv2-title{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  font-size:22px;
+  font-weight:900;
+  letter-spacing:-.5px;
+  line-height:1;
+  text-shadow:2px 2px 0 #122E78;
+}
+.cv2-title-dot{
+  width:14px; height:14px;
+  border-radius:50%;
+  background:#C2F94A;
+  border:2px solid #0f172a;
+  box-shadow:0 0 0 3px rgba(194,249,74,.35);
+  flex:none;
+}
+.cv2-more{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  font-size:12px;
+  font-weight:900;
+  color:#0f172a;
+  background:#C2F94A;
+  padding:5px 10px;
+  border-radius:999px;
+  border:2px solid #0f172a;
+  white-space:nowrap;
+  line-height:1;
+}
+.cv2-more-arrow{ font-size:13px; transform:translateY(.5px); }
+
+/* ===== 컬러블록 그리드 ===== */
+.cv2-grid{
+  display:grid;
+  grid-template-columns:1.45fr 1fr;
+  gap:0;
+}
+
+/* 대형 출석률 블록 (좌측, 하프톤 점) */
+.cv2-rate{
+  position:relative;
+  grid-row:span 3;
+  padding:18px 16px 16px;
+  background:#C2F94A;
+  border-right:5px solid #0f172a;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.cv2-rate::before{
+  content:"";
+  position:absolute; inset:0;
+  background-image:radial-gradient(#0f172a 2.1px, transparent 2.4px);
+  background-size:13px 13px;
+  background-position:0 0;
+  opacity:.16;
+  pointer-events:none;
+}
+.cv2-rate-label{
+  position:relative;
+  display:inline-block;
+  align-self:flex-start;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.5px;
+  color:#fff;
+  background:#0f172a;
+  padding:4px 9px;
+  border-radius:6px;
+  margin-bottom:2px;
+}
+.cv2-rate-num{
+  position:relative;
+  font-size:78px;
+  font-weight:900;
+  line-height:.86;
+  letter-spacing:-4px;
+  color:#122E78;
+  text-shadow:
+    3px 3px 0 #fff,
+    6px 6px 0 #0f172a;
+}
+.cv2-rate-pct{
+  font-size:40px;
+  letter-spacing:-1px;
+  margin-left:2px;
+}
+.cv2-rate-sub{
+  position:relative;
+  margin-top:8px;
+  font-size:11px;
+  font-weight:800;
+  color:#0f172a;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  opacity:.7;
+}
+
+/* 통계 3종 (우측 색블록 반복) */
+.cv2-stat{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:11px 14px;
+  border-bottom:5px solid #0f172a;
+  overflow:hidden;
+}
+.cv2-stat:nth-child(2){ background:#10B981; color:#fff; }
+.cv2-stat:nth-child(3){ background:#F59E0B; color:#0f172a; }
+.cv2-stat:nth-child(4){ background:#EF4444; color:#fff; border-bottom:none; }
+.cv2-stat::before{
+  content:"";
+  position:absolute;
+  top:-30%; right:-18px;
+  width:64px; height:160%;
+  background:repeating-linear-gradient(
+    -45deg,
+    rgba(255,255,255,.18) 0 6px,
+    transparent 6px 12px);
+  transform:skewX(-8deg);
+  pointer-events:none;
+}
+.cv2-stat-num{
+  font-size:30px;
+  font-weight:900;
+  line-height:1;
+  letter-spacing:-1px;
+  min-width:34px;
+  text-align:center;
+  text-shadow:2px 2px 0 rgba(15,23,42,.35);
+}
+.cv2-stat:nth-child(3) .cv2-stat-num{ text-shadow:2px 2px 0 rgba(255,255,255,.5); }
+.cv2-stat-label{
+  font-size:13px;
+  font-weight:900;
+  letter-spacing:.5px;
+}
+
+/* ===== 연속 출석 배지 (하단 풀폭 띠) ===== */
+.cv2-streak{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  padding:13px 16px;
+  background:#122E78;
+  color:#fff;
+  overflow:hidden;
+}
+.cv2-streak::before{
+  content:"";
+  position:absolute; inset:0;
+  background:repeating-linear-gradient(
+    90deg,
+    transparent 0 16px,
+    rgba(194,249,74,.14) 16px 19px);
+  pointer-events:none;
+}
+.cv2-streak-fire{
+  position:relative;
+  font-size:24px;
+  line-height:1;
+  filter:drop-shadow(0 0 6px rgba(245,158,11,.9));
+}
+.cv2-streak-txt{
+  position:relative;
+  font-size:16px;
+  font-weight:900;
+  letter-spacing:-.3px;
+}
+.cv2-streak-hl{
+  color:#C2F94A;
+  font-size:20px;
+  text-shadow:2px 2px 0 #0f172a;
+}
+.cv2-streak-star{
+  position:relative;
+  width:18px; height:18px;
+  flex:none;
+  background:#C2F94A;
+  clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+}
+
+
+/* ===== 시안 3 · 멤피스 펀치 (cv3) ===== */
+
+.cv3-card{
+  position:relative;
+  width:100%;
+  box-sizing:border-box;
+  padding:20px 18px 22px;
+  border:4px solid #0f172a;
+  border-radius:22px;
+  background:#fff;
+  box-shadow:8px 8px 0 #0f172a;
+  overflow:hidden;
+  cursor:pointer;
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  color:#0f172a;
+  transition:transform .12s ease, box-shadow .12s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.cv3-card:hover{transform:translate(-2px,-2px);box-shadow:11px 11px 0 #0f172a;}
+.cv3-card:active{transform:translate(4px,4px);box-shadow:3px 3px 0 #0f172a;}
+
+/* ===== 흩뿌려진 멤피스 배경 컨페티 ===== */
+.cv3-confetti{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.cv3-shape{position:absolute;}
+
+/* 동그라미 (속 빈) */
+.cv3-dot{border-radius:50%;}
+.cv3-dot.cv3-a{width:46px;height:46px;border:7px solid #183FB0;top:-14px;right:42px;}
+.cv3-dot.cv3-b{width:22px;height:22px;background:#F59E0B;bottom:54px;left:-6px;}
+.cv3-dot.cv3-c{width:14px;height:14px;background:#EF4444;top:60px;right:18px;}
+
+/* 삼각형 */
+.cv3-tri{width:0;height:0;border-style:solid;}
+.cv3-tri.cv3-a{
+  border-width:0 16px 28px 16px;
+  border-color:transparent transparent #C2F94A transparent;
+  top:14px;left:-4px;transform:rotate(-18deg);
+}
+.cv3-tri.cv3-b{
+  border-width:0 11px 19px 11px;
+  border-color:transparent transparent #10B981 transparent;
+  bottom:-6px;right:96px;transform:rotate(28deg);
+}
+
+/* 작은 사각 (기울어진) */
+.cv3-sq{width:18px;height:18px;}
+.cv3-sq.cv3-a{background:#183FB0;top:96px;left:30px;transform:rotate(25deg);}
+.cv3-sq.cv3-b{background:#F59E0B;bottom:88px;right:-5px;transform:rotate(15deg);border-radius:4px;}
+
+/* 플러스(+) 기호 */
+.cv3-plus{width:20px;height:20px;}
+.cv3-plus::before,.cv3-plus::after{content:"";position:absolute;background:#122E78;}
+.cv3-plus::before{width:20px;height:5px;top:7px;left:0;}
+.cv3-plus::after{width:5px;height:20px;top:0;left:7px;}
+.cv3-plus.cv3-a{top:46px;right:120px;transform:rotate(12deg);}
+.cv3-plus.cv3-b{bottom:18px;left:44px;transform:rotate(-20deg);}
+
+/* 지그재그 띠 */
+.cv3-zig{
+  position:absolute;left:-10px;right:-10px;height:12px;
+  background:
+    linear-gradient(135deg,#EF4444 25%,transparent 25%) -10px 0/20px 20px,
+    linear-gradient(225deg,#EF4444 25%,transparent 25%) -10px 0/20px 20px;
+  opacity:.85;
+}
+.cv3-zig.cv3-top{top:0;transform:translateY(-1px);}
+
+/* 물결 라인 (점선 곡선 느낌) */
+.cv3-wave{
+  position:absolute;width:120px;height:14px;
+  background:
+    radial-gradient(circle at 7px 12px, transparent 6px, #C2F94A 6px 8px, transparent 8px) 0 0/14px 14px;
+  bottom:120px;right:-30px;transform:rotate(-8deg);opacity:.9;
+}
+
+/* ===== 콘텐츠 ===== */
+.cv3-inner{position:relative;z-index:1;}
+
+.cv3-head{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;margin-bottom:14px;
+}
+.cv3-title{
+  display:inline-flex;align-items:center;
+  font-size:22px;font-weight:900;letter-spacing:-.5px;
+  background:#C2F94A;color:#0f172a;
+  padding:4px 12px;border:3px solid #0f172a;border-radius:11px;
+  transform:rotate(-2deg);box-shadow:3px 3px 0 #0f172a;
+}
+.cv3-more{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:13px;font-weight:800;color:#fff;
+  background:#183FB0;padding:5px 11px;
+  border:3px solid #0f172a;border-radius:999px;
+  transform:rotate(2deg);box-shadow:2px 2px 0 #0f172a;white-space:nowrap;
+}
+.cv3-more .cv3-arrow{font-size:15px;line-height:1;}
+
+/* 출석률 메인 블록 */
+.cv3-hero{
+  display:flex;align-items:center;gap:14px;
+  background:#183FB0;
+  border:4px solid #0f172a;border-radius:18px;
+  padding:14px 16px;margin-bottom:14px;
+  box-shadow:5px 5px 0 #122E78;
+  position:relative;overflow:hidden;
+}
+/* 하프톤 점 패턴 (hero 안) */
+.cv3-hero::after{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(#122E78 2px, transparent 2.4px) 0 0/12px 12px;
+  opacity:.45;pointer-events:none;
+}
+.cv3-pct{
+  position:relative;z-index:1;
+  font-size:58px;font-weight:900;line-height:.9;
+  color:#C2F94A;letter-spacing:-2px;
+  text-shadow:3px 3px 0 #0f172a;
+  font-variant-numeric:tabular-nums;
+}
+.cv3-pct .cv3-sign{font-size:30px;vertical-align:14px;}
+.cv3-herolabel{
+  position:relative;z-index:1;
+  display:flex;flex-direction:column;gap:3px;
+  color:#fff;
+}
+.cv3-herolabel b{
+  font-size:16px;font-weight:900;
+  background:#F59E0B;color:#0f172a;
+  padding:2px 9px;border:2px solid #0f172a;border-radius:8px;
+  align-self:flex-start;transform:rotate(-3deg);
+}
+.cv3-herolabel span{font-size:12px;font-weight:700;opacity:.95;letter-spacing:.3px;}
+
+/* 통계 3종 */
+.cv3-stats{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px;
+}
+.cv3-stat{
+  position:relative;
+  border:3px solid #0f172a;border-radius:14px;
+  padding:11px 6px 9px;text-align:center;background:#fff;
+  box-shadow:3px 3px 0 #0f172a;
+}
+.cv3-stat .cv3-num{
+  display:block;font-size:30px;font-weight:900;line-height:1;
+  letter-spacing:-1px;font-variant-numeric:tabular-nums;
+}
+.cv3-stat .cv3-lab{
+  display:block;margin-top:5px;font-size:12px;font-weight:800;
+  color:#0f172a;
+}
+.cv3-stat.cv3-ok{background:#10B981;transform:rotate(-1.5deg);}
+.cv3-stat.cv3-ok .cv3-num,.cv3-stat.cv3-ok .cv3-lab{color:#0f172a;}
+.cv3-stat.cv3-late{background:#F59E0B;transform:rotate(1.5deg);}
+.cv3-stat.cv3-late .cv3-num,.cv3-stat.cv3-late .cv3-lab{color:#0f172a;}
+.cv3-stat.cv3-no{background:#EF4444;transform:rotate(-1deg);}
+.cv3-stat.cv3-no .cv3-num,.cv3-stat.cv3-no .cv3-lab{color:#fff;}
+
+/* 연속 출석 배지 */
+.cv3-streak{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  background:#0f172a;color:#fff;
+  border:4px solid #0f172a;border-radius:14px;
+  padding:11px 12px;
+  box-shadow:4px 4px 0 #EF4444;
+  transform:rotate(-1deg);
+  position:relative;overflow:hidden;
+}
+/* 배지 안 지그재그 하단 띠 */
+.cv3-streak::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:7px;
+  background:
+    linear-gradient(135deg,#C2F94A 25%,transparent 25%) 0 0/14px 14px,
+    linear-gradient(225deg,#C2F94A 25%,transparent 25%) 0 0/14px 14px;
+  opacity:.9;
+}
+.cv3-fire{font-size:22px;line-height:1;}
+.cv3-streak b{
+  font-size:17px;font-weight:900;color:#C2F94A;letter-spacing:-.3px;
+  font-variant-numeric:tabular-nums;
+}
+.cv3-streak span{font-size:15px;font-weight:800;color:#fff;}
+
+
+/* ===== 시안 4 · 리소 듀오톤 83 (cv4) ===== */
+
+.cv4-card{
+  position:relative;
+  display:block;
+  width:100%;
+  box-sizing:border-box;
+  border:none;
+  margin:0;
+  padding:18px 18px 16px;
+  cursor:pointer;
+  text-align:left;
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  color:#0f172a;
+  background:#C2F94A;
+  border-radius:22px;
+  overflow:hidden;
+  isolation:isolate;
+  box-shadow:0 4px 14px rgba(0,0,0,.05), 0 0 0 3px #122E78 inset;
+  transition:transform .12s ease, box-shadow .12s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.cv4-card:active{
+  transform:translateY(2px) scale(.992);
+  box-shadow:0 2px 8px rgba(0,0,0,.08), 0 0 0 3px #122E78 inset;
+}
+/* 리소 그레인 / 하프톤 점 — 듀오톤 잉크 텍스처 */
+.cv4-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  background-image:radial-gradient(rgba(18,46,120,.28) 1.1px, transparent 1.4px);
+  background-size:7px 7px;
+  background-position:0 0;
+  mix-blend-mode:multiply;
+  opacity:.55;
+  pointer-events:none;
+}
+/* 오버프린트 인디고 잉크 번짐 — 사선 그라데이션 얼룩 */
+.cv4-card::after{
+  content:"";
+  position:absolute;
+  z-index:0;
+  right:-30%;
+  top:-40%;
+  width:120%;
+  height:120%;
+  background:
+    radial-gradient(closest-side at 70% 30%, rgba(24,63,176,.85), rgba(24,63,176,0) 70%),
+    radial-gradient(closest-side at 90% 75%, rgba(18,46,120,.5), rgba(18,46,120,0) 72%);
+  mix-blend-mode:multiply;
+  pointer-events:none;
+}
+.cv4-inner{position:relative;z-index:2;}
+
+/* 헤더 */
+.cv4-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:2px;
+}
+.cv4-title{
+  display:inline-flex;
+  align-items:center;
+  font-size:15px;
+  font-weight:900;
+  letter-spacing:.02em;
+  color:#122E78;
+  background:#fff;
+  padding:5px 12px;
+  border-radius:999px;
+  box-shadow:2px 2px 0 #122E78;
+  text-transform:uppercase;
+}
+.cv4-more{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  font-size:12px;
+  font-weight:900;
+  color:#fff;
+  background:#122E78;
+  padding:6px 11px;
+  border-radius:999px;
+  letter-spacing:.02em;
+  box-shadow:2px 2px 0 rgba(18,46,120,.35);
+}
+.cv4-more .cv4-arrow{font-size:13px;line-height:1;transform:translateY(-.5px);}
+
+/* 초대형 출석률 숫자 */
+.cv4-bignum{
+  position:relative;
+  margin:-6px 0 -10px;
+  line-height:.78;
+  display:flex;
+  align-items:flex-end;
+}
+.cv4-num{
+  font-size:148px;
+  font-weight:900;
+  letter-spacing:-.07em;
+  color:#122E78;
+  -webkit-text-stroke:3px #122E78;
+  /* 오버프린트 어긋난 그림자 — 인디고/라임 2색 잔상 */
+  text-shadow:
+     4px 4px 0 rgba(24,63,176,.9),
+     -3px -2px 0 rgba(255,255,255,.6);
+  font-variant-numeric:tabular-nums;
+}
+.cv4-pct{
+  font-size:48px;
+  font-weight:900;
+  color:#122E78;
+  margin-left:2px;
+  margin-bottom:24px;
+  -webkit-text-stroke:2px #122E78;
+}
+.cv4-numtag{
+  position:absolute;
+  right:2px;
+  top:14px;
+  transform:rotate(7deg);
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.14em;
+  color:#C2F94A;
+  background:#EF4444;
+  padding:5px 9px;
+  border-radius:7px;
+  box-shadow:2px 2px 0 #122E78;
+  text-transform:uppercase;
+}
+
+/* 연속 출석 배지 */
+.cv4-streak{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  margin:8px 0 14px;
+  font-size:14px;
+  font-weight:900;
+  color:#fff;
+  background:linear-gradient(90deg,#F59E0B,#EF4444);
+  padding:8px 14px;
+  border-radius:999px;
+  box-shadow:3px 3px 0 #122E78;
+  transform:rotate(-1.6deg);
+  letter-spacing:.01em;
+}
+.cv4-streak .cv4-fire{
+  font-size:16px;
+  filter:drop-shadow(1px 1px 0 rgba(18,46,120,.4));
+}
+
+/* 통계 3종 — 작은 태그 행 */
+.cv4-stats{
+  display:flex;
+  gap:8px;
+}
+.cv4-stat{
+  flex:1 1 0;
+  position:relative;
+  background:#fff;
+  border-radius:13px;
+  padding:9px 6px 8px;
+  text-align:center;
+  box-shadow:3px 3px 0 #122E78;
+  overflow:hidden;
+}
+.cv4-stat::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background-image:radial-gradient(currentColor 1px, transparent 1.3px);
+  background-size:6px 6px;
+  opacity:.16;
+  pointer-events:none;
+}
+.cv4-stat .cv4-sv{
+  position:relative;
+  font-size:30px;
+  font-weight:900;
+  line-height:1;
+  letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;
+}
+.cv4-stat .cv4-sl{
+  position:relative;
+  display:block;
+  margin-top:4px;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.08em;
+  color:#475569;
+}
+.cv4-stat--ok{color:#10B981;}
+.cv4-stat--late{color:#F59E0B;}
+.cv4-stat--no{color:#EF4444;}
+.cv4-stat--ok .cv4-sl,
+.cv4-stat--late .cv4-sl,
+.cv4-stat--no .cv4-sl{color:#122E78;}
+
+
+/* ===== 시안 5 · 스티커 콜라주 (cv5) ===== */
+
+.cv5-card{
+  position:relative;
+  width:100%;
+  box-sizing:border-box;
+  padding:20px 18px 22px;
+  border-radius:22px;
+  background:
+    radial-gradient(circle at 16% 14%, rgba(194,249,74,.30) 0 9px, transparent 10px) 0 0/26px 26px,
+    radial-gradient(circle at 16% 14%, rgba(255,255,255,.14) 0 4px, transparent 5px) 0 0/26px 26px,
+    linear-gradient(135deg,#183FB0 0%, #122E78 64%, #0c205a 100%);
+  border:4px solid #0f172a;
+  box-shadow:0 10px 0 #0c205a, 0 16px 26px rgba(12,16,30,.42);
+  overflow:hidden;
+  cursor:pointer;
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .14s ease, box-shadow .14s ease;
+  isolation:isolate;
+}
+.cv5-card:active{ transform:translateY(5px) rotate(-.3deg); box-shadow:0 4px 0 #0c205a, 0 8px 16px rgba(12,16,30,.4); }
+
+/* 큼직 배경 번개 도형 */
+.cv5-bolt{
+  position:absolute; right:-6px; top:64px; width:120px; height:150px; z-index:0;
+  opacity:.5; transform:rotate(8deg);
+  background:#C2F94A;
+  clip-path:polygon(58% 0,18% 56%,46% 56%,30% 100%,86% 40%,54% 40%);
+  filter:drop-shadow(0 0 0 #0f172a);
+}
+.cv5-zig{
+  position:absolute; left:0; right:0; bottom:0; height:14px; z-index:0;
+  background:
+    linear-gradient(135deg,#F59E0B 25%, transparent 25%) -10px 0/20px 20px,
+    linear-gradient(225deg,#F59E0B 25%, transparent 25%) -10px 0/20px 20px,
+    #122E78;
+  opacity:.9;
+}
+
+/* 헤더 */
+.cv5-head{
+  position:relative; z-index:3;
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:6px;
+}
+.cv5-title{
+  display:inline-block;
+  font-size:24px; font-weight:900; letter-spacing:-.5px;
+  color:#fff;
+  background:#EF4444;
+  padding:6px 14px;
+  border:3px solid #0f172a;
+  border-radius:13px;
+  transform:rotate(-2.6deg);
+  box-shadow:3px 3px 0 #0f172a, inset 0 0 0 2px rgba(255,255,255,.18);
+  text-shadow:2px 2px 0 rgba(15,23,42,.45);
+}
+.cv5-more{
+  display:inline-flex; align-items:center; gap:3px;
+  font-size:12.5px; font-weight:900; color:#0f172a;
+  background:#fff;
+  padding:6px 11px;
+  border:3px solid #0f172a;
+  border-radius:999px;
+  transform:rotate(3deg);
+  box-shadow:2px 2px 0 #0f172a;
+}
+.cv5-more b{ color:#183FB0; font-size:15px; line-height:1; }
+
+/* 핵심 출석률 스티커 */
+.cv5-rate{
+  position:relative; z-index:3;
+  display:flex; align-items:center; gap:14px;
+  margin:14px 2px 6px;
+}
+.cv5-rate-blob{
+  position:relative; flex:0 0 auto;
+  width:108px; height:108px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:
+    radial-gradient(circle at 30% 26%, #d6ff6e 0 40%, #C2F94A 41% 100%);
+  border:4px solid #0f172a;
+  border-radius:50% 48% 52% 50%/50% 52% 48% 50%;
+  box-shadow:4px 5px 0 #0f172a, 6px 9px 14px rgba(12,16,30,.4);
+  transform:rotate(-5deg);
+}
+.cv5-rate-num{
+  font-size:46px; font-weight:900; line-height:.9; color:#0f172a;
+  letter-spacing:-2px;
+  text-shadow:2px 2px 0 rgba(255,255,255,.5);
+}
+.cv5-rate-num span{ font-size:22px; vertical-align:6px; margin-left:1px; }
+.cv5-rate-cap{
+  font-size:12px; font-weight:900; color:#15171E;
+  background:rgba(255,255,255,.55);
+  padding:1px 8px; border-radius:999px; margin-top:2px;
+  border:2px solid #0f172a;
+}
+.cv5-rate-side{ position:relative; }
+.cv5-marker{
+  display:inline-block;
+  font-size:17px; font-weight:900; color:#fff;
+  line-height:1.25;
+  transform:rotate(-1.5deg);
+}
+.cv5-marker em{
+  font-style:normal;
+  background:linear-gradient(180deg,transparent 55%, #F59E0B 55% 92%, transparent 92%);
+  padding:0 2px;
+  color:#fff;
+}
+.cv5-marker .cv5-pow{
+  display:inline-block; margin-top:8px;
+  font-size:13px; color:#0f172a; background:#fff;
+  border:3px solid #0f172a; border-radius:10px;
+  padding:3px 9px; transform:rotate(2.5deg);
+  box-shadow:2px 2px 0 #0f172a;
+}
+
+/* 통계 3종 스티커 */
+.cv5-stats{
+  position:relative; z-index:3;
+  display:flex; justify-content:center; gap:8px;
+  margin:16px 0 8px;
+  flex-wrap:wrap;
+}
+.cv5-chip{
+  flex:1 1 0; min-width:92px;
+  position:relative;
+  background:#fff;
+  border:3px solid #0f172a;
+  border-radius:15px;
+  padding:9px 6px 8px;
+  text-align:center;
+  box-shadow:3px 4px 0 #0f172a;
+}
+.cv5-chip:nth-child(1){ transform:rotate(-3deg); }
+.cv5-chip:nth-child(2){ transform:rotate(2deg) translateY(-3px); }
+.cv5-chip:nth-child(3){ transform:rotate(-2deg) translateY(2px); }
+.cv5-chip .cv5-tape{
+  position:absolute; top:-9px; left:50%; width:34px; height:14px;
+  transform:translateX(-50%) rotate(-4deg);
+  background:rgba(255,255,255,.7);
+  border:2px solid rgba(15,23,42,.4);
+  border-radius:3px;
+}
+.cv5-chip-n{ font-size:30px; font-weight:900; line-height:1; letter-spacing:-1px; }
+.cv5-chip-l{
+  display:inline-block; margin-top:4px;
+  font-size:12px; font-weight:900; color:#fff;
+  padding:2px 9px; border-radius:999px;
+  border:2px solid #0f172a;
+}
+.cv5-chip.cv5-ok  .cv5-chip-n{ color:#10B981; }
+.cv5-chip.cv5-ok  .cv5-chip-l{ background:#10B981; }
+.cv5-chip.cv5-mid .cv5-chip-n{ color:#F59E0B; }
+.cv5-chip.cv5-mid .cv5-chip-l{ background:#F59E0B; }
+.cv5-chip.cv5-bad .cv5-chip-n{ color:#EF4444; }
+.cv5-chip.cv5-bad .cv5-chip-l{ background:#EF4444; }
+
+/* 연속 출석 큼직 라임 배지 */
+.cv5-streak{
+  position:relative; z-index:3;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  margin:14px auto 2px;
+  width:fit-content; max-width:100%;
+  background:#C2F94A;
+  border:4px solid #0f172a;
+  border-radius:14px;
+  padding:9px 16px;
+  transform:rotate(-1.6deg);
+  box-shadow:4px 5px 0 #0f172a, 0 0 0 3px #fff inset;
+}
+.cv5-streak .cv5-fire{ font-size:24px; line-height:1; filter:drop-shadow(1px 1px 0 rgba(15,23,42,.3)); }
+.cv5-streak b{ font-size:18px; font-weight:900; color:#15171E; letter-spacing:-.5px; }
+.cv5-streak b u{ text-decoration:none; color:#EF4444; font-size:22px; }
+.cv5-star{
+  position:absolute; top:-12px; right:-10px; width:30px; height:30px;
+  background:#F59E0B; border:3px solid #0f172a;
+  clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+  transform:rotate(12deg);
+}
+
+
+</style>
+</head>
+<body>
+  <div class="lab-wrap">
+    <div class="lab-top">
+      <h1>🎨 "내 활동" 카드 · 팝아트 시안</h1>
+      <p>홈 화면에서 예정 모임이 없을 때 뜨는 요약 카드입니다. 아래 5종을 비교해 마음에 드는 번호를 알려주세요. (조합·수정도 가능)</p>
+      <span class="lab-data">샘플 데이터 고정 · 출석률 83% · 출석 10 · 지각 2 · 노쇼 1 · 🔥 5회 연속</span>
+    </div>
+    
+  <section class="lab-item">
+    <div class="lab-cap">
+      <span class="lab-no">시안 1</span>
+      <span class="lab-name">코믹 펀치</span>
+      <p class="lab-vibe">굵은 검정 외곽선 + 하드 오프셋 그림자, 하프톤 점·번개·별 도형, 원색 대비로 "POW!" 터지는 만화책 한 장</p>
+    </div>
+    <div class="lab-stage">
+<div class="cv1-card">
+  <div class="cv1-head">
+    <span class="cv1-title"><span class="cv1-title-star">★</span>내 활동</span>
+    <span class="cv1-more">자세히<span class="cv1-more-arrow">→</span></span>
+  </div>
+
+  <div class="cv1-main">
+    <div class="cv1-pow">
+      <span class="cv1-burst"></span>
+      <span class="cv1-burst-inner"></span>
+      <span class="cv1-rate">
+        <span class="cv1-rate-num">83</span><span class="cv1-rate-pct">%</span>
+      </span>
+    </div>
+    <div class="cv1-rate-side">
+      <span class="cv1-rate-label">출석률</span>
+      <span class="cv1-bang">POW!</span>
+    </div>
+  </div>
+
+  <div class="cv1-stats">
+    <div class="cv1-stat cv1-stat-go">
+      <span class="cv1-stat-num">10</span>
+      <span class="cv1-stat-label">출석</span>
+    </div>
+    <div class="cv1-stat cv1-stat-warn">
+      <span class="cv1-stat-num">2</span>
+      <span class="cv1-stat-label">지각</span>
+    </div>
+    <div class="cv1-stat cv1-stat-bad">
+      <span class="cv1-stat-num">1</span>
+      <span class="cv1-stat-label">노쇼</span>
+    </div>
+  </div>
+
+  <div class="cv1-streak">
+    <span class="cv1-streak-fire">🔥</span>
+    <span class="cv1-streak-text"><b>5회</b> 연속 출석 중!</span>
+  </div>
+</div>
+    </div>
+  </section>
+  <section class="lab-item">
+    <div class="lab-cap">
+      <span class="lab-no">시안 2</span>
+      <span class="lab-name">워홀 컬러블록</span>
+      <p class="lab-vibe">고채도 보색 블록으로 4분할한 실크스크린 팝아트. 거대한 83%와 하프톤 점·지그재그 띠로 정적이지 않고 튀는 한 장.</p>
+    </div>
+    <div class="lab-stage">
+<div class="cv2-card">
+  <div class="cv2-head">
+    <div class="cv2-title"><span class="cv2-title-dot"></span>내 활동</div>
+    <span class="cv2-more">자세히 <span class="cv2-more-arrow">→</span></span>
+  </div>
+
+  <div class="cv2-grid">
+    <div class="cv2-rate">
+      <span class="cv2-rate-label">출석률</span>
+      <div class="cv2-rate-num">83<span class="cv2-rate-pct">%</span></div>
+      <div class="cv2-rate-sub">ATTENDANCE</div>
+    </div>
+
+    <div class="cv2-stat">
+      <span class="cv2-stat-num">10</span>
+      <span class="cv2-stat-label">출석</span>
+    </div>
+    <div class="cv2-stat">
+      <span class="cv2-stat-num">2</span>
+      <span class="cv2-stat-label">지각</span>
+    </div>
+    <div class="cv2-stat">
+      <span class="cv2-stat-num">1</span>
+      <span class="cv2-stat-label">노쇼</span>
+    </div>
+  </div>
+
+  <div class="cv2-streak">
+    <span class="cv2-streak-star"></span>
+    <span class="cv2-streak-fire">🔥</span>
+    <span class="cv2-streak-txt"><span class="cv2-streak-hl">5회</span> 연속 출석 중</span>
+    <span class="cv2-streak-star"></span>
+  </div>
+</div>
+    </div>
+  </section>
+  <section class="lab-item">
+    <div class="lab-cap">
+      <span class="lab-no">시안 3</span>
+      <span class="lab-name">멤피스 펀치</span>
+      <p class="lab-vibe">지그재그·물결·삼각형·컨페티가 흩뿌려진 80s 멤피스 배경 위에, 살짝 기울어진 도형과 굵은 외곽선으로 경쾌하게 튀는 누름 카드</p>
+    </div>
+    <div class="lab-stage">
+<div class="cv3-card">
+  <div class="cv3-confetti" aria-hidden="true">
+    <span class="cv3-zig cv3-top"></span>
+    <span class="cv3-shape cv3-dot cv3-a"></span>
+    <span class="cv3-shape cv3-dot cv3-b"></span>
+    <span class="cv3-shape cv3-dot cv3-c"></span>
+    <span class="cv3-shape cv3-tri cv3-a"></span>
+    <span class="cv3-shape cv3-tri cv3-b"></span>
+    <span class="cv3-shape cv3-sq cv3-a"></span>
+    <span class="cv3-shape cv3-sq cv3-b"></span>
+    <span class="cv3-shape cv3-plus cv3-a"></span>
+    <span class="cv3-shape cv3-plus cv3-b"></span>
+    <span class="cv3-shape cv3-wave"></span>
+  </div>
+
+  <div class="cv3-inner">
+    <div class="cv3-head">
+      <span class="cv3-title">내 활동</span>
+      <span class="cv3-more">자세히 <span class="cv3-arrow">→</span></span>
+    </div>
+
+    <div class="cv3-hero">
+      <div class="cv3-pct">83<span class="cv3-sign">%</span></div>
+      <div class="cv3-herolabel">
+        <b>출석률</b>
+        <span>이번 시즌 출석 비율</span>
+      </div>
+    </div>
+
+    <div class="cv3-stats">
+      <div class="cv3-stat cv3-ok">
+        <span class="cv3-num">10</span>
+        <span class="cv3-lab">출석</span>
+      </div>
+      <div class="cv3-stat cv3-late">
+        <span class="cv3-num">2</span>
+        <span class="cv3-lab">지각</span>
+      </div>
+      <div class="cv3-stat cv3-no">
+        <span class="cv3-num">1</span>
+        <span class="cv3-lab">노쇼</span>
+      </div>
+    </div>
+
+    <div class="cv3-streak">
+      <span class="cv3-fire">🔥</span>
+      <b>5회</b>
+      <span>연속 출석 중</span>
+    </div>
+  </div>
+</div>
+    </div>
+  </section>
+  <section class="lab-item">
+    <div class="lab-cap">
+      <span class="lab-no">시안 4</span>
+      <span class="lab-name">리소 듀오톤 83</span>
+      <p class="lab-vibe">인디고×라임 2색 리소그래프 그레인. 카드를 꽉 채우는 초대형 83 숫자, 잉크 번짐·오버프린트 무드, 나머지는 작은 태그로 눌러 담음.</p>
+    </div>
+    <div class="lab-stage">
+<div class="cv4-card">
+  <div class="cv4-inner">
+    <div class="cv4-head">
+      <span class="cv4-title">내 활동</span>
+      <span class="cv4-more">자세히 <span class="cv4-arrow">→</span></span>
+    </div>
+
+    <div class="cv4-bignum">
+      <span class="cv4-num">83</span>
+      <span class="cv4-pct">%</span>
+      <span class="cv4-numtag">출석률</span>
+    </div>
+
+    <div class="cv4-streak">
+      <span class="cv4-fire">🔥</span>5회 연속 출석 중
+    </div>
+
+    <div class="cv4-stats">
+      <div class="cv4-stat cv4-stat--ok">
+        <span class="cv4-sv">10</span>
+        <span class="cv4-sl">출석</span>
+      </div>
+      <div class="cv4-stat cv4-stat--late">
+        <span class="cv4-sv">2</span>
+        <span class="cv4-sl">지각</span>
+      </div>
+      <div class="cv4-stat cv4-stat--no">
+        <span class="cv4-sv">1</span>
+        <span class="cv4-sl">노쇼</span>
+      </div>
+    </div>
+  </div>
+</div>
+    </div>
+  </section>
+  <section class="lab-item">
+    <div class="lab-cap">
+      <span class="lab-no">시안 5</span>
+      <span class="lab-name">스티커 콜라주</span>
+      <p class="lab-vibe">흰 테두리 스티커를 삐뚤빼뚤 덕지덕지 붙인 자유분방 팝아트 콜라주. 하프톤 점·지그재그·번개로 시끌벅적하게 튀는 한 장.</p>
+    </div>
+    <div class="lab-stage">
+<div class="cv5-card">
+  <div class="cv5-bolt"></div>
+  <div class="cv5-zig"></div>
+
+  <div class="cv5-head">
+    <span class="cv5-title">내 활동</span>
+    <span class="cv5-more">자세히 <b>→</b></span>
+  </div>
+
+  <div class="cv5-rate">
+    <div class="cv5-rate-blob">
+      <div class="cv5-rate-num">83<span>%</span></div>
+      <div class="cv5-rate-cap">출석률</div>
+    </div>
+    <div class="cv5-rate-side">
+      <span class="cv5-marker">
+        이번 시즌<br><em>출석 페이스</em><br>아주 좋아요!
+        <span class="cv5-pow">POW!</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="cv5-stats">
+    <div class="cv5-chip cv5-ok">
+      <span class="cv5-tape"></span>
+      <div class="cv5-chip-n">10</div>
+      <div class="cv5-chip-l">출석</div>
+    </div>
+    <div class="cv5-chip cv5-mid">
+      <span class="cv5-tape"></span>
+      <div class="cv5-chip-n">2</div>
+      <div class="cv5-chip-l">지각</div>
+    </div>
+    <div class="cv5-chip cv5-bad">
+      <span class="cv5-tape"></span>
+      <div class="cv5-chip-n">1</div>
+      <div class="cv5-chip-l">노쇼</div>
+    </div>
+  </div>
+
+  <div class="cv5-streak">
+    <span class="cv5-star"></span>
+    <span class="cv5-fire">🔥</span>
+    <b><u>5</u>회 연속 출석 중</b>
+  </div>
+</div>
+    </div>
+  </section>
+    <p class="lab-foot">미리보기 전용(noindex) · 확정 후 실제 카드에 적용하고 이 페이지는 제거합니다</p>
+  </div>
+</body>
+</html>
