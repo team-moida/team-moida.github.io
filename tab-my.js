@@ -5,7 +5,7 @@
 // (회칙은 게시판 탭에 있으므로 MY에는 두지 않는다.)
 // 표시용 시맨틱 버전(vMAJOR.MINOR.PATCH) — index.html 로그인 푸터와 항상 같이 맞춘다.
 // 큰 변화=MAJOR / 새 기능=MINOR / 자잘한 수정=PATCH. SW 캐시(moida-vNNN)는 별도 카운터(배포마다 +1, 화면 미표시).
-const APP_VERSION = 'v1.0.1';
+const APP_VERSION = 'v1.0.2';
 
 // 벌금 상세 — 카드는 비면 스스로 null. 둘 다 비면(내 벌금 0건) "없어요" 안내.
 // 구독은 이 화면(벌금 상세)이 떠 있을 때만 살아있음(컴포넌트 분리). 관리자 모드는 카드가 전체관리 목록을 보여주므로 빈 안내 제외.
@@ -123,7 +123,8 @@ const TabMy = ({
                     <p className="font-black text-base text-slate-800 truncate">{memberName} <span className="text-slate-400 text-sm">님</span></p>
                     <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
                         <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500">{role}</span>
-                        {level && <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500">Lv.{level}</span>}
+                        {/* 레벨(등급)은 운영진만 — 회원 본인에겐 숨김(관리자 모드일 때만 표시) */}
+                        {level && isAdminMode && <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500">Lv.{level}</span>}
                         {ms && (ms.active
                             ? <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600">{ms.type}납 · ~{ms.endDateFormatted}</span>
                             : <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-500">{ms.type}납 만료</span>)}
