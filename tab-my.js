@@ -1,8 +1,9 @@
 // ─── MY 탭 (회원 마이페이지) ──────────────────────────────────────────────────
-// 프로필 · 설정(알림/다크모드) · 계정(로그아웃/버전) · (개발자)보기모드를 한 화면에 모음.
+// 메뉴(항목 목록) → 누르면 상세 화면으로 진입(회비/벌금/출석). 게시판→회칙과 같은 내부 뷰 전환.
+// 설정/계정/보기모드는 그 자리에서 토글·표시(이동 없음).
 // 모든 동작은 기존 상태/핸들러를 '전달받아 호출'만 한다 — 새 로직·상태 정의 없음.
 // (회칙은 게시판 탭에 있으므로 MY에는 두지 않는다.)
-const APP_VERSION = 'v285';   // SW 캐시(moida-vNNN)와 맞춤
+const APP_VERSION = 'v286';   // SW 캐시(moida-vNNN)와 맞춤
 
 const TabMy = ({
     memberInfo, memberName, isAdminMode, onOpenProfile,
@@ -21,11 +22,14 @@ const TabMy = ({
     const previewAsMember = isDeveloper && viewMode === 'member';
     const duesExempt = !!(memberInfo && STAFF_ROLES.includes(memberInfo.role)) && !previewAsMember;
     const isDevMode = isDeveloper && viewMode === 'dev';   // 개발 전용(DevDuesToggle) 노출
-    // [내 기록] 섹션 표시 조건 — 이미 받는 attendHistory에서 파생(새 구독 없음). 빈 헤더 방지.
+    // [내 출석] 상세 표시 조건 — 이미 받는 attendHistory에서 파생(새 구독 없음). 빈 화면 안내 분기용.
     const _myId = memberInfo?.id;
     const hasAttendance = !!_myId && (attendHistory || []).some(h => (h.records || []).some(r => r.memberId === _myId && r.status && r.status !== '대기'));
 
-    // 알림 권한(보정 3) — 앱에서 권한 회수 불가. 끄려면 기기 설정으로 안내.
+    // 메뉴 ↔ 상세 내부 뷰 전환(null=메뉴, 'dues'|'penalty'|'attend'=상세)
+    const [myView, setMyView] = useState(null);
+
+    // 알림 권한(보정 3 — 권한 3분기, 가짜 토글 금지). 앱에서 권한 회수 불가 → 끄려면 기기 설정 안내.
     const [reqBusy, setReqBusy] = useState(false);
     const askNotif = async () => {
         if (reqBusy) return;
@@ -34,6 +38,53 @@ const TabMy = ({
         setReqBusy(false);
     };
     const perm = notifPermission;
+
+    // ─── 상세 화면(메뉴 → 진입) ─────────────────────────────────────────────
+    if (myView) {
+        const titles = { dues: '회비', penalty: '벌금', attend: '내 출석' };
+        return (
+            <div className="animate-in space-y-3">
+                {/* 뒤로 헤더 → 메뉴로 복귀 */}
+                <div className="flex items-center gap-1 px-1">
+                    <button onClick={() => setMyView(null)} className="flex items-center -ml-1.5 p-1.5 rounded-lg text-slate-500 active:bg-slate-100 transition-colors">
+                        <Icon.ChevronLeft size={22}/>
+                    </button>
+                    <h2 className="font-black text-lg text-slate-800">{titles[myView]}</h2>
+                </div>
+
+                {myView === 'dues' && (
+                    <div className="space-y-3">
+                        <DuesAccountCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} previewAsMember={previewAsMember} />
+                        <DuesHistoryCard memberInfo={memberInfo} isExempt={duesExempt} embedded />
+                    </div>
+                )}
+
+                {myView === 'penalty' && (
+                    <div className="space-y-3">
+                        <PenaltyPayCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} managers={managers} />
+                        <PenaltyHistoryCard memberInfo={memberInfo} />
+                    </div>
+                )}
+
+                {myView === 'attend' && (
+                    hasAttendance
+                        ? <MyAttendanceCard attendHistory={attendHistory} memberInfo={memberInfo} memberName={memberName} embedded />
+                        : <div className="card rounded-2xl p-10 flex flex-col items-center justify-center text-center">
+                              <p className="font-black text-sm text-slate-400">아직 출석 기록이 없어요</p>
+                          </div>
+                )}
+            </div>
+        );
+    }
+
+    // ─── 메뉴(기본) ────────────────────────────────────────────────────────
+    // 한 줄 리스트 행: 라벨(좌) + 화살표(우). 누르면 상세로 진입.
+    const MenuRow = ({ label, onClick }) => (
+        <button onClick={onClick} className="w-full flex items-center px-4 py-3.5 text-left active:bg-slate-50 transition-colors">
+            <span className="flex-1 font-black text-sm text-slate-700">{label}</span>
+            <Icon.ChevronRight size={18} className="text-slate-300 flex-shrink-0"/>
+        </button>
+    );
 
     return (
         <div className="animate-in space-y-3">
@@ -57,26 +108,15 @@ const TabMy = ({
                 <Icon.ChevronRight size={18} className="text-slate-300 flex-shrink-0"/>
             </button>
 
-            {/* 회비 — 섹션 h3 + 계좌(full) + 납부내역(embedded: 자체 제목 숨김 → 회비 h3로 단일화) */}
+            {/* 내 정보 — 회비/벌금/출석 메뉴 행(누르면 상세 진입) */}
             <div>
-                <h3 className="font-black text-base text-slate-800 px-1 mb-2">회비</h3>
-                <div className="space-y-3">
-                    <DuesAccountCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} previewAsMember={previewAsMember} />
-                    <DuesHistoryCard memberInfo={memberInfo} isExempt={duesExempt} embedded />
+                <h3 className="font-black text-base text-slate-800 px-1 mb-2">내 정보</h3>
+                <div className="card rounded-2xl divide-y divide-slate-100">
+                    <MenuRow label="회비" onClick={() => setMyView('dues')} />
+                    <MenuRow label="벌금" onClick={() => setMyView('penalty')} />
+                    <MenuRow label="내 출석" onClick={() => setMyView('attend')} />
                 </div>
             </div>
-
-            {/* 벌금 — 카드 자체 제목이 섹션 제목 역할(빈 경우 카드째 사라짐). 제목 위계(text-base/font-black/slate-800)는 회비 h3와 동일 */}
-            <PenaltyPayCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} managers={managers} />
-            <PenaltyHistoryCard memberInfo={memberInfo} />
-
-            {/* 내 기록 — 내 출석 있을 때만 섹션 표시(빈 헤더 방지) */}
-            {hasAttendance && (
-                <div>
-                    <h3 className="font-black text-base text-slate-800 px-1 mb-2">내 기록</h3>
-                    <MyAttendanceCard attendHistory={attendHistory} memberInfo={memberInfo} memberName={memberName} embedded />
-                </div>
-            )}
 
             {/* 설정 */}
             <div>
