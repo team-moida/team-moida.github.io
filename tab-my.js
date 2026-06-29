@@ -2,7 +2,7 @@
 // 프로필 · 설정(알림/다크모드) · 계정(로그아웃/버전) · (개발자)보기모드를 한 화면에 모음.
 // 모든 동작은 기존 상태/핸들러를 '전달받아 호출'만 한다 — 새 로직·상태 정의 없음.
 // (회칙은 게시판 탭에 있으므로 MY에는 두지 않는다.)
-const APP_VERSION = 'v279';   // SW 캐시(moida-vNNN)와 맞춤
+const APP_VERSION = 'v280';   // SW 캐시(moida-vNNN)와 맞춤
 
 const TabMy = ({
     memberInfo, memberName, isAdminMode, onOpenProfile,
@@ -20,6 +20,7 @@ const TabMy = ({
     // 회비/벌금 카드용 — 기존 회비 탭 호출부와 동일 계산(새 상태 아님, STAFF_ROLES는 전역)
     const previewAsMember = isDeveloper && viewMode === 'member';
     const duesExempt = !!(memberInfo && STAFF_ROLES.includes(memberInfo.role)) && !previewAsMember;
+    const isDevMode = isDeveloper && viewMode === 'dev';   // 개발 전용(DevDuesToggle) 노출
 
     // 알림 권한(보정 3) — 앱에서 권한 회수 불가. 끄려면 기기 설정으로 안내.
     const [reqBusy, setReqBusy] = useState(false);
@@ -117,6 +118,9 @@ const TabMy = ({
                     </div>
                 </div>
             )}
+
+            {/* 개발 전용 — 회비/벌금 상태 테스트(정의는 tab-home.js, 호출만) */}
+            {isDevMode && <DevDuesToggle memberInfo={memberInfo} />}
 
             {/* 계정 */}
             <div>

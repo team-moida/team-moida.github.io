@@ -880,17 +880,15 @@ function App() {
                 testMode={testMode} memberName={memberName} meetingSettings={meetingSettings}
                 mySession={mySession} teamReady={teamReady} allowFromDisplay={allowFromDisplay}
                 myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
-                handleLogout={handleLogout} toggleTheme={toggleTheme} darkMode={darkMode}
                 isAdminMode={isAdminMode}
-                isDeveloper={isDeveloper} viewMode={viewMode} onChangeViewMode={changeViewMode}
-                onLockDeveloper={lockDeveloper} onLogoHold={promptDeveloper}
+                onLogoHold={promptDeveloper} onGoMy={() => setTab('my')}
                 isMeetingOver={attend.isMeetingOver}
                 onEndMeeting={attendHandleEndMeeting}
                 isMeetingEndSaved={attend.attendHistory?.some(h => h.date === displayMeetingSettings?.date) || false}
                 unreadCount={unreadCount} onOpenAnnouncements={openAnnouncements}
                 notifications={visibleNotifs} onNotifNavigate={onNotifNavigate} onBellOpen={markAllNotifSeen}
                 isNotifDone={isNotifDone} onConfirmNotif={confirmNotif} onDismissNotif={dismissNotif} onClearDoneNotifs={clearDoneNotifs}
-                onOpenProfile={() => setIsProfileModalOpen(true)} profileImage={memberInfo?.profileImage || memberInfo?.kakaoProfileImage}
+                profileImage={memberInfo?.profileImage || memberInfo?.kakaoProfileImage}
             />
             <div className="px-4 pt-4">
                 {tab === 'home' && <div className="mb-3"><AnnounceTicker announcements={announcements} meetings={visibleMeetings} onOpen={openAnnouncements} onTabChange={navTab} /></div>}
@@ -1089,16 +1087,7 @@ function App() {
                   </MeetingSection>
                 )}
                 {/* (지금 할 일은 맨 위로 이동) */}
-                {tab === 'dues' && (
-                    <div className="animate-in space-y-3">
-                        <h2 className="font-black text-lg text-slate-800 px-1">회비 납부</h2>
-                        <DuesAccountCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} previewAsMember={isDeveloper && viewMode === 'member'} />
-                        <PenaltyPayCard mode="full" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} managers={managers} />
-                        <PenaltyHistoryCard memberInfo={memberInfo} />
-                        <DuesHistoryCard memberInfo={memberInfo} isExempt={!!(memberInfo && STAFF_ROLES.includes(memberInfo.role)) && !(isDeveloper && viewMode === 'member')} />
-                        {isDevMode && <DevDuesToggle memberInfo={memberInfo} />}
-                    </div>
-                )}
+                {/* 회비 탭 제거(단계 3) — 회비/벌금 카드·DevDuesToggle은 MY 탭으로 일원화 */}
                 {tab === 'rules' && (
                     <TabRules isAdminMode={isAdminMode} showAlert={showAlert} memberName={memberName}/>
                 )}
@@ -1139,7 +1128,6 @@ function App() {
                     {[
                         {key:'home',    label:'홈',   Comp:Icon.Home},
                         {key:'meeting', label:'모임', Comp:Icon.Calendar},
-                        {key:'dues',    label:'회비', Comp:Icon.CreditCard},
                         {key:'notice',  label:'게시판', Comp:Icon.Clipboard},
                         {key:'my',      label:'MY', Comp:Icon.User},
                         ...(isAdminMode ? [{key:'roster', label:'명단', Comp:Icon.List}] : []),

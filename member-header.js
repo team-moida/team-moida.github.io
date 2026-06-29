@@ -25,17 +25,16 @@ const fmtNotifAgo = (v) => {
 
 function MemberHeader({
     testMode, memberName, meetingSettings, mySession, teamReady, allowFromDisplay,
-    myTeamInfo, myTeamIdx, handleLogout, toggleTheme, darkMode,
+    myTeamInfo, myTeamIdx,
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
     unreadCount = 0, onOpenAnnouncements,
     notifications = [], onNotifNavigate, onBellOpen,
     isNotifDone, onConfirmNotif, onDismissNotif, onClearDoneNotifs,
-    onOpenProfile, profileImage, children,
-    isDeveloper, viewMode, onChangeViewMode, onLockDeveloper, onLogoHold,
+    profileImage, children,
+    onLogoHold, onGoMy,
     hasTopBanner = false
 }) {
     const showOverlay = isAdminMode && isMeetingOver && !isMeetingEndSaved;
-    const [menuOpen, setMenuOpen] = React.useState(false);
     const [alertOpen, setAlertOpen] = React.useState(false);
     // 로고 길게 누르면(650ms) 개발자 PIN 진입 — 평소엔 보이지 않는 은밀한 트리거
     const holdRef = React.useRef(null);
@@ -112,44 +111,10 @@ function MemberHeader({
                             </>
                         )}
                     </div>
-                    {/* 프로필 아바타(LAB형) → 보기모드(개발자) · 내 프로필 · 라이트/다크 · 로그아웃 */}
-                    <div className="relative">
-                        <button onClick={()=>setMenuOpen(o=>!o)} className="w-9 h-9 rounded-full bg-teal-500 text-white font-black text-sm flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden" title="프로필">
-                            {profileImage ? <img src={profileImage} alt="" className="w-full h-full object-cover"/> : avatarChar}
-                        </button>
-                        {menuOpen && (
-                            <>
-                                <div className="fixed inset-0 z-40" onClick={()=>setMenuOpen(false)}/>
-                                <div className="absolute right-0 top-11 z-50 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden py-1">
-                                    {isDeveloper && (
-                                        <div className="px-3 pt-1.5 pb-2 mb-1 border-b border-slate-100">
-                                            <p className="text-[10px] font-black text-slate-400 mb-1.5 px-0.5">보기 모드</p>
-                                            <div className="flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5">
-                                                {[['dev','개발'],['staff','운영'],['member','회원']].map(([v,l]) => (
-                                                    <button key={v} onClick={() => { if (v !== viewMode && onChangeViewMode) onChangeViewMode(v); }}
-                                                        className={`flex-1 px-1 py-1.5 rounded-md text-[11px] font-black leading-none transition-all ${viewMode === v ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500'}`}>{l}</button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                    <button onClick={()=>{ setMenuOpen(false); onOpenProfile && onOpenProfile(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-black text-slate-700">
-                                        <Icon.User size={16}/> 내 프로필
-                                    </button>
-                                    <button onClick={()=>{ toggleTheme && toggleTheme(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-black text-slate-700">
-                                        {darkMode ? <Icon.Sun size={16}/> : <Icon.Moon size={16}/>} {darkMode ? '라이트 모드' : '다크 모드'}
-                                    </button>
-                                    {isDeveloper && (
-                                        <button onClick={()=>{ setMenuOpen(false); onLockDeveloper && onLockDeveloper(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-black text-slate-700">
-                                            <Icon.Wrench size={16}/> 개발자 잠금
-                                        </button>
-                                    )}
-                                    <button onClick={()=>{ setMenuOpen(false); handleLogout && handleLogout(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-black text-red-500">
-                                        <Icon.LogOut size={16}/> 로그아웃
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                    </div>
+                    {/* 프로필 아바타 → MY 탭으로 이동 (드롭다운 제거, 기능은 MY로 이전) */}
+                    <button onClick={onGoMy} className="w-9 h-9 rounded-full bg-teal-500 text-white font-black text-sm flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden" title="MY">
+                        {profileImage ? <img src={profileImage} alt="" className="w-full h-full object-cover"/> : avatarChar}
+                    </button>
                 </div>
             </div>
             {children && <div className="mt-3">{children}</div>}
