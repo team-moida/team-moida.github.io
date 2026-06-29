@@ -381,7 +381,7 @@ const NextMeetingCard = ({
     memberData, showToast, showAlert, showConfirm, regDuesUnpaid, regDuesBlock, regPenaltyUnpaid, regPenaltyTotal,
     mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount, scheduleData,
     isMeetingOver, isMeetingEndSaved, onEndMeeting, onGenerateQR, onEditMeeting, onDeleteMeeting,
-    onOpenAttendModal, onInlineGPS, onInlineQR, enableQR, onOpenKiosk,
+    onOpenAttendModal, onInlineGPS, onInlineQR, enableQR, onOpenKiosk, fill,
 }) => {
     const cfg = MEETING_KIND[kind] || MEETING_KIND.self;
     // 매칭 = 라임 카드(밝은 배경) → 어두운 글자 / 정기 = 인디고 카드 → 흰 글자
@@ -448,11 +448,30 @@ const NextMeetingCard = ({
     const regWindowOpen = !regBeforeOpen && !regAfterClose;
     const regFCFS = meeting?.isFirstComeFirstServed ?? true;
 
+    // (fill) 모임 카드가 1개일 때만 — 카드를 하단탭 근처까지 세로로 채운다. 실제 위치를 측정해 minHeight 지정.
+    const fillRef = React.useRef(null);
+    const [fillH, setFillH] = React.useState(null);
+    React.useEffect(() => {
+        if (!fill) { setFillH(null); return; }
+        const calc = () => {
+            const el = fillRef.current; if (!el) return;
+            const top = el.getBoundingClientRect().top;
+            const nav = (document.querySelector('.tab-bar')?.offsetHeight) || 76;
+            const h = Math.round(window.innerHeight - top - nav - 12);
+            setFillH(h > 320 ? h : null);   // 너무 작으면(키보드 등) 자연 높이로
+        };
+        calc();
+        const tid = setTimeout(calc, 80);   // 폰트/배너 레이아웃 안정 후 보정
+        window.addEventListener('resize', calc);
+        return () => { clearTimeout(tid); window.removeEventListener('resize', calc); };
+    }, [fill, meeting?.date, kind]);
+    const fillOn = fill && !!fillH;
+
     return (
-        <div className="relative">
+        <div className="relative" ref={fillRef}>
         <button onClick={()=> onTabChange('attend', kind, meeting.id || getMeetingId(meeting))}
-            className={`w-full rounded-3xl p-5 text-left ${ink} transition-all${showInlineAttend ? '' : ' active:scale-98'}${showOverlay ? ' blur-sm' : ''}`}
-            style={{ background: cardBg, boxShadow: cardShadow }}>
+            className={`w-full rounded-3xl p-5 text-left ${ink} transition-all${showInlineAttend ? '' : ' active:scale-98'}${showOverlay ? ' blur-sm' : ''}${fillOn ? ' flex flex-col' : ''}`}
+            style={{ background: cardBg, boxShadow: cardShadow, ...(fillOn ? { minHeight: fillH + 'px' } : {}) }}>
             <div className="flex items-center justify-between gap-2 mb-2.5">
                 <div className="flex items-center gap-1.5 min-w-0">
                     <p className={`text-xs font-black uppercase tracking-widest ${ink80}`}>{cfg.label}</p>
@@ -505,6 +524,8 @@ const NextMeetingCard = ({
             {dayInfo && dayInfo.type !== 'past' && (
                 <MeetingWeather lat={meeting.locationLat} lng={meeting.locationLng} isAdminMode={isAdminMode} dark={dark} />
             )}
+            {/* (fill) 위 정보와 아래 신청/출석 영역 사이를 늘려 카드를 하단탭 근처까지 채움 */}
+            {fillOn && <div className="flex-1" aria-hidden="true" />}
             {/* 모임 신청 — 카드 안에서 바로 신청/취소 (신청 받는 모임일 때만) */}
             {showRegBlock && (
                 <div className="mt-3 pt-3 border-t" style={{borderColor: softBorder}}>
@@ -537,8 +558,8 @@ const NextMeetingCard = ({
                                 {regFCFS && kind!=='match' && <span className={`text-xs font-black ${ink70}`}>{curCount} / {meeting.maxLimit||18}명</span>}
                             </div>
                             <span role="button" onClick={(e)=>{ e.stopPropagation(); regHandlers && regHandlers.handleRegister(); }}
-                                className="btn-apply w-full flex items-center justify-center gap-1.5 py-3 rounded-2xl font-black text-sm cursor-pointer">
-                                <Icon.CheckSq size={16}/> 신청하기
+                                className={`btn-apply w-full flex items-center justify-center gap-1.5 rounded-2xl font-black cursor-pointer ${fillOn ? 'py-5 text-base' : 'py-3 text-sm'}`}>
+                                <Icon.CheckSq size={fillOn ? 18 : 16}/> 신청하기
                             </span>
                         </div>
                     )}
@@ -1740,7 +1761,7 @@ const TabHome = ({
 
         {/* 다음 모임 — 정기/매칭 종류별로 분리해 색상으로 구분 (탭하면 모임 탭으로 이동) */}
         {meetingCards.length > 0 ? meetingCards.map(c => (
-            <NextMeetingCard key={c.kind} meeting={c.meeting} kind={c.kind} isActive={c.isActive}
+            <NextMeetingCard key={c.kind} fill={meetingCards.length === 1} meeting={c.meeting} kind={c.kind} isActive={c.isActive}
                 dayInfo={c.dayInfo} darkMode={darkMode} isAdminMode={isAdminMode} onTabChange={onTabChange} members={members}
                 mySession={mySession} teamReady={teamReady} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                 allowFromDisplay={allowFromDisplay} participantCount={participantCount} scheduleData={scheduleData}
