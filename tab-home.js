@@ -1504,23 +1504,52 @@ const RecurringPreviewCard = ({ onTabChange }) => {
         );
     }
 
-    // 정기모임 설정됨 → 다음 회차 미리보기
-    const wd = _WD_KR[Number(cfg.weekday) || 0];
+    // 정기모임 설정됨 → 다음 회차를 '실제 모임 카드'처럼 표시(신청만 시간 게이트)
+    const accent = '#183FB0';
+    const _md = nextDate ? new Date(nextDate + 'T00:00:00') : null;
+    const ok = _md && !isNaN(_md.getTime());
+    const dDay = ok ? _md.getDate() : '';
+    const dMon = ok ? ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'][_md.getMonth()] : '';
+    const dDow = ok ? _WD_KR[_md.getDay()] : '';
     const loc = (ovr && ovr.location) || cfg.defaultLocation || '';
-    const [, mo, da] = (nextDate || '').split('-');
-    const dateLabel = (mo && da) ? `${Number(mo)}월 ${Number(da)}일` : '';
+    // 신청 오픈 시각 = uploadWeekday/uploadHour 기준(해당 회차 주). 서버 생성=신청오픈과 일치.
+    let openLabel = '', openPassed = false, hasOpen = false;
+    if (ok && cfg.uploadWeekday != null && cfg.uploadHour != null) {
+        const backDays = (Number(cfg.weekday) - Number(cfg.uploadWeekday) + 7) % 7;
+        const openD = new Date(_md); openD.setDate(_md.getDate() - backDays); openD.setHours(Number(cfg.uploadHour), 0, 0, 0);
+        hasOpen = true;
+        openPassed = Date.now() >= openD.getTime();
+        openLabel = `${openD.getMonth() + 1}/${openD.getDate()} ${String(Number(cfg.uploadHour)).padStart(2, '0')}:00`;
+    }
     return (
-        <button onClick={() => onTabChange('meeting-list')} className="w-full card rounded-2xl p-4 text-left active:scale-98 transition-all border border-teal-100">
-            <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0"><Icon.Refresh size={18} className="text-teal-500"/></div>
-                <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-black text-teal-600">다음 정기모임</p>
-                    <p className="font-black text-sm text-slate-800 mt-0.5 truncate">{dateLabel} {wd}요일 · {cfg.start}~{cfg.end}</p>
-                    {loc && <p className="text-[11.5px] text-slate-400 font-bold truncate mt-0.5">{loc}</p>}
-                </div>
-                <Icon.ChevronRight size={18} className="text-slate-300 flex-shrink-0"/>
+        <button onClick={() => onTabChange('meeting-list')}
+            className="w-full rounded-3xl p-5 text-left text-white active:scale-98 transition-all"
+            style={{ background: accent, boxShadow: `0 16px 34px -6px ${accent}66` }}>
+            <div className="flex items-center justify-between gap-2 mb-2.5">
+                <p className="text-xs font-black uppercase tracking-widest text-white/80">정기모임</p>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-white/25 text-white flex-shrink-0">예정</span>
             </div>
-            <p className="text-[10.5px] text-slate-400 mt-2.5 leading-relaxed">모임 날짜가 되면 자동으로 열려요. 신청은 모임 탭에서 확인하세요.</p>
+            <div className="flex items-end gap-3 mb-3">
+                <span className="text-[44px] font-black leading-none">{dDay}</span>
+                <div className="pb-1 min-w-0">
+                    <p className="text-[11px] font-black uppercase tracking-widest text-white/70">{dMon}</p>
+                    <p className="text-sm font-black text-white/90">{dDow}요일</p>
+                </div>
+            </div>
+            <div className="space-y-1">
+                <p className="text-sm font-black text-white/90 flex items-center gap-1.5"><Icon.Clock size={14} className="flex-shrink-0"/>{cfg.start} ~ {cfg.end}</p>
+                {loc && <p className="text-sm font-bold text-white/85 flex items-center gap-1.5 min-w-0"><Icon.MapPin size={14} className="flex-shrink-0"/><span className="truncate">{loc}</span></p>}
+            </div>
+            <div className="mt-4 rounded-2xl bg-white/15 px-4 py-3 text-center">
+                {openPassed ? (
+                    <p className="text-sm font-black text-white">곧 신청이 열려요</p>
+                ) : (
+                    <>
+                        <p className="text-sm font-black text-white">신청 시작 전</p>
+                        <p className="text-xs text-white/75 mt-0.5">{hasOpen ? `${openLabel} 부터 신청 가능` : '모임 날짜가 되면 자동으로 열려요'}</p>
+                    </>
+                )}
+            </div>
         </button>
     );
 };
