@@ -57,10 +57,16 @@ Firebase 초기화 (db, auth, getCol, APP_ID, STAFF_ROLES) → firebase-init.js
 (member.html) 매치탭 → tab-match.js, handlers-match.js, use-match.js
 경기 타이머 (게임 카운트다운 + 교체 알림 — 워치 TimerService 이식) → match-timer.js (MoidaTimer 단일상태·useMatchTimer·MatchTimerBar). 매치판 크게 보기(tab-match.js MatchBoardModal) 상단에 표시. WebAudio 삐 + navigator.vibrate(iOS는 소리만). 워치<->앱 연동은 미구현
 
-회칙  (member.html 회칙탭)
+회칙  (게시판 탭 안 정보카드로 진입 — 별도 하단탭 없음)
 
-회칙 조회(전체) / 작성·수정(관리자) → tab-rules.js
-Firestore: settings/club_rules { content, updatedAt, updatedBy }
+회칙 조회(전체) / 작성·수정(관리자) → tab-rules.js. 진입=tab-notice.js(게시판 카드 '정보' 항목 → TabRules 호출, 뒤로='게시판').
+제목 "O.T.P FC 회칙" + 시행/개정일자(관리자가 편집에서 직접 지정).
+Firestore: settings/club_rules { content, updatedAt, updatedBy, effectiveDate, revisedDate }
+
+MY  (회원 마이페이지 — 하단탭 [홈·모임·게시판·MY], 회비탭 흡수)
+
+프로필·회비·벌금·내출석·설정(알림/다크모드)·계정(로그아웃/버전)·(개발자)보기모드 → tab-my.js.
+회비/벌금/출석 카드 정의는 tab-home.js, MY에서 호출만(embedded). 헤더 아바타=MY 바로가기. (자세히 메모리 project-my-tab)
 
 홈 / 로그인 / 알림  (member.html)
 
