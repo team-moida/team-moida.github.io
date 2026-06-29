@@ -103,6 +103,7 @@ QR 코드 생성 → handlers-attend-qr.js
 팀 생성 알고리즘 → team-balance.js(team-maker.html 추정) + handlers-team.js(member.html 호출)
 매치 스케줄 알고리즘 → match/match-generator.js + handlers-match.js
 출석 기능 → member.html 계열(tab-attend.js / handlers-attend.js)과 attendance.html 계열(tab-attend-*.js)은 별개
+회비/벌금/출석 카드(DuesAccountCard·PenaltyPayCard·MyAttendanceCard·DuesHistoryCard·PenaltyHistoryCard)는 tab-home.js에 정의되고 home·my 양쪽에서 렌더된다. 수정 시 두 화면 모두 확인.
 아이콘 정의 → member-icons.js / roster-utils.js / team-utils.js / match/match-utils.js 에 흩어짐
 ※ JSX 주의: member-icons.js는 일반 JS로 로드되어 React.createElement 사용이 "정상"이다. JSX로 바꾸지 말 것 (바꾸면 깨짐).
 

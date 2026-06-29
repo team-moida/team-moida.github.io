@@ -1537,9 +1537,7 @@ const TabHome = ({
             </button>
         )}
 
-        {/* 내 출석 현황 (history 집계 · 기록 있으면 표시) */}
-        <MyAttendanceCard attendHistory={attendHistory} memberInfo={memberInfo} memberName={memberName} />
-
+        {/* 내 출석 현황 카드는 MY 탭으로 이동(정의는 위 MyAttendanceCard, 호출은 tab-my.js) */}
 
         {/* iOS PWA 설치 안내 */}
         {/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone && (
