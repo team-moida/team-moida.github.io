@@ -152,7 +152,7 @@ function makeAttendHandlers(ctx) {
         catch(e) { showAlert('오류', '설정 저장 실패'); }
     };
 
-    const attendHandleCheckIn = async (participant) => {
+    const attendHandleCheckIn = async (participant, opts = {}) => {
         if (participant.date !== meetingSettings?.date) return showAlert('오류', '날짜 불일치\n새로고침 후 다시 시도해주세요.');
         const now = new Date();
         const [sy, sm, sd] = participant.date.split('-');
@@ -168,7 +168,7 @@ function makeAttendHandlers(ctx) {
         const timeStr = now.toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false});
         try {
             await getSessionCol().doc(participant.id).update({checkedIn: true, checkInTime: timeStr, status: finalStatus});
-            setAttendModal({type: 'checkin', data: {...participant, checkedIn: true, checkInTime: timeStr, status: finalStatus}});
+            if (!opts.silent) setAttendModal({type: 'checkin', data: {...participant, checkedIn: true, checkInTime: timeStr, status: finalStatus}});
         } catch(e) { showAlert('오류', '출석 실패'); }
     };
 

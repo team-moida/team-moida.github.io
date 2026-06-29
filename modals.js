@@ -833,20 +833,8 @@ const AppModals = ({
                                     </div>
                                 </div>
                             )}
-                            {attendModal.confirmCancel ? (
-                                <div>
-                                    <p className="text-center text-sm font-black text-slate-600 mb-3">출석을 취소할까요?</p>
-                                    <div className="flex gap-2">
-                                        <button onClick={()=>setAttendModal({...attendModal, confirmCancel:false})} className="flex-1 py-3.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-base active:scale-95 transition-all">돌아가기</button>
-                                        <button onClick={()=>attendHandleUncheckIn(attendModal.data)} className="flex-1 py-3.5 bg-red-500 text-white rounded-2xl font-black text-base active:scale-95 transition-all">출석 취소</button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <>
-                                    <button onClick={()=>setAttendModal({type:null,data:null})} className="w-full py-3.5 bg-teal-500 text-white rounded-2xl font-black text-base shadow-sm active:scale-95 transition-all">확인</button>
-                                    <button onClick={()=>setAttendModal({...attendModal, confirmCancel:true})} className="w-full py-2.5 mt-2 text-slate-400 font-black text-xs underline active:scale-95 transition-all">잘못 눌렀나요? 출석 취소</button>
-                                </>
-                            )}
+                            <button onClick={()=>setAttendModal({type:null,data:null})} className="w-full py-3.5 bg-teal-500 text-white rounded-2xl font-black text-base shadow-sm active:scale-95 transition-all">확인</button>
+                            <button onClick={()=>attendHandleUncheckIn(attendModal.data)} className="w-full py-2.5 mt-2 text-slate-400 font-black text-xs underline active:scale-95 transition-all">출석 취소</button>
                           </div>
                         : <div>
                             <button onClick={()=>attendHandleCheckIn(attendModal.data)} className="w-full py-4 bg-teal-500 text-white rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-all">출석 체크</button>

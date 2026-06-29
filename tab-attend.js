@@ -35,12 +35,11 @@ const KioskModal = ({
     attendHandleCheckIn, attendHandleUncheckIn, setAttendModal,
 }) => {
     const [confirmTarget, setConfirmTarget] = React.useState(null);
-    const [cancelStep, setCancelStep] = React.useState(false);   // 출석한 회원: '출석 취소'를 2단계로(실수 방지)
     if (!isKioskOpen) return null;
 
-    const closePopup = () => { setConfirmTarget(null); setCancelStep(false); };
+    const closePopup = () => setConfirmTarget(null);
     const handleConfirm = () => {
-        attendHandleCheckIn(confirmTarget);
+        attendHandleCheckIn(confirmTarget, {silent:true});   // 키오스크는 자체 팝업으로 끝 — '출석 완료' 모달 중복 방지
         closePopup();
     };
     const teamBadgeClass = confirmTarget?.teamIdx != null ? getTeamBadge(confirmTarget.teamIdx) : 'bg-teal-500';
@@ -185,28 +184,14 @@ const KioskModal = ({
                                 <p style={{fontSize:'0.95rem',fontWeight:900,color:txtSoft,marginBottom:'24px'}}>출석 완료{confirmTarget.checkInTime?` · ${confirmTarget.checkInTime}`:''}</p>
                             )}
                             {isIn ? (
-                                cancelStep ? (
-                                    <div>
-                                        <p style={{fontSize:'0.9rem',fontWeight:900,color:txtSoft,marginBottom:'12px'}}>출석을 취소할까요?</p>
-                                        <div style={{display:'flex',gap:'10px'}}>
-                                            <button onClick={() => setCancelStep(false)}
-                                                style={{flex:1,height:'56px',borderRadius:'16px',background:subBg,color:txt,fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
-                                                className="active:scale-95 transition-all">돌아가기</button>
-                                            <button onClick={() => { attendHandleUncheckIn && attendHandleUncheckIn(confirmTarget); closePopup(); }}
-                                                style={{flex:1,height:'56px',borderRadius:'16px',background:okBg,color:okFg,fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
-                                                className="active:scale-95 transition-all">출석 취소</button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <button onClick={closePopup}
-                                            style={{width:'100%',height:'56px',borderRadius:'16px',background:okBg,color:okFg,fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
-                                            className="active:scale-95 transition-all">확인</button>
-                                        <button onClick={() => setCancelStep(true)}
-                                            style={{marginTop:'14px',background:'none',border:'none',cursor:'pointer',color:txtSoft,fontWeight:800,fontSize:'0.8rem',textDecoration:'underline',width:'100%'}}
-                                            className="active:scale-95 transition-all">잘못 눌렀나요? 출석 취소</button>
-                                    </div>
-                                )
+                                <div>
+                                    <button onClick={closePopup}
+                                        style={{width:'100%',height:'56px',borderRadius:'16px',background:okBg,color:okFg,fontWeight:900,fontSize:'1rem',border:'none',cursor:'pointer'}}
+                                        className="active:scale-95 transition-all">확인</button>
+                                    <button onClick={() => { attendHandleUncheckIn && attendHandleUncheckIn(confirmTarget); closePopup(); }}
+                                        style={{marginTop:'14px',background:'none',border:'none',cursor:'pointer',color:txtSoft,fontWeight:800,fontSize:'0.8rem',textDecoration:'underline',width:'100%'}}
+                                        className="active:scale-95 transition-all">출석 취소</button>
+                                </div>
                             ) : (
                                 <div style={{display:'flex',gap:'10px'}}>
                                     <button onClick={closePopup}
