@@ -107,6 +107,37 @@ const Header = () => (
     </div>
 );
 
+// ── 슬롯머신 숫자: 0~9 릴을 여러 바퀴 빠르게 돌다가 ease-out으로 서서히 최종 숫자에 멈춤 ──
+const SLOT_EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
+const SlotDigit = ({ d, delay, duration }) => {
+    const LOOPS = 5;                       // 멈추기 전 도는 바퀴 수(빠른 회전 느낌)
+    const cells = [];
+    for (let l = 0; l < LOOPS; l++) for (let n = 0; n < 10; n++) cells.push(n);
+    for (let n = 0; n <= d; n++) cells.push(n);   // 마지막에 목표 숫자에서 멈춤
+    const finalIndex = LOOPS * 10 + d;
+    const [y, setY] = useState(0);
+    useEffect(() => {
+        let r1, r2;
+        r1 = requestAnimationFrame(() => { r2 = requestAnimationFrame(() => setY(finalIndex)); });
+        return () => { cancelAnimationFrame(r1); cancelAnimationFrame(r2); };
+    }, []);
+    return (
+        <span style={{ display:'inline-block', height:'1em', lineHeight:'1em', overflow:'hidden', verticalAlign:'bottom' }}>
+            <span style={{ display:'flex', flexDirection:'column', transform:`translateY(-${y}em)`, transition:`transform ${duration}ms ${SLOT_EASE} ${delay}ms` }}>
+                {cells.map((n, i) => <span key={i} style={{ height:'1em', textAlign:'center' }}>{n}</span>)}
+            </span>
+        </span>
+    );
+};
+const SlotNumber = ({ value, baseDelay = 0, baseDuration = 1100 }) => {
+    const digits = String(Math.max(0, Math.round(value || 0))).split('');
+    return (
+        <span style={{ fontVariantNumeric:'tabular-nums', display:'inline-flex' }}>
+            {digits.map((ch, i) => <SlotDigit key={i} d={parseInt(ch, 10)} delay={baseDelay + i * 90} duration={baseDuration + i * 160} />)}
+        </span>
+    );
+};
+
 // ── 새안 1: 가운데 대형 도넛 ──
 const CardCentered = ({ attendHistory, memberInfo, onTabChange }) => {
     const t = useCountUp(1100);
@@ -134,9 +165,9 @@ const CardCentered = ({ attendHistory, memberInfo, onTabChange }) => {
                 </div>
             </div>
             <div className="mt-5 flex items-center justify-around">
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background:'#059669' }}/><span className="text-xs font-black text-slate-500">출석</span><span className="text-sm font-black text-slate-800 tabular-nums">{dGo}</span></div>
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background:'#F59E0B' }}/><span className="text-xs font-black text-slate-500">지각</span><span className="text-sm font-black text-slate-800 tabular-nums">{dLate}</span></div>
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background:'#EF4444' }}/><span className="text-xs font-black text-slate-500">노쇼</span><span className="text-sm font-black text-slate-800 tabular-nums">{dNo}</span></div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background:'#059669' }}/><span className="text-xs font-black text-slate-500">출석</span><span className="text-sm font-black text-slate-800"><SlotNumber value={a.go} baseDelay={0}/></span></div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background:'#F59E0B' }}/><span className="text-xs font-black text-slate-500">지각</span><span className="text-sm font-black text-slate-800"><SlotNumber value={a.late} baseDelay={140}/></span></div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background:'#EF4444' }}/><span className="text-xs font-black text-slate-500">노쇼</span><span className="text-sm font-black text-slate-800"><SlotNumber value={a.no} baseDelay={280}/></span></div>
             </div>
         </button>
     );
@@ -171,9 +202,9 @@ const CardSide = ({ attendHistory, memberInfo, onTabChange }) => {
                     </div>
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col gap-2.5">
-                    <Row c="#059669" label="출석" val={dGo}/>
-                    <Row c="#F59E0B" label="지각" val={dLate}/>
-                    <Row c="#EF4444" label="노쇼" val={dNo}/>
+                    <Row c="#059669" label="출석" val={<SlotNumber value={a.go} baseDelay={0}/>}/>
+                    <Row c="#F59E0B" label="지각" val={<SlotNumber value={a.late} baseDelay={140}/>}/>
+                    <Row c="#EF4444" label="노쇼" val={<SlotNumber value={a.no} baseDelay={280}/>}/>
                 </div>
             </div>
             {a.streak >= 2 && (
