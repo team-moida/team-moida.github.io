@@ -3,21 +3,24 @@
 > 다른 PC/새 세션에서 이어갈 때 이 파일부터 읽으세요.
 > 자세한 작업 규칙·금지사항은 `CLAUDE.md`에 있습니다(꼭 같이 읽기).
 
-**마지막 갱신:** 2026-06-27 · **SW 캐시:** `moida-v271` · **마지막 커밋:** `8d895c2`
+**마지막 갱신:** 2026-06-30 · **SW 캐시:** `moida-v301` · **마지막 커밋:** `b07a446`
 **라이브:** team-moida/team-moida.github.io · **Firebase:** moida-otpfc
 **최종 제품:** `member.html` 통합앱 (회원·운영진·개발자). ※ 옛 독립 관리자 HTML(attendance/roster/team-maker/match/index)은 화제 금지.
 
 ---
 
-## 가장 최근 세션에 한 일 (v257 → v271, 전부 배포됨)
-- 홈 **매칭 모임 카드 = 라임색**(어두운 글자). 날씨·수정버튼·남은시간 배지도 대비 보정. (tab-home.js `NextMeetingCard`, `dark = kind==='match'`)
-- **개근왕** 산정 정교화 + **명단탭 [통계] 서브탭**: [회원별](랭킹) / [모임별](월별 묶음·월별 개근왕, 모임 펼치면 출석명단). 회비 대상자 기준. (tab-roster.js `RosterStatsView`)
-- **운영진도 선착순 신청 가능**(그 모임 담당자=managerId는 제외, 자동등록됨). (tab-attend.js `showRegister`)
-- **홈 모임카드 안에서 바로 신청/취소** + 신청·취소 시 **확인 팝업**. (tab-home.js 카드별 registrations 구독 + `makeRegistrationHandlers(meeting)`, handlers-registration.js의 register/cancel을 `showConfirm`으로 감쌈)
-- **공지 권한**: 새 공지에 `authorId` 저장. 개발자=전부 / 그 외=본인 글만 수정·삭제. 전체삭제=개발자만. (member.html `canManageAnnouncement` + tab-notice.js)
-- **삭제한 모임 보관함 (soft-delete)** ← 아래 "핵심 구조" 참고
-- **팀편성**: 확정 후 드래그/교체로 한 명이라도 옮기면 "확정됨→확정하기"로 해제. (handlers-team.js)
-- **앱 아이콘 분리**: `app-icon.png`(모이다)=런처/홈추가, `icon.png`(OTP 엠블럼)=인앱. 섞지 말 것.
+## 가장 최근 세션에 한 일 (v294 → v301, 전부 배포됨)
+- **담당자 자동 1번 등록 = 체크박스로** (모임 생성 폼 + 정기모임 설정, 기본 ON). 정기모임 **서버 자동생성(functions)에도 담당자 자동등록 추가**(이전엔 빠져서 매니저에게 신청버튼이 안 뜨던 버그 해결). 신청버튼 가시성을 "담당자 제외"가 아니라 **등록상태 기반**으로 변경. → tab-home.js·tab-attend.js·tab-meetings.js·handlers-meetings.js·functions/index.js. ★**functions는 `firebase deploy --only functions`로 배포 완료**(git push로는 서버 반영 안 됨).
+- **본인 프로필 등급(레벨) 숨김** — MY 탭 프로필 카드에서 운영진 본인도 Lv. 미표시(레벨은 *다른* 회원 평가용). tab-my.js. (명단/팀편성 등 다른 곳은 그대로)
+- **'내 활동' 카드 리디자인** (tab-home.js `MyActivitySummaryCard` + 헬퍼 `MyActivityBody`/`useActCountUp`/`actRateColor`/`ActSlotNumber`): 출석/지각/노쇼 비율 **세그먼트 도넛**(초록·노랑·빨강), 가운데 출석률%(값따라 빨강→초록 색변화 카운트업), 출석/지각/노쇼 숫자 **슬롯머신**, 진입 애니메이션. **홈(예정모임 없을 때) + MY 탭 메인** 양쪽 표시(데이터 준비 후 본문 마운트로 애니 재생).
+- **홈 모임 카드 fill** (tab-home.js `NextMeetingCard`, prop `fill`): 모임 카드가 **1개일 때만** 하단탭 근처까지 세로로 채움(`.tab-bar` 높이·카드 위치 측정 → minHeight). 내부도 상태별 큰 히어로 — 신청기간=영역 꽉 채우는 큰 신청버튼(flex-1) / 신청완료=큰 체크(120) / 마감후 팀공개=팀색 블록(132)+번호(66). 신청/출석 영역을 flex-1로 늘려 빈 공간 제거. **2개(정기+매칭)·기타 상태는 기존 유지.**
+
+> 그 이전 세션: MY 탭 신설(tab-my.js), 회칙→게시판 통합, 시맨틱버전 v1.0.x, 회비 '가입 월'(duesStartMonth)·명단 '빠른 년생'(isFastYear). / 그 전: 매칭카드 라임색, 개근왕 통계, 모임 보관함(soft-delete, 아래 핵심구조).
+
+## 진행 중 / 다음에 할 일 (사무실에서 이어가기)
+- **홈 모임 카드 fill 미세 조정**(작업 중): 칸별 크기 다듬기 — 신청버튼 **최대 높이 제한** 여부, **날짜 숫자 크기**, 간격, 팀/체크 그래픽 크기 등. 사용자가 실제 화면 보고 피드백 → 조정.
+- **lab 페이지 정리**: `lab-meeting.html`(홈 모임카드 상태별 히어로 미리보기)이 아직 저장소에 있음 → **디자인 확정되면 삭제**(noindex 미리보기 전용). lab-activity.html은 이미 제거됨.
+- fill 적용 후 **상태별 깨짐 점검**: 먼 예정(신청버튼 위주) / 당일·진행중(GPS·QR 출석) / 매칭(라임 카드) / 관리자(수정·삭제) 등 NextMeetingCard 상태가 많음.
 
 ## 핵심 구조 — 삭제한 모임 보관함 (꼭 이해)
 - 모임 삭제 = 영구삭제 아님 → **soft-delete** (`meetings.deleted = true`). 신청·명단(weekly_session)은 복원 위해 **유지**, 출석기록(history)은 `trashed:true`(통계 제외).
@@ -34,7 +37,7 @@
 
 ## 작업 규칙 (요약)
 - 코드 수정 → `sw.js` `CACHE_NAME` +1 → commit/push (CLAUDE.md·HANDOFF.md 같은 비런타임 문서는 SW 안 올려도 됨).
-- Babel 검증: `cd /d/tmp/babel-test && node -e "..."`(@babel/standalone). member.html 인라인은 regex로 추출해 검증.
+- Babel 검증: 세션 스크래치패드에 `@babel/standalone` 설치 후 `Babel.transform(code,{presets:['react']})`. .js는 파일째, member.html/lab 인라인은 `<script type="text/babel">` regex로 추출해 검증.
 - 파일 지도(CLAUDE.md) 기준으로 **해당 파일만** 읽기. JSX는 text/babel (단 member-icons.js만 React.createElement).
 - STAFF_ROLES = ['회장','매니저','총무','부총무'].
 
