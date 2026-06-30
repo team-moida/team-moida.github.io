@@ -56,6 +56,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
     const [wizStep, setWizStep] = useState(1);
     const [wizLoading, setWizLoading] = useState(false);   // 등록 중 센스 로딩
     const [loadIdx, setLoadIdx] = useState(0);
+    const [wizAnim, setWizAnim] = useState('');            // 단계 전환 애니메이션 클래스(슬라이드)
     const WIZ_STEPS = [
         { t:'어떤 모임인가요?', s:'자체전인지 매칭인지 골라요.' },
         { t:'언제 모이나요?', s:'날짜와 시작·종료 시간을 정해요.' },
@@ -65,6 +66,18 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
         { t:'거의 다 됐어요!', s:'담당자·알림 등 마지막 옵션이에요.' },
     ];
     const WIZ_LOAD = ['구장에 잔디를 까는 중…','골대를 단단히 고정하는 중…','조끼를 색깔별로 개는 중…','공에 바람을 넣는 중…','출석부를 펼치는 중…','호루라기를 부는 중…'];
+    // 단계 전환: 현재 단계를 슬라이드 아웃 → 단계 교체 → 새 단계 슬라이드 인 (다음=오른쪽에서 / 이전=왼쪽에서)
+    const wizGo = (dir) => {
+        if (wizAnim) return;                                       // 전환 중 중복 입력 방지
+        const target = Math.min(WIZ_STEPS.length, Math.max(1, wizStep + dir));
+        if (target === wizStep) return;
+        setWizAnim(dir > 0 ? 'wiz-out-fwd' : 'wiz-out-back');
+        setTimeout(() => {
+            setWizStep(target);
+            setWizAnim(dir > 0 ? 'wiz-in-fwd' : 'wiz-in-back');
+            setTimeout(() => setWizAnim(''), 340);
+        }, 190);
+    };
 
     // ── 정기 모임 설정 ──
     const DOW = ['일','월','화','수','목','금','토'];
@@ -83,7 +96,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
     const [isOvrSaving, setIsOvrSaving] = useState(false);
     // 뒤로가기로 닫기 (안드로이드) — 모임 수정/추가 전체화면 · 정기설정 · 날짜별지정 (지도 선택은 자체 처리)
     window.useMoidaBack && window.useMoidaBack(isModalOpen, () => {
-        if (!editingId && wizStep > 1) setWizStep(s => Math.max(1, s - 1));   // 마법사: 이전 단계로
+        if (!editingId && wizStep > 1) wizGo(-1);   // 마법사: 이전 단계로(슬라이드)
         else setIsModalOpen(false);
     });
     window.useMoidaBack && window.useMoidaBack(isRecModalOpen, () => setIsRecModalOpen(false));
@@ -418,7 +431,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                     {WIZ_STEPS.map((_, i) => <div key={i} className={`flex-1 h-1.5 rounded-full transition-all ${i < wizStep ? 'bg-teal-500' : 'bg-slate-200'}`}/>)}
                                 </div>
                             )}
-                            <div className={isWiz ? 'flex-1 flex flex-col justify-center space-y-4 py-2' : 'space-y-3'}>
+                            <div className={isWiz ? `flex-1 flex flex-col justify-center space-y-4 py-2 ${wizAnim}` : 'space-y-3'}>
                             {isWiz && (
                                 <div>
                                     <p className="text-[11px] font-black text-teal-600 tracking-wide">STEP {wizStep} / {WIZ_STEPS.length}</p>
@@ -697,11 +710,11 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                             {isWiz ? (
                                 <div className="flex gap-2">
                                     {wizStep > 1 && (
-                                        <button onClick={() => setWizStep(s => Math.max(1, s - 1))}
+                                        <button onClick={() => wizGo(-1)}
                                             className="px-5 py-3 rounded-2xl bg-slate-100 text-slate-500 font-black text-sm active:scale-95 transition-all">이전</button>
                                     )}
                                     {wizStep < WIZ_STEPS.length ? (
-                                        <button onClick={() => setWizStep(s => Math.min(WIZ_STEPS.length, s + 1))}
+                                        <button onClick={() => wizGo(1)}
                                             className="flex-1 py-3 rounded-2xl bg-teal-500 text-white font-black text-sm active:scale-95 transition-all">다음</button>
                                     ) : (
                                         <button onClick={wizSubmit} disabled={wizLoading}

@@ -59,6 +59,16 @@ input:focus { outline: none; }
 .wiz-lg select,
 .wiz-lg .wiz-box{ padding-top:.95rem!important; padding-bottom:.95rem!important; font-size:1rem!important; border-radius:1rem!important; }
 .wiz-lg .wiz-box span{ font-size:1rem!important; }
+/* 단계 전환(C 슬라이드): 다음=오른쪽에서 들어옴 / 이전=왼쪽에서 들어옴 (토스 느낌) */
+@keyframes wizSlFwdOut{ to{opacity:0;transform:translateX(-30px)} }
+@keyframes wizSlFwdIn{ from{opacity:0;transform:translateX(30px)} }
+@keyframes wizSlBackOut{ to{opacity:0;transform:translateX(30px)} }
+@keyframes wizSlBackIn{ from{opacity:0;transform:translateX(-30px)} }
+.wiz-out-fwd{ animation:wizSlFwdOut .2s cubic-bezier(.4,0,1,1) forwards; }
+.wiz-out-back{ animation:wizSlBackOut .2s cubic-bezier(.4,0,1,1) forwards; }
+.wiz-in-fwd{ animation:wizSlFwdIn .34s cubic-bezier(.22,1,.36,1); }
+.wiz-in-back{ animation:wizSlBackIn .34s cubic-bezier(.22,1,.36,1); }
+@media (prefers-reduced-motion: reduce){ .wiz-out-fwd,.wiz-out-back,.wiz-in-fwd,.wiz-in-back{ animation:none!important } }
 /* 인원 스텝퍼의 큰 숫자 입력 — 기본 스피너(화살표) 숨김 */
 .moida-num-bare{ -moz-appearance:textfield; appearance:textfield; }
 .moida-num-bare::-webkit-inner-spin-button, .moida-num-bare::-webkit-outer-spin-button{ -webkit-appearance:none; margin:0; }
