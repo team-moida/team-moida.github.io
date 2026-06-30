@@ -65,6 +65,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
         { t:'신청을 받을까요?', s:'선착순·신청 기간을 정해요.' },
         { t:'거의 다 됐어요!', s:'담당자·알림 등 마지막 옵션이에요.' },
     ];
+    const WIZ_TABS = ['종류','일시','장소','정원','신청','담당'];   // 수정 모드 단계 점프용 짧은 라벨
     const WIZ_LOAD = ['구장에 잔디를 까는 중…','골대를 단단히 고정하는 중…','조끼를 색깔별로 개는 중…','공에 바람을 넣는 중…','출석부를 펼치는 중…','호루라기를 부는 중…'];
     // 단계 전환: 현재 단계를 슬라이드 아웃 → 단계 교체 → 새 단계 슬라이드 인 (다음=오른쪽에서 / 이전=왼쪽에서)
     const wizGo = (dir) => {
@@ -451,18 +452,21 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                     </div>
                     <div className="flex-1 overflow-y-auto relative">
                         <div className={`max-w-lg mx-auto w-full px-5 ${isWiz ? 'py-5 min-h-full flex flex-col wiz-lg' : 'py-4 space-y-3'}`}>
-                            {isWiz && (
+                            {/* 신규 = 순서대로 진행(얇은 막대) / 수정 = 단계 이름 칩(눌러서 바로 이동) */}
+                            {isWiz && !editingId && (
                                 <div className="flex gap-1.5 mb-2.5 shrink-0">
-                                    {WIZ_STEPS.map((_, i) => editingId ? (
-                                        <button key={i} onClick={() => wizGoTo(i + 1)}
-                                            className={`flex-1 h-1.5 rounded-full transition-all ${i + 1 === wizStep ? 'bg-teal-600' : i < wizStep ? 'bg-teal-400' : 'bg-slate-200'}`}/>
-                                    ) : (
+                                    {WIZ_STEPS.map((_, i) => (
                                         <div key={i} className={`flex-1 h-1.5 rounded-full transition-all ${i < wizStep ? 'bg-teal-500' : 'bg-slate-200'}`}/>
                                     ))}
                                 </div>
                             )}
-                            {editingId && (
-                                <p className="text-[11px] font-bold text-slate-400 mb-1.5 -mt-1 shrink-0 text-center">진행 점을 눌러 원하는 항목으로 바로 갈 수 있어요</p>
+                            {isWiz && editingId && (
+                                <div className="flex gap-1 mb-2.5 shrink-0">
+                                    {WIZ_TABS.map((label, i) => (
+                                        <button key={i} onClick={() => wizGoTo(i + 1)}
+                                            className={`flex-1 min-w-0 truncate text-center text-[10.5px] font-black py-1.5 rounded-lg transition-all ${i + 1 === wizStep ? 'bg-teal-500 text-white shadow-sm' : 'bg-slate-100 text-slate-400'}`}>{label}</button>
+                                    ))}
+                                </div>
                             )}
                             <div className={isWiz ? `flex-1 flex flex-col justify-center space-y-4 py-2 ${wizAnim}` : 'space-y-3'}>
                             {isWiz && (
