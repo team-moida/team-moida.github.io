@@ -1,57 +1,93 @@
+// 고정 회전(라운드로빈) — 구장 크기별로 팀을 묶고 묶음 안에서만 회전. 랜덤 없음(매번 같은 표).
 function generateSchedule(config, confirmedData) {
     const teams = confirmedData.teams.map((_,i) => getTeamName(i));
     const teamSizes = {};
     confirmedData.teams.forEach((t,i) => { teamSizes[getTeamName(i)] = t.members.length; });
     const {courtCount, matchDuration, breakDuration, startTime, endTime} = config;
+    return buildRotationSchedule({ courtCount, matchDuration, breakDuration, startTime, endTime, fieldTypes: config.fieldTypes || [] }, teams, teamSizes);
+}
+
+// 공통 회전 생성기 (match-generator.js · handlers-match.js 양쪽에서 사용)
+function buildRotationSchedule(cfg, teams, teamSizes) {
+    const { courtCount, matchDuration, breakDuration, startTime, endTime, fieldTypes } = cfg;
+    // 서클 방식: 팀 목록 → 라운드들(각 라운드 = 서로 안 겹치는 [a,b] 쌍). 홀수면 한 팀 쉼(bye)
+    const circleRounds = (items) => {
+        let arr = items.slice();
+        if (arr.length % 2 === 1) arr.push(null);
+        const n = arr.length;
+        if (n < 2) return [[]];
+        const fixed = arr[0];
+        let rot = arr.slice(1);
+        const rounds = [];
+        for (let r = 0; r < n - 1; r++) {
+            const order = [fixed, ...rot];
+            const pairs = [];
+            for (let i = 0; i < n / 2; i++) { const a = order[i], b = order[n-1-i]; if (a !== null && b !== null) pairs.push([a, b]); }
+            rounds.push(pairs);
+            rot = [rot[rot.length-1], ...rot.slice(0, rot.length-1)];
+        }
+        return rounds;
+    };
+    // 한 묶음(팀들 + 구장 수) → 슬롯 시퀀스. 각 슬롯 = 구장별 경기(부족하면 null) + 쉬는 팀
+    const poolSlots = (teamIds, cc) => {
+        const rounds = circleRounds(teamIds);
+        const slots = [];
+        rounds.forEach(pairs => {
+            if (pairs.length === 0) { slots.push({ courts: Array(cc).fill(null), resting: teamIds.slice() }); return; }
+            for (let c = 0; c < pairs.length; c += cc) {
+                const chunk = pairs.slice(c, c + cc);
+                const playing = new Set(); chunk.forEach(([a, b]) => { playing.add(a); playing.add(b); });
+                const courts = []; for (let k = 0; k < cc; k++) courts.push(chunk[k] || null);
+                slots.push({ courts, resting: teamIds.filter(t => !playing.has(t)) });
+            }
+        });
+        return slots.length ? slots : [{ courts: Array(cc).fill(null), resting: teamIds.slice() }];
+    };
+    // 구장 크기별로 묶기 — 6v6 구장엔 6인 팀, 5v5 구장엔 5인 팀. 안 나뉘면 한 묶음으로 섞어 회전
+    const caps = Array.from({ length: courtCount }, (_, i) => ((fieldTypes[i] || '6vs6') === '5vs5' ? 5 : 6));
+    const cap6 = [], cap5 = [];
+    caps.forEach((c, i) => (c >= 6 ? cap6 : cap5).push(i));
+    const bigTeams = teams.filter(t => (teamSizes[t] || 6) >= 6);
+    const smallTeams = teams.filter(t => (teamSizes[t] || 6) <= 5);
+    const pools = [];
+    if (cap5.length > 0 && smallTeams.length >= 2 && cap6.length > 0 && bigTeams.length >= 2) {
+        pools.push({ courtIdx: cap6, teamIds: bigTeams });
+        pools.push({ courtIdx: cap5, teamIds: smallTeams });
+    } else {
+        pools.push({ courtIdx: caps.map((_, i) => i), teamIds: teams.slice() });
+    }
+    pools.forEach(p => { p.seq = poolSlots(p.teamIds, p.courtIdx.length); });
+    // 시간만큼 슬롯 채우기
     let currentTime = new Date(`2024-01-01T${startTime}:00`);
     const limitTime = new Date(`2024-01-01T${endTime}:00`);
-    const teamStats = {};
-    teams.forEach(t => teamStats[t] = 0);
-    const matchupHistory = {};
-    teams.forEach(t1 => { matchupHistory[t1] = {}; teams.forEach(t2 => { if(t1!==t2) matchupHistory[t1][t2] = 0; }); });
-    const courtUsage = {}, lastOpponent = {};
-    teams.forEach(t => { courtUsage[t] = {}; for(let i=0;i<courtCount;i++) courtUsage[t][i] = 0; lastOpponent[t] = null; });
-    let sessionList = [], matchIdx = 1;
-
-    while(currentTime < limitTime) {
-        let usedInSession = new Set();
-        let sessionMatches = [];
-        const sessionCourts = Array.from({length:courtCount}, (_,i) => ({idx:i, type:config.fieldTypes[i]||'6vs6'}));
-        for(const court of sessionCourts) {
-            const isSmall = court.type === '5vs5';
-            let candidates = teams.filter(t => !usedInSession.has(t));
-            if(config.strictCourtSize && isSmall) candidates = candidates.filter(t => teamSizes[t] <= 5);
-            if(candidates.length < 2) continue;
-            candidates.sort(() => Math.random() - 0.5);
-            let bestPair = null, minScore = Infinity;
-            for(let i=0; i<candidates.length; i++) {
-                for(let j=i+1; j<candidates.length; j++) {
-                    const t1 = candidates[i], t2 = candidates[j];
-                    const isB2B = (lastOpponent[t1]===t2 || lastOpponent[t2]===t1);
-                    const score = matchupHistory[t1][t2]*10000 + (teamStats[t1]+teamStats[t2])*100 + (courtUsage[t1][court.idx]+courtUsage[t2][court.idx])*50 + (isB2B?500000:0) + Math.random();
-                    if(score < minScore) { minScore = score; bestPair = [t1, t2]; }
+    const teamStats = {}; teams.forEach(t => teamStats[t] = 0);
+    const sessionList = []; let matchIdx = 1, slotIdx = 0;
+    while (currentTime < limitTime) {
+        const sessionMatches = []; const playing = new Set();
+        pools.forEach(p => {
+            if (!p.seq.length) return;
+            const ps = p.seq[slotIdx % p.seq.length];
+            p.courtIdx.forEach((fieldIdx, k) => {
+                const pair = ps.courts[k];
+                if (pair) {
+                    sessionMatches.push({ match: [pair[0], pair[1]], fieldIdx });
+                    playing.add(pair[0]); playing.add(pair[1]);
+                    teamStats[pair[0]]++; teamStats[pair[1]]++;
                 }
-            }
-            if(bestPair) {
-                const [t1, t2] = bestPair;
-                sessionMatches.push({match:[t1, t2], fieldIdx:court.idx});
-                usedInSession.add(t1); usedInSession.add(t2);
-                matchupHistory[t1][t2]++; matchupHistory[t2][t1]++;
-                teamStats[t1]++; teamStats[t2]++;
-                courtUsage[t1][court.idx]++; courtUsage[t2][court.idx]++;
-                lastOpponent[t1] = t2; lastOpponent[t2] = t1;
-            }
-        }
-        if(sessionMatches.length > 0) {
-            const startL = currentTime.toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit', hour12:false});
-            const endC = new Date(currentTime.getTime() + matchDuration*60000);
-            const endL = endC.toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit', hour12:false});
-            sessionList.push({id:matchIdx++, time:`${startL} - ${endL}`, startTime:startL, endTime:endL, matches:sessionMatches.sort((a,b)=>a.fieldIdx-b.fieldIdx), resting:teams.filter(t=>!usedInSession.has(t))});
-            currentTime = new Date(currentTime.getTime() + (matchDuration+breakDuration)*60000);
-            if(new Date(currentTime.getTime()-breakDuration*60000) >= limitTime) break;
-        } else break;
+            });
+        });
+        if (sessionMatches.length === 0) break;
+        const startL = currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+        const endC = new Date(currentTime.getTime() + matchDuration * 60000);
+        const endL = endC.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+        sessionList.push({ id: matchIdx++, time: `${startL} - ${endL}`, startTime: startL, endTime: endL,
+            matches: sessionMatches.sort((a, b) => a.fieldIdx - b.fieldIdx),
+            resting: teams.filter(t => !playing.has(t)) });
+        currentTime = new Date(currentTime.getTime() + (matchDuration + breakDuration) * 60000);
+        if (new Date(currentTime.getTime() - breakDuration * 60000) >= limitTime) break;
+        slotIdx++;
     }
-    return {list: sessionList, stats: teamStats};
+    return { list: sessionList, stats: teamStats };
 }
 
 function SetupTab({config, setConfig, confirmedData, presets, selectedPresetId, presetToggles, onGenerate, onLoadOpen, onPresetModalOpen, onPresetSelect, onToggleSubCourt}) {
