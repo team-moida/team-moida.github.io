@@ -62,6 +62,14 @@
   .modal .mnum.wait b{ color:var(--warn); }
   .modal .msub{ font-size:12.5px; font-weight:800; color:#94a3b8; line-height:1.5; margin-top:4px; }
   .modal .mok{ margin-top:20px; width:100%; border:0; border-radius:16px; background:var(--orange); color:#fff; font-weight:900; font-size:15px; padding:14px; cursor:pointer; font-family:inherit; }
+  /* 취소 확인 팝업 */
+  .badge.ask{ background:var(--warn); box-shadow:0 12px 26px -10px rgba(245,158,11,.5); }
+  .modal .mtitle{ font-size:18px; font-weight:900; color:#0f172a; }
+  .modal .mwarn{ margin-top:14px; background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; font-size:12px; font-weight:800; line-height:1.55; padding:11px 13px; border-radius:14px; text-align:left; }
+  .modal .mrow{ display:flex; gap:8px; margin-top:20px; }
+  .modal .mrow button{ flex:1; border:0; border-radius:16px; font-weight:900; font-size:14.5px; padding:14px; cursor:pointer; font-family:inherit; }
+  .modal .mkeep{ background:#f1f5f9; color:#64748b; }
+  .modal .mcancel{ background:var(--danger); color:#fff; }
 
   .hint{ text-align:center; font-size:12px; font-weight:800; color:#94a3b8; margin:18px 4px 0; line-height:1.6; }
 
@@ -159,7 +167,20 @@ function doApply(){
   modalBg.classList.add('show');
   modal.querySelector('.mok').onclick = ()=>{ modalBg.classList.remove('show'); st='applied'; render(); };
 }
-function doCancel(){ st='apply'; render(); flash('신청이 취소되었어요'); }
+function doCancel(){
+  // 취소 확인 팝업 (재신청 시 순번 밀림 안내)
+  modal.innerHTML = `
+    <div class="badge ask">!</div>
+    <div class="mtitle">신청을 취소할까요?</div>
+    <div class="mwarn">지금 취소하면 다시 신청할 때 <b>순번이 맨 뒤로 밀려요.</b> 정원이 찼다면 대기로 넘어갈 수 있어요.</div>
+    <div class="mrow">
+      <button class="mkeep">그대로 둘게요</button>
+      <button class="mcancel">신청 취소</button>
+    </div>`;
+  modalBg.classList.add('show');
+  modal.querySelector('.mkeep').onclick = ()=>{ modalBg.classList.remove('show'); };
+  modal.querySelector('.mcancel').onclick = ()=>{ modalBg.classList.remove('show'); st='apply'; render(); flash('신청이 취소되었어요'); };
+}
 
 modalBg.onclick = (e)=>{ if(e.target===modalBg){ modalBg.classList.remove('show'); st='applied'; render(); } };
 
