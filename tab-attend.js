@@ -1369,7 +1369,7 @@ const TabAttend = ({
     isAdminMode,
     isAttendPanelOpen, setIsAttendPanelOpen,
     generateAttendQRCode, attendToggleTestMode, testMode,
-    attendSubTab, setAttendSubTab,
+    attendSubTab, setAttendSubTab, rosterOnly = false,
     selectedHistoryDetail, setSelectedHistoryDetail,
     attendActiveList, attendIsPending,
     darkMode, meetingSettings, updateMeetingSettingsAdmin,
@@ -1472,6 +1472,7 @@ const TabAttend = ({
     // 모임 당일(출석 시작) + 현재 모임이면 관리자는 들어왔을 때 출석 현황(명단)을 바로 표시.
     // 활성 모임이 아니면 '출석 현황' 탭이 없으므로, 그 탭이 선택돼 있으면 명단으로 되돌린다.
     React.useEffect(() => {
+        if (rosterOnly) return;                                 // 명단 전용 모드 — 서브탭 자동전환 안 함
         const di = computeMeetingDay(meetingSettings?.date, meetingSettings?.start);
         if (!isViewActive) {
             setAttendSubTab('roster');                          // 예정 모임 = 명단 작성
@@ -1494,7 +1495,8 @@ const TabAttend = ({
         {/* 관리자 패널 — 항상 표시 (출석 관리 토글 제거, 서브탭으로 직접 이동) */}
         {isAdminMode ? (
             <div>
-                {/* 출석 상단 — 현황↔명단 전환 + 출석체크/QR + 모임 종료 (서브탭 단순화) */}
+                {/* 출석 상단 — 현황↔명단 전환 + 출석체크/QR + 모임 종료. 명단 전용 모드(팀 편성 안)에선 숨김 */}
+                {!rosterOnly && (
                 <div className="mb-4 space-y-2">
                     <div className="flex items-center gap-2">
                         {isViewActive ? (
@@ -1531,9 +1533,10 @@ const TabAttend = ({
                         </div>
                     )}
                 </div>
+                )}
 
                 {/* ── 명단 관리 서브탭 — 지금 보고 있는 모임의 명단 작성 ── */}
-                {attendSubTab === 'roster' && selectedMeeting && (
+                {(rosterOnly || attendSubTab === 'roster') && selectedMeeting && (
                     <div className="min-w-0">
                             <div>
                                 {/* 헤더: 모임 정보 + 모임 종료 */}
@@ -1782,7 +1785,7 @@ const TabAttend = ({
                 )}
 
                 {/* ── 출석 서브탭 ── */}
-                {attendSubTab === 'attend' && isViewActive && (
+                {!rosterOnly && attendSubTab === 'attend' && isViewActive && (
                     <div>
                         {/* 모임 정보 카드 */}
                         <div className="card rounded-2xl p-4 mb-4">
@@ -1909,7 +1912,7 @@ const TabAttend = ({
                 )}
 
                 {/* ── 기록 서브탭 ── */}
-                {attendSubTab === 'history' && !selectedHistoryDetail && (
+                {!rosterOnly && attendSubTab === 'history' && !selectedHistoryDetail && (
                     <div>
                         <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 px-1">출결 기록</p>
                         {attendHistory.length === 0
@@ -1930,7 +1933,7 @@ const TabAttend = ({
                         }
                     </div>
                 )}
-                {attendSubTab === 'history' && selectedHistoryDetail && (
+                {!rosterOnly && attendSubTab === 'history' && selectedHistoryDetail && (
                     <div>
                         <div className="flex items-center gap-3 mb-4">
                             <button onClick={()=>setSelectedHistoryDetail(null)} className="p-2 rounded-xl bg-slate-100 text-slate-600"><Icon.ArrowLeft size={18}/></button>

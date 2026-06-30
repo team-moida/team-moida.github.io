@@ -116,7 +116,9 @@ function App() {
     // 모임 상세 섹션 다중 펼침: meetingSubTab(주 펼침)에 더해 추가로 펼친 섹션들을 함께 펼친다
     const [openExtra, setOpenExtra] = useState([]);
     const [adminHub, setAdminHub] = useState(false);   // 운영 허브(편집 진입) 열림 — 운영진 전용
-    React.useEffect(() => { setOpenExtra([]); setAdminHub(false); }, [viewMeetingId]);
+    const [infoEdit, setInfoEdit] = useState(null);    // 모임 정보 설정 폼(모달) 열기 대상 — 운영진 전용
+    const [teamSubView, setTeamSubView] = useState('roster'); // 팀 편성 화면 내 [명단|팀] 토글
+    React.useEffect(() => { setOpenExtra([]); setAdminHub(false); setTeamSubView('roster'); }, [viewMeetingId]);
     const isSecOpen = (k) => meetingSubTab === k || openExtra.includes(k);
     const toggleSection = (k) => {
         if (meetingSubTab === k || openExtra.includes(k)) {
@@ -975,23 +977,40 @@ function App() {
                 {tab === 'meeting' && viewMeeting && isAdminMode && (
                     <div>
                         <MeetingDetailHeader meeting={viewMeeting}
-                            onBack={() => { if (meetingSubTab) setMeetingSubTab(''); else setViewMeetingId(null); }} />
+                            onBack={() => { if (meetingSubTab === 'team' || meetingSubTab === 'match') setMeetingSubTab(''); else setViewMeetingId(null); }} />
                     </div>
                 )}
                 {/* 운영진 전용 — 관리 카드(모임정보·팀·매치 3줄). 줄을 누르면 해당 편집 화면으로 */}
-                {tab === 'meeting' && viewMeeting && isAdminMode && !meetingSubTab && (
+                {tab === 'meeting' && viewMeeting && isAdminMode && meetingSubTab !== 'team' && meetingSubTab !== 'match' && (
                     <MeetingManageCard
                         meeting={viewMeeting} viewKind={viewKind} teamStatus={teamStatus} matchStatus={matchStatus}
-                        onEditInfo={() => { setMeetingSubTab('attend'); setOpenExtra([]); }}
-                        onTeam={() => { setMeetingSubTab('team'); setOpenExtra([]); }}
+                        onEditInfo={() => setInfoEdit(viewMeeting)}
+                        onTeam={() => { setMeetingSubTab('team'); setTeamSubView('roster'); setOpenExtra([]); }}
                         onMatch={() => { setMeetingSubTab('match'); setOpenExtra([]); }}
                         onQR={viewKind !== 'match' ? () => generateAttendQRCode(viewMeeting) : null}
                         onDelete={() => handleDeleteMeeting(viewMeeting)} />
                 )}
-                {/* 운영진 전용 — 모임 정보·출석 편집 ([수정] 진입). 회원은 간소 목록만 봄 */}
-                {tab === 'meeting' && viewMeeting && isAdminMode && meetingSubTab === 'attend' && (
+                {/* 모임 정보 설정 폼(모달) — 관리 카드 위로 뜸. 저장/닫으면 카드로 복귀 */}
+                {tab === 'meeting' && viewMeeting && isAdminMode && meetingSubTab !== 'team' && meetingSubTab !== 'match' && (
+                    <MeetingsTab embedded
+                        pendingEditMeeting={infoEdit} onPendingEditHandled={() => setInfoEdit(null)}
+                        meetings={visibleMeetings} activeMeeting={activeMeeting}
+                        handleSaveMeeting={handleSaveMeeting} handleDeleteMeeting={handleDeleteMeeting}
+                        managers={managers} showAlert={showAlert} />
+                )}
+                {/* 운영진 전용 — 팀 편성 화면 상단 [명단 | 팀] 토글 (정기 모임만) */}
+                {tab === 'meeting' && viewMeeting && isAdminMode && meetingSubTab === 'team' && viewKind !== 'match' && (
+                    <div className="flex gap-1.5 p-1 bg-slate-100 rounded-2xl mb-3 animate-in">
+                        {[['roster','명단'],['team','팀']].map(([v,l]) => (
+                            <button key={v} onClick={() => setTeamSubView(v)}
+                                className={`flex-1 py-2 rounded-xl text-sm font-black transition-all ${teamSubView===v?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>{l}</button>
+                        ))}
+                    </div>
+                )}
+                {/* 운영진 전용 — 명단(참가자 선정). 팀 편성 화면의 '명단' 탭. 회원은 간소 목록만 봄 */}
+                {tab === 'meeting' && viewMeeting && isAdminMode && meetingSubTab === 'team' && viewKind !== 'match' && teamSubView === 'roster' && (
                   <div className="animate-in">
-                    <TabAttend
+                    <TabAttend rosterOnly
                         viewMeeting={viewMeeting} isViewActive={isViewActive}
                         onEditMeeting={(m) => { setPendingEditMeeting(m); setViewMeetingId(null); }}
                         isAdminMode={isAdminMode} isAttendPanelOpen={attend.isAttendPanelOpen}
@@ -1056,8 +1075,8 @@ function App() {
                     />
                   </div>
                 )}
-                {/* 운영진 전용 — 팀 편성 ([편성/수정] 진입) */}
-                {tab === 'meeting' && viewMeeting && isAdminMode && meetingSubTab === 'team' && (
+                {/* 운영진 전용 — 팀 ([편성/수정]). 정기=명단/팀 토글의 '팀' 탭, 매칭=참여 명단 */}
+                {tab === 'meeting' && viewMeeting && isAdminMode && meetingSubTab === 'team' && !(viewKind !== 'match' && teamSubView === 'roster') && (
                   <div className="animate-in">
                     <TabTeam
                         isAdminMode={isAdminMode} isTeamPanelOpen={team.isTeamPanelOpen} setIsTeamPanelOpen={team.setIsTeamPanelOpen}
