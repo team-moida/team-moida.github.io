@@ -1,5 +1,5 @@
 // ─── 회칙 탭 ────────────────────────────────────────────────────────────────────
-const TabRules = ({ isAdminMode, showAlert, memberName }) => {
+const TabRules = ({ isAdminMode, showAlert, memberName, embedded = false }) => {
     const { useState, useEffect } = React;
     const [content, setContent] = useState('');
     const [updatedAt, setUpdatedAt] = useState('');
@@ -51,6 +51,8 @@ const TabRules = ({ isAdminMode, showAlert, memberName }) => {
         }
     };
 
+    const startEdit = () => { setEditContent(content); setEditEffectiveDate(effectiveDate || ''); setEditRevisedDate(revisedDate || ''); setIsEditing(true); };
+
     const formatDate = (iso) => {
         if (!iso) return '';
         const d = new Date(iso);
@@ -87,28 +89,42 @@ const TabRules = ({ isAdminMode, showAlert, memberName }) => {
     };
 
     return (
-        <div className="animate-in">
-            {/* 헤더(B+): "O.T.P FC 회칙" 제목 + 시행·개정일 칩 + (관리자) 편집 */}
-            <div className="flex items-start justify-between gap-3 mb-4 reveal">
-                <div className="min-w-0">
-                    <h2 className="font-black text-2xl text-slate-900 leading-tight">O.T.P FC 회칙</h2>
-                    {!isEditing && (effectiveDate || revisedDate) && (
-                        <div className="flex items-center gap-1.5 flex-wrap mt-2">
+        <div className={embedded ? '' : 'animate-in'}>
+            {/* 헤더 — 일반: 큰 제목+일자+편집 / 임베드(게시판 펼침): 제목 생략, 일자칩+편집만 */}
+            {embedded ? (
+                !isEditing && (isAdminMode || effectiveDate || revisedDate) && (
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                             {effectiveDate && <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">{formatDate(effectiveDate)} 시행</span>}
                             {revisedDate && <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">{formatDate(revisedDate)} 개정</span>}
                         </div>
+                        {isAdminMode && (
+                            <button onClick={startEdit} className="p-1.5 rounded-lg bg-slate-100 text-slate-500 shrink-0 active:scale-95 transition-all"><Icon.Edit size={14}/></button>
+                        )}
+                    </div>
+                )
+            ) : (
+                <div className="flex items-start justify-between gap-3 mb-4 reveal">
+                    <div className="min-w-0">
+                        <h2 className="font-black text-2xl text-slate-900 leading-tight">O.T.P FC 회칙</h2>
+                        {!isEditing && (effectiveDate || revisedDate) && (
+                            <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                                {effectiveDate && <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">{formatDate(effectiveDate)} 시행</span>}
+                                {revisedDate && <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">{formatDate(revisedDate)} 개정</span>}
+                            </div>
+                        )}
+                    </div>
+                    {isAdminMode && !isEditing && (
+                        <button onClick={startEdit}
+                            className="p-2 rounded-xl bg-slate-100 text-slate-500 shrink-0 active:scale-95 transition-all">
+                            <Icon.Edit size={15}/>
+                        </button>
                     )}
                 </div>
-                {isAdminMode && !isEditing && (
-                    <button onClick={()=>{setEditContent(content);setEditEffectiveDate(effectiveDate||'');setEditRevisedDate(revisedDate||'');setIsEditing(true);}}
-                        className="p-2 rounded-xl bg-slate-100 text-slate-500 shrink-0 active:scale-95 transition-all">
-                        <Icon.Edit size={15}/>
-                    </button>
-                )}
-            </div>
+            )}
 
             {isEditing ? (
-                <div className="reveal">
+                <div className={embedded ? '' : 'reveal'}>
                     <div className="mb-3">
                         <label className="block text-[11px] font-black text-slate-500 mb-1 px-1">시행일자</label>
                         <input type="date" value={editEffectiveDate} onChange={e=>setEditEffectiveDate(e.target.value)}
@@ -138,20 +154,25 @@ const TabRules = ({ isAdminMode, showAlert, memberName }) => {
                     </div>
                 </div>
             ) : content ? (
-                <div className="reveal">
-                    <div className="card rounded-2xl px-5 py-1">
-                        {renderRules(content)}
-                    </div>
+                <div className={embedded ? '' : 'reveal'}>
+                    {embedded ? renderRules(content) : <div className="card rounded-2xl px-5 py-1">{renderRules(content)}</div>}
                     {updatedBy && (
                         <p className="text-[10px] text-slate-400 mt-2 text-right">{updatedBy} 수정</p>
                     )}
                 </div>
             ) : (
-                <div className="card rounded-2xl p-8 text-center text-slate-400 reveal">
-                    <div className="flex justify-center mb-2 opacity-25"><Icon.ShieldCheck size={36}/></div>
-                    <p className="font-black text-sm">아직 회칙이 등록되지 않았습니다</p>
-                    {isAdminMode && <p className="text-xs mt-1">우측 상단 편집 버튼으로 작성하세요</p>}
-                </div>
+                embedded ? (
+                    <div className="py-4 text-center text-slate-400">
+                        <p className="font-black text-sm">아직 회칙이 등록되지 않았습니다</p>
+                        {isAdminMode && <p className="text-xs mt-1">위 편집 버튼으로 작성하세요</p>}
+                    </div>
+                ) : (
+                    <div className="card rounded-2xl p-8 text-center text-slate-400 reveal">
+                        <div className="flex justify-center mb-2 opacity-25"><Icon.ShieldCheck size={36}/></div>
+                        <p className="font-black text-sm">아직 회칙이 등록되지 않았습니다</p>
+                        {isAdminMode && <p className="text-xs mt-1">우측 상단 편집 버튼으로 작성하세요</p>}
+                    </div>
+                )
             )}
         </div>
     );
