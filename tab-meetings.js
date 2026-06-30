@@ -414,16 +414,18 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                     <div className="flex-1 overflow-y-auto relative">
                         <div className={`max-w-lg mx-auto w-full px-5 ${isWiz ? 'py-5 min-h-full flex flex-col wiz-lg' : 'py-4 space-y-3'}`}>
                             {isWiz && (
-                                <div className="mb-1 shrink-0">
-                                    <div className="flex gap-1.5 mb-2.5">
-                                        {WIZ_STEPS.map((_, i) => <div key={i} className={`flex-1 h-1.5 rounded-full transition-all ${i < wizStep ? 'bg-teal-500' : 'bg-slate-200'}`}/>)}
-                                    </div>
+                                <div className="flex gap-1.5 mb-2.5 shrink-0">
+                                    {WIZ_STEPS.map((_, i) => <div key={i} className={`flex-1 h-1.5 rounded-full transition-all ${i < wizStep ? 'bg-teal-500' : 'bg-slate-200'}`}/>)}
+                                </div>
+                            )}
+                            <div className={isWiz ? 'flex-1 flex flex-col justify-center space-y-4 py-2' : 'space-y-3'}>
+                            {isWiz && (
+                                <div>
                                     <p className="text-[11px] font-black text-teal-600 tracking-wide">STEP {wizStep} / {WIZ_STEPS.length}</p>
                                     <p className="text-2xl font-black text-slate-800 mt-0.5">{WIZ_STEPS[wizStep-1].t}</p>
                                     <p className="text-sm font-bold text-slate-400 mt-1">{WIZ_STEPS[wizStep-1].s}</p>
                                 </div>
                             )}
-                            <div className={isWiz ? 'flex-1 flex flex-col justify-center space-y-4 py-2' : 'space-y-3'}>
                             {stepShow(1) && (<div className="space-y-3">
                             {isWiz ? (
                                 <div className="grid grid-cols-2 gap-3">
