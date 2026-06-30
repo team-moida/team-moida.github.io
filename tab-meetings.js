@@ -14,7 +14,7 @@ const CapStepper = ({ value, onChange, min = 1, max = 60 }) => {
         const d = drag.current; if (!d) return;
         const dy = d.startY - e.clientY;                 // 위로 끌면 +
         if (Math.abs(dy) > 3) d.moved = true;
-        const next = clamp(d.startVal + Math.round(dy / 7));   // 7px당 1명
+        const next = clamp(d.startVal + Math.round(dy / 14));   // 14px당 1명(민감도 절반)
         if (next !== cur) onChange(next);
     };
     const onUp = (e) => {
