@@ -456,14 +456,24 @@ const NextMeetingCard = ({
         const calc = () => {
             const el = fillRef.current; if (!el) return;
             const top = el.getBoundingClientRect().top;
-            const nav = (document.querySelector('.tab-bar')?.offsetHeight) || 76;
-            const h = Math.round(window.innerHeight - top - nav - 12);
+            // 카드 아래 형제(설치 안내·알림 배너 등) 높이 합 + space-y-3 간격(12px) — 같이 화면에 들어오게
+            let below = 0;
+            for (let sib = el.nextElementSibling; sib; sib = sib.nextElementSibling) {
+                below += sib.offsetHeight + 12;
+            }
+            // 스크롤 영역(.content-pb)의 하단 패딩(탭바+세이프영역 포함)을 그대로 빼야 넘침(스크롤)이 안 생김
+            const pbEl = el.closest('.content-pb');
+            const bottom = pbEl
+                ? (parseFloat(getComputedStyle(pbEl).paddingBottom) || 0)
+                : ((document.querySelector('.tab-bar')?.offsetHeight || 76) + 12);
+            const h = Math.round(window.innerHeight - top - below - bottom);
             setFillH(h > 320 ? h : null);   // 너무 작으면(키보드 등) 자연 높이로
         };
         calc();
-        const tid = setTimeout(calc, 80);   // 폰트/배너 레이아웃 안정 후 보정
+        const tid = setTimeout(calc, 80);    // 폰트/배너 레이아웃 안정 후 보정
+        const tid2 = setTimeout(calc, 280);   // 공지 띠/이미지 등 늦은 레이아웃 한 번 더 보정
         window.addEventListener('resize', calc);
-        return () => { clearTimeout(tid); window.removeEventListener('resize', calc); };
+        return () => { clearTimeout(tid); clearTimeout(tid2); window.removeEventListener('resize', calc); };
     }, [fill, meeting?.date, kind]);
     const fillOn = fill && !!fillH;
 
