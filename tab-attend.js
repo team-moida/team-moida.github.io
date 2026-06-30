@@ -430,39 +430,24 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
                         </div>
                     )}
                     {penaltyUnpaid > 0 ? (
-                        <div className="flex justify-center pt-1">
-                            <div className="cancel-circle flex flex-col items-center justify-center text-center cursor-not-allowed">
-                                <span className="font-black text-[15px] text-slate-400">신청 불가</span>
-                                <span className="text-[11px] font-bold text-slate-300 mt-1">벌금 미납</span>
-                            </div>
-                        </div>
+                        <button disabled className="w-full py-3.5 bg-slate-200 text-slate-400 rounded-2xl font-black text-sm cursor-not-allowed">벌금 미납 — 신청 불가</button>
                     ) : duesBlock && duesUnpaid ? (
-                        <div className="flex justify-center pt-1">
-                            <div className="cancel-circle flex flex-col items-center justify-center text-center cursor-not-allowed">
-                                <span className="font-black text-[15px] text-slate-400">신청 불가</span>
-                                <span className="text-[11px] font-bold text-slate-300 mt-1">회비 미납</span>
-                            </div>
-                        </div>
+                        <button disabled className="w-full py-3.5 bg-slate-200 text-slate-400 rounded-2xl font-black text-sm cursor-not-allowed">회비 미납 — 신청 불가</button>
                     ) : (
-                        <div className="flex justify-center pt-1">
-                            <button onClick={onApplyClick}
-                                className="apply-circle flex flex-col items-center justify-center text-center text-white">
-                                <span className="font-black text-[21px]">신청하기</span>
-                                <span className="text-[11px] font-bold opacity-85 mt-1">{isPreview ? '미리보기' : '탭하면 신청'}</span>
-                            </button>
-                        </div>
+                        <button onClick={onApplyClick}
+                            className="w-full py-3.5 rounded-2xl font-black text-[15px] text-white active:scale-95 transition-transform"
+                            style={{ background:'#f97316', boxShadow:'0 10px 22px -10px rgba(249,115,22,.5)' }}>
+                            신청하기{isPreview ? ' (미리보기)' : ''}
+                        </button>
                     )}
                 </>
             )}
 
             {isOpen && (myRegistration?.status === 'confirmed' || (myRegistration?.status === 'waiting' && (isFirstComeFirstServed || isMatch))) && (
-                <div className="flex justify-center pt-1">
-                    <button onClick={() => setCancelAsk(true)}
-                        className="cancel-circle flex flex-col items-center justify-center text-center">
-                        <span className="font-black text-[18px] text-slate-500">신청 취소</span>
-                        <span className="text-[11px] font-bold text-slate-400 mt-1">탭하면 취소</span>
-                    </button>
-                </div>
+                <button onClick={() => setCancelAsk(true)}
+                    className="w-full py-2.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm active:scale-95">
+                    신청 취소
+                </button>
             )}
 
             {isAfterClose && (
