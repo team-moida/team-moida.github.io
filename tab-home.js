@@ -430,6 +430,10 @@ const NextMeetingCard = ({
     const regEnabled = !!meeting?.isRegistrationEnabled;
     const showRegBlock = regEnabled && !!_meId;
     const [myReg, setMyReg] = React.useState(null);
+    const [donePopup, setDonePopup] = React.useState(null);   // 신청 완료 팝업 {type:'confirmed'|'waiting', pos}
+    const [cancelAsk, setCancelAsk] = React.useState(false);  // 신청 취소 확인 팝업
+    const [justApplied, setJustApplied] = React.useState(false);
+    const prevRegStatus = React.useRef(null);
     React.useEffect(() => {
         if (!showRegBlock || !meeting?.date) { setMyReg(null); return; }
         const mid = (typeof getMeetingId === 'function') ? getMeetingId(meeting) : meeting.date;
@@ -440,6 +444,18 @@ const NextMeetingCard = ({
     const regHandlers = React.useMemo(() => (showRegBlock && typeof makeRegistrationHandlers === 'function')
         ? makeRegistrationHandlers({ meetingDate: meeting.date, memberData, meetingSettings: meeting, showToast, showAlert, showConfirm })
         : null, [showRegBlock, _meId, meeting?.date, meeting?.meetingType]);
+    // 신청 직후 확정/대기로 잡히면 완료 팝업(+순번) 표시
+    React.useEffect(() => {
+        const cur = myReg?.status || null;
+        if (justApplied && !prevRegStatus.current && (cur === 'confirmed' || cur === 'waiting')) {
+            setDonePopup(cur === 'waiting'
+                ? { type: 'waiting', pos: (myReg && (myReg.waitingNumber || '')) }
+                : { type: 'confirmed', pos: curCount });
+            setJustApplied(false);
+        }
+        prevRegStatus.current = cur;
+    }, [myReg && myReg.status, curCount, justApplied]);
+    const onHomeApply = (e) => { e.stopPropagation(); if (!regHandlers) return; setJustApplied(true); regHandlers.handleRegister(); };
     const _now = Date.now();
     const _regOpenMs = meeting?.registrationOpenAt ? new Date(meeting.registrationOpenAt).getTime() : null;
     const _regCloseMs = meeting?.registrationCloseAt ? new Date(meeting.registrationCloseAt).getTime() : null;
@@ -548,18 +564,18 @@ const NextMeetingCard = ({
                                     <Icon.Check size={64} className={ink}/>
                                 </div>
                                 <span className={`text-3xl font-black ${ink}`}>신청 완료</span>
-                                <span role="button" onClick={(e)=>{ e.stopPropagation(); regHandlers && regHandlers.handleCancel(); }} className={`text-sm font-black px-5 py-2.5 rounded-full ${chip} active:scale-95 cursor-pointer`}>신청 취소</span>
+                                <span role="button" onClick={(e)=>{ e.stopPropagation(); setCancelAsk(true); }} className={`text-sm font-black px-5 py-2.5 rounded-full ${chip} active:scale-95 cursor-pointer`}>신청 취소</span>
                             </div>
                         ) : (
                             <div className="flex items-center justify-between gap-2">
                                 <span className={`flex items-center gap-1.5 text-sm font-black ${ink} min-w-0`}><Icon.Check size={16} className="flex-shrink-0"/><span className="truncate">신청 완료</span></span>
-                                <span role="button" onClick={(e)=>{ e.stopPropagation(); regHandlers && regHandlers.handleCancel(); }} className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${chip} active:scale-95 cursor-pointer flex-shrink-0`}>신청 취소</span>
+                                <span role="button" onClick={(e)=>{ e.stopPropagation(); setCancelAsk(true); }} className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${chip} active:scale-95 cursor-pointer flex-shrink-0`}>신청 취소</span>
                             </div>
                         )
                     ) : myReg?.status === 'waiting' ? (
                         <div className="flex items-center justify-between gap-2">
                             <span className={`flex items-center gap-1.5 text-sm font-black ${ink} min-w-0`}><Icon.Clock size={16} className="flex-shrink-0"/><span className="truncate">대기 {myReg.waitingNumber || ''}번</span></span>
-                            <span role="button" onClick={(e)=>{ e.stopPropagation(); regHandlers && regHandlers.handleCancel(); }} className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${chip} active:scale-95 cursor-pointer flex-shrink-0`}>신청 취소</span>
+                            <span role="button" onClick={(e)=>{ e.stopPropagation(); setCancelAsk(true); }} className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${chip} active:scale-95 cursor-pointer flex-shrink-0`}>신청 취소</span>
                         </div>
                     ) : (myReg?.status === 'absent' || myReg?.status === 'noshow') ? (
                         <div className={`flex items-center gap-1.5 text-xs font-black ${ink70}`}><Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">{myReg.status === 'noshow' ? '노쇼 처리됨' : '불참 처리됨'}</span></div>
@@ -569,16 +585,31 @@ const NextMeetingCard = ({
                         <div className={`text-xs font-black ${ink70} text-center py-1`}>미납 벌금이 있어 신청할 수 없어요</div>
                     ) : (regDuesBlock && regDuesUnpaid) ? (
                         <div className={`text-xs font-black ${ink70} text-center py-1`}>회비 미납 — 신청할 수 없어요</div>
-                    ) : (
-                        <div className={fillOn ? 'w-full flex flex-col flex-1' : ''}>
-                            <div className={`flex items-center justify-between ${fillOn ? 'mb-3' : 'mb-2'}`}>
-                                <span className={`font-black ${ink80} ${fillOn ? 'text-sm' : 'text-xs'}`}>{kind==='match' ? '매칭 신청' : (regFCFS ? '선착순 신청' : '모임 신청')}</span>
-                                {regFCFS && kind!=='match' && <span className={`font-black ${ink70} ${fillOn ? 'text-base' : 'text-xs'}`}>{curCount} / {meeting.maxLimit||18}명</span>}
+                    ) : fillOn ? (
+                        <div className="w-full flex flex-col flex-1">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className={`font-black ${ink80} text-sm`}>{kind==='match' ? '매칭 신청' : (regFCFS ? '선착순 신청' : '모임 신청')}</span>
+                                {regFCFS && kind!=='match' && <span className={`font-black ${ink70} text-base`}>{curCount} / {meeting.maxLimit||18}명</span>}
                             </div>
-                            <span role="button" onClick={(e)=>{ e.stopPropagation(); regHandlers && regHandlers.handleRegister(); }}
-                                className={`btn-apply w-full flex items-center justify-center gap-2 rounded-2xl font-black cursor-pointer ${fillOn ? 'flex-1 text-lg' : 'py-3 text-sm'}`}
-                                style={fillOn ? {minHeight:120} : undefined}>
-                                <Icon.CheckSq size={fillOn ? 22 : 16}/> 신청하기
+                            <div className="flex-1 flex items-center justify-center py-1">
+                                <span role="button" onClick={onHomeApply}
+                                    className="flex flex-col items-center justify-center rounded-full text-white active:scale-95 transition-all cursor-pointer"
+                                    style={{ width:120, height:120, background:'#f97316', boxShadow:'0 0 0 7px rgba(249,115,22,.12), 0 16px 30px -14px rgba(249,115,22,.65)' }}>
+                                    <Icon.CheckSq size={28}/>
+                                    <span className="font-black text-[16px] mt-1.5">신청하기</span>
+                                </span>
+                            </div>
+                        </div>
+                    ) : (
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <span className={`font-black ${ink80} text-xs`}>{kind==='match' ? '매칭 신청' : (regFCFS ? '선착순 신청' : '모임 신청')}</span>
+                                {regFCFS && kind!=='match' && <span className={`font-black ${ink70} text-xs`}>{curCount} / {meeting.maxLimit||18}명</span>}
+                            </div>
+                            <span role="button" onClick={onHomeApply}
+                                className="w-full flex items-center justify-center gap-2 rounded-2xl font-black cursor-pointer py-3 text-sm text-white active:scale-95"
+                                style={{ background:'#f97316', boxShadow:'0 10px 22px -10px rgba(249,115,22,.5)' }}>
+                                <Icon.CheckSq size={16}/> 신청하기
                             </span>
                         </div>
                     )}
@@ -738,6 +769,64 @@ const NextMeetingCard = ({
         {showOverlay && (
             <div className="absolute inset-0 flex items-center justify-center bg-white/40 rounded-3xl">
                 <button onClick={onEndMeeting} className="bg-rose-500 text-white px-6 py-3 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg">모임 종료</button>
+            </div>
+        )}
+
+        {/* 신청 완료 팝업 (+내 순번) */}
+        {donePopup && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 animate-in"
+                style={{ background:'rgba(15,23,42,.46)', backdropFilter:'blur(2px)' }}
+                onClick={() => setDonePopup(null)}>
+                <div className="bg-white rounded-3xl p-7 pt-8 max-w-[320px] w-full text-center"
+                    style={{ boxShadow:'0 30px 70px -22px rgba(0,0,0,.45)' }}
+                    onClick={e => e.stopPropagation()}>
+                    <div className="w-[66px] h-[66px] rounded-full mx-auto mb-4 flex items-center justify-center text-white"
+                        style={{ background: donePopup.type === 'waiting' ? '#F59E0B' : '#183FB0' }}>
+                        {donePopup.type === 'waiting' ? <Icon.Clock size={32}/> : <Icon.Check size={34}/>}
+                    </div>
+                    <p className="text-[13px] font-black text-slate-400">{donePopup.type === 'waiting' ? '대기 신청 완료' : '신청 완료'}</p>
+                    <p className="text-[32px] font-black text-slate-900 mt-1 mb-0.5">
+                        {donePopup.type === 'waiting'
+                            ? <>대기 <span style={{color:'#F59E0B'}}>{donePopup.pos}</span>번</>
+                            : <>참가 <span style={{color:'#f97316'}}>{donePopup.pos}</span>번째</>}
+                    </p>
+                    <p className="text-[12.5px] font-bold text-slate-400 mt-1 leading-relaxed whitespace-pre-line">
+                        {donePopup.type === 'waiting'
+                            ? '정원이 차서 대기로 등록됐어요.\n자리가 나면 자동으로 확정돼요.'
+                            : `선착순 ${donePopup.pos} / ${meeting.maxLimit||18}명으로 신청됐어요.`}
+                    </p>
+                    <button onClick={() => setDonePopup(null)}
+                        className="mt-5 w-full py-3.5 rounded-2xl text-white font-black text-[15px] active:scale-95"
+                        style={{ background:'#f97316' }}>확인</button>
+                </div>
+            </div>
+        )}
+
+        {/* 신청 취소 확인 팝업 (재신청 시 순번 밀림 안내) */}
+        {cancelAsk && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 animate-in"
+                style={{ background:'rgba(15,23,42,.46)', backdropFilter:'blur(2px)' }}
+                onClick={() => setCancelAsk(false)}>
+                <div className="bg-white rounded-3xl p-7 pt-8 max-w-[320px] w-full text-center"
+                    style={{ boxShadow:'0 30px 70px -22px rgba(0,0,0,.45)' }}
+                    onClick={e => e.stopPropagation()}>
+                    <div className="w-[66px] h-[66px] rounded-full mx-auto mb-4 flex items-center justify-center text-white"
+                        style={{ background:'#F59E0B' }}>
+                        <span className="text-[34px] font-black leading-none">!</span>
+                    </div>
+                    <p className="text-[18px] font-black text-slate-900">신청을 취소할까요?</p>
+                    <div className="mt-3.5 text-left text-[12px] font-bold leading-relaxed rounded-2xl px-3.5 py-3"
+                        style={{ background:'#fff7ed', border:'1px solid #fed7aa', color:'#9a3412' }}>
+                        지금 취소하면 다시 신청할 때 <b>순번이 맨 뒤로 밀려요.</b> 정원이 찼다면 대기로 넘어갈 수 있어요.
+                    </div>
+                    <div className="flex gap-2 mt-5">
+                        <button onClick={() => setCancelAsk(false)}
+                            className="flex-1 py-3.5 rounded-2xl bg-slate-100 text-slate-500 font-black text-[14.5px] active:scale-95">그대로 둘게요</button>
+                        <button onClick={() => { setCancelAsk(false); regHandlers && regHandlers.handleCancel(); }}
+                            className="flex-1 py-3.5 rounded-2xl text-white font-black text-[14.5px] active:scale-95"
+                            style={{ background:'#EF4444' }}>신청 취소</button>
+                    </div>
+                </div>
             </div>
         )}
         </div>
