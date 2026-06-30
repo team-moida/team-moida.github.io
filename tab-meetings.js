@@ -1,3 +1,49 @@
+// ── 인원 스텝퍼: −/＋ 버튼 + 큰 숫자(위로 끌면↑·아래로 끌면↓ / 탭하면 직접 입력) ──
+const CapStepper = ({ value, onChange, min = 1, max = 60 }) => {
+    const { useState, useRef } = React;
+    const [editing, setEditing] = useState(false);
+    const drag = useRef(null);   // { startY, startVal, moved }
+    const cur = parseInt(value) || 0;
+    const clamp = (n) => Math.max(min, Math.min(max, n));
+    const onDown = (e) => {
+        if (editing) return;
+        drag.current = { startY: e.clientY, startVal: clamp(cur || 18), moved: false };
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+    };
+    const onMove = (e) => {
+        const d = drag.current; if (!d) return;
+        const dy = d.startY - e.clientY;                 // 위로 끌면 +
+        if (Math.abs(dy) > 3) d.moved = true;
+        const next = clamp(d.startVal + Math.round(dy / 7));   // 7px당 1명
+        if (next !== cur) onChange(next);
+    };
+    const onUp = (e) => {
+        const d = drag.current; drag.current = null;
+        try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (_) {}
+        if (d && !d.moved) setEditing(true);             // 끌지 않고 탭 → 입력 모드
+    };
+    return (
+        <div className="flex items-center justify-center gap-5 py-3 select-none">
+            <button type="button" onClick={() => onChange(clamp((cur || 18) - 1))}
+                className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center active:scale-90 transition-all"><Icon.Minus size={22}/></button>
+            <div className="flex flex-col items-center" style={{ minWidth: 96 }}>
+                {editing ? (
+                    <input type="number" inputMode="numeric" autoFocus value={value}
+                        onChange={e => onChange(e.target.value === '' ? '' : (parseInt(e.target.value) || 0))}
+                        onBlur={e => { const n = parseInt(e.target.value); onChange(n >= min ? clamp(n) : 18); setEditing(false); }}
+                        className="moida-num-bare w-24 text-center text-4xl font-black text-teal-600 bg-transparent border-0 focus:outline-none"/>
+                ) : (
+                    <div onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
+                        className="w-24 text-center text-4xl font-black text-teal-600 cursor-ns-resize touch-none">{cur}</div>
+                )}
+                <span className="text-xs font-black text-slate-400 -mt-1">명</span>
+            </div>
+            <button type="button" onClick={() => onChange(clamp((cur || 18) + 1))}
+                className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center active:scale-90 transition-all"><Icon.Plus size={22}/></button>
+        </div>
+    );
+};
+
 // ── 모임 목록 탭 ──────────────────────────────────────────────────────────────
 function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDeleteMeeting, managers = [], showAlert, onSelectMeeting = null, pendingEditMeeting = null, onPendingEditHandled = null, embedded = false, pendingAction = null, onPendingActionHandled = null }) {
     const { useState } = React;
@@ -507,18 +553,9 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                     <p className="text-[11px] text-teal-600 font-black mt-1.5 text-center">총 정원 {(parseInt(form.maxMale)||0)+(parseInt(form.maxFemale)||0)}명</p>
                                 </div>
                             ) : isWiz ? (
-                                <div className="flex items-center justify-center gap-5 py-3">
-                                    <button type="button" onClick={() => setForm(f => ({...f, maxLimit: Math.max(1, (parseInt(f.maxLimit)||18) - 1)}))}
-                                        className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center active:scale-90 transition-all"><Icon.Minus size={22}/></button>
-                                    <div className="flex flex-col items-center">
-                                        <input type="number" inputMode="numeric" value={form.maxLimit} min={1} max={60}
-                                            onChange={e => setForm(f => ({...f, maxLimit: e.target.value === '' ? '' : (parseInt(e.target.value)||0)}))}
-                                            onBlur={e => { if (!(parseInt(e.target.value) >= 1)) setForm(f => ({...f, maxLimit: 18})); }}
-                                            className="moida-num-bare w-24 text-center text-4xl font-black text-teal-600 bg-transparent border-0 focus:outline-none"/>
-                                        <span className="text-xs font-black text-slate-400 -mt-1">명</span>
-                                    </div>
-                                    <button type="button" onClick={() => setForm(f => ({...f, maxLimit: Math.min(60, (parseInt(f.maxLimit)||18) + 1)}))}
-                                        className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center active:scale-90 transition-all"><Icon.Plus size={22}/></button>
+                                <div>
+                                    <CapStepper value={form.maxLimit} onChange={(v) => setForm(f => ({...f, maxLimit: v}))} />
+                                    <p className="text-[11px] text-slate-400 text-center -mt-1">숫자를 위·아래로 끌거나, 눌러서 직접 입력</p>
                                 </div>
                             ) : (
                                 <div>
