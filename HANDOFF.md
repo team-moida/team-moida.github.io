@@ -3,11 +3,16 @@
 > 다른 PC/새 세션에서 이어갈 때 이 파일부터 읽으세요.
 > 자세한 작업 규칙·금지사항은 `CLAUDE.md`에 있습니다(꼭 같이 읽기).
 
-**마지막 갱신:** 2026-06-30 · **SW 캐시:** `moida-v301` · **마지막 커밋:** `b07a446`
+**마지막 갱신:** 2026-06-30 · **SW 캐시:** `moida-v303` · **표시버전:** `v1.1.0` · **마지막 커밋:** `0373158`
 **라이브:** team-moida/team-moida.github.io · **Firebase:** moida-otpfc
 **최종 제품:** `member.html` 통합앱 (회원·운영진·개발자). ※ 옛 독립 관리자 HTML(attendance/roster/team-maker/match/index)은 화제 금지.
 
 ---
+
+## 사무실 세션 추가 (v301 → v1.1.0, 전부 배포됨)
+- **모임 생성 = 6단계 마법사** (새 모임만 / 수정은 기존 단일 폼 유지) — 유형→날짜·시간→장소→인원→신청→마무리. 진행바·단계 제목, 마지막에 센스 로딩(공 통통+회전 문구) 후 등록. **저장은 기존 handleSaveMeeting 재사용**, 필드·검증 그대로. 안드로이드 뒤로=이전 단계. → tab-meetings.js(`wizStep`/`stepShow`/`wizSubmit`/`WIZ_STEPS`/`WIZ_LOAD`), 로딩 공=member.css `.moida-ball`. 시안=lab-create.html.
+- **홈 모임 카드 fill 스크롤 제거**(v1.0.3) — fill 높이 계산에 카드 아래 형제 높이 + content-pb 하단패딩까지 반영(tab-home.js). 모바일에서 카드가 스크롤 없이 한 화면.
+- **표시 버전 시맨틱 정리**: 자잘한 변경은 표시버전 안 올리고 SW 캐시만 +1. 표시=index.html 푸터 + tab-my.js APP_VERSION 두 곳.
 
 ## 가장 최근 세션에 한 일 (v294 → v301, 전부 배포됨)
 - **담당자 자동 1번 등록 = 체크박스로** (모임 생성 폼 + 정기모임 설정, 기본 ON). 정기모임 **서버 자동생성(functions)에도 담당자 자동등록 추가**(이전엔 빠져서 매니저에게 신청버튼이 안 뜨던 버그 해결). 신청버튼 가시성을 "담당자 제외"가 아니라 **등록상태 기반**으로 변경. → tab-home.js·tab-attend.js·tab-meetings.js·handlers-meetings.js·functions/index.js. ★**functions는 `firebase deploy --only functions`로 배포 완료**(git push로는 서버 반영 안 됨).
@@ -19,7 +24,7 @@
 
 ## 진행 중 / 다음에 할 일 (사무실에서 이어가기)
 - **홈 모임 카드 fill 미세 조정**(작업 중): 칸별 크기 다듬기 — 신청버튼 **최대 높이 제한** 여부, **날짜 숫자 크기**, 간격, 팀/체크 그래픽 크기 등. 사용자가 실제 화면 보고 피드백 → 조정.
-- **lab 페이지 정리**: `lab-meeting.html`(홈 모임카드 상태별 히어로 미리보기)이 아직 저장소에 있음 → **디자인 확정되면 삭제**(noindex 미리보기 전용). lab-activity.html은 이미 제거됨.
+- **lab 페이지 정리**: `lab-meeting.html`(홈 모임카드 히어로 미리보기) + `lab-create.html`(모임 생성 마법사 시안)이 저장소에 있음 → **확정/적용 끝나면 삭제**(noindex). lab-activity.html은 이미 제거됨. ※모임 생성 마법사는 본앱 적용 완료 → lab-create.html은 UI 다듬기 끝나면 삭제.
 - fill 적용 후 **상태별 깨짐 점검**: 먼 예정(신청버튼 위주) / 당일·진행중(GPS·QR 출석) / 매칭(라임 카드) / 관리자(수정·삭제) 등 NextMeetingCard 상태가 많음.
 
 ## 핵심 구조 — 삭제한 모임 보관함 (꼭 이해)
