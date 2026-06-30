@@ -603,6 +603,64 @@ exports.notifyDuesReport = onDocumentCreated(
   }
 );
 
+// ── 불참/노쇼 신청 시 담당자(없으면 운영진)에게 푸시 ──────────────────────────
+// 회원이 신청 마감 후 불참/노쇼를 신청하면 registrations.status 가 confirmed → absent/noshow 로 바뀐다.
+// 그 변화를 감지해 해당 모임 담당자(meetings.managerId)에게, 담당자가 없으면 운영진(STAFF_ROLES) 전체에게 알림.
+// notifications 문서를 서버에서 만들면 위 sendPushNotification 이 실제 전송을 처리한다(회원이 직접 못 쓰는 규칙 회피).
+exports.notifyAbsentReport = onDocumentUpdated(
+  `${DB_PATH}/registrations/{regId}`,
+  async (event) => {
+    const before = (event.data.before && event.data.before.data()) || {};
+    const after = (event.data.after && event.data.after.data()) || {};
+    const isAbsentNow = after.status === "absent" || after.status === "noshow";
+    const wasAbsent = before.status === "absent" || before.status === "noshow";
+    if (!isAbsentNow || wasAbsent) return;   // 새로 불참/노쇼로 바뀐 경우만 (중복 방지)
+
+    const db = admin.firestore();
+    const FV = admin.firestore.FieldValue;
+
+    // 담당자 우선 — meetings 문서에서 managerId 조회, 없으면 운영진 전체
+    let targetIds = [];
+    let managerId = "";
+    try {
+      if (after.meetingId) {
+        const mDoc = await db.doc(`${DB_PATH}/meetings/${after.meetingId}`).get();
+        managerId = (mDoc.exists && (mDoc.data().managerId || "")) || "";
+      }
+    } catch (_) {}
+
+    if (managerId) {
+      targetIds = [managerId];
+    } else {
+      const membersSnap = await db.collection(`${DB_PATH}/members`).get();
+      membersSnap.forEach((doc) => {
+        const m = doc.data();
+        if (m && !m.isResigned && DUES_STAFF_ROLES.includes(m.role)) targetIds.push(doc.id);
+      });
+    }
+    targetIds = targetIds.filter((id) => id && id !== after.memberId);  // 본인(담당자=본인) 제외
+    if (targetIds.length === 0) return;
+
+    const isNo = after.status === "noshow";
+    const who = after.name || "회원";
+    const kindLabel = after.meetingType === "match" ? "매칭" : "모임";
+    const fine = Number(after.noShowFine) || 0;
+    const reason = (after.absentReason || "").slice(0, 120);
+    const title = isNo ? "🚫 노쇼 신청" : "🙏 불참 신청";
+    let body = `${who}님이 ${after.meetingDate || ""} ${kindLabel}에 ${isNo ? "노쇼" : "불참"}을 신청했어요.`;
+    if (fine > 0) body += ` (벌금 ${fine.toLocaleString("ko-KR")}원)`;
+    if (reason) body += ` · 사유: ${reason}`;
+
+    await db.collection(`${DB_PATH}/notifications`).add({
+      title, body, targetMemberIds: targetIds,
+      type: "absent_report", pushOnly: true,
+      meetingId: after.meetingId || "", memberId: after.memberId || "",
+      sentAt: FV.serverTimestamp(), sentBy: "불참/노쇼 신청",
+    });
+    console.log(`[불참알림] ${who} ${after.status} → 대상 ${targetIds.length}명`);
+  }
+);
+
 // ── 워치 명령 처리 (라운드 완료 토글) ─────────────────────────────────────────
 // 워치가 종료/취소를 누르면 watch_commands 컬렉션에 { roundId, done } 문서를 추가한다.
 // (오프라인이면 워치에 큐로 쌓였다가 재연결 시 자동 전송됨 — Firestore 기본 오프라인 큐잉)

@@ -266,14 +266,14 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
         }
     };
 
-    // 불참(absent) 취소 — 노쇼 기준 전(absent 구간)에만 가능. 선착순 '맨 뒤'로 다시 신청
-    // (registeredAt를 새로 찍어 뒤로). 자리 있으면 확정, 정원이 찼으면 대기 맨 뒤.
+    // 불참/노쇼 취소(다시 신청) — 모임 시간 구간 안이면 가능. 대기 유무와 무관하게 선착순 '맨 뒤'로
+    // 다시 신청(registeredAt를 새로 찍어 뒤로). 자리 있으면 확정, 정원이 찼으면 대기 맨 뒤.
     const handleUndoAbsent = async () => {
         if (!meetingDate || !memberData?.memberId) return;
 
-        // 노쇼 기준 전(absent 구간)까지만 허용
-        if (getAbsentType(meetingDate, meetingSettings?.end) !== 'absent') {
-            showAlert && showAlert('불참 취소 불가', '노쇼 기준 시간이 지나 불참을 취소할 수 없어요.\n(모임 1일 전 밤 10시 이후 불가)');
+        // 불참·노쇼 모두 취소(다시 신청) 가능 — 단 모임 시간 구간이 지난(종료) 뒤엔 불가
+        if (!getAbsentType(meetingDate, meetingSettings?.end)) {
+            showAlert && showAlert('취소 불가', '지금은 취소할 수 없어요.\n(모임 시간이 지났어요)');
             return;
         }
 
@@ -309,7 +309,7 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
                 const regDoc = await tx.get(regRef);
                 if (!regDoc.exists) throw new Error('신청 기록이 없습니다');
                 const reg = regDoc.data();
-                if (reg.status !== 'absent') throw new Error('불참 상태가 아닙니다');
+                if (reg.status !== 'absent' && reg.status !== 'noshow') throw new Error('불참 상태가 아닙니다');
                 if (!meetingDoc.exists) throw new Error('모임 정보를 찾을 수 없습니다');
 
                 const meetingData = meetingDoc.data();

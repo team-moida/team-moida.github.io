@@ -439,6 +439,8 @@ const NextMeetingCard = ({
     const [myReg, setMyReg] = React.useState(null);
     const [donePopup, setDonePopup] = React.useState(null);   // 신청 완료 팝업 {type:'confirmed'|'waiting', pos}
     const [cancelAsk, setCancelAsk] = React.useState(false);  // 신청 취소 확인 팝업
+    const [absentAsk, setAbsentAsk] = React.useState(false);  // 불참/노쇼 신청 사유 입력 팝업
+    const [absentReason, setAbsentReason] = React.useState('');
     const [justApplied, setJustApplied] = React.useState(false);
     const prevRegStatus = React.useRef(null);
     React.useEffect(() => {
@@ -470,6 +472,15 @@ const NextMeetingCard = ({
     const regAfterClose = _regCloseMs && _now > _regCloseMs;
     const regWindowOpen = !regBeforeOpen && !regAfterClose;
     const regFCFS = meeting?.isFirstComeFirstServed ?? true;
+    // 불참/노쇼 — 신청 마감 후 + 확정 상태일 때 시간 구간(absent / noshow_1 / noshow_2) 판정
+    const absentType = (regAfterClose && myReg?.status === 'confirmed' && typeof getAbsentType === 'function')
+        ? getAbsentType(meeting.date, meeting.end) : null;
+    const absentFine = absentType === 'noshow_1' ? 10000 : absentType === 'noshow_2' ? 20000 : 0;
+    const isNoshowStage = absentType === 'noshow_1' || absentType === 'noshow_2';
+    const absentColor = absentFine === 20000 ? '#EF4444' : absentFine === 10000 ? '#EA580C' : '#F59E0B'; // 당일=빨강/전날=진주황/불참=노랑
+    const undoAbsentOk = (myReg?.status === 'absent' || myReg?.status === 'noshow') && typeof getAbsentType === 'function' && !!getAbsentType(meeting.date, meeting.end);
+    const onAbsentConfirm = () => { if (regHandlers) regHandlers.handleAbsent(absentReason.trim()); setAbsentAsk(false); setAbsentReason(''); };
+    const onUndoAbsent = (e) => { if (e) e.stopPropagation(); if (regHandlers) regHandlers.handleUndoAbsent(); };
 
     // (fill) 모임 카드가 1개일 때만 — 카드를 하단탭 근처까지 세로로 채운다. 실제 위치를 측정해 minHeight 지정.
     const fillRef = React.useRef(null);
@@ -564,6 +575,40 @@ const NextMeetingCard = ({
                         <div className={`flex items-center gap-1.5 text-xs font-black ${ink70}`}>
                             <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">신청 시작 전 · {fmtRegDT(meeting.registrationOpenAt)}부터</span>
                         </div>
+                    ) : (myReg?.status === 'confirmed' && absentType) ? (
+                        /* 신청 마감 후 — 못 오면 불참/노쇼 신청 (시간 단계별 라벨·색) */
+                        (fillOn && !(teamReady && myTeamInfo)) ? (
+                            <div className="w-full flex-1 flex items-center justify-center gap-6 py-1">
+                                <span role="button" onClick={(e)=>{ e.stopPropagation(); setAbsentAsk(true); }}
+                                    className="flex-shrink-0 flex flex-col items-center justify-center rounded-full text-white active:scale-95 transition-all cursor-pointer text-center px-3"
+                                    style={{ width:180, height:180, background: absentColor, boxShadow:`0 0 0 8px ${absentColor}1f, 0 18px 34px -14px ${absentColor}a6` }}>
+                                    <Icon.AlertTriangle size={34}/>
+                                    <span className="font-black text-[19px] mt-1.5 leading-tight">{absentType==='noshow_2' ? '당일 노쇼' : isNoshowStage ? '노쇼' : '불참'} 신청</span>
+                                </span>
+                                <div className="flex flex-col gap-2.5 min-w-0">
+                                    <span className={`flex items-center gap-1 text-sm font-black ${ink80}`}><Icon.Check size={15} className="flex-shrink-0"/>참가 확정</span>
+                                    <div>
+                                        <p className={`text-[11px] font-black ${ink70} mb-0.5`}>못 가게 됐다면</p>
+                                        <p className={`text-[15px] font-black ${ink} leading-snug`}>{absentFine>0 ? `노쇼 벌금 ${absentFine/10000}만원` : '미리 알리면 벌금 없음'}</p>
+                                    </div>
+                                    <p className={`text-[11px] font-black ${ink70} leading-relaxed`}>탭하면 사유를 적고<br/>{isNoshowStage?'노쇼':'불참'}을 알려요</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className={`flex items-center gap-1 text-sm font-black ${ink}`}><Icon.Check size={14} className="flex-shrink-0"/>참가 확정</span>
+                                    <span className={`text-[11px] font-black ${ink70}`}>{absentFine>0?`노쇼 ${absentFine/10000}만원`:'불참 벌금 없음'}</span>
+                                </div>
+                                <span role="button" onClick={(e)=>{ e.stopPropagation(); setAbsentAsk(true); }}
+                                    className="w-full flex items-center justify-center gap-2 rounded-2xl font-black cursor-pointer py-3 text-sm text-white active:scale-95"
+                                    style={{ background: absentColor, boxShadow:`0 10px 22px -10px ${absentColor}80` }}>
+                                    <Icon.AlertTriangle size={15}/> {absentType==='noshow_2'?'당일 노쇼':isNoshowStage?'노쇼':'불참'} 신청
+                                </span>
+                            </div>
+                        )
+                    ) : (myReg?.status === 'confirmed' && regAfterClose) ? (
+                        <div className={`flex items-center gap-1.5 text-sm font-black ${ink}`}><Icon.Check size={15} className="flex-shrink-0"/><span className="truncate">참가 확정</span></div>
                     ) : myReg?.status === 'confirmed' ? (
                         (fillOn && !(teamReady && myTeamInfo)) ? (
                             /* 신청하기 원과 같은 자리·같은 크기 토글 — 원이 '신청 취소'로 바뀜 + 우측 정보 */
@@ -620,7 +665,15 @@ const NextMeetingCard = ({
                             </div>
                         )
                     ) : (myReg?.status === 'absent' || myReg?.status === 'noshow') ? (
-                        <div className={`flex items-center gap-1.5 text-xs font-black ${ink70}`}><Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">{myReg.status === 'noshow' ? '노쇼 처리됨' : '불참 처리됨'}</span></div>
+                        <div className="flex items-center justify-between gap-2">
+                            <span className={`flex items-center gap-1.5 text-sm font-black ${ink} min-w-0`}>
+                                <Icon.AlertTriangle size={15} className="flex-shrink-0"/>
+                                <span className="truncate">{myReg.status === 'noshow' ? `노쇼 신청됨${myReg.noShowFine ? ` · 벌금 ${myReg.noShowFine/10000}만원` : ''}` : '불참 신청됨'}</span>
+                            </span>
+                            {undoAbsentOk && (
+                                <span role="button" onClick={onUndoAbsent} className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${chip} active:scale-95 cursor-pointer flex-shrink-0`}>{myReg.status === 'noshow' ? '노쇼' : '불참'} 취소</span>
+                            )}
+                        </div>
                     ) : regAfterClose ? (
                         <div className={`flex items-center gap-1.5 text-xs font-black ${ink70}`}><Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">신청 마감</span></div>
                     ) : (regPenaltyUnpaid > 0) ? (
@@ -871,6 +924,38 @@ const NextMeetingCard = ({
                         <button onClick={() => { setCancelAsk(false); regHandlers && regHandlers.handleCancel(); }}
                             className="flex-1 py-3.5 rounded-2xl text-white font-black text-[14.5px] active:scale-95"
                             style={{ background:'#EF4444' }}>신청 취소</button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* 불참/노쇼 신청 — 사유 입력 팝업 */}
+        {absentAsk && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 animate-in"
+                style={{ background:'rgba(15,23,42,.46)', backdropFilter:'blur(2px)' }}
+                onClick={() => { setAbsentAsk(false); setAbsentReason(''); }}>
+                <div className="bg-white rounded-3xl p-7 pt-8 max-w-[330px] w-full"
+                    style={{ boxShadow:'0 30px 70px -22px rgba(0,0,0,.45)' }}
+                    onClick={e => e.stopPropagation()}>
+                    <div className="w-[66px] h-[66px] rounded-full mx-auto mb-4 flex items-center justify-center text-white"
+                        style={{ background: absentColor }}>
+                        <Icon.AlertTriangle size={30}/>
+                    </div>
+                    <p className="text-[18px] font-black text-slate-900 text-center">{absentType==='noshow_2' ? '당일 노쇼 신청' : isNoshowStage ? '노쇼 신청' : '불참 신청'}</p>
+                    <p className="text-[12.5px] font-bold text-slate-400 text-center mt-1.5 leading-relaxed">{absentFine>0 ? `노쇼로 기록되고 벌금 ${absentFine/10000}만원이 부과돼요.` : '미리 알려주셔서 벌금 없이 처리돼요.'}</p>
+                    <textarea value={absentReason} onChange={e => setAbsentReason(e.target.value)} rows={2} maxLength={200}
+                        placeholder={isNoshowStage ? '노쇼 사유 (선택) — 예: 갑작스런 일정' : '불참 사유 (선택) — 예: 컨디션 난조'}
+                        className="w-full mt-4 border border-slate-200 rounded-2xl px-3.5 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-200"/>
+                    <div className="text-left text-[11.5px] font-bold leading-relaxed rounded-2xl px-3.5 py-2.5 mt-2"
+                        style={{ background:'#fff7ed', border:'1px solid #fed7aa', color:'#9a3412' }}>
+                        담당 운영진에게 알림이 가요. 다시 참석하려면 취소할 수 있지만 <b className="whitespace-nowrap">순번은 맨 뒤로</b> 밀려요.
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                        <button onClick={() => { setAbsentAsk(false); setAbsentReason(''); }}
+                            className="flex-1 py-3.5 rounded-2xl bg-slate-100 text-slate-500 font-black text-[14.5px] active:scale-95">그대로 둘게요</button>
+                        <button onClick={onAbsentConfirm}
+                            className="flex-1 py-3.5 rounded-2xl text-white font-black text-[14.5px] active:scale-95"
+                            style={{ background: absentColor }}>{absentType==='noshow_2' ? '당일 노쇼' : isNoshowStage ? '노쇼' : '불참'} 신청</button>
                     </div>
                 </div>
             </div>

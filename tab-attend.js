@@ -380,8 +380,8 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
     const absentFine = absentType === 'noshow_1' ? 10000 : absentType === 'noshow_2' ? 20000 : 0;
     const absentBtnCls = absentFine === 20000 ? 'bg-red-500 text-white' : absentFine === 10000 ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-600';
     const absentBtnLabel = absentFine > 0 ? `불참 신청 (노쇼 · ${absentFine / 10000}만원 벌금)` : '불참 신청 (벌금 없음)';
-    // 불참 취소 가능 여부 — 내가 불참(absent) 상태이고, 아직 노쇼 기준 전(absent 구간)일 때만
-    const undoAbsentOk = myRegistration?.status === 'absent' && typeof getAbsentType === 'function' && getAbsentType(meetingSettings.date, meetingSettings.end) === 'absent';
+    // 불참/노쇼 취소(다시 신청) 가능 여부 — 불참·노쇼 상태이고, 아직 모임 시간 구간 안일 때
+    const undoAbsentOk = (myRegistration?.status === 'absent' || myRegistration?.status === 'noshow') && typeof getAbsentType === 'function' && !!getAbsentType(meetingSettings.date, meetingSettings.end);
 
     return (
         <>
@@ -492,11 +492,11 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
                     )}
                     {undoAbsentOk && (
                         <>
-                            <button onClick={() => isPreview ? alert('미리보기에서는 불참 취소가 되지 않아요.') : (handleUndoAbsent && handleUndoAbsent())}
+                            <button onClick={() => isPreview ? alert('미리보기에서는 취소가 되지 않아요.') : (handleUndoAbsent && handleUndoAbsent())}
                                 className="w-full py-2.5 rounded-2xl font-black text-sm active:scale-95 bg-teal-500 text-white">
-                                불참 취소 (다시 신청)
+                                {myRegistration?.status === 'noshow' ? '노쇼 취소 (다시 신청)' : '불참 취소 (다시 신청)'}
                             </button>
-                            <p className="text-[11px] text-slate-400 text-center">취소하면 선착순 맨 뒤로 다시 신청돼요</p>
+                            <p className="text-[11px] text-slate-400 text-center">취소하면 대기 여부와 상관없이 맨 뒤로 다시 신청돼요</p>
                         </>
                     )}
                 </div>
