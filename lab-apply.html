@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>신청 버튼 원형 LAB</title>
 <style>
-  :root{ --accent:#183FB0; --accent-deep:#122E78; --orange:#f97316; }
+  :root{ --accent:#183FB0; --accent-deep:#122E78; --orange:#f97316; --lime:#C2F94A; --lime-ink:#15171E; --danger:#EF4444; }
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   body{
     margin:0; font-family:'Pretendard',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
@@ -18,51 +18,77 @@
   .seclabel{ font-size:12px; font-weight:900; color:var(--accent); margin:22px 4px 8px; letter-spacing:.02em; }
   .seclabel small{ color:#94a3b8; font-weight:800; }
 
+  /* 색 토글 */
+  .seg{ display:flex; gap:6px; background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:5px; box-shadow:0 4px 14px rgba(0,0,0,.05); }
+  .seg button{ flex:1; border:0; background:transparent; border-radius:10px; padding:10px 4px; font-weight:900; font-size:12.5px; color:#64748b; cursor:pointer; font-family:inherit; }
+  .seg button.on{ color:#fff; }
+  .seg button.on[data-c="lime"]{ background:var(--lime); color:var(--lime-ink); }
+  .seg button.on[data-c="orange"]{ background:var(--orange); }
+
   .card{ background:#fff; border:1px solid #e2e8f0; border-radius:20px; box-shadow:0 4px 14px rgba(0,0,0,.05); padding:20px; }
-  .chead{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .chead{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
   .chead .t{ font-size:11px; font-weight:900; color:var(--orange); text-transform:uppercase; letter-spacing:.12em; }
   .chead .c{ font-size:12px; font-weight:900; color:#94a3b8; }
   .center{ display:flex; flex-direction:column; align-items:center; justify-content:center; }
 
-  /* ── 현재안(사각형) ── */
-  .cur-apply{ width:100%; border:0; border-radius:16px; background:var(--orange); color:#fff; font-weight:900; font-size:14px; padding:15px; }
-  .cur-box{ width:100%; background:#eef2fb; border:1px solid #c7d2f0; border-radius:16px; padding:14px; text-align:center; font-weight:900; color:var(--accent-deep); margin-bottom:12px; }
-  .cur-cancel{ width:100%; border:0; border-radius:16px; background:#f1f5f9; color:#64748b; font-weight:900; font-size:14px; padding:12px; }
-
-  /* ── 원형 공통 ── */
-  .circle{ border-radius:50%; border:0; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; transition:transform .12s; }
+  /* 원 (모든 상태 동일 크기) */
+  .circle{ width:168px; height:168px; border-radius:50%; border:0; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; transition:transform .12s, background .2s; }
   .circle:active{ transform:scale(.96); }
-  .c-apply{ background:var(--orange); color:#fff; animation:ringPulse 1.8s infinite; }
-  .c-apply .big{ font-weight:900; }
-  .c-apply .sub{ font-size:11px; font-weight:800; opacity:.9; margin-top:2px; }
-  .c-done{ background:var(--accent); color:#fff; cursor:default; box-shadow:0 14px 30px -10px rgba(24,63,176,.55); }
-  .c-done:active{ transform:none; }
-  .c-done .chk{ line-height:1; }
-  .c-done .lbl{ font-weight:900; margin-top:6px; }
-  .c-wait{ background:#f59e0b; color:#fff; box-shadow:0 14px 30px -10px rgba(245,158,11,.5); cursor:default; }
-  .c-wait .lbl{ font-weight:900; }
+  .circle .big{ font-weight:900; font-size:22px; }
+  .circle .sub{ font-size:11.5px; font-weight:800; opacity:.85; margin-top:3px; }
+  .circle .chk{ font-size:46px; line-height:1; }
+  .circle .lbl{ font-weight:900; font-size:17px; margin-top:5px; }
 
-  @keyframes ringPulse{
+  .c-apply-lime{ background:var(--lime); color:var(--lime-ink); animation:ringLime 1.8s infinite; }
+  .c-apply-orange{ background:var(--orange); color:#fff; animation:ringOrange 1.8s infinite; }
+  .c-done{ background:var(--accent); color:#fff; box-shadow:0 14px 30px -10px rgba(24,63,176,.55); }
+  .c-cancel{ background:var(--danger); color:#fff; box-shadow:0 14px 30px -10px rgba(239,68,68,.5); }
+
+  @keyframes ringLime{
+    0%{ box-shadow:0 0 0 0 rgba(194,249,74,.7), 0 12px 26px -6px rgba(133,180,30,.45); }
+    70%{ box-shadow:0 0 0 18px rgba(194,249,74,0), 0 12px 26px -6px rgba(133,180,30,.45); }
+    100%{ box-shadow:0 0 0 0 rgba(194,249,74,0), 0 12px 26px -6px rgba(133,180,30,.45); }
+  }
+  @keyframes ringOrange{
     0%{ box-shadow:0 0 0 0 rgba(249,115,22,.55), 0 12px 26px -6px rgba(249,115,22,.5); }
     70%{ box-shadow:0 0 0 18px rgba(249,115,22,0), 0 12px 26px -6px rgba(249,115,22,.5); }
     100%{ box-shadow:0 0 0 0 rgba(249,115,22,0), 0 12px 26px -6px rgba(249,115,22,.5); }
   }
-  @media (prefers-reduced-motion: reduce){ .c-apply{ animation:none; box-shadow:0 12px 26px -6px rgba(249,115,22,.5); } }
+  @media (prefers-reduced-motion: reduce){ .c-apply-lime,.c-apply-orange{ animation:none; } }
 
-  /* 취소 버튼 — 작은 알약 / 더 작은 텍스트형 */
-  .cancel-pill{ margin-top:14px; border:1px solid #e2e8f0; background:#f8fafc; color:#64748b; font-weight:900; font-size:12.5px; padding:8px 18px; border-radius:999px; cursor:pointer; }
-  .cancel-text{ margin-top:12px; border:0; background:transparent; color:#94a3b8; font-weight:800; font-size:12px; padding:6px 10px; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+  .helper{ font-size:12px; font-weight:800; color:#94a3b8; margin-top:14px; min-height:18px; text-align:center; }
+  .keep{ margin-top:8px; border:0; background:transparent; color:#94a3b8; font-weight:800; font-size:12px; padding:6px 12px; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+  .keep.hide{ display:none; }
+
+  /* 현재안(비교용) */
+  .cur-apply{ width:100%; border:0; border-radius:16px; background:var(--orange); color:#fff; font-weight:900; font-size:14px; padding:15px; }
+  .cur-box{ width:100%; background:#eef2fb; border:1px solid #c7d2f0; border-radius:16px; padding:14px; text-align:center; font-weight:900; color:var(--accent-deep); margin-bottom:12px; }
+  .cur-cancel{ width:100%; border:0; border-radius:16px; background:#f1f5f9; color:#64748b; font-weight:900; font-size:14px; padding:12px; }
 
   .hint{ text-align:center; font-size:12px; font-weight:800; color:#94a3b8; margin:18px 4px 0; line-height:1.6; }
-  .tap{ font-size:11px; font-weight:800; color:#cbd5e1; margin-top:10px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>신청 버튼 · 원형 통일 LAB</h1>
-  <p class="lead">원을 누르면 <b>신청 → 참가 확정</b>으로 바뀌고, 취소를 누르면 되돌아와요. 신청 전/후가 같은 원형이라 통일감이 생깁니다. 마음에 드는 안의 번호를 알려주세요.</p>
+  <h1>신청 버튼 · 원형 + 탭 취소 LAB</h1>
+  <p class="lead">① <b>신청하기</b> 색을 라임/주황으로 비교해 보고 ② <b>참가 확정 원을 누르면 "신청 취소"</b>로 바뀌어 취소되는 흐름을 직접 눌러보세요. (실수 방지로 한 번 더 눌러 확정)</p>
 
-  <!-- 현재안 -->
+  <p class="seclabel">신청하기 색</p>
+  <div class="seg" id="seg">
+    <button data-c="lime" class="on">라임</button>
+    <button data-c="orange">주황</button>
+  </div>
+
+  <p class="seclabel">새 안 <small>· 같은 크기 원 · 확정을 눌러 취소</small></p>
+  <div class="card">
+    <div class="chead"><span class="t">선착순 신청</span><span class="c">12 / 18명</span></div>
+    <div class="center">
+      <div data-slot></div>
+      <p class="helper" id="helper"></p>
+      <button class="keep hide" id="keep">아니요, 그대로 둘게요</button>
+    </div>
+  </div>
+
   <p class="seclabel">현재 <small>· 사각형 (비교용)</small></p>
   <div class="card">
     <div class="chead"><span class="t">선착순 신청</span><span class="c">12 / 18명</span></div>
@@ -72,70 +98,59 @@
     <button class="cur-cancel">신청 취소</button>
   </div>
 
-  <!-- 새 안 A -->
-  <p class="seclabel">새 안 A <small>· 신청=완료 같은 크기 · 취소 알약</small></p>
-  <div class="card" id="cardA">
-    <div class="chead"><span class="t">선착순 신청</span><span class="c">12 / 18명</span></div>
-    <div class="center" data-slot></div>
-    <p class="tap center">원을 눌러보세요</p>
-  </div>
-
-  <!-- 새 안 B -->
-  <p class="seclabel">새 안 B <small>· 원 더 크게(신청=완료) · 취소 아주 작게</small></p>
-  <div class="card" id="cardB">
-    <div class="chead"><span class="t">선착순 신청</span><span class="c">12 / 18명</span></div>
-    <div class="center" data-slot></div>
-    <p class="tap center">원을 눌러보세요</p>
-  </div>
-
-  <!-- 대기 예시 -->
-  <p class="seclabel">대기 상태 예시 <small>· 두 안 공통(주황 원)</small></p>
-  <div class="card">
-    <div class="chead"><span class="t">선착순 신청</span><span class="c">18 / 18명</span></div>
-    <div class="center">
-      <div class="circle c-wait" style="width:150px;height:150px">
-        <span style="font-size:13px;font-weight:800;opacity:.9">대기</span>
-        <span class="lbl" style="font-size:30px">3번</span>
-      </div>
-    </div>
-  </div>
-
-  <p class="hint">신청하기 원과 참가 확정 원은 같은 크기예요(탭해도 모양이 안 튐). A=원 보통+취소 알약 · B=원 더 큼+취소 텍스트.<br>원 크기·취소 형태는 더 조절할 수 있어요.</p>
+  <p class="hint">신청하기·참가 확정·신청 취소 원이 모두 같은 크기라 탭해도 모양이 안 튀어요.<br>색·크기·"한 번 더 확인" 여부는 더 조절할 수 있어요.</p>
 </div>
 
 <script>
-// 신청하기 원과 참가 확정 원은 같은 크기(D). 취소만 작게.
-const VARIANTS = {
-  A: { D:158, cancel:'pill', chk:44, applyBig:21 },
-  B: { D:188, cancel:'text', chk:54, applyBig:23 },
-};
-const state = { A:'apply', B:'apply' };
+let color = 'lime';     // 'lime' | 'orange'
+let st = 'apply';       // 'apply' | 'done' | 'cancel'
+const slot = document.querySelector('[data-slot]');
+const helper = document.getElementById('helper');
+const keepBtn = document.getElementById('keep');
 
-function render(key){
-  const v = VARIANTS[key];
-  const slot = document.querySelector('#card'+key+' [data-slot]');
+function render(){
   slot.innerHTML = '';
-  if(state[key]==='apply'){
-    const b = document.createElement('button');
-    b.className='circle c-apply';
-    b.style.width=v.D+'px'; b.style.height=v.D+'px';
-    b.innerHTML = `<span class="big" style="font-size:${v.applyBig}px">신청하기</span><span class="sub">탭하면 신청</span>`;
-    b.onclick=()=>{ state[key]='done'; render(key); };
-    slot.appendChild(b);
+  keepBtn.classList.add('hide');
+  const el = document.createElement('button');
+  el.className = 'circle';
+  if(st==='apply'){
+    el.classList.add(color==='lime'?'c-apply-lime':'c-apply-orange');
+    el.innerHTML = `<span class="big">신청하기</span><span class="sub">탭하면 신청</span>`;
+    el.onclick = ()=>{ st='done'; render(); };
+    helper.textContent = '';
+  } else if(st==='done'){
+    el.classList.add('c-done');
+    el.innerHTML = `<span class="chk">✓</span><span class="lbl">참가 확정</span>`;
+    el.onclick = ()=>{ st='cancel'; render(); };
+    helper.textContent = '원을 누르면 신청을 취소할 수 있어요';
   } else {
-    const d = document.createElement('div');
-    d.className='circle c-done';
-    d.style.width=v.D+'px'; d.style.height=v.D+'px';
-    d.innerHTML = `<span class="chk" style="font-size:${v.chk}px">✓</span><span class="lbl" style="font-size:16px">참가 확정</span>`;
-    slot.appendChild(d);
-    const c = document.createElement('button');
-    if(v.cancel==='pill'){ c.className='cancel-pill'; c.textContent='신청 취소'; }
-    else { c.className='cancel-text'; c.textContent='신청 취소'; }
-    c.onclick=()=>{ state[key]='apply'; render(key); };
-    slot.appendChild(c);
+    el.classList.add('c-cancel');
+    el.innerHTML = `<span class="big">신청 취소</span><span class="sub">한 번 더 누르면 취소</span>`;
+    el.onclick = ()=>{ st='apply'; render(); flash('신청이 취소되었어요'); };
+    helper.textContent = '정말 취소할까요?';
+    keepBtn.classList.remove('hide');
   }
+  slot.appendChild(el);
 }
-render('A'); render('B');
+keepBtn.onclick = ()=>{ st='done'; render(); };
+
+let toastT;
+function flash(msg){
+  let t = document.getElementById('toast');
+  if(!t){ t=document.createElement('div'); t.id='toast';
+    t.style.cssText='position:fixed;left:50%;bottom:32px;transform:translateX(-50%);background:#0f172a;color:#fff;font-weight:900;font-size:13px;padding:11px 18px;border-radius:999px;z-index:9;box-shadow:0 10px 30px rgba(0,0,0,.25);opacity:0;transition:.2s';
+    document.body.appendChild(t); }
+  t.textContent=msg; t.style.opacity='1';
+  clearTimeout(toastT); toastT=setTimeout(()=>{ t.style.opacity='0'; }, 1400);
+}
+
+document.getElementById('seg').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#seg button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); color=b.dataset.c; render();
+});
+
+render();
 </script>
 </body>
 </html>
