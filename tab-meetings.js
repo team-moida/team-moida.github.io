@@ -452,22 +452,44 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                     </div>
                     <div className="flex-1 overflow-y-auto relative">
                         <div className={`max-w-lg mx-auto w-full px-5 ${isWiz ? 'py-5 min-h-full flex flex-col wiz-lg' : 'py-4 space-y-3'}`}>
-                            {/* 신규 = 순서대로 진행(얇은 막대) / 수정 = 단계 이름 칩(눌러서 바로 이동) */}
-                            {isWiz && !editingId && (
-                                <div className="flex gap-1.5 mb-2.5 shrink-0">
-                                    {WIZ_STEPS.map((_, i) => (
-                                        <div key={i} className={`flex-1 h-1.5 rounded-full transition-all ${i < wizStep ? 'bg-teal-500' : 'bg-slate-200'}`}/>
-                                    ))}
-                                </div>
-                            )}
-                            {isWiz && editingId && (
-                                <div className="flex gap-1 mb-2.5 shrink-0">
-                                    {WIZ_TABS.map((label, i) => (
-                                        <button key={i} onClick={() => wizGoTo(i + 1)}
-                                            className={`flex-1 min-w-0 truncate text-center text-[10.5px] font-black py-1.5 rounded-lg transition-all ${i + 1 === wizStep ? 'bg-teal-500 text-white shadow-sm' : 'bg-slate-100 text-slate-400'}`}>{label}</button>
-                                    ))}
-                                </div>
-                            )}
+                            {/* 단계 스테퍼 — 번호 원형 + 점3개 커넥터. 현재 단계까지 채움.
+                                색=종류(자체전 인디고 / 매칭 라임). 수정 시 원을 눌러 그 단계로 바로 이동 */}
+                            {isWiz && (() => {
+                                const isMatch = form.meetingType === 'match';
+                                const fill = isMatch ? '#C2F94A' : '#183FB0';
+                                const fillText = isMatch ? '#15171E' : '#ffffff';
+                                const labelOn = isMatch ? '#3f6212' : '#122E78';
+                                return (
+                                    <div className="flex items-start mb-3 shrink-0 px-1">
+                                        {WIZ_TABS.map((label, i) => {
+                                            const stepNo = i + 1;
+                                            const done = stepNo <= wizStep;
+                                            const current = stepNo === wizStep;
+                                            return (
+                                                <React.Fragment key={i}>
+                                                    {i > 0 && (
+                                                        <div className="flex-1 flex items-center justify-center gap-1" style={{ marginTop: 13 }}>
+                                                            {[0,1,2].map(d => (
+                                                                <span key={d} className="w-1 h-1 rounded-full transition-all" style={{ background: done ? fill : '#cbd5e1' }}/>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    <button type="button" onClick={() => editingId && wizGoTo(stepNo)} disabled={!editingId}
+                                                        className="flex flex-col items-center gap-1 shrink-0">
+                                                        <span className="rounded-full flex items-center justify-center font-black transition-all" style={{
+                                                            width: 28, height: 28, fontSize: 12,
+                                                            background: done ? fill : '#f1f5f9',
+                                                            color: done ? fillText : '#94a3b8',
+                                                            boxShadow: current ? `0 0 0 3px ${fill}33` : 'none',
+                                                        }}>{stepNo}</span>
+                                                        <span className="text-[10px] font-black transition-colors" style={{ color: current ? labelOn : '#94a3b8' }}>{label}</span>
+                                                    </button>
+                                                </React.Fragment>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })()}
                             <div className={isWiz ? `flex-1 flex flex-col justify-center space-y-4 py-2 ${wizAnim}` : 'space-y-3'}>
                             {isWiz && (
                                 <div>
