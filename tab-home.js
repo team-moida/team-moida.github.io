@@ -384,10 +384,17 @@ const NextMeetingCard = ({
     onOpenAttendModal, onInlineGPS, onInlineQR, enableQR, onOpenKiosk, fill,
 }) => {
     const cfg = MEETING_KIND[kind] || MEETING_KIND.self;
-    // 매칭 = 라임 카드(밝은 배경) → 어두운 글자 / 정기 = 인디고 카드 → 흰 글자
-    const dark = kind === 'match';
-    const cardBg = dark ? '#C2F94A' : cfg.accent;
-    const cardShadow = dark ? '0 16px 34px -6px rgba(163,224,53,0.5)' : `0 16px 34px -6px ${cfg.accent}66`;
+    // ── 팀 발표(공개) 시 카드를 내 조끼색으로 ─────────────────────────────────────
+    // 정기(self) 모임에서 팀이 확정·공개(teamReady)되고 내 팀이 정해지면(출석 전) 카드 배경=내 조끼색.
+    const VEST_HEX = ['#ec4899','#38bdf8','#a3e635','#facc15','#2563eb','#ef4444']; // 핑크·하늘·연두·노랑·파랑·빨강 (getTeamBadge 순서)
+    const vestLightText = (myTeamIdx === 2 || myTeamIdx === 3); // 연두·노랑 = 밝은 조끼 → 어두운 글자
+    const teamReveal = kind === 'self' && teamReady && !!myTeamInfo && myTeamIdx >= 0 && !mySession?.checkedIn;
+    const vestNumColor = vestLightText ? '#1e293b' : (VEST_HEX[myTeamIdx] || '#1e293b'); // 흰 번호패치 안 숫자색
+    // 매칭=라임(밝은)→어두운 글자 / 정기=인디고→흰 글자 / 팀공개=조끼색(밝으면 어두운 글자)
+    const dark = teamReveal ? vestLightText : (kind === 'match');
+    const cardBg = teamReveal ? (VEST_HEX[myTeamIdx] || cfg.accent) : (kind === 'match' ? '#C2F94A' : cfg.accent);
+    const cardShadow = teamReveal ? `0 16px 34px -6px ${(VEST_HEX[myTeamIdx] || '#000000')}66`
+        : (kind === 'match' ? '0 16px 34px -6px rgba(163,224,53,0.5)' : `0 16px 34px -6px ${cfg.accent}66`);
     const ink   = dark ? 'text-[#15171E]'    : 'text-white';
     const ink90 = dark ? 'text-[#15171E]/90' : 'text-white/90';
     const ink85 = dark ? 'text-[#15171E]/85' : 'text-white/85';
@@ -642,7 +649,7 @@ const NextMeetingCard = ({
                             <div>
                                 <div className="flex items-center gap-2 mb-2.5">
                                     <span className="w-1.5 h-1.5 rounded-full bg-live moida-pulse-live flex-shrink-0"></span>
-                                    <span className="text-[13px] font-black text-white">지금 출석 체크하세요</span>
+                                    <span className={`text-[13px] font-black ${ink}`}>지금 출석 체크하세요</span>
                                 </div>
                                 <div className="flex gap-2.5">
                                     <span role="button" onClick={(e)=>{ e.stopPropagation(); onInlineGPS && onInlineGPS(); }}
@@ -655,11 +662,11 @@ const NextMeetingCard = ({
                                     </span>
                                     {enableQR && (
                                         <span role="button" onClick={(e)=>{ e.stopPropagation(); onInlineQR && onInlineQR(); }}
-                                            className="flex-1 min-w-0 rounded-2xl p-4 text-white active:scale-95 transition-all flex flex-col justify-between cursor-pointer" style={{minHeight:'104px', background:'rgba(255,255,255,0.14)'}}>
-                                            <Icon.QrCode size={32} className="text-white"/>
+                                            className={`flex-1 min-w-0 rounded-2xl p-4 ${ink} active:scale-95 transition-all flex flex-col justify-between cursor-pointer`} style={{minHeight:'104px', background: dark?'rgba(0,0,0,0.10)':'rgba(255,255,255,0.14)'}}>
+                                            <Icon.QrCode size={32} className={ink}/>
                                             <div className="min-w-0">
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-white/70">QR 출석</p>
-                                                <p className="font-black text-[15px] leading-tight text-white">스캔하기</p>
+                                                <p className={`text-[10px] font-black uppercase tracking-widest ${ink70}`}>QR 출석</p>
+                                                <p className={`font-black text-[15px] leading-tight ${ink}`}>스캔하기</p>
                                             </div>
                                         </span>
                                     )}
@@ -729,22 +736,21 @@ const NextMeetingCard = ({
                         )
                     ) : teamReady && myTeamInfo ? (
                         fillOn ? (
-                            <div className="flex flex-col items-center gap-4 py-1 text-center">
-                                <div className={`flex items-center justify-center rounded-3xl ${getTeamBadge(myTeamIdx)}`} style={{width:132, height:132}}>
-                                    <span className="font-black text-white leading-none" style={{fontSize:66}}>{myTeamInfo.jerseyNumber}</span>
+                            <div className="flex items-center justify-center gap-5 py-2">
+                                {/* 흰 번호패치(저지 느낌) — 조끼색 카드 위에서도 항상 잘 보이게 */}
+                                <div className="flex items-center justify-center rounded-3xl bg-white flex-shrink-0" style={{width:128, height:128, boxShadow:'0 8px 20px rgba(0,0,0,0.18)'}}>
+                                    <span className="font-black leading-none" style={{fontSize:64, color: vestNumColor}}>{myTeamInfo.jerseyNumber}</span>
                                 </div>
-                                <div>
-                                    <p className="text-xl font-black text-white leading-tight">내 팀 · {myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</p>
-                                    <p className="text-sm font-black text-white/70 mt-1">{getTeamColorName(myTeamIdx)} 조끼</p>
+                                <div className="min-w-0">
+                                    <p className={`text-[15px] font-black ${ink85} leading-snug`}>오늘 {memberData?.name || '회원'}님은</p>
+                                    <p className={`text-2xl font-black ${ink} leading-snug mt-0.5`}>{getTeamColorName(myTeamIdx)}색 {myTeamInfo.jerseyNumber}번<span className="text-lg">이에요!</span></p>
+                                    <p className={`text-xs font-black ${ink70} mt-2`}>{myTeamInfo.teamName}팀 · {getTeamColorName(myTeamIdx)} 조끼</p>
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex items-center justify-between gap-2">
-                                <span className="flex items-center gap-1.5 text-sm font-black text-white min-w-0">
-                                    <span className={`w-5 h-5 rounded-md flex items-center justify-center text-white text-[11px] font-black flex-shrink-0 ${getTeamBadge(myTeamIdx)}`}>{myTeamInfo.jerseyNumber}</span>
-                                    <span className="truncate">내 팀 · {myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</span>
-                                </span>
-                                <span className="text-xs text-white/70 flex-shrink-0">{getTeamColorName(myTeamIdx)} 조끼</span>
+                            <div className="flex items-center gap-2.5">
+                                <span className="w-9 h-9 rounded-xl bg-white flex items-center justify-center font-black flex-shrink-0" style={{color: vestNumColor, fontSize:17, boxShadow:'0 2px 6px rgba(0,0,0,0.15)'}}>{myTeamInfo.jerseyNumber}</span>
+                                <span className={`text-sm font-black ${ink} min-w-0 truncate`}>오늘 {memberData?.name || '회원'}님은 {getTeamColorName(myTeamIdx)}색 {myTeamInfo.jerseyNumber}번!</span>
                             </div>
                         )
                     ) : (
