@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>운영진 모임 상세 — 관리 카드 안</title>
+<style>
+  :root{ --accent:#183FB0; --accent-deep:#122E78; --teal:#0d9488; --ink:#0f172a; --sub:#64748b; --line:#e6eaf2; --bg:#f4f6fa; --live:#C2F94A; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; font-family:'Pretendard',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:radial-gradient(125% 90% at 50% -8%, #e8ecf9 0%, #f3f5fb 46%, #f4f6fa 100%); min-height:100vh; color:var(--ink); user-select:none; }
+  .wrap{ max-width:440px; margin:0 auto; padding:16px 16px calc(28px + env(safe-area-inset-bottom)); }
+  h1{ font-size:18px; font-weight:900; margin:6px 4px 2px; }
+  .lead{ font-size:12px; font-weight:700; color:#94a3b8; margin:0 4px 14px; line-height:1.6; }
+  .lead b{ color:var(--accent-deep); }
+
+  /* 상세 헤더 */
+  .dhead{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .back{ width:38px; height:38px; border-radius:12px; background:#eef1f7; border:0; color:#475569; font-size:18px; font-weight:900; flex-shrink:0; cursor:pointer; }
+  .dhead .meta{ min-width:0; }
+  .dhead .tags{ display:flex; align-items:center; gap:6px; }
+  .dhead .badge{ font-size:10px; font-weight:900; color:#fff; background:var(--accent); padding:2px 8px; border-radius:8px; }
+  .dhead .dlabel{ font-size:10px; font-weight:900; color:#94a3b8; }
+  .dhead .when{ font-size:15px; font-weight:900; margin-top:3px; }
+  .dhead .place{ font-size:11.5px; font-weight:700; color:#94a3b8; margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .crumb{ font-size:11px; font-weight:900; color:#94a3b8; margin:0 2px 8px; text-transform:uppercase; letter-spacing:.08em; }
+
+  /* 관리 카드 (3줄) */
+  .mcard{ background:#fff; border:1px solid var(--line); border-radius:20px; overflow:hidden; box-shadow:0 4px 14px rgba(0,0,0,.05); }
+  .row{ display:flex; align-items:center; gap:13px; padding:15px 15px; border-top:1px solid #f1f5f9; }
+  .row:first-child{ border-top:0; }
+  .ic{ width:46px; height:46px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:21px; flex-shrink:0; }
+  .ic.info{ background:#eef2fb; color:#122E78; } .ic.team{ background:#dcfce7; color:#15803d; } .ic.match{ background:#fee2e2; color:#b91c1c; }
+  .rbody{ flex:1; min-width:0; }
+  .rbody .nm{ font-size:15.5px; font-weight:900; }
+  .rbody .desc{ font-size:11.5px; font-weight:700; color:#94a3b8; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .stat{ display:inline-block; font-size:10.5px; font-weight:900; padding:2px 9px; border-radius:999px; margin-top:7px; }
+  .stat.done{ background:#ecfdf5; color:#059669; } .stat.todo{ background:#fffbeb; color:#d97706; } .stat.muted{ background:#f1f5f9; color:#94a3b8; }
+  .edit{ flex-shrink:0; display:flex; align-items:center; gap:3px; border:0; font-family:inherit; font-size:13px; font-weight:900; color:#fff; background:var(--accent); padding:9px 14px; border-radius:12px; cursor:pointer; }
+  .edit.ghost{ background:#eef2fb; color:var(--accent-deep); }
+  .edit:active{ transform:scale(.95); }
+
+  .toolbar{ display:flex; gap:8px; margin-top:12px; }
+  .toolbar button{ flex:1; border:0; font-family:inherit; font-size:12.5px; font-weight:900; padding:11px; border-radius:14px; cursor:pointer; }
+  .toolbar .qr{ background:#eef1f7; color:#475569; } .toolbar .del{ background:#fef2f2; color:#ef4444; }
+
+  .note{ font-size:12px; font-weight:800; color:#475569; margin:16px 4px 0; line-height:1.7; background:#fff; border:1px solid var(--line); border-radius:14px; padding:13px 14px; }
+  .note b{ color:var(--accent-deep); }
+
+  /* 토글: 팀/매치 상태 미리보기 */
+  .sw{ display:flex; gap:6px; margin:14px 4px 4px; }
+  .sw button{ flex:1; border:1px solid var(--line); background:#fff; font-family:inherit; font-size:11.5px; font-weight:900; color:#94a3b8; padding:8px; border-radius:11px; cursor:pointer; }
+  .sw button.on{ background:#122E78; color:#fff; border-color:#122E78; }
+
+  /* '수정' 눌렀을 때 진입 예시 (오버레이) */
+  .ov{ position:fixed; inset:0; background:rgba(15,23,42,.5); display:none; align-items:flex-end; justify-content:center; z-index:50; }
+  .ov.show{ display:flex; }
+  .sheet{ background:#fff; width:100%; max-width:440px; border-radius:24px 24px 0 0; padding:22px 18px calc(22px + env(safe-area-inset-bottom)); }
+  .sheet h3{ margin:0 0 4px; font-size:17px; font-weight:900; }
+  .sheet p{ margin:0; font-size:12.5px; font-weight:700; color:#94a3b8; line-height:1.6; }
+  .sheet .ph{ margin-top:14px; border:1.5px dashed #cbd5e1; border-radius:14px; padding:26px 14px; text-align:center; font-size:12px; font-weight:800; color:#94a3b8; }
+  .sheet .close{ width:100%; margin-top:14px; border:0; background:#122E78; color:#fff; font-family:inherit; font-weight:900; font-size:14px; padding:13px; border-radius:14px; cursor:pointer; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>운영진 모임 상세 — 관리 카드 안</h1>
+  <p class="lead">모임을 누르면 <b>긴 출석·팀·매치 섹션 대신</b>, 한 카드 안에 <b>모임 정보·팀·매치</b> 3줄만. 각 줄의 <b>[수정]</b>을 누르면 그 편집 화면으로 들어가요. (회원 화면은 그대로 — 이건 운영진 전용)</p>
+
+  <!-- 상세 헤더 -->
+  <div class="dhead">
+    <button class="back">‹</button>
+    <div class="meta">
+      <div class="tags"><span class="badge">정기</span><span class="dlabel">D-5</span></div>
+      <div class="when">7월 5일 (토) · 20:00~22:00</div>
+      <div class="place">📍 ○○풋살장 A</div>
+    </div>
+  </div>
+
+  <div class="crumb">이 모임 관리</div>
+
+  <!-- 관리 카드 -->
+  <div class="mcard">
+    <div class="row">
+      <div class="ic info">🕗</div>
+      <div class="rbody">
+        <div class="nm">모임 정보</div>
+        <div class="desc">시간 · 장소 · 정원 · 담당자</div>
+        <span class="stat done">20:00~22:00 · 정원 18명</span>
+      </div>
+      <button class="edit" onclick="open_('모임 정보 수정','시간·장소(지도/GPS)·정원·선착순·QR·담당자를 여기서 바꿔요.')">수정</button>
+    </div>
+
+    <div class="row" id="teamRow">
+      <div class="ic team">🦺</div>
+      <div class="rbody">
+        <div class="nm">팀 편성</div>
+        <div class="desc">팀 나누기 · 조끼색 · 확정</div>
+        <span class="stat done" id="teamStat">2팀 확정 · 공개됨</span>
+      </div>
+      <button class="edit" id="teamBtn" onclick="open_('팀 편성','자동 편성·드래그 이동·조끼색·확정/재생성을 여기서.')">수정</button>
+    </div>
+
+    <div class="row" id="matchRow">
+      <div class="ic match">⚔️</div>
+      <div class="rbody">
+        <div class="nm">매치표</div>
+        <div class="desc">대진 · 라운드 · 코트</div>
+        <span class="stat done" id="matchStat">5경기 생성됨</span>
+      </div>
+      <button class="edit" id="matchBtn" onclick="open_('매치표','대진 생성·라운드·코트·경기 진행/결과를 여기서.')">수정</button>
+    </div>
+  </div>
+
+  <!-- QR / 삭제 -->
+  <div class="toolbar">
+    <button class="qr">▣ QR 코드</button>
+    <button class="del">🗑 모임 삭제</button>
+  </div>
+
+  <!-- 상태 미리보기 토글 -->
+  <div class="sw">
+    <button class="on" onclick="setState('done',this)">팀·매치 있음</button>
+    <button onclick="setState('todo',this)">아직 안 함</button>
+  </div>
+
+  <p class="note">바뀌는 점: 들어가자마자 <b>출석·팀·매치 섹션이 길게 펼쳐지던 것</b>을 없애고, <b>관리 카드 1개(3줄)</b>로 정리. 출석 현황(체크인·키오스크)은 모임이 임박/진행 중일 때 <b>홈</b>에서 진행하니 여기선 <b>설정·편집 진입</b>에 집중. 매칭 모임은 매치표 줄이 자동으로 빠져요.</p>
+</div>
+
+<!-- 수정 진입 예시 시트 -->
+<div class="ov" id="ov" onclick="if(event.target===this)closeOv()">
+  <div class="sheet">
+    <h3 id="ovT">제목</h3>
+    <p id="ovD">설명</p>
+    <div class="ph">(여기에 해당 편집 화면이 들어와요)</div>
+    <button class="close" onclick="closeOv()">닫기</button>
+  </div>
+</div>
+
+<script>
+function open_(t,d){ document.getElementById('ovT').textContent=t; document.getElementById('ovD').textContent=d; document.getElementById('ov').classList.add('show'); }
+function closeOv(){ document.getElementById('ov').classList.remove('show'); }
+function setState(s,btn){
+  document.querySelectorAll('.sw button').forEach(b=>b.classList.remove('on')); btn.classList.add('on');
+  var ts=document.getElementById('teamStat'), ms=document.getElementById('matchStat');
+  var tb=document.getElementById('teamBtn'), mb=document.getElementById('matchBtn');
+  if(s==='done'){
+    ts.className='stat done'; ts.textContent='2팀 확정 · 공개됨'; tb.textContent='수정'; tb.className='edit';
+    ms.className='stat done'; ms.textContent='5경기 생성됨'; mb.textContent='수정'; mb.className='edit';
+  }else{
+    ts.className='stat todo'; ts.textContent='아직 안 나눔'; tb.textContent='편성'; tb.className='edit ghost';
+    ms.className='stat todo'; ms.textContent='아직 없음'; mb.textContent='생성'; mb.className='edit ghost';
+  }
+}
+</script>
+</body>
+</html>
