@@ -64,7 +64,7 @@
 <script>
 let openId=1;
 const MEET=[
-  { kind:'live', day:5, dow:'토', title:'정기모임', time:'20:00~22:00', place:'○○풋살장 A', hl:true, chip:{t:'● 진행 중',cls:'live'},
+  { kind:'self', day:5, dow:'토', title:'정기모임', time:'20:00~22:00', place:'○○풋살장 A', hl:true, chip:{t:'● 진행 중',cls:'live'},
     info:[['⏰','20:00~22:00'],['📍','○○풋살장 A'],['👥','18명 참여 중']],
     state:{ mode:'home', c:'#15803d', ic:'▶', t:'지금 진행 중', s:'출석·팀·매치는 홈에서 봐요' } },
   { kind:'self', day:12, dow:'토', title:'정기모임', time:'20:00', place:'○○풋살장 A', chip:{t:'신청 완료',cls:'done'},
@@ -97,11 +97,9 @@ function bodyHTML(m){
 function render(){
   const list=document.getElementById('list');
   list.innerHTML=MEET.map((m,i)=>{ const open=openId===i; const isM=m.kind==='match';
-    const chipBg=m.kind==='live'?'':isM?'#C2F94A':'#183FB0', chipFg=isM?'#15171E':'#fff';
-    const dp = m.kind==='live' ? 'live' : '';
-    const dpStyle = m.kind==='live' ? '' : `style="background:${isM?'#C2F94A':'#183FB0'};color:${chipFg}"`;
+    const dpBg=isM?'#C2F94A':'#183FB0', dpFg=isM?'#15171E':'#fff';   // 정기=인디고 / 매칭=라임 (종류 기준)
     return `<div class="mc${m.hl?' hl':''}${open?' open':''}" data-i="${i}">
-      <button class="head"><div class="dchip ${dp}" ${dpStyle}><b>${m.day}</b><span>${m.dow}</span></div>
+      <button class="head"><div class="dchip" style="background:${dpBg};color:${dpFg}"><b>${m.day}</b><span>${m.dow}</span></div>
         <div class="info"><div class="ttl"><span class="nm">${m.title}</span><span class="chip ${m.chip.cls}">${m.chip.t}</span></div>
           <div class="meta">⏰ ${m.time} · 📍 ${m.place}</div></div><div class="chev">›</div></button>
       <div class="acc"><div class="accin">${bodyHTML(m)}</div></div></div>`; }).join('');
