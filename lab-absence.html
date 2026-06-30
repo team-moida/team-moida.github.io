@@ -77,6 +77,12 @@
   .modal .mreason::placeholder{ color:#cbd5e1; font-weight:700; }
   .rsn{ font-size:11px; font-weight:800; color:rgba(255,255,255,.72); margin-top:1px; max-width:150px; line-height:1.4; }
   .rsnbar{ text-align:center; font-size:11.5px; font-weight:800; color:rgba(255,255,255,.72); margin-top:11px; }
+  /* 운영진 폰에 가는 알림 미리보기 */
+  .notif{ background:#fff; border:1px solid #e6eaf2; border-radius:16px; padding:13px 14px; box-shadow:0 8px 20px -10px rgba(0,0,0,.16); display:flex; gap:11px; align-items:flex-start; animation:popIn .3s cubic-bezier(.22,1,.36,1); }
+  .notif .ic{ width:38px; height:38px; border-radius:11px; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .notif .nlab{ font-size:10.5px; font-weight:900; color:#94a3b8; margin-bottom:3px; }
+  .notif .nt{ font-size:13.5px; font-weight:900; color:#0f172a; }
+  .notif .nb{ font-size:12px; font-weight:700; color:#64748b; margin-top:2px; line-height:1.45; }
   .modal .mrow{ display:flex; gap:8px; margin-top:20px; }
   .modal .mrow button{ flex:1; border:0; border-radius:16px; font-weight:900; font-size:14.5px; padding:14px; cursor:pointer; font-family:inherit; }
   .modal .mkeep{ background:#f1f5f9; color:#64748b; }
@@ -89,7 +95,7 @@
 <body>
 <div class="wrap">
   <h1>신청 단계 LAB · 불참 / 노쇼</h1>
-  <p class="lead">시간이 지나면 같은 자리의 신청 버튼이 <b>신청하기 → 불참 신청 → 노쇼 신청 → 당일 노쇼 신청</b>으로 바뀝니다. 불참·노쇼는 누를 때 <b>사유를 적을 수 있고</b>, 한 번 빠지면 대기 여부와 상관없이 <b>취소해도 순번이 항상 맨 뒤로</b> 밀려요. 아래에서 시점을 바꿔보세요.</p>
+  <p class="lead">시간이 지나면 같은 자리의 신청 버튼이 <b>신청하기 → 불참 신청 → 노쇼 신청 → 당일 노쇼 신청</b>으로 바뀝니다. 불참·노쇼는 누를 때 <b>사유를 적을 수 있고</b>, 한 번 빠지면 대기 여부와 상관없이 <b>취소해도 순번이 항상 맨 뒤로</b> 밀려요. 신청하면 <b>담당 운영진에게 알림</b>이 갑니다(맨 아래 미리보기). 아래에서 시점을 바꿔보세요.</p>
 
   <div class="seclabel">현재 시점 <small>· 골라보세요</small></div>
   <div class="phases" id="phases"></div>
@@ -107,6 +113,8 @@
     <div class="cdesc" id="cdesc"></div>
     <div class="row" id="row"></div>
   </div>
+
+  <div id="notifWrap"></div>
 
   <p class="hint" id="hint"></p>
 </div>
@@ -202,6 +210,18 @@ function render(){
     if(applied && reason){ const r=document.createElement('div'); r.className='rsnbar'; r.textContent='사유: '+reason; row.appendChild(r); }
   }
   if(shape==='circle') row.style.display='flex';
+
+  // 운영진(담당자) 폰에 가는 알림 미리보기 — 불참/노쇼 신청을 했을 때만
+  const nw=document.getElementById('notifWrap');
+  if(applied && pi>0){
+    const who='김모이', isNo=pi>=2, fine=pi===2?10000:pi===3?20000:0;
+    const title=isNo?'🚫 노쇼 신청':'🙏 불참 신청';
+    let body=`${who}님이 7/5 모임에 ${isNo?'노쇼':'불참'}을 신청했어요.`;
+    if(fine>0) body+=` (벌금 ${fine.toLocaleString()}원)`;
+    if(reason) body+=` · 사유: ${reason}`;
+    nw.innerHTML=`<div class="seclabel" style="margin-top:18px">담당 운영진 폰 알림 <small>· 신청하면 이렇게 가요</small></div>
+      <div class="notif"><div class="ic">🔔</div><div style="min-width:0"><div class="nlab">모이다 · 방금</div><div class="nt">${title}</div><div class="nb">${body}</div></div></div>`;
+  } else nw.innerHTML='';
 }
 
 function doApply(){
@@ -223,14 +243,15 @@ function doApply(){
       <div class="mtitle">${p.applyBig}</div>
       <textarea class="mreason" id="reasonInput" placeholder="사유를 적어주세요 (선택)&#10;예: 갑자기 일이 생겼어요">${reason}</textarea>
       <div class="msub" style="margin-top:10px">${d.sub}</div>
+      <div class="mwarn">담당 운영진에게 <b>알림이 가요.</b> 다시 참석하려면 취소할 수 있지만 <b>순번은 맨 뒤로</b> 밀려요.</div>
       <div class="mrow">
-        <button class="mkeep">닫기</button>
+        <button class="mkeep">그대로 둘게요</button>
         <button class="mcancel" style="background:${p.cssColor}">${p.applyBig}</button>
       </div>`;
     modalBg.classList.add('show');
     setTimeout(()=>{ const ta=document.getElementById('reasonInput'); if(ta) ta.focus(); }, 80);
     modal.querySelector('.mkeep').onclick=()=>{ modalBg.classList.remove('show'); };
-    modal.querySelector('.mcancel').onclick=()=>{ reason=(document.getElementById('reasonInput').value||'').trim(); modalBg.classList.remove('show'); applied=true; render(); flash(p.applyBig+'됐어요'); };
+    modal.querySelector('.mcancel').onclick=()=>{ reason=(document.getElementById('reasonInput').value||'').trim(); modalBg.classList.remove('show'); applied=true; render(); flash('담당 운영진에게 알림이 갔어요 📨'); };
   }
 }
 function doCancel(){
