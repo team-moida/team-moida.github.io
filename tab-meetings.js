@@ -78,6 +78,17 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
             setTimeout(() => setWizAnim(''), 340);
         }, 190);
     };
+    // 단계 점프(수정 시 진행 점을 눌러 원하는 항목으로 바로 이동)
+    const wizGoTo = (target) => {
+        if (wizAnim || target === wizStep || target < 1 || target > WIZ_STEPS.length) return;
+        const dir = target > wizStep ? 1 : -1;
+        setWizAnim(dir > 0 ? 'wiz-out-fwd' : 'wiz-out-back');
+        setTimeout(() => {
+            setWizStep(target);
+            setWizAnim(dir > 0 ? 'wiz-in-fwd' : 'wiz-in-back');
+            setTimeout(() => setWizAnim(''), 340);
+        }, 190);
+    };
 
     // ── 정기 모임 설정 ──
     const DOW = ['일','월','화','수','목','금','토'];
@@ -236,6 +247,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
             locationLat: m.locationLat || null, locationLng: m.locationLng || null,
             locationRadius: m.locationRadius || 100, enableQR: m.enableQR || false,
         });
+        setWizStep(1); setWizAnim('');   // 수정도 단계별 마법사 → 1단계부터
         setIsModalOpen(true);
     };
 
@@ -308,8 +320,8 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
         if (pendingAction) onPendingActionHandled && onPendingActionHandled();
     }, [pendingAction]);
 
-    const isWiz = !editingId;                       // 새 모임만 마법사
-    const stepShow = (n) => !isWiz || wizStep === n; // 수정모드는 전부 표시
+    const isWiz = true;                              // 새 모임·수정 모두 단계별 마법사
+    const stepShow = (n) => wizStep === n;           // 현재 단계만 표시
     // 시간 = 시(00~23)·분(10분 단위) 드롭다운(24시간 표기). 날짜는 캘린더로 고르되 칸엔 월·일만 표시.
     const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
     const MINS = ['00','10','20','30','40','50'];
@@ -441,8 +453,16 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                         <div className={`max-w-lg mx-auto w-full px-5 ${isWiz ? 'py-5 min-h-full flex flex-col wiz-lg' : 'py-4 space-y-3'}`}>
                             {isWiz && (
                                 <div className="flex gap-1.5 mb-2.5 shrink-0">
-                                    {WIZ_STEPS.map((_, i) => <div key={i} className={`flex-1 h-1.5 rounded-full transition-all ${i < wizStep ? 'bg-teal-500' : 'bg-slate-200'}`}/>)}
+                                    {WIZ_STEPS.map((_, i) => editingId ? (
+                                        <button key={i} onClick={() => wizGoTo(i + 1)}
+                                            className={`flex-1 h-1.5 rounded-full transition-all ${i + 1 === wizStep ? 'bg-teal-600' : i < wizStep ? 'bg-teal-400' : 'bg-slate-200'}`}/>
+                                    ) : (
+                                        <div key={i} className={`flex-1 h-1.5 rounded-full transition-all ${i < wizStep ? 'bg-teal-500' : 'bg-slate-200'}`}/>
+                                    ))}
                                 </div>
+                            )}
+                            {editingId && (
+                                <p className="text-[11px] font-bold text-slate-400 mb-1.5 -mt-1 shrink-0 text-center">진행 점을 눌러 원하는 항목으로 바로 갈 수 있어요</p>
                             )}
                             <div className={isWiz ? `flex-1 flex flex-col justify-center space-y-4 py-2 ${wizAnim}` : 'space-y-3'}>
                             {isWiz && (
@@ -716,26 +736,22 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                     <div className="shrink-0 border-t border-slate-100"
                         style={{paddingBottom:'max(0.75rem,env(safe-area-inset-bottom))'}}>
                         <div className="max-w-lg mx-auto w-full px-5 pt-3">
-                            {isWiz ? (
-                                <div className="flex gap-2">
-                                    {wizStep > 1 && (
-                                        <button onClick={() => wizGo(-1)}
-                                            className="px-5 py-3 rounded-2xl bg-slate-100 text-slate-500 font-black text-sm active:scale-95 transition-all">이전</button>
-                                    )}
-                                    {wizStep < WIZ_STEPS.length ? (
-                                        <button onClick={() => wizGo(1)}
-                                            className="flex-1 py-3 rounded-2xl bg-teal-500 text-white font-black text-sm active:scale-95 transition-all">다음</button>
-                                    ) : (
-                                        <button onClick={wizSubmit} disabled={wizLoading}
-                                            className="flex-1 py-3 rounded-2xl bg-orange-500 text-white font-black text-sm shadow-lg active:scale-95 transition-all disabled:opacity-60">{wizLoading ? '등록 중…' : '✨ 등록하기'}</button>
-                                    )}
-                                </div>
-                            ) : (
-                                <button onClick={handleSave} disabled={isSaving}
-                                    className="w-full py-3 bg-teal-500 text-white rounded-2xl font-black text-sm active:scale-95 transition-all disabled:opacity-50">
-                                    {isSaving ? '저장 중...' : '수정 완료'}
-                                </button>
-                            )}
+                            <div className="flex gap-2">
+                                {wizStep > 1 && (
+                                    <button onClick={() => wizGo(-1)}
+                                        className="px-5 py-3 rounded-2xl bg-slate-100 text-slate-500 font-black text-sm active:scale-95 transition-all">이전</button>
+                                )}
+                                {wizStep < WIZ_STEPS.length ? (
+                                    <button onClick={() => wizGo(1)}
+                                        className="flex-1 py-3 rounded-2xl bg-teal-500 text-white font-black text-sm active:scale-95 transition-all">다음</button>
+                                ) : editingId ? (
+                                    <button onClick={handleSave} disabled={isSaving}
+                                        className="flex-1 py-3 rounded-2xl bg-teal-500 text-white font-black text-sm shadow-lg active:scale-95 transition-all disabled:opacity-60">{isSaving ? '저장 중…' : '수정 완료'}</button>
+                                ) : (
+                                    <button onClick={wizSubmit} disabled={wizLoading}
+                                        className="flex-1 py-3 rounded-2xl bg-orange-500 text-white font-black text-sm shadow-lg active:scale-95 transition-all disabled:opacity-60">{wizLoading ? '등록 중…' : '✨ 등록하기'}</button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
