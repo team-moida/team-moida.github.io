@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>모임 운영(편집) LAB · 3안 비교</title>
+<style>
+  :root{ --accent:#183FB0; --accent-deep:#122E78; --ink:#0f172a; --sub:#64748b; --line:#e6eaf2; --bg:#f4f6fa; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; font-family:'Pretendard',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:radial-gradient(125% 90% at 50% -8%, #e8ecf9 0%, #f3f5fb 46%, #f4f6fa 100%); min-height:100vh; color:var(--ink); user-select:none; }
+  .wrap{ max-width:440px; margin:0 auto; padding:16px 16px calc(28px + env(safe-area-inset-bottom)); }
+  h1{ font-size:18px; font-weight:900; margin:6px 4px 2px; }
+  .lead{ font-size:12px; font-weight:700; color:#94a3b8; margin:0 4px 14px; line-height:1.6; }
+  .seclabel{ font-size:12px; font-weight:900; color:var(--accent); margin:18px 4px 8px; }
+  .seclabel small{ color:#94a3b8; font-weight:800; }
+
+  .seg{ display:flex; gap:5px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:5px; box-shadow:0 4px 14px rgba(0,0,0,.05); }
+  .seg button{ flex:1; border:0; background:transparent; border-radius:10px; padding:11px 4px; font-weight:900; font-size:12px; color:#64748b; cursor:pointer; font-family:inherit; line-height:1.3; }
+  .seg button.on{ background:var(--accent); color:#fff; }
+
+  /* 폰 프레임 (모임 상세) */
+  .phone{ position:relative; margin-top:12px; background:var(--bg); border:1px solid var(--line); border-radius:24px; overflow:hidden; box-shadow:0 18px 40px -16px rgba(15,23,42,.22); height:560px; display:flex; flex-direction:column; }
+  .mhead{ background:#fff; border-bottom:1px solid var(--line); padding:13px 14px; display:flex; align-items:center; gap:10px; }
+  .mhead .bk{ font-size:20px; color:#94a3b8; font-weight:700; }
+  .mhead .mt{ flex:1; min-width:0; }
+  .mhead .mt b{ font-size:14.5px; font-weight:900; display:block; }
+  .mhead .mt span{ font-size:11px; font-weight:700; color:#94a3b8; }
+  .mhead .op{ border:0; font-family:inherit; font-weight:900; font-size:12.5px; border-radius:11px; padding:9px 13px; cursor:pointer; }
+  .op.hub{ background:var(--accent); color:#fff; }
+  .op.pen{ background:#eef2fb; color:var(--accent-deep); }
+  .subtabs{ display:flex; gap:4px; background:#fff; border-bottom:1px solid var(--line); padding:0 10px; }
+  .subtabs div{ padding:11px 14px; font-size:13px; font-weight:900; color:#94a3b8; border-bottom:2px solid transparent; }
+  .subtabs div.on{ color:var(--accent); border-bottom-color:var(--accent); }
+  .mbody{ flex:1; overflow:auto; padding:14px; }
+
+  /* 회원용(정보 많은) 목업 */
+  .mcard{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:13px; margin-bottom:10px; }
+  .mcard .ct{ font-size:12px; font-weight:900; color:var(--sub); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
+  .person{ display:flex; align-items:center; gap:9px; padding:7px 0; border-top:1px solid #f1f5f9; }
+  .person:first-of-type{ border-top:0; }
+  .av{ width:30px; height:30px; border-radius:9px; background:#eef2fb; color:var(--accent-deep); font-weight:900; font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .person .nm{ font-size:13px; font-weight:800; flex:1; }
+  .person .tg{ font-size:10.5px; font-weight:900; color:#94a3b8; background:#f1f5f9; padding:3px 8px; border-radius:999px; }
+  .chip{ border:0; font-family:inherit; font-weight:900; font-size:11px; color:var(--accent-deep); background:#eef2fb; border-radius:9px; padding:6px 10px; cursor:pointer; }
+
+  /* 오버레이 (폰 안 자식) */
+  .layer{ position:absolute; inset:0; z-index:10; }
+  .lbg{ position:absolute; inset:0; background:rgba(15,23,42,.42); animation:fade .2s; }
+  @keyframes fade{ from{opacity:0} }
+
+  /* A. 운영 허브 */
+  .hub{ position:absolute; inset:0; background:var(--bg); display:flex; flex-direction:column; animation:slideUp .26s cubic-bezier(.22,1,.36,1); }
+  @keyframes slideUp{ from{transform:translateY(14px);opacity:0} }
+  .hubhead{ background:#fff; border-bottom:1px solid var(--line); padding:14px; display:flex; align-items:center; gap:10px; }
+  .hubhead b{ font-size:15px; font-weight:900; flex:1; }
+  .hubhead .x{ font-size:14px; font-weight:900; color:#94a3b8; background:#f1f5f9; border:0; border-radius:10px; padding:7px 12px; cursor:pointer; font-family:inherit; }
+  .hubbody{ flex:1; overflow:auto; padding:14px; }
+  .opcard{ width:100%; text-align:left; border:1px solid var(--line); background:#fff; border-radius:18px; padding:16px; margin-bottom:11px; cursor:pointer; font-family:inherit; display:flex; align-items:center; gap:13px; box-shadow:0 4px 14px rgba(0,0,0,.04); }
+  .opcard .ic{ width:46px; height:46px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+  .opcard .tx{ flex:1; min-width:0; }
+  .opcard .tx b{ font-size:15.5px; font-weight:900; display:block; }
+  .opcard .tx .d{ font-size:12px; font-weight:800; color:#94a3b8; }
+  .opcard .go{ font-size:13px; font-weight:900; color:var(--accent); flex-shrink:0; }
+  .opcard .st{ display:inline-block; font-size:10.5px; font-weight:900; padding:2px 8px; border-radius:999px; margin-top:5px; }
+  .st.done{ background:#dcfce7; color:#15803d; } .st.todo{ background:#fef0c7; color:#92400e; }
+
+  /* B. 바텀시트 */
+  .sheet{ position:absolute; left:0; right:0; bottom:0; background:#fff; border-radius:24px 24px 0 0; padding:8px 0 16px; animation:up .28s cubic-bezier(.22,1,.36,1); max-height:90%; display:flex; flex-direction:column; }
+  @keyframes up{ from{transform:translateY(100%)} }
+  .grip{ width:42px; height:5px; border-radius:999px; background:#e2e8f0; margin:6px auto; }
+  .sheet h3{ font-size:16px; font-weight:900; margin:4px 16px 8px; display:flex; justify-content:space-between; align-items:center; }
+  .sheet h3 .x{ font-size:13px; color:#94a3b8; background:#f1f5f9; border:0; border-radius:9px; padding:6px 11px; font-family:inherit; font-weight:900; cursor:pointer; }
+  .srows{ overflow:auto; }
+  .srow{ width:100%; text-align:left; border:0; background:#fff; font-family:inherit; padding:15px 16px; border-top:1px solid #f1f5f9; display:flex; align-items:center; gap:12px; cursor:pointer; }
+  .srow .n{ width:22px; height:22px; border-radius:7px; background:#eef2fb; color:var(--accent-deep); font-weight:900; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .srow .l{ font-size:14px; font-weight:900; width:46px; flex-shrink:0; }
+  .srow .v{ flex:1; font-size:13px; font-weight:700; color:var(--sub); text-align:right; }
+  .srow .ar{ color:#cbd5e1; font-weight:900; margin-left:8px; }
+  .sedit{ background:#f8fafc; border-top:1px solid #f1f5f9; padding:14px 16px; }
+  .field{ width:100%; border:1.5px solid var(--line); border-radius:12px; padding:11px 13px; font-size:14px; font-weight:700; font-family:inherit; background:#fff; }
+  .stepper{ display:flex; align-items:center; gap:14px; justify-content:center; }
+  .stepper button{ width:42px; height:42px; border-radius:12px; border:1.5px solid var(--line); background:#fff; font-size:22px; font-weight:900; cursor:pointer; font-family:inherit; color:var(--accent); }
+  .stepper .num{ font-size:28px; font-weight:900; min-width:54px; text-align:center; }
+
+  /* 포커스 편집기 (A·B 공용) */
+  .editor{ position:absolute; inset:0; background:var(--bg); display:flex; flex-direction:column; animation:slideL .26s cubic-bezier(.22,1,.36,1); z-index:12; }
+  @keyframes slideL{ from{transform:translateX(20px);opacity:0} }
+  .edhead{ background:#fff; border-bottom:1px solid var(--line); padding:14px; display:flex; align-items:center; gap:10px; }
+  .edhead .bk{ font-size:14px; font-weight:900; color:var(--accent-deep); background:#eef2fb; border:0; border-radius:10px; padding:8px 12px; font-family:inherit; cursor:pointer; }
+  .edhead b{ font-size:15px; font-weight:900; }
+  .edbody{ flex:1; overflow:auto; padding:16px; }
+  .lab{ font-size:11.5px; font-weight:900; color:var(--sub); margin:14px 2px 6px; }
+  .lab.first{ margin-top:0; }
+  .ph{ background:#fff; border:1.5px dashed #cbd5e1; border-radius:16px; padding:24px 16px; text-align:center; color:#94a3b8; font-weight:800; font-size:13px; line-height:1.7; }
+  .save{ width:100%; border:0; background:var(--accent); color:#fff; font-weight:900; font-size:15px; border-radius:14px; padding:15px; margin-top:18px; cursor:pointer; font-family:inherit; }
+
+  .hint{ font-size:12px; font-weight:800; color:#475569; margin:16px 4px 0; line-height:1.7; background:#fff; border:1px solid var(--line); border-radius:14px; padding:13px 14px; }
+  #toast{ position:fixed; left:50%; bottom:30px; transform:translateX(-50%); background:#0f172a; color:#fff; font-weight:900; font-size:13px; padding:11px 18px; border-radius:999px; z-index:30; box-shadow:0 10px 30px rgba(0,0,0,.25); opacity:0; transition:.2s; pointer-events:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>모임 운영(편집) LAB · 3안 비교</h1>
+  <p class="lead">아래 <b>모임 상세(회원 화면)</b>는 일부러 정보를 많게 뒀어요. 위에서 <b>방식을 바꿔</b> 운영 편집 진입이 어떻게 달라지는지 직접 눌러보세요. 운영진이 만지는 건 결국 <b>모임정보·팀·매치</b> 3가지예요.</p>
+
+  <div class="seclabel">운영 편집 방식 <small>· 골라서 비교</small></div>
+  <div class="seg" id="segConcept">
+    <button data-v="A" class="on">A 운영 허브</button>
+    <button data-v="B">B 바텀시트</button>
+    <button data-v="C">C 인라인칩</button>
+  </div>
+
+  <div class="phone" id="phone">
+    <div class="mhead">
+      <span class="bk">‹</span>
+      <div class="mt"><b>7/5(토) 정기모임</b><span>20:00 · ○○풋살장 A</span></div>
+      <button class="op" id="opBtn"></button>
+    </div>
+    <div class="subtabs"><div class="on">출석</div><div>팀</div><div>매치</div></div>
+    <div class="mbody" id="mbody"></div>
+  </div>
+
+  <p class="hint" id="hint"></p>
+</div>
+<div id="toast"></div>
+
+<script>
+let concept='A', sheetEditIdx=null;
+const phone=document.getElementById('phone');
+const opBtn=document.getElementById('opBtn');
+const mbody=document.getElementById('mbody');
+const hint=document.getElementById('hint');
+
+const ITEMS={
+  info:{ icon:'🕐', bg:'#eef2fb', name:'모임 정보', desc:'시간 · 장소 · 인원', st:'7/5 20:00 · ○○풋살장 · 18명', stcls:'done' },
+  team:{ icon:'🦺', bg:'#dcfce7', name:'팀 편성',  desc:'팀 나누기 · 조끼색', st:'3팀 확정', stcls:'done' },
+  match:{ icon:'⚔️', bg:'#fee2e2', name:'매치표',  desc:'대진 · 라운드', st:'아직 안 만듦', stcls:'todo' },
+};
+const HINTS={
+  A:'A안 — 우상단 ⚙운영 한 번이면 편집할 3가지만 큰 카드로. 회원 정보는 아예 안 보여 가장 깔끔.',
+  B:'B안 — 우상단 ✎ 누르면 아래서 시트가 올라와 시간·장소·인원·팀·매치를 순서대로. 모임 생성 마법사와 같은 느낌.',
+  C:'C안 — 지금 구조 그대로, 각 항목 옆 [편집]칩만 추가. 변화는 가장 적지만 정보 과부하는 그대로 남아요.',
+};
+
+function memberBody(withChips){
+  const chip=(t)=> withChips ? `<button class="chip" data-edit="${t}">편집</button>` : '';
+  return `
+    <div class="mcard">
+      <div class="ct"><span>모임 정보</span>${chip('모임 정보')}</div>
+      <div style="font-size:13px;font-weight:800;line-height:1.7;color:#475569">🕐 20:00~22:00 · 📍 ○○풋살장 A<br>👥 현재 13 / 18명 · 🧑‍💼 담당 김총무</div>
+    </div>
+    <div class="mcard">
+      <div class="ct"><span>참가 명단 13명</span>${chip('인원')}</div>
+      <div class="person"><div class="av">김</div><div class="nm">김모이</div><span class="tg">출석</span></div>
+      <div class="person"><div class="av">이</div><div class="nm">이풋살</div><span class="tg">출석</span></div>
+      <div class="person"><div class="av">박</div><div class="nm">박패스</div><span class="tg">대기 1</span></div>
+      <div class="person"><div class="av">최</div><div class="nm">최슈팅</div><span class="tg">미체크</span></div>
+      <div class="person"><div class="av">정</div><div class="nm">정골핑</div><span class="tg">출석</span></div>
+    </div>
+    <div class="mcard">
+      <div class="ct"><span>출석 체크 · QR / GPS</span></div>
+      <div style="font-size:12px;font-weight:800;color:#94a3b8;line-height:1.8">QR 코드 생성 · GPS 반경 80m · 자동 마감 22:00<br>대기 자동 승급 ON · 선착순 ON</div>
+    </div>`;
+}
+
+function addLayer(html){ const d=document.createElement('div'); d.className='layer'; d.innerHTML=html; phone.appendChild(d); return d; }
+function closeLayers(){ phone.querySelectorAll('.layer').forEach(l=>l.remove()); }
+
+/* A. 운영 허브 */
+function openHub(){
+  const cards=Object.keys(ITEMS).map(k=>{ const it=ITEMS[k];
+    return `<button class="opcard" data-k="${k}"><div class="ic" style="background:${it.bg}">${it.icon}</div>
+      <div class="tx"><b>${it.name}</b><div class="d">${it.desc}</div><span class="st ${it.stcls}">${it.st}</span></div>
+      <div class="go">${it.stcls==='todo'?'만들기':'수정'} ›</div></button>`; }).join('');
+  const l=addLayer(`<div class="hub"><div class="hubhead"><b>⚙ 운영 · 7/5 정기모임</b><button class="x" data-close>닫기</button></div><div class="hubbody">${cards}</div></div>`);
+  l.querySelector('[data-close]').onclick=closeLayers;
+  l.querySelectorAll('.opcard').forEach(b=> b.onclick=()=>openEditor(b.dataset.k,'hub'));
+}
+
+/* B. 바텀시트 */
+function openSheet(){ sheetEditIdx=null;
+  const l=addLayer(`<div class="lbg" data-close></div><div class="sheet"><div class="grip"></div>
+    <h3>모임 편집 <button class="x" data-close>닫기</button></h3><div class="srows"></div></div>`);
+  l.querySelectorAll('[data-close]').forEach(x=> x.onclick=closeLayers);
+  drawSheetRows(l.querySelector('.srows'));
+}
+function drawSheetRows(el){
+  const rows=[
+    {k:'info',l:'시간',v:'7/5(토) 20:00',inline:'time'},
+    {k:'info',l:'장소',v:'○○풋살장 A',inline:'place'},
+    {k:'info',l:'인원',v:'18명',inline:'cap'},
+    {k:'team',l:'팀',v:'3팀 확정',inline:''},
+    {k:'match',l:'매치',v:'아직 안 만듦',inline:''},
+  ];
+  el.innerHTML=rows.map((r,i)=>{
+    const open=sheetEditIdx===i;
+    let edit='';
+    if(open && r.inline==='time') edit=`<div class="sedit"><input class="field" type="datetime-local" value="2026-07-05T20:00"></div>`;
+    else if(open && r.inline==='place') edit=`<div class="sedit"><input class="field" value="○○풋살장 A"></div>`;
+    else if(open && r.inline==='cap') edit=`<div class="sedit"><div class="stepper"><button>−</button><span class="num">18</span><button>＋</button></div></div>`;
+    return `<button class="srow" data-i="${i}" data-k="${r.k}" data-inline="${r.inline}">
+      <span class="n">${i+1}</span><span class="l">${r.l}</span><span class="v">${r.v}</span><span class="ar">${r.inline?(open?'⌃':'⌄'):'›'}</span></button>${edit}`;
+  }).join('');
+  el.querySelectorAll('.srow').forEach(b=> b.onclick=()=>{
+    if(b.dataset.inline){ const i=+b.dataset.i; sheetEditIdx = sheetEditIdx===i?null:i; drawSheetRows(el); }
+    else openEditor(b.dataset.k,'sheet');
+  });
+}
+
+/* 포커스 편집기 (A·B 공용) */
+function openEditor(key,from){
+  const it=ITEMS[key];
+  let body='';
+  if(key==='info'){
+    body=`<div class="lab first">시간</div><input class="field" type="datetime-local" value="2026-07-05T20:00">
+      <div class="lab">장소</div><input class="field" value="○○풋살장 A">
+      <div class="lab">정원</div><div class="stepper"><button>−</button><span class="num">18</span><button>＋</button></div>
+      <button class="save" data-save="저장됨">저장</button>`;
+  } else if(key==='team'){
+    body=`<div class="lab first">팀 편성</div><div class="ph">🦺 팀 편성 화면<br>(자동 분배 · 드래그 이동 · 조끼색 · 확정)<br><br>여기서 팀만 집중해서 편성</div>
+      <button class="save" data-save="팀 확정됨">팀 확정</button>`;
+  } else {
+    body=`<div class="lab first">매치표</div><div class="ph">⚔️ 매치표 생성 화면<br>(라운드 자동 생성 · 대진 편집 · 코트 배정)<br><br>여기서 매치만 집중해서 구성</div>
+      <button class="save" data-save="매치표 생성됨">매치표 생성</button>`;
+  }
+  const back = from==='hub' ? '‹ 운영' : '‹ 모임 편집';
+  const ed=document.createElement('div'); ed.className='layer';
+  ed.innerHTML=`<div class="editor"><div class="edhead"><button class="bk" data-back>${back}</button><b>${it.icon} ${it.name}</b></div><div class="edbody">${body}</div></div>`;
+  phone.appendChild(ed);
+  ed.querySelector('[data-back]').onclick=()=> ed.remove();
+  const s=ed.querySelector('[data-save]'); if(s) s.onclick=()=>{ flash(s.dataset.save+' (목업)'); ed.remove(); };
+}
+
+function render(){
+  if(concept==='A'){ opBtn.className='op hub'; opBtn.textContent='⚙ 운영'; opBtn.style.display=''; opBtn.onclick=openHub; }
+  else if(concept==='B'){ opBtn.className='op pen'; opBtn.textContent='✎ 편집'; opBtn.style.display=''; opBtn.onclick=openSheet; }
+  else { opBtn.style.display='none'; opBtn.onclick=null; }
+  mbody.innerHTML=memberBody(concept==='C');
+  if(concept==='C') mbody.querySelectorAll('[data-edit]').forEach(b=> b.onclick=()=>flash(b.dataset.edit+' 편집 (목업)'));
+  hint.textContent=HINTS[concept];
+  closeLayers();
+}
+
+document.getElementById('segConcept').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return;
+  document.querySelectorAll('#segConcept button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); concept=b.dataset.v; render(); });
+
+let toastT; const toast=document.getElementById('toast');
+function flash(m){ toast.textContent=m; toast.style.opacity='1'; clearTimeout(toastT); toastT=setTimeout(()=>toast.style.opacity='0',1500); }
+
+render();
+</script>
+</body>
+</html>
