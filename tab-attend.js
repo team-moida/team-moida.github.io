@@ -1338,7 +1338,7 @@ const MeetingManageCard = ({ meeting, viewKind, teamStatus, matchStatus, onEditI
             <p className="text-[11px] font-black text-slate-400 px-1 mb-2 uppercase tracking-widest">이 모임 관리</p>
             <div className="card rounded-2xl overflow-hidden">
                 {row(<Icon.Clock size={22}/>, { bg: '#eef2fb', fg: '#122E78' }, '모임 정보', '시간·장소·정원 · 참가자·출석', { label: `${meeting.start || ''}~${meeting.end || ''} · 정원 ${cap}명`, done: true }, onEditInfo, '관리', false)}
-                {row(<Icon.Users size={22}/>, { bg: '#dcfce7', fg: '#15803d' }, isMatch ? '명단' : '팀 편성', isMatch ? '참가 명단 확인' : '팀 나누기 · 조끼색 · 확정', teamStatus, onTeam, teamStatus.done ? '수정' : '편성', !teamStatus.done)}
+                {row(<Icon.Users size={22}/>, { bg: '#dcfce7', fg: '#15803d' }, isMatch ? '명단' : '명단/팀', isMatch ? '참가 명단 확인' : '명단 선정 · 팀 나누기 · 조끼색', teamStatus, onTeam, teamStatus.done ? '수정' : '편성', !teamStatus.done)}
                 {!isMatch && row(<Icon.Swords size={20}/>, { bg: '#fee2e2', fg: '#b91c1c' }, '매치표', '대진 · 라운드 · 코트', matchStatus, onMatch, matchStatus.done ? '수정' : '생성', !matchStatus.done)}
             </div>
             <div className="flex gap-2 mt-3">
@@ -1464,10 +1464,17 @@ const TabAttend = ({
 
     // 선택한 모임에 선정된 회원 명단(weekly_session)
     const selSessionList = React.useMemo(() => {
+        // 선택(누른) 순서 = createdAt 오름차순. 같은 시각이면 이름순.
         return (tmSessionData || [])
             .filter(p => sessionMatchesMeeting(p, selectedMeeting))
-            .sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+            .sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||'') || (a.name||'').localeCompare(b.name||''));
     }, [tmSessionData, selectedMeeting?.date, selectedMeeting?.meetingType]);
+    // 누른 순서대로 번호(1,2,3…) — memberId 기준. 제거 시 자동으로 당겨짐(rank 재계산).
+    const pickOrder = React.useMemo(() => {
+        const map = {};
+        selSessionList.forEach((p, i) => { map[p.memberId] = i + 1; });
+        return map;
+    }, [selSessionList]);
 
     // 모임 당일(출석 시작) + 현재 모임이면 관리자는 들어왔을 때 출석 현황(명단)을 바로 표시.
     // 활성 모임이 아니면 '출석 현황' 탭이 없으므로, 그 탭이 선택돼 있으면 명단으로 되돌린다.
@@ -1548,7 +1555,7 @@ const TabAttend = ({
                                         </div>
                                         <p className="text-xs text-slate-400">{selectedMeeting.start} ~ {selectedMeeting.end}</p>
                                     </div>
-                                    {isViewActive && (
+                                    {!rosterOnly && isViewActive && (
                                         <button onClick={attendHandleEndMeeting}
                                             disabled={attendIsPending || !isMeetingOver || attendHistory.some(h => h.date === meetingSettings?.date)}
                                             className={`px-3 py-2 rounded-xl font-black text-xs transition-all disabled:opacity-30 ${attendHistory.some(h => h.date === meetingSettings?.date) ? 'bg-emerald-50 text-emerald-500' : isMeetingOver ? 'bg-rose-500 text-white active:scale-95' : 'bg-slate-100 text-slate-300'}`}>
@@ -1570,7 +1577,8 @@ const TabAttend = ({
                                     </div>
                                 </div>
 
-                                {/* 모임 정보 (읽기 전용) — 수정은 [수정] 버튼 → 모임 수정 폼 */}
+                                {/* 모임 정보 (읽기 전용) — 명단 전용 모드에선 숨김(모임 정보 카드 줄에서 따로 봄) */}
+                                {!rosterOnly && (
                                 <div className="card border-slate-100 rounded-2xl p-4 mb-4">
                                     <div className="flex items-center justify-between mb-3">
                                         <p className="text-xs font-black text-teal-500 uppercase tracking-widest">모임 정보</p>
@@ -1640,9 +1648,10 @@ const TabAttend = ({
                                         )}
                                     </div>
                                 </div>
+                                )}
 
-                                {/* 선정된 회원 명단(보기) ↔ 회원 선정(편집) */}
-                                {!isSelecting ? (
+                                {/* 선정된 회원 명단(보기) ↔ 회원 선정(편집). 명단 전용 모드는 항상 선택 목록 */}
+                                {(!rosterOnly && !isSelecting) ? (
                                     <div>
                                         <div className="flex items-center justify-between mb-3 px-1">
                                             <p className="text-xs font-black text-slate-700 uppercase tracking-widest">선정된 회원 {selSessionList.length > 0 && <span className="text-teal-500">{selSessionList.length}명</span>}</p>
@@ -1695,7 +1704,7 @@ const TabAttend = ({
                                                     </>
                                                 )}
                                                 <button onClick={()=>attendHandleResetSelection(selectedMeeting)} className="shrink-0 px-2.5 py-1.5 bg-red-50 text-red-500 text-xs font-black rounded-xl flex items-center gap-1"><Icon.RotateCcw size={12}/> 초기화</button>
-                                                <button onClick={()=>setIsSelecting(false)} className="shrink-0 px-3 py-1.5 bg-teal-500 text-white text-xs font-black rounded-xl flex items-center gap-1 active:scale-95"><Icon.Check size={12}/> 완료</button>
+                                                {!rosterOnly && <button onClick={()=>setIsSelecting(false)} className="shrink-0 px-3 py-1.5 bg-teal-500 text-white text-xs font-black rounded-xl flex items-center gap-1 active:scale-95"><Icon.Check size={12}/> 완료</button>}
                                             </div>
                                         </div>
                                         {selSessionList.some(p=>p.isGuest) && (
@@ -1721,8 +1730,8 @@ const TabAttend = ({
                                                 return (
                                                     <button key={member.id} onClick={()=>attendToggleParticipant(member, selectedMeeting)}
                                                         className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-teal-50 border-teal-300':'card border-slate-100 hover:border-slate-200'}`}>
-                                                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${isSelected?'bg-teal-500 border-teal-500':'border-slate-300'}`}>
-                                                            {isSelected&&<Icon.Check size={10} className="text-white"/>}
+                                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-[12px] font-black transition-all ${isSelected?'bg-teal-500 text-white':'border-2 border-slate-300 text-slate-300'}`}>
+                                                            {isSelected ? (pickOrder[member.id] || <Icon.Check size={12} className="text-white"/>) : ''}
                                                         </div>
                                                         <span className="font-black text-sm text-slate-800 flex-1 min-w-0 truncate">{member.name}</span>
                                                         {member.gender==='여성'&&<span className="shrink-0 text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
@@ -1748,8 +1757,8 @@ const TabAttend = ({
                                                         return (
                                                             <button key={member.id} onClick={()=>attendToggleParticipantAsGuest(member, selectedMeeting)}
                                                                 className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-orange-50 border-orange-300':'card border-slate-100 hover:border-slate-200'}`}>
-                                                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${isSelected?'bg-orange-400 border-orange-400':'border-slate-300'}`}>
-                                                                    {isSelected&&<Icon.Check size={10} className="text-white"/>}
+                                                                <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-[12px] font-black transition-all ${isSelected?'bg-orange-400 text-white':'border-2 border-slate-300 text-slate-300'}`}>
+                                                                    {isSelected ? (pickOrder[member.id] || <Icon.Check size={12} className="text-white"/>) : ''}
                                                                 </div>
                                                                 <span className="font-black text-sm text-slate-800 flex-1 min-w-0 truncate">{member.name}</span>
                                                                 {member.gender==='여성'&&<span className="shrink-0 text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
@@ -1765,8 +1774,8 @@ const TabAttend = ({
                                     </div>
                                 )}
 
-                                {/* 출석 현황 요약 (현재 모임일 때만) */}
-                                {isViewActive && (
+                                {/* 출석 현황 요약 (현재 모임일 때만) — 명단 전용 모드에선 숨김(출석은 홈) */}
+                                {!rosterOnly && isViewActive && (
                                     <div className="mt-6 pt-4 border-t border-slate-100">
                                         <div className="flex items-center justify-between mb-3">
                                             <p className="text-xs font-black text-slate-400 uppercase tracking-widest">출석 현황</p>
