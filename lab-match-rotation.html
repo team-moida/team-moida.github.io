@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>매치표 고정 회전 LAB</title>
+<style>
+  :root{ --accent:#183FB0; --accent-deep:#122E78; --teal:#0d9488; --ink:#0f172a; --sub:#64748b; --line:#e6eaf2; --bg:#f4f6fa; --lime:#C2F94A; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; font-family:'Pretendard',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:radial-gradient(125% 90% at 50% -8%, #e8ecf9 0%, #f3f5fb 46%, #f4f6fa 100%); min-height:100vh; color:var(--ink); }
+  .wrap{ max-width:520px; margin:0 auto; padding:16px 14px calc(28px + env(safe-area-inset-bottom)); }
+  h1{ font-size:18px; font-weight:900; margin:6px 4px 2px; }
+  .lead{ font-size:12px; font-weight:700; color:#94a3b8; margin:0 4px 14px; line-height:1.6; }
+  .lead b{ color:var(--accent-deep); }
+  .presets{ display:flex; gap:6px; flex-wrap:wrap; margin:0 2px 12px; }
+  .presets button{ border:1px solid var(--line); background:#fff; font-family:inherit; font-size:11.5px; font-weight:900; color:#475569; padding:7px 11px; border-radius:11px; cursor:pointer; }
+  .presets button.on{ background:#122E78; color:#fff; border-color:#122E78; }
+
+  .meta{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:12px 13px; margin-bottom:12px; box-shadow:0 4px 14px rgba(0,0,0,.04); }
+  .meta .row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:7px; }
+  .meta .row:last-child{ margin-bottom:0; }
+  .meta .lbl{ font-size:10.5px; font-weight:900; color:#94a3b8; width:42px; flex-shrink:0; }
+  .chip{ font-size:11.5px; font-weight:900; padding:4px 9px; border-radius:999px; }
+  .t6{ background:#eef2fb; color:#122E78; } .t5{ background:#fef9c3; color:#854d0e; }
+  .c6{ background:#dbe3f6; color:#122E78; } .c5{ background:#fde68a; color:#854d0e; }
+
+  .pool{ font-size:11px; font-weight:800; color:#64748b; margin:2px 4px 8px; line-height:1.6; }
+  .pool b{ color:var(--accent-deep); }
+
+  table{ width:100%; border-collapse:separate; border-spacing:0 6px; }
+  th{ font-size:10px; font-weight:900; color:#94a3b8; text-transform:uppercase; letter-spacing:.06em; padding:0 6px 2px; text-align:center; }
+  th.tk{ text-align:left; width:40px; }
+  td{ background:#fff; border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:9px 6px; text-align:center; font-size:13px; font-weight:900; }
+  td.tk{ border-left:1px solid var(--line); border-radius:12px 0 0 12px; text-align:left; color:#94a3b8; font-size:11px; padding-left:11px; }
+  td.last{ border-right:1px solid var(--line); border-radius:0 12px 12px 0; }
+  td.rest{ color:#cbd5e1; font-weight:800; font-size:11px; }
+  .vs6{ color:#122E78; } .vs5{ color:#854d0e; }
+  td.idle{ color:#e2e8f0; font-weight:800; font-size:11px; }
+  .restrow{ font-size:11px; font-weight:800; color:#f59e0b; text-align:center; margin:8px 4px 0; }
+
+  .note{ font-size:12px; font-weight:800; color:#475569; margin:16px 4px 0; line-height:1.7; background:#fff; border:1px solid var(--line); border-radius:14px; padding:13px 14px; }
+  .note b{ color:var(--accent-deep); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>매치표 고정 회전 — LAB</h1>
+  <p class="lead">구장 크기로 팀을 묶고, <b>묶음 안에서만 라운드로빈 회전</b>. 5인 팀은 5v5 구장에서 자기들끼리, 6인 팀은 6v6 구장들에서 균등 회전. 시간 끝까지 이 순서를 반복해요. (랜덤 아님 · 매번 같은 표)</p>
+
+  <div class="presets" id="presets"></div>
+  <div class="meta" id="meta"></div>
+  <div class="pool" id="pool"></div>
+  <div id="table"></div>
+
+  <p class="note">규칙: ① 구장을 크기별로 묶음 → ② 팀을 인원으로 그 구장에 배정(6인→6v6, 5인→5v5) → ③ 각 묶음 안에서 <b>라운드로빈</b>(구장 수에 맞춰 동시 경기, 남으면 쉼) → ④ 시간만큼 반복. 묶음별로 독립이라 5v5는 계속 5-6, 6v6 2면은 4팀이 골고루.</p>
+</div>
+
+<script>
+// ── 그룹별 라운드로빈 ───────────────────────────────────────────────
+// 서클 방식: 팀 목록 → 라운드들(각 라운드는 서로 안 겹치는 [a,b] 쌍 배열). 홀수면 한 팀 bye(쉼).
+function circleRounds(items){
+  let arr = items.slice();
+  const BYE = null;
+  if(arr.length % 2 === 1) arr.push(BYE);
+  const n = arr.length;
+  if(n < 2) return [[]];
+  const fixed = arr[0];
+  let rot = arr.slice(1);
+  const rounds = [];
+  for(let r=0; r<n-1; r++){
+    const order = [fixed, ...rot];
+    const pairs = [];
+    for(let i=0;i<n/2;i++){
+      const a = order[i], b = order[n-1-i];
+      if(a!==BYE && b!==BYE) pairs.push([a,b]);
+    }
+    rounds.push(pairs);
+    rot = [rot[rot.length-1], ...rot.slice(0,rot.length-1)]; // 회전
+  }
+  return rounds;
+}
+// 한 묶음(팀들 + 구장 수) → 시간슬롯 배열. 각 슬롯 = 구장별 경기(부족하면 null=빈구장), 그 슬롯 쉬는 팀.
+function poolSlots(teamIds, courtCount){
+  const rounds = circleRounds(teamIds);            // 라운드들(쌍)
+  const slots = [];
+  rounds.forEach(pairs => {
+    // 라운드의 쌍들을 구장 수만큼씩 끊어 슬롯으로
+    for(let c=0; c<pairs.length || (pairs.length===0); c+=courtCount){
+      const chunk = pairs.slice(c, c+courtCount);
+      const playing = new Set();
+      chunk.forEach(([a,b])=>{ playing.add(a); playing.add(b); });
+      const courts = [];
+      for(let k=0;k<courtCount;k++) courts.push(chunk[k] || null);
+      slots.push({ courts, resting: teamIds.filter(t=>!playing.has(t)) });
+      if(pairs.length===0) break;
+    }
+  });
+  return slots.length ? slots : [{courts:Array(courtCount).fill(null), resting:teamIds.slice()}];
+}
+
+// ── 시나리오 → 전체 매치표 ──────────────────────────────────────────
+function build(scn, nSlots){
+  // 구장 크기별 묶기
+  const cap6Courts = scn.courts.map((c,i)=>({i,cap:c})).filter(c=>c.cap>=6);
+  const cap5Courts = scn.courts.map((c,i)=>({i,cap:c})).filter(c=>c.cap===5);
+  const bigTeams = scn.teams.filter(t=>t.size>=6);
+  const smallTeams = scn.teams.filter(t=>t.size<=5);
+
+  const pools = [];
+  if(cap5Courts.length>0 && smallTeams.length>=2 && cap6Courts.length>0 && bigTeams.length>=2){
+    pools.push({ courts: cap6Courts.map(c=>c.i), teamIds: bigTeams.map(t=>t.name), kind:'6' });
+    pools.push({ courts: cap5Courts.map(c=>c.i), teamIds: smallTeams.map(t=>t.name), kind:'5' });
+  } else {
+    // 한 묶음(섞임) — 큰 구장 우선
+    pools.push({ courts: scn.courts.map((_,i)=>i), teamIds: scn.teams.map(t=>t.name), kind:'mix' });
+  }
+  // 각 묶음 슬롯 시퀀스(독립 반복)
+  pools.forEach(p => { p.slots = poolSlots(p.teamIds, p.courts.length); });
+
+  // 전체 슬롯 합치기 — 각 묶음이 자기 시퀀스를 독립 반복
+  const totalCourts = scn.courts.length;
+  const table = [];
+  for(let s=0; s<nSlots; s++){
+    const courtsRow = Array(totalCourts).fill(null);
+    let resting = [];
+    pools.forEach(p => {
+      const ps = p.slots[s % p.slots.length];
+      p.courts.forEach((courtIdx, k) => { courtsRow[courtIdx] = ps.courts[k]; });
+      resting = resting.concat(ps.resting);
+    });
+    table.push({ courts: courtsRow, resting });
+  }
+  return { table, pools };
+}
+
+// ── 시나리오 정의 ──────────────────────────────────────────────────
+const SCN = [
+  { key:'A', label:'34명 · 666655 · 6v6×2+5v5', teams:[
+      {name:1,size:6},{name:2,size:6},{name:3,size:6},{name:4,size:6},{name:5,size:5},{name:6,size:5}],
+    courts:[6,6,5] },
+  { key:'B', label:'3팀 · 6v6×1', teams:[{name:1,size:6},{name:2,size:6},{name:3,size:6}], courts:[6] },
+  { key:'C', label:'4팀 · 6v6×1', teams:[{name:1,size:6},{name:2,size:6},{name:3,size:6},{name:4,size:6}], courts:[6] },
+  { key:'D', label:'5팀 · 6v6×1', teams:[{name:1,size:6},{name:2,size:6},{name:3,size:6},{name:4,size:6},{name:5,size:6}], courts:[6] },
+  { key:'E', label:'6팀 · 6v6×3', teams:[{name:1,size:6},{name:2,size:6},{name:3,size:6},{name:4,size:6},{name:5,size:6},{name:6,size:6}], courts:[6,6,6] },
+];
+let cur = 'A';
+
+function render(){
+  const scn = SCN.find(s=>s.key===cur);
+  // presets
+  document.getElementById('presets').innerHTML = SCN.map(s=>`<button class="${s.key===cur?'on':''}" onclick="cur='${s.key}';render()">${s.label}</button>`).join('');
+  // meta
+  const teamChips = scn.teams.map(t=>`<span class="chip ${t.size>=6?'t6':'t5'}">${t.name}팀 · ${t.size}명</span>`).join('');
+  const courtChips = scn.courts.map((c,i)=>`<span class="chip ${c>=6?'c6':'c5'}">${i+1}구장 · ${c}v${c}</span>`).join('');
+  document.getElementById('meta').innerHTML =
+    `<div class="row"><span class="lbl">팀</span>${teamChips}</div><div class="row"><span class="lbl">구장</span>${courtChips}</div>`;
+
+  const { table, pools } = build(scn, 8);
+  document.getElementById('pool').innerHTML = '묶음: ' + pools.map(p=>{
+    const cs = p.courts.map(i=>i+1+'구장').join('·');
+    return `<b>${p.kind==='5'?'5v5':p.kind==='6'?'6v6':'혼합'}</b>(${cs}) → ${p.teamIds.map(t=>t+'팀').join(', ')}`;
+  }).join(' / ');
+
+  // table
+  let html = '<table><thead><tr><th class="tk">슬롯</th>';
+  scn.courts.forEach((c,i)=> html += `<th>${i+1}구장<br><span style="font-weight:700;color:#cbd5e1">${c}v${c}</span></th>`);
+  html += '</tr></thead><tbody>';
+  table.forEach((row,si)=>{
+    html += `<tr><td class="tk">${si+1}</td>`;
+    row.courts.forEach((m,ci)=>{
+      const last = ci===row.courts.length-1 ? 'last' : '';
+      if(!m){ html += `<td class="idle ${last}">—</td>`; }
+      else { const cap = scn.courts[ci]; html += `<td class="${last}"><span class="${cap>=6?'vs6':'vs5'}">${m[0]} <span style="color:#cbd5e1">vs</span> ${m[1]}</span></td>`; }
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  if(table.some(r=>r.resting.length)){
+    html += table.map((r,si)=> r.resting.length? `<div class="restrow">슬롯 ${si+1} 쉼: ${r.resting.map(t=>t+'팀').join(', ')}</div>`:'').join('');
+  }
+  document.getElementById('table').innerHTML = html;
+}
+render();
+</script>
+</body>
+</html>
