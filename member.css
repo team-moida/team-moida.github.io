@@ -47,6 +47,12 @@ input:focus { outline: none; }
 .btn-apply{ background:#f97316; color:#fff; animation:moidaApplyRing 1.8s infinite; }
 .btn-apply:active{ transform:scale(.96); opacity:.9; }
 @media (prefers-reduced-motion: reduce){ .btn-apply{ animation:none!important; box-shadow:0 10px 22px -8px rgba(249,115,22,.5); } }
+/* ── 신청 카드: 원형 신청/취소 버튼 (차분 — 정적 헤일로, 펄스 없음) ── */
+.apply-circle{ width:150px; height:150px; border-radius:9999px; background:#f97316; color:#fff; border:0;
+  box-shadow:0 0 0 7px rgba(249,115,22,.10), 0 16px 30px -14px rgba(249,115,22,.6); transition:transform .14s ease; }
+.cancel-circle{ width:150px; height:150px; border-radius:9999px; background:#fff; color:#94a3b8;
+  border:1.5px solid #e9edf3; box-shadow:0 6px 16px -10px rgba(15,23,42,.18); transition:transform .14s ease; }
+html.dark .cancel-circle{ background:var(--t-surface); border-color:var(--t-border); }
 /* ── 모임 등록 로딩 공(통통) ── */
 .moida-ball{ width:56px; height:56px; border-radius:50%;
   background:radial-gradient(circle at 35% 30%, #ffffff 0 8%, #183FB0 9% 60%, #122E78 100%);

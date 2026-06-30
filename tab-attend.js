@@ -329,9 +329,29 @@ const RegSettingsSection = ({ meetingSettings, updateMeetingSettingsAdmin }) => 
 
 // ─── 회원용 신청 카드 ─────────────────────────────────────────────────────────────
 const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel, handleAbsent, handleUndoAbsent, duesUnpaid, duesBlock, penaltyUnpaid = 0, penaltyTotal = 0, isPreview }) => {
-    const { useState } = React;
+    const { useState, useRef, useEffect } = React;
     const [absentConfirm, setAbsentConfirm] = useState(false);
     const [absentReason, setAbsentReason] = useState('');
+    const [donePopup, setDonePopup] = useState(null);   // 신청 완료 팝업 {type:'confirmed'|'waiting', pos}
+    const [cancelAsk, setCancelAsk] = useState(false);  // 신청 취소 확인 팝업
+    const [justApplied, setJustApplied] = useState(false);
+    const prevStatus = useRef(myRegistration?.status || null);
+    // 신청 직후 myRegistration이 확정/대기로 잡히면 완료 팝업(+순번) 표시
+    useEffect(() => {
+        const cur = myRegistration?.status || null;
+        if (justApplied && !prevStatus.current && (cur === 'confirmed' || cur === 'waiting')) {
+            setDonePopup(cur === 'waiting'
+                ? { type: 'waiting', pos: myWaitingPosition }
+                : { type: 'confirmed', pos: regConfirmedCount });
+            setJustApplied(false);
+        }
+        prevStatus.current = cur;
+    }, [myRegistration && myRegistration.status, regConfirmedCount, myWaitingPosition, justApplied]);
+    const onApplyClick = () => {
+        if (isPreview) { setDonePopup({ type: 'confirmed', pos: (regConfirmedCount || 0) + 1 }); return; }
+        setJustApplied(true);
+        handleRegister && handleRegister();
+    };
 
     if (!meetingSettings?.isRegistrationEnabled) return null;
 
@@ -364,12 +384,25 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
     const undoAbsentOk = myRegistration?.status === 'absent' && typeof getAbsentType === 'function' && getAbsentType(meetingSettings.date, meetingSettings.end) === 'absent';
 
     return (
+        <>
         <div className="card rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-black text-orange-500 uppercase tracking-widest">{isMatch ? '매칭 신청' : (isFirstComeFirstServed ? '선착순 신청' : '모임 신청')}</p>
-                {isMatch
-                    ? <span className="text-xs font-black text-slate-400">남 {confMale}/{maxMale} · 여 {confFemale}/{maxFemale}</span>
-                    : (isFirstComeFirstServed && <span className="text-xs font-black text-slate-400">{regConfirmedCount} / {maxLimit}명</span>)}
+            <div className="flex items-center justify-between gap-2 mb-3">
+                <p className="text-xs font-black text-orange-500 uppercase tracking-widest shrink-0">{isMatch ? '매칭 신청' : (isFirstComeFirstServed ? '선착순 신청' : '모임 신청')}</p>
+                {isMatch ? (
+                    <span className="inline-flex items-center gap-1.5 font-black rounded-full px-3 py-1.5 leading-none text-[12.5px]" style={{background:'#e7edfa', color:'#122E78'}}>
+                        <Icon.Users size={13} className="opacity-80 flex-shrink-0"/>남 <b className="text-[15px]">{confMale}</b>/{maxMale} · 여 <b className="text-[15px]">{confFemale}</b>/{maxFemale}
+                    </span>
+                ) : isFirstComeFirstServed ? (
+                    myRegistration?.status === 'waiting' ? (
+                        <span className="inline-flex items-center gap-1.5 font-black rounded-full px-3 py-1.5 leading-none text-[13px]" style={{background:'#fef0c7', color:'#92400e'}}>
+                            <Icon.Clock size={13} className="opacity-80 flex-shrink-0"/>대기 <b className="text-[15px]">{myWaitingPosition}</b>번
+                        </span>
+                    ) : (
+                        <span className="inline-flex items-center gap-1.5 font-black rounded-full px-3 py-1.5 leading-none text-[13px]" style={{background:'#e7edfa', color:'#122E78'}}>
+                            <Icon.Users size={13} className="opacity-80 flex-shrink-0"/><b className="text-[15px]">{regConfirmedCount}</b> / {maxLimit}명
+                        </span>
+                    )
+                ) : null}
             </div>
             {isMatch && meetingSettings?.opponentName && (
                 <p className="text-[11px] font-black text-indigo-500 mb-3">vs {meetingSettings.opponentName}</p>
@@ -397,38 +430,37 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
                         </div>
                     )}
                     {penaltyUnpaid > 0 ? (
-                        <button disabled className="w-full py-3.5 bg-slate-200 text-slate-400 rounded-2xl font-black text-sm cursor-not-allowed">벌금 미납 — 신청 불가</button>
+                        <div className="flex justify-center pt-1">
+                            <div className="cancel-circle flex flex-col items-center justify-center text-center cursor-not-allowed">
+                                <span className="font-black text-[15px] text-slate-400">신청 불가</span>
+                                <span className="text-[11px] font-bold text-slate-300 mt-1">벌금 미납</span>
+                            </div>
+                        </div>
                     ) : duesBlock && duesUnpaid ? (
-                        <button disabled className="w-full py-3.5 bg-slate-200 text-slate-400 rounded-2xl font-black text-sm cursor-not-allowed">회비 미납 — 신청 불가</button>
+                        <div className="flex justify-center pt-1">
+                            <div className="cancel-circle flex flex-col items-center justify-center text-center cursor-not-allowed">
+                                <span className="font-black text-[15px] text-slate-400">신청 불가</span>
+                                <span className="text-[11px] font-bold text-slate-300 mt-1">회비 미납</span>
+                            </div>
+                        </div>
                     ) : (
-                        <button onClick={isPreview ? () => alert('미리보기에서는 실제로 신청되지 않아요.') : handleRegister}
-                            className="btn-apply w-full py-3.5 rounded-2xl font-black text-sm">
-                            신청하기{isPreview ? ' (미리보기)' : ''}
-                        </button>
+                        <div className="flex justify-center pt-1">
+                            <button onClick={onApplyClick}
+                                className="apply-circle flex flex-col items-center justify-center text-center text-white">
+                                <span className="font-black text-[21px]">신청하기</span>
+                                <span className="text-[11px] font-bold opacity-85 mt-1">{isPreview ? '미리보기' : '탭하면 신청'}</span>
+                            </button>
+                        </div>
                     )}
                 </>
             )}
 
-            {isOpen && myRegistration?.status === 'confirmed' && (
-                <div>
-                    <div className="bg-teal-50 border border-teal-200 rounded-2xl p-3 mb-3 text-center">
-                        <p className="font-black text-teal-500 flex items-center justify-center gap-1">참가 확정 <Icon.Check size={15}/></p>
-                    </div>
-                    <button onClick={handleCancel}
-                        className="w-full py-2.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm active:scale-95">
-                        신청 취소
-                    </button>
-                </div>
-            )}
-
-            {isOpen && myRegistration?.status === 'waiting' && (isFirstComeFirstServed || isMatch) && (
-                <div>
-                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-3 text-center">
-                        <p className="font-black text-amber-500">대기 중 {myWaitingPosition}번</p>
-                    </div>
-                    <button onClick={handleCancel}
-                        className="w-full py-2.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm active:scale-95">
-                        신청 취소
+            {isOpen && (myRegistration?.status === 'confirmed' || (myRegistration?.status === 'waiting' && (isFirstComeFirstServed || isMatch))) && (
+                <div className="flex justify-center pt-1">
+                    <button onClick={() => setCancelAsk(true)}
+                        className="cancel-circle flex flex-col items-center justify-center text-center">
+                        <span className="font-black text-[18px] text-slate-500">신청 취소</span>
+                        <span className="text-[11px] font-bold text-slate-400 mt-1">탭하면 취소</span>
                     </button>
                 </div>
             )}
@@ -485,6 +517,65 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
                 </div>
             )}
         </div>
+
+        {/* 신청 완료 팝업 (+내 순번) */}
+        {donePopup && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 animate-in"
+                style={{ background:'rgba(15,23,42,.46)', backdropFilter:'blur(2px)' }}
+                onClick={() => setDonePopup(null)}>
+                <div className="bg-white rounded-3xl p-7 pt-8 max-w-[320px] w-full text-center"
+                    style={{ boxShadow:'0 30px 70px -22px rgba(0,0,0,.45)' }}
+                    onClick={e => e.stopPropagation()}>
+                    <div className="w-[66px] h-[66px] rounded-full mx-auto mb-4 flex items-center justify-center text-white"
+                        style={{ background: donePopup.type === 'waiting' ? '#F59E0B' : '#183FB0' }}>
+                        {donePopup.type === 'waiting' ? <Icon.Clock size={32}/> : <Icon.Check size={34}/>}
+                    </div>
+                    <p className="text-[13px] font-black text-slate-400">{donePopup.type === 'waiting' ? '대기 신청 완료' : '신청 완료'}</p>
+                    <p className="text-[32px] font-black text-slate-900 mt-1 mb-0.5">
+                        {donePopup.type === 'waiting'
+                            ? <>대기 <span style={{color:'#F59E0B'}}>{donePopup.pos}</span>번</>
+                            : <>참가 <span style={{color:'#f97316'}}>{donePopup.pos}</span>번째</>}
+                    </p>
+                    <p className="text-[12.5px] font-bold text-slate-400 mt-1 leading-relaxed whitespace-pre-line">
+                        {donePopup.type === 'waiting'
+                            ? '정원이 차서 대기로 등록됐어요.\n자리가 나면 자동으로 확정돼요.'
+                            : `선착순 ${donePopup.pos} / ${maxLimit}명으로 신청됐어요.`}
+                    </p>
+                    <button onClick={() => setDonePopup(null)}
+                        className="mt-5 w-full py-3.5 rounded-2xl text-white font-black text-[15px] active:scale-95"
+                        style={{ background:'#f97316' }}>확인</button>
+                </div>
+            </div>
+        )}
+
+        {/* 신청 취소 확인 팝업 (재신청 시 순번 밀림 안내) */}
+        {cancelAsk && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 animate-in"
+                style={{ background:'rgba(15,23,42,.46)', backdropFilter:'blur(2px)' }}
+                onClick={() => setCancelAsk(false)}>
+                <div className="bg-white rounded-3xl p-7 pt-8 max-w-[320px] w-full text-center"
+                    style={{ boxShadow:'0 30px 70px -22px rgba(0,0,0,.45)' }}
+                    onClick={e => e.stopPropagation()}>
+                    <div className="w-[66px] h-[66px] rounded-full mx-auto mb-4 flex items-center justify-center text-white"
+                        style={{ background:'#F59E0B' }}>
+                        <span className="text-[34px] font-black leading-none">!</span>
+                    </div>
+                    <p className="text-[18px] font-black text-slate-900">신청을 취소할까요?</p>
+                    <div className="mt-3.5 text-left text-[12px] font-bold leading-relaxed rounded-2xl px-3.5 py-3"
+                        style={{ background:'#fff7ed', border:'1px solid #fed7aa', color:'#9a3412' }}>
+                        지금 취소하면 다시 신청할 때 <b>순번이 맨 뒤로 밀려요.</b> 정원이 찼다면 대기로 넘어갈 수 있어요.
+                    </div>
+                    <div className="flex gap-2 mt-5">
+                        <button onClick={() => setCancelAsk(false)}
+                            className="flex-1 py-3.5 rounded-2xl bg-slate-100 text-slate-500 font-black text-[14.5px] active:scale-95">그대로 둘게요</button>
+                        <button onClick={() => { setCancelAsk(false); handleCancel && handleCancel(); }}
+                            className="flex-1 py-3.5 rounded-2xl text-white font-black text-[14.5px] active:scale-95"
+                            style={{ background:'#EF4444' }}>신청 취소</button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     );
 };
 
