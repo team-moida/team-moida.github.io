@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>모임생성 전환효과 LAB</title>
+<style>
+  :root{ --accent:#183FB0; --accent-deep:#122E78; --lime:#C2F94A; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{
+    margin:0; font-family:'Pretendard',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:radial-gradient(125% 90% at 50% -8%, #e8ecf9 0%, #f3f5fb 46%, #f4f6fa 100%);
+    min-height:100vh; color:#0f172a; user-select:none;
+  }
+  .wrap{ max-width:480px; margin:0 auto; padding:16px 16px calc(16px + env(safe-area-inset-bottom)); }
+  h1{ font-size:18px; font-weight:900; margin:8px 4px 2px; }
+  .lead{ font-size:12px; font-weight:700; color:#94a3b8; margin:0 4px 14px; line-height:1.5; }
+
+  /* 효과 선택 세그먼트 */
+  .seg{ display:flex; gap:6px; background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:5px; box-shadow:0 4px 14px rgba(0,0,0,.05); margin-bottom:14px; }
+  .seg button{ flex:1; border:0; background:transparent; border-radius:12px; padding:11px 4px; font-weight:900; font-size:12.5px; color:#64748b; cursor:pointer; transition:.15s; font-family:inherit; }
+  .seg button.on{ background:var(--accent); color:#fff; box-shadow:0 6px 14px -6px rgba(24,63,176,.6); }
+  .seg button .t{ display:block; font-size:10px; color:inherit; opacity:.7; font-weight:800; margin-top:1px; }
+
+  /* 폰 카드 (마법사 모형) */
+  .phone{ background:#fff; border:1px solid #e2e8f0; border-radius:24px; box-shadow:0 14px 40px -16px rgba(15,23,42,.28); overflow:hidden; display:flex; flex-direction:column; height:560px; }
+  .ph-head{ display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid #f1f5f9; }
+  .ph-head h3{ margin:0; font-size:16px; font-weight:900; }
+  .ph-head .x{ font-size:12px; font-weight:900; color:#94a3b8; background:#f1f5f9; border:0; border-radius:10px; padding:6px 10px; }
+
+  .ph-body{ flex:1; overflow:hidden; padding:18px 18px 6px; display:flex; flex-direction:column; }
+  .bars{ display:flex; gap:6px; flex-shrink:0; margin-bottom:6px; }
+  .bars i{ flex:1; height:6px; border-radius:99px; background:#e2e8f0; transition:.25s; }
+  .bars i.fill{ background:var(--accent); }
+
+  .stage{ flex:1; display:flex; flex-direction:column; justify-content:center; overflow:hidden; }
+  .step{ display:flex; flex-direction:column; gap:16px; }
+  .qlabel{ font-size:11px; font-weight:900; letter-spacing:.04em; color:var(--accent); }
+  .qtitle{ font-size:24px; font-weight:900; color:#1e293b; margin-top:2px; }
+  .qsub{ font-size:13px; font-weight:700; color:#94a3b8; margin-top:4px; }
+  .qhead{ }
+
+  /* 모형 필드 */
+  .cards{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .tcard{ border:2px solid #e2e8f0; border-radius:18px; padding:30px 12px; text-align:center; }
+  .tcard .ic{ font-size:34px; }
+  .tcard p{ margin:8px 0 0; font-weight:900; font-size:15px; color:#475569; }
+  .tcard.on-self{ background:var(--accent); border-color:var(--accent); }
+  .tcard.on-self p{ color:#fff; }
+  .tcard.on-match{ background:var(--lime); border-color:var(--lime); }
+  .tcard.on-match p{ color:#15171E; }
+  .field{ }
+  .field label{ display:block; font-size:13px; font-weight:900; color:#64748b; margin-bottom:7px; }
+  .field .box{ border:1px solid #e2e8f0; border-radius:16px; padding:15px 14px; font-size:15px; font-weight:700; color:#334155; background:#fff; }
+  .row{ display:flex; gap:12px; }
+  .row>.field{ flex:1; }
+  .big{ text-align:center; font-size:54px; font-weight:900; color:var(--accent); padding:10px 0; }
+  .toggle-row{ display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:16px; padding:16px; }
+  .toggle-row b{ font-size:14px; }
+  .sw{ width:48px; height:26px; border-radius:99px; background:var(--accent); position:relative; }
+  .sw::after{ content:''; position:absolute; top:3px; left:25px; width:20px; height:20px; background:#fff; border-radius:50%; }
+
+  .ph-foot{ flex-shrink:0; border-top:1px solid #f1f5f9; padding:12px 18px calc(14px + env(safe-area-inset-bottom)); display:flex; gap:8px; }
+  .ph-foot button{ border:0; border-radius:16px; font-weight:900; font-size:14px; padding:14px; cursor:pointer; font-family:inherit; }
+  .btn-prev{ background:#f1f5f9; color:#64748b; padding-left:22px; padding-right:22px; }
+  .btn-next{ flex:1; background:var(--accent); color:#fff; }
+  .btn-next.last{ background:#f97316; }
+
+  /* ── 전환 키프레임 ── */
+  @keyframes fadeOut{ to{opacity:0} }
+  @keyframes fadeIn{ from{opacity:0} }
+  @keyframes upOut{ to{opacity:0; transform:translateY(-14px)} }
+  @keyframes upIn{ from{opacity:0; transform:translateY(16px)} }
+  @keyframes slFwdOut{ to{opacity:0; transform:translateX(-30px)} }
+  @keyframes slFwdIn{ from{opacity:0; transform:translateX(30px)} }
+  @keyframes slBackOut{ to{opacity:0; transform:translateX(30px)} }
+  @keyframes slBackIn{ from{opacity:0; transform:translateX(-30px)} }
+
+  .hint{ text-align:center; font-size:12px; font-weight:800; color:#94a3b8; margin:14px 4px 0; line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>모임 생성 · 단계 전환효과 LAB</h1>
+  <p class="lead">효과를 고른 뒤 아래 폰에서 <b>이전 / 다음</b>을 눌러보세요. 스르륵 사라졌다 나타나는 느낌을 비교해 보고, 마음에 드는 번호를 알려주세요.</p>
+
+  <div class="seg" id="seg">
+    <button data-mode="fade" class="on">A 페이드<span class="t">투명도만</span></button>
+    <button data-mode="up">B 페이드+업<span class="t">위로 떠오름</span></button>
+    <button data-mode="slide">C 슬라이드<span class="t">방향감(토스)</span></button>
+  </div>
+
+  <div class="phone">
+    <div class="ph-head"><h3>모임 추가</h3><button class="x">✕ 닫기</button></div>
+    <div class="ph-body">
+      <div class="bars" id="bars"></div>
+      <div class="stage" id="stage"></div>
+    </div>
+    <div class="ph-foot" id="foot"></div>
+  </div>
+
+  <p class="hint">A=잔잔 · B=요즘앱 느낌 · C=가장 다이내믹(좌우 방향).<br>속도/방향도 조절 가능해요.</p>
+</div>
+
+<script>
+const TOTAL = 6;
+const STEPS = [
+  { l:'STEP 1 / 6', t:'어떤 모임인가요?', s:'자체전인지 매칭인지 골라요.',
+    body:`<div class="cards"><div class="tcard on-self"><div class="ic">⚽</div><p>자체전</p></div><div class="tcard"><div class="ic">⚔️</div><p>매칭</p></div></div>` },
+  { l:'STEP 2 / 6', t:'언제 모이나요?', s:'날짜와 시작·종료 시간을 정해요.',
+    body:`<div class="field"><label>날짜</label><div class="box">📅 6월 14일 (토)</div></div><div class="row"><div class="field"><label>시작</label><div class="box">08시 00분</div></div><div class="field"><label>종료</label><div class="box">10시 00분</div></div></div>` },
+  { l:'STEP 3 / 6', t:'어디서 하나요?', s:'장소·GPS 반경·QR 출석을 정해요.',
+    body:`<div class="field"><label>장소명</label><div class="box">📍 잠실 풋살파크</div></div><div class="field"><label>GPS 인정 반경</label><div class="box">100m</div></div>` },
+  { l:'STEP 4 / 6', t:'몇 명이 모이나요?', s:'정원/최대 인원을 정해요.',
+    body:`<div class="field"><label>최대 인원</label><div class="big">18</div></div>` },
+  { l:'STEP 5 / 6', t:'신청을 받을까요?', s:'선착순·신청 기간을 정해요.',
+    body:`<div class="toggle-row"><b>신청 창구 열기</b><div class="sw"></div></div><div class="toggle-row"><b>선착순 제한</b><div class="sw"></div></div>` },
+  { l:'STEP 6 / 6', t:'거의 다 됐어요!', s:'담당자·알림 등 마지막 옵션이에요.',
+    body:`<div class="field"><label>담당자</label><div class="box">홍길동</div></div><div class="toggle-row"><b>등록 시 전체 알림</b><div class="sw"></div></div>` },
+];
+
+const ANIM = {
+  fade:  { out:'fadeOut .18s ease-in forwards',                 in:'fadeIn .30s ease-out' },
+  up:    { out:'upOut .18s ease-in forwards',                   in:'upIn .34s cubic-bezier(.22,1,.36,1)' },
+  slideF:{ out:'slFwdOut .20s cubic-bezier(.4,0,1,1) forwards', in:'slFwdIn .34s cubic-bezier(.22,1,.36,1)' },
+  slideB:{ out:'slBackOut .20s cubic-bezier(.4,0,1,1) forwards',in:'slBackIn .34s cubic-bezier(.22,1,.36,1)' },
+};
+
+let mode = 'fade', step = 1, animating = false;
+const stage = document.getElementById('stage');
+const bars = document.getElementById('bars');
+const foot = document.getElementById('foot');
+
+function renderBars(){
+  bars.innerHTML = '';
+  for(let i=1;i<=TOTAL;i++){ const x=document.createElement('i'); if(i<=step) x.className='fill'; bars.appendChild(x); }
+}
+function renderFoot(){
+  const last = step===TOTAL;
+  foot.innerHTML =
+    (step>1?'<button class="btn-prev" onclick="go(-1)">이전</button>':'') +
+    `<button class="btn-next ${last?'last':''}" onclick="${last?'go(0)':'go(1)'}">${last?'✨ 등록하기':'다음'}</button>`;
+}
+function stepEl(n){
+  const d = STEPS[n-1];
+  const el = document.createElement('div');
+  el.className = 'step';
+  el.innerHTML = `<div class="qhead"><div class="qlabel">${d.l}</div><div class="qtitle">${d.t}</div><div class="qsub">${d.s}</div></div>${d.body}`;
+  return el;
+}
+function paint(){ stage.innerHTML=''; stage.appendChild(stepEl(step)); renderBars(); renderFoot(); }
+
+function pickAnim(dir){
+  if(mode==='slide') return dir>=0 ? ANIM.slideF : ANIM.slideB;
+  return ANIM[mode];
+}
+function go(dir){
+  if(dir===0){ flash(); return; }
+  const next = step + dir;
+  if(next<1 || next>TOTAL || animating) return;
+  animating = true;
+  const a = pickAnim(dir);
+  const cur = stage.firstElementChild;
+  cur.style.animation = a.out;
+  cur.addEventListener('animationend', ()=>{
+    step = next;
+    paint();
+    const fresh = stage.firstElementChild;
+    fresh.style.animation = a.in;
+    fresh.addEventListener('animationend', ()=>{ fresh.style.animation=''; animating=false; }, {once:true});
+  }, {once:true});
+}
+function flash(){
+  const c = document.querySelector('.phone');
+  c.style.transition='transform .12s'; c.style.transform='scale(.98)';
+  setTimeout(()=>{ c.style.transform=''; alert('등록! (LAB이라 실제 저장은 안 해요)'); step=1; paint(); }, 130);
+}
+
+document.getElementById('seg').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#seg button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); mode = b.dataset.mode;
+});
+
+paint();
+</script>
+</body>
+</html>
