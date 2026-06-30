@@ -128,25 +128,67 @@ function makeMatchHandlers(ctx) {
         if (!localSchedule.list.length) return;
         setMatchIsSaving(true);
         try {
-            const docRef = await getCol('match_schedules').add({
-                schedule: localSchedule, config: matchConfig,
-                completedMatches: Array.from(localCompletedMatches),
-                currentMatchIndex: localMatchIndex,
-                createdAt: new Date().toISOString(), meetingDate: matchConfig.meetingDate,
-                meetingId: matchConfig.meetingDate,
-                label: `${matchConfig.meetingDate} 매치 (${localSchedule.list.length}라운드)`
-            });
-            setActiveMatchScheduleId(docRef.id);
-            // 워치 컨트롤 초기화 (라운드 목록/교체시간 기본값 포함)
-            getCol('settings').doc('watch_control').set({
-                command: null, cmdId: null, currentMatchIndex: 0,
-                totalMatches: localSchedule.list.length,
-                rounds: buildWatchRounds(localSchedule.list, localCompletedMatches, matchConfig),
-                subInterval: matchConfig.subIntervalSec ?? 180,
-                activeMatchScheduleId: docRef.id  // 서버(워치 명령 처리)가 갱신할 매치표 지정
-            }).catch(() => {});
-            showAlert('저장 완료', '매치 테이블이 저장되었습니다.');
+            if (activeMatchScheduleId) {
+                // 이미 저장된 매치표 → 그 문서를 덮어쓴다(인라인 편집 반영, 새 문서 양산 방지).
+                await getCol('match_schedules').doc(activeMatchScheduleId).update({
+                    schedule: localSchedule, config: matchConfig,
+                    completedMatches: Array.from(localCompletedMatches),
+                    currentMatchIndex: localMatchIndex,
+                    label: `${matchConfig.meetingDate} 매치 (${localSchedule.list.length}라운드)`
+                });
+                // 워치 라운드 목록도 편집 내용으로 갱신(진행 상태·명령은 보존 — merge)
+                getCol('settings').doc('watch_control').set({
+                    currentMatchIndex: localMatchIndex,
+                    totalMatches: localSchedule.list.length,
+                    rounds: buildWatchRounds(localSchedule.list, localCompletedMatches, matchConfig),
+                    subInterval: matchConfig.subIntervalSec ?? 180,
+                    activeMatchScheduleId
+                }, { merge: true }).catch(() => {});
+                showAlert('저장 완료', '매치 테이블이 수정되었습니다.');
+            } else {
+                const docRef = await getCol('match_schedules').add({
+                    schedule: localSchedule, config: matchConfig,
+                    completedMatches: Array.from(localCompletedMatches),
+                    currentMatchIndex: localMatchIndex,
+                    createdAt: new Date().toISOString(), meetingDate: matchConfig.meetingDate,
+                    meetingId: matchConfig.meetingDate,
+                    label: `${matchConfig.meetingDate} 매치 (${localSchedule.list.length}라운드)`
+                });
+                setActiveMatchScheduleId(docRef.id);
+                // 워치 컨트롤 초기화 (라운드 목록/교체시간 기본값 포함)
+                getCol('settings').doc('watch_control').set({
+                    command: null, cmdId: null, currentMatchIndex: 0,
+                    totalMatches: localSchedule.list.length,
+                    rounds: buildWatchRounds(localSchedule.list, localCompletedMatches, matchConfig),
+                    subInterval: matchConfig.subIntervalSec ?? 180,
+                    activeMatchScheduleId: docRef.id  // 서버(워치 명령 처리)가 갱신할 매치표 지정
+                }).catch(() => {});
+                showAlert('저장 완료', '매치 테이블이 저장되었습니다.');
+            }
         } catch(e) { showAlert('오류', '저장 실패'); } finally { setMatchIsSaving(false); }
+    };
+
+    // 매치표 인라인 편집 — 같은 라운드 안에서 두 팀 슬롯을 맞바꾼다(코트↔코트 / 코트↔휴식).
+    // slot = { si(라운드 index), kind:'court'|'rest', mi/side(코트) 또는 ri(휴식) }
+    // 같은 라운드(si 동일)에서만 허용 → "라운드당 한 팀 한 번" 규칙이 깨지지 않게.
+    const matchEditSwap = (a, b) => {
+        if (!a || !b || a.si !== b.si) return;
+        setLocalSchedule(prev => {
+            const list = (prev.list || []).map(s => ({
+                ...s,
+                matches: (s.matches || []).map(m => ({ ...m, match: [...m.match] })),
+                resting: [...(s.resting || [])]
+            }));
+            const s = list[a.si];
+            if (!s) return prev;
+            const getTeam = (sl) => sl.kind === 'court' ? s.matches[sl.mi]?.match[sl.side] : s.resting[sl.ri];
+            const setTeam = (sl, val) => { if (sl.kind === 'court') s.matches[sl.mi].match[sl.side] = val; else s.resting[sl.ri] = val; };
+            const ta = getTeam(a), tb = getTeam(b);
+            if (ta == null || tb == null || ta === tb) return prev;
+            setTeam(a, tb); setTeam(b, ta);
+            return { ...prev, list };
+        });
+        if (lastManualOpRef) lastManualOpRef.current = Date.now();
     };
 
     const syncMatchState = (newCompleted, newIndex) => {
@@ -250,7 +292,7 @@ function makeMatchHandlers(ctx) {
     };
 
     return {
-        splitTime, matchGenerateTable, matchSaveSchedule,
+        splitTime, matchGenerateTable, matchSaveSchedule, matchEditSwap,
         matchHandleNextMatch, matchHandlePrevMatch, matchHandleToggleComplete, matchHandleAutoAdvance,
         matchHandleCapture, matchHandlePresetSelect, matchToggleSubCourt, matchSavePreset
     };

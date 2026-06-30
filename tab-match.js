@@ -219,13 +219,43 @@ const TabMatch = ({
     scheduleData, matchViewMode, setMatchViewMode,
     myTeamInfo,
     matchSaveSchedule, matchHandleCapture, matchGenerateTable,
-    matchHandleNextMatch, matchHandlePrevMatch, matchHandleToggleComplete, matchHandleAutoAdvance, matchHandlePresetSelect, matchToggleSubCourt,
+    matchHandleNextMatch, matchHandlePrevMatch, matchHandleToggleComplete, matchHandleAutoAdvance, matchEditSwap, matchHandlePresetSelect, matchToggleSubCourt,
     splitTime, setIsLoadMatchModalOpen, setIsPresetModalOpen,
     meetings, embedded,
 }) => {
-    const [boardOpen, setBoardOpen] = React.useState(false);
-    const [boardMode, setBoardMode] = React.useState('mine'); // 'mine'=내 팀만 / 'all'=구장별 전체(관리자)
-    const openBoard = (m) => { setBoardMode(m); setBoardOpen(true); };
+    // 매치표 인라인 편집 — 탭하여 팀 선택 후 같은 라운드 다른 팀 탭 = 교체 (PC는 드래그)
+    const [picked, setPicked] = React.useState(null); // {si, kind, mi, side} 또는 {si, kind:'rest', ri}
+    const slotEq = (a, b) => !!a && !!b && a.si === b.si && a.kind === b.kind && (a.kind === 'court' ? (a.mi === b.mi && a.side === b.side) : a.ri === b.ri);
+    const onPick = (slot) => {
+        if (!picked) { setPicked(slot); return; }
+        if (slotEq(picked, slot)) { setPicked(null); return; }
+        if (picked.si === slot.si) { matchEditSwap && matchEditSwap(picked, slot); setPicked(null); }
+        else setPicked(slot); // 다른 라운드는 교체 불가 → 새로 선택
+    };
+    const onDropSlot = (slot) => {
+        if (picked && picked.si === slot.si && !slotEq(picked, slot)) matchEditSwap && matchEditSwap(picked, slot);
+        setPicked(null);
+    };
+    // 캡쳐 직전엔 선택 해제(이미지에 선택 테두리 안 남게)
+    React.useEffect(() => { if (matchIsCapturing) setPicked(null); }, [matchIsCapturing]);
+    const pickedName = picked ? (() => {
+        const s = localSchedule.list?.[picked.si]; if (!s) return null;
+        return picked.kind === 'court' ? s.matches?.[picked.mi]?.match?.[picked.side] : s.resting?.[picked.ri];
+    })() : null;
+    // 편집용 팀 배지 — 탭/드래그로 선택·교체 (캡쳐 중엔 선택 테두리 없음)
+    const renderEditTeam = (team, slot, dim, key) => {
+        const idx = String(team).charCodeAt(0) - 65;
+        const sel = slotEq(picked, slot);
+        return (
+            <span key={key} draggable
+                onDragStart={() => setPicked(slot)}
+                onDragOver={e => { if (picked && picked.si === slot.si) e.preventDefault(); }}
+                onDrop={e => { e.preventDefault(); e.stopPropagation(); onDropSlot(slot); }}
+                onClick={e => { e.stopPropagation(); onPick(slot); }}
+                className={`px-2.5 py-1 rounded-lg font-black text-xs cursor-pointer select-none transition-all ${getTeamBadge(idx)} ${dim && !sel ? 'opacity-60' : ''} ${sel ? 'ring-2 ring-offset-1 ring-slate-900 scale-110' : ''}`}
+                style={{touchAction:'manipulation'}}>{team}</span>
+        );
+    };
     const [selectedMeetingId, setSelectedMeetingId] = React.useState('');
     // 모임 선택 시 그 모임의 날짜·시간·장소를 매치 설정에 자동 채움
     const pickMeeting = (mid) => {
@@ -235,15 +265,7 @@ const TabMatch = ({
     };
     // 매치표 만들 대상 = 아직 종료 안 된 모임(가까운 날짜 먼저)
     const pickableMeetings = (meetings || []).filter(m => m && m.date && !isMeetingEnded(m)).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-    window.useMoidaBack?.(boardOpen, () => setBoardOpen(false));
-    const boardSessions = isAdminMode
-        ? (localSchedule.list || [])
-        : ((scheduleData?.schedule?.list?.length ? scheduleData.schedule.list : (localSchedule.list || [])));
-    const boardFieldNames = isAdminMode
-        ? (matchConfig?.fieldNames || scheduleData?.config?.fieldNames || [])
-        : (scheduleData?.config?.fieldNames || matchConfig?.fieldNames || []);
-    const boardCurrent = (scheduleData?.currentMatchIndex ?? localMatchIndex ?? 0);
-    const boardDate = scheduleData?.meetingDate || matchConfig?.meetingDate || '';
+    // (매치판 크게 보기는 홈 탭 모임카드로 이식됨 — MatchBoardModal 정의는 홈에서 재사용)
     return (
     <div className="animate-in">
         {/* 관리자 패널 토글 버튼 */}
@@ -409,6 +431,9 @@ const TabMatch = ({
                             ? <div className="text-center py-16 text-slate-400"><div className="flex justify-center mb-3 opacity-30"><Icon.Calendar size={48}/></div><p className="font-black">설정 탭에서 매치 테이블을 생성해주세요</p></div>
                             : (
                                 <div>
+                                    {!matchIsCapturing && (
+                                        <p className="text-[10px] text-slate-400 text-center mb-2 flex items-center justify-center gap-1"><Icon.Hand size={12}/>팀을 탭해 선택 후, 같은 라운드의 다른 팀을 탭하면 교체 · PC는 드래그</p>
+                                    )}
                                     <div id="match-capture-area">
                                         <div className="text-center mb-3">
                                             <p className="font-black text-slate-800">{matchConfig.meetingDate}</p>
@@ -435,19 +460,30 @@ const TabMatch = ({
                                                             return (
                                                                 <div key={mi} className="flex items-center gap-2">
                                                                     <span className="text-[9px] font-black text-slate-400 w-10 shrink-0">{matchConfig.fieldNames[m.fieldIdx]||`${m.fieldIdx+1}구장`}</span>
-                                                                    <span className={`px-2.5 py-1 rounded-lg font-black text-xs ${getTeamBadge(t1.charCodeAt(0)-65)} ${isPast||isDone?'opacity-60':''}`}>{t1}</span>
+                                                                    {renderEditTeam(t1, {si, kind:'court', mi, side:0}, isPast||isDone)}
                                                                     <span className="text-slate-400 font-black text-xs">vs</span>
-                                                                    <span className={`px-2.5 py-1 rounded-lg font-black text-xs ${getTeamBadge(t2.charCodeAt(0)-65)} ${isPast||isDone?'opacity-60':''}`}>{t2}</span>
+                                                                    {renderEditTeam(t2, {si, kind:'court', mi, side:1}, isPast||isDone)}
                                                                     <span className="text-[8px] font-black text-slate-300 ml-auto">{matchConfig.fieldTypes[m.fieldIdx]||'6vs6'}</span>
                                                                 </div>
                                                             );
                                                         })}
-                                                        {session.resting.length > 0 && <p className="text-[9px] text-slate-400">휴식: {session.resting.join(', ')}</p>}
+                                                        {session.resting.length > 0 && (
+                                                            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                                                                <span className="text-[9px] text-slate-400 font-black shrink-0">휴식</span>
+                                                                {session.resting.map((r,ri) => renderEditTeam(r, {si, kind:'rest', ri}, true, ri))}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             );
                                         })}
                                     </div>
+                                    {!matchIsCapturing && picked && pickedName && (
+                                        <div className="sticky bottom-2 z-10 mt-2 flex items-center justify-center gap-2 bg-slate-900 text-white rounded-xl px-3 py-2.5 shadow-lg">
+                                            <span className="inline-flex items-center gap-1.5 text-xs font-black min-w-0"><Icon.Hand size={13} className="flex-shrink-0"/><span className="truncate">{pickedName}팀 선택됨 · 같은 라운드 다른 팀 탭 = 교체</span></span>
+                                            <button onClick={() => setPicked(null)} className="ml-1 text-slate-300 font-black inline-flex items-center flex-shrink-0"><Icon.X size={14}/></button>
+                                        </div>
+                                    )}
                                     {!matchIsCapturing && (
                                         <div className="mt-3 p-3 card border-slate-100 rounded-2xl">
                                             <p className="text-center text-xs font-black text-slate-500 mb-2">
@@ -570,8 +606,8 @@ const TabMatch = ({
                             </div>
                         )}
 
-                        {/* 패드 크게 보기 진입(내 팀/전체 대진) — 제거됨. 홈 탭 모임카드로 이식 예정.
-                            (openBoard·MatchBoardModal 로직은 이식 위해 유지) */}
+                        {/* 매치판 크게 보기 진입은 홈 탭 모임카드로 이식됨(tab-home.js).
+                            MatchBoardModal 정의는 이 파일에 두고 홈에서 재사용. */}
 
                         {/* ── 내 경기 뷰 ── */}
                         {matchViewMode==='my' && (
@@ -744,13 +780,6 @@ const TabMatch = ({
                     </div>
                 );
             })()
-        )}
-        {boardOpen && boardSessions.length > 0 && (
-            <MatchBoardModal sessions={boardSessions} fieldNames={boardFieldNames}
-                startIndex={boardCurrent} dateLabel={boardDate} onClose={() => setBoardOpen(false)}
-                isAdmin={isAdminMode} mode={boardMode} myTeamInfo={myTeamInfo}
-                currentIndex={localMatchIndex} completedMatches={localCompletedMatches}
-                onPrev={matchHandlePrevMatch} onNext={matchHandleNextMatch} onToggleComplete={matchHandleToggleComplete} onAutoAdvance={matchHandleAutoAdvance} />
         )}
     </div>
     );

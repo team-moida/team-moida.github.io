@@ -811,7 +811,7 @@ function App() {
         setIsCapturing: team.setIsCapturing, showAlert, showConfirm
     });
 
-    const { splitTime, matchGenerateTable, matchSaveSchedule,
+    const { splitTime, matchGenerateTable, matchSaveSchedule, matchEditSwap,
             matchHandleNextMatch, matchHandlePrevMatch, matchHandleToggleComplete, matchHandleAutoAdvance,
             matchHandleCapture, matchHandlePresetSelect, matchToggleSubCourt,
             matchSavePreset } = makeMatchHandlers({
@@ -913,6 +913,9 @@ function App() {
                         participantCount={meetingParticipants.length}
                         allowFromDisplay={allowFromDisplay} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                         scheduleData={scheduleData}
+                        matchLocalIndex={match.localMatchIndex} matchCompleted={match.localCompletedMatches}
+                        onMatchPrev={matchHandlePrevMatch} onMatchNext={matchHandleNextMatch}
+                        onMatchToggleComplete={matchHandleToggleComplete} onMatchAutoAdvance={matchHandleAutoAdvance}
                         memberData={memberData} memberInfo={memberInfo} mySession={mySession} meetingSettings={meetingSettings}
                         meetingSettingsMatch={meetingSettingsMatch}
                         darkMode={darkMode} memberName={memberName} announcements={announcements}
@@ -1128,6 +1131,7 @@ function App() {
                         matchGenerateTable={matchGenerateTable}
                         matchHandleNextMatch={matchHandleNextMatch} matchHandlePrevMatch={matchHandlePrevMatch}
                         matchHandleToggleComplete={matchHandleToggleComplete} matchHandleAutoAdvance={matchHandleAutoAdvance}
+                        matchEditSwap={matchEditSwap}
                         matchHandlePresetSelect={matchHandlePresetSelect} matchToggleSubCourt={matchToggleSubCourt}
                         splitTime={splitTime} setIsLoadMatchModalOpen={match.setIsLoadMatchModalOpen}
                         setIsPresetModalOpen={match.setIsPresetModalOpen}

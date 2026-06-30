@@ -380,9 +380,14 @@ const NextMeetingCard = ({
     meeting, kind, isActive, dayInfo, darkMode, isAdminMode, onTabChange, members,
     memberData, showToast, showAlert, showConfirm, regDuesUnpaid, regDuesBlock, regPenaltyUnpaid, regPenaltyTotal,
     mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount, scheduleData,
+    matchLocalIndex, matchCompleted, onMatchPrev, onMatchNext, onMatchToggleComplete, onMatchAutoAdvance,
     isMeetingOver, isMeetingEndSaved, onEndMeeting, onGenerateQR, onEditMeeting, onDeleteMeeting,
     onOpenAttendModal, onInlineGPS, onInlineQR, enableQR, onOpenKiosk, fill,
 }) => {
+    const [boardOpen, setBoardOpen] = React.useState(false);
+    window.useMoidaBack?.(boardOpen, () => setBoardOpen(false));
+    // 이 카드(정기 모임)에 확정된 매치표가 있으면 '매치판 크게 보기' 진입 가능
+    const hasBoard = kind === 'self' && (scheduleData?.schedule?.list?.length > 0);
     const cfg = MEETING_KIND[kind] || MEETING_KIND.self;
     // ── 팀 발표(공개) 시 카드를 내 조끼색으로 ─────────────────────────────────────
     // 정기(self) 모임에서 팀이 확정·공개(teamReady)되고 내 팀이 정해지면(출석 전) 카드 배경=내 조끼색.
@@ -855,6 +860,15 @@ const NextMeetingCard = ({
                     </div>
                 </div>
             )}
+            {/* 매치판 크게 보기 — 확정 매치표가 있으면 진입(회원=내 경기 / 관리자=전체 대진·라운드 컨트롤) */}
+            {hasBoard && (
+                <div className="mt-3">
+                    <span role="button" onClick={(e)=>{ e.stopPropagation(); setBoardOpen(true); }}
+                        className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-black text-sm ${chip} active:scale-95 cursor-pointer`}>
+                        <Icon.Tv size={16}/> 매치판 크게 보기
+                    </span>
+                </div>
+            )}
             {/* 관리자: 카드에서 바로 수정/삭제 */}
             {isAdminMode && (onEditMeeting || onDeleteMeeting) && (
                 <div className="mt-3 pt-3 border-t flex items-center justify-end gap-1.5" style={{borderColor: softBorder}}>
@@ -865,6 +879,22 @@ const NextMeetingCard = ({
                 </div>
             )}
         </button>
+        {/* 매치판 크게 보기 모달 (정의는 tab-match.js, 홈에서 재사용) */}
+        {boardOpen && hasBoard && (
+            <MatchBoardModal
+                sessions={scheduleData.schedule.list}
+                fieldNames={scheduleData.config?.fieldNames || []}
+                startIndex={(matchLocalIndex ?? scheduleData.currentMatchIndex) ?? 0}
+                dateLabel={scheduleData.meetingDate || meeting.date}
+                onClose={() => setBoardOpen(false)}
+                isAdmin={isAdminMode}
+                mode={isAdminMode ? 'all' : 'mine'}
+                myTeamInfo={myTeamInfo}
+                currentIndex={(matchLocalIndex ?? scheduleData.currentMatchIndex) ?? 0}
+                completedMatches={matchCompleted || new Set(scheduleData.completedMatches || [])}
+                onPrev={onMatchPrev} onNext={onMatchNext}
+                onToggleComplete={onMatchToggleComplete} onAutoAdvance={onMatchAutoAdvance} />
+        )}
         {/* 관리자: 모임 종료 시간이 지나면 카드 위에 '모임 종료' 버튼 (누르면 그날 출석 기록 저장) */}
         {showOverlay && (
             <div className="absolute inset-0 flex items-center justify-center bg-white/40 rounded-3xl">
@@ -1957,6 +1987,7 @@ const TabHome = ({
     notifPermission, registerFcmToken, onTabChange,
     meetingDayInfo, teamReady, allowFromDisplay,
     myTeamInfo, myTeamIdx, memberData, memberInfo, meetings, members, participantCount, scheduleData, attendHistory,
+    matchLocalIndex, matchCompleted, onMatchPrev, onMatchNext, onMatchToggleComplete, onMatchAutoAdvance,
     mySession, meetingSettings, meetingSettingsMatch, darkMode,
     memberName, announcements, onOpenAnnouncements,
     isAdminMode, isMeetingOver, isMeetingEndSaved, onEndMeeting,
@@ -2017,6 +2048,8 @@ const TabHome = ({
                 dayInfo={c.dayInfo} darkMode={darkMode} isAdminMode={isAdminMode} onTabChange={onTabChange} members={members}
                 mySession={mySession} teamReady={teamReady} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                 allowFromDisplay={allowFromDisplay} participantCount={participantCount} scheduleData={scheduleData}
+                matchLocalIndex={matchLocalIndex} matchCompleted={matchCompleted}
+                onMatchPrev={onMatchPrev} onMatchNext={onMatchNext} onMatchToggleComplete={onMatchToggleComplete} onMatchAutoAdvance={onMatchAutoAdvance}
                 isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting}
                 onGenerateQR={generateAttendQRCode} onEditMeeting={onEditMeeting} onDeleteMeeting={onDeleteMeeting}
                 onOpenAttendModal={onOpenAttendModal} onInlineGPS={onInlineGPS} onInlineQR={onInlineQR}
