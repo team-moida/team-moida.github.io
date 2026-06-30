@@ -570,21 +570,8 @@ const TabMatch = ({
                             </div>
                         )}
 
-                        {/* 패드 크게 보기 진입 — 회원=내 팀만 / 관리자=내 팀 + 구장별 전체 */}
-                        <div className={`mb-4 ${isAdminMode ? 'grid grid-cols-2 gap-2' : ''}`}>
-                            <button onClick={() => openBoard('mine')}
-                                className="w-full py-3.5 rounded-2xl font-black text-sm text-white flex items-center justify-center gap-2 active:scale-95 transition-all"
-                                style={{background:'linear-gradient(135deg,#0f2660,var(--c-accent-deep))',boxShadow:'0 8px 20px -6px rgba(18,46,120,0.5)'}}>
-                                <Icon.Tv size={18}/>내 팀 크게 보기
-                            </button>
-                            {isAdminMode && (
-                                <button onClick={() => openBoard('all')}
-                                    className="w-full py-3.5 rounded-2xl font-black text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
-                                    style={{background:'#dbe3f6',color:'var(--c-accent-deep)'}}>
-                                    <Icon.Clipboard size={18}/>전체 대진 크게 보기
-                                </button>
-                            )}
-                        </div>
+                        {/* 패드 크게 보기 진입(내 팀/전체 대진) — 제거됨. 홈 탭 모임카드로 이식 예정.
+                            (openBoard·MatchBoardModal 로직은 이식 위해 유지) */}
 
                         {/* ── 내 경기 뷰 ── */}
                         {matchViewMode==='my' && (
