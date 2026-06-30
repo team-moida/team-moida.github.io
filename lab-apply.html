@@ -73,7 +73,7 @@
   </div>
 
   <!-- 새 안 A -->
-  <p class="seclabel">새 안 A <small>· 균형 (완료 살짝 크게 · 취소 알약)</small></p>
+  <p class="seclabel">새 안 A <small>· 신청=완료 같은 크기 · 취소 알약</small></p>
   <div class="card" id="cardA">
     <div class="chead"><span class="t">선착순 신청</span><span class="c">12 / 18명</span></div>
     <div class="center" data-slot></div>
@@ -81,7 +81,7 @@
   </div>
 
   <!-- 새 안 B -->
-  <p class="seclabel">새 안 B <small>· 완료 크게 / 취소 아주 작게</small></p>
+  <p class="seclabel">새 안 B <small>· 원 더 크게(신청=완료) · 취소 아주 작게</small></p>
   <div class="card" id="cardB">
     <div class="chead"><span class="t">선착순 신청</span><span class="c">12 / 18명</span></div>
     <div class="center" data-slot></div>
@@ -100,13 +100,14 @@
     </div>
   </div>
 
-  <p class="hint">A=취소도 눌러야 할 일이라 알약으로 살짝 보이게 · B=완료를 최대한 키우고 취소는 최소화.<br>원 크기·취소 형태는 더 조절할 수 있어요.</p>
+  <p class="hint">신청하기 원과 참가 확정 원은 같은 크기예요(탭해도 모양이 안 튐). A=원 보통+취소 알약 · B=원 더 큼+취소 텍스트.<br>원 크기·취소 형태는 더 조절할 수 있어요.</p>
 </div>
 
 <script>
+// 신청하기 원과 참가 확정 원은 같은 크기(D). 취소만 작게.
 const VARIANTS = {
-  A: { applyD:150, doneD:166, cancel:'pill', chk:46, applyBig:21 },
-  B: { applyD:142, doneD:188, cancel:'text', chk:54, applyBig:20 },
+  A: { D:158, cancel:'pill', chk:44, applyBig:21 },
+  B: { D:188, cancel:'text', chk:54, applyBig:23 },
 };
 const state = { A:'apply', B:'apply' };
 
@@ -117,14 +118,14 @@ function render(key){
   if(state[key]==='apply'){
     const b = document.createElement('button');
     b.className='circle c-apply';
-    b.style.width=v.applyD+'px'; b.style.height=v.applyD+'px';
+    b.style.width=v.D+'px'; b.style.height=v.D+'px';
     b.innerHTML = `<span class="big" style="font-size:${v.applyBig}px">신청하기</span><span class="sub">탭하면 신청</span>`;
     b.onclick=()=>{ state[key]='done'; render(key); };
     slot.appendChild(b);
   } else {
     const d = document.createElement('div');
     d.className='circle c-done';
-    d.style.width=v.doneD+'px'; d.style.height=v.doneD+'px';
+    d.style.width=v.D+'px'; d.style.height=v.D+'px';
     d.innerHTML = `<span class="chk" style="font-size:${v.chk}px">✓</span><span class="lbl" style="font-size:16px">참가 확정</span>`;
     slot.appendChild(d);
     const c = document.createElement('button');
