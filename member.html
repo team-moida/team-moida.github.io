@@ -984,7 +984,10 @@ function App() {
                 )}
                 {/* 회원=지금 할 일(맨 위) / 관리자=출석 서브탭 */}
                 {tab === 'meeting' && viewMeeting && !(isAdminMode && adminHub) && (
-                  <MeetingSection title="출석" open={isSecOpen('attend')} onToggle={() => toggleSection('attend')}>
+                  <MeetingSection title="출석"
+                    icon={{ el: <Icon.CheckSq size={18}/>, bg:'#eef2fb', fg:'#122E78' }}
+                    summary={mySession?.checkedIn ? '출석 완료' : attend.myRegistration?.status === 'confirmed' ? `신청 완료 · ${meetingParticipants.length}/${viewMeeting.maxLimit||18}명` : attend.myRegistration?.status === 'waiting' ? `대기 ${attend.myWaitingPosition||''}번` : `${meetingParticipants.length}/${viewMeeting.maxLimit||18}명 참여`}
+                    open={isSecOpen('attend')} onToggle={() => toggleSection('attend')}>
                     <TabAttend
                         viewMeeting={viewMeeting} isViewActive={isViewActive}
                         onEditMeeting={(m) => { setPendingEditMeeting(m); setViewMeetingId(null); }}
@@ -1052,7 +1055,10 @@ function App() {
                 )}
                 {/* 회원=내 팀 / 관리자=팀 편성 */}
                 {tab === 'meeting' && viewMeeting && !(isAdminMode && adminHub) && (
-                  <MeetingSection title={viewKind === 'match' ? '명단' : '팀'} open={isSecOpen('team')} onToggle={() => toggleSection('team')}>
+                  <MeetingSection title={viewKind === 'match' ? '명단' : '팀'}
+                    icon={{ el: <Icon.Users size={18}/>, bg:'#dcfce7', fg:'#15803d' }}
+                    summary={viewKind === 'match' ? `${meetingParticipants.length}명 참여` : (teamStatus.done ? `${teamStatus.label}${myTeamInfo ? ` · 내 팀 ${getTeamColorName(myTeamIdx)} ${myTeamInfo.jerseyNumber}번` : ''}` : teamStatus.label)}
+                    open={isSecOpen('team')} onToggle={() => toggleSection('team')}>
                     <TabTeam
                         isAdminMode={isAdminMode} isTeamPanelOpen={team.isTeamPanelOpen} setIsTeamPanelOpen={team.setIsTeamPanelOpen}
                         teamMakerTab={team.teamMakerTab} setTeamMakerTab={team.setTeamMakerTab}
@@ -1085,7 +1091,10 @@ function App() {
                 )}
                 {/* 회원=경기 / 관리자=매치 관리 (매칭 모임 제외) */}
                 {tab === 'meeting' && viewMeeting && viewKind !== 'match' && !(isAdminMode && adminHub) && (
-                  <MeetingSection title="매치" open={isSecOpen('match')} onToggle={() => toggleSection('match')}>
+                  <MeetingSection title="매치"
+                    icon={{ el: <Icon.Swords size={16}/>, bg:'#fee2e2', fg:'#b91c1c' }}
+                    summary={matchStatus.label}
+                    open={isSecOpen('match')} onToggle={() => toggleSection('match')}>
                     <TabMatch
                         isAdminMode={isAdminMode} isMatchPanelOpen={match.isMatchPanelOpen} setIsMatchPanelOpen={match.setIsMatchPanelOpen}
                         matchAdminView={match.matchAdminView} setMatchAdminView={match.setMatchAdminView}

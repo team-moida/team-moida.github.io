@@ -1079,11 +1079,15 @@ const MeetingAdminHub = ({ meeting, teamStatus, matchStatus, isMatchKind, onClos
 };
 
 // ─── 모임 상세 접이식 섹션 (출석/팀/매치를 세로로 — 제목 누르면 펼침/접힘) ──────────
-const MeetingSection = ({ title, open, onToggle, children }) => (
+const MeetingSection = ({ title, summary, icon, open, onToggle, children }) => (
     <div className="card rounded-2xl overflow-hidden mb-3">
-        <button onClick={onToggle} className="w-full flex items-center gap-2 px-4 py-3.5 text-left active:bg-slate-50 transition-colors">
-            <span className="font-black text-[15px] text-slate-800">{title}</span>
-            <Icon.ChevronRight size={18} className={`ml-auto text-slate-400 shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} />
+        <button onClick={onToggle} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 transition-colors">
+            {icon && <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{background:icon.bg, color:icon.fg}}>{icon.el}</div>}
+            <div className="flex-1 min-w-0">
+                <span className="font-black text-[15px] text-slate-800">{title}</span>
+                {summary && <p className="text-[12px] font-bold text-slate-400 mt-0.5 truncate">{summary}</p>}
+            </div>
+            <Icon.ChevronRight size={18} className={`text-slate-400 shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} />
         </button>
         {open && <div className="px-2 pb-2">{children}</div>}
     </div>
