@@ -412,17 +412,18 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                         </div>
                     </div>
                     <div className="flex-1 overflow-y-auto relative">
-                        <div className="max-w-lg mx-auto w-full px-5 py-4 space-y-3">
+                        <div className={`max-w-lg mx-auto w-full px-5 ${isWiz ? 'py-5 min-h-full flex flex-col wiz-lg' : 'py-4 space-y-3'}`}>
                             {isWiz && (
-                                <div className="mb-1">
+                                <div className="mb-1 shrink-0">
                                     <div className="flex gap-1.5 mb-2.5">
                                         {WIZ_STEPS.map((_, i) => <div key={i} className={`flex-1 h-1.5 rounded-full transition-all ${i < wizStep ? 'bg-teal-500' : 'bg-slate-200'}`}/>)}
                                     </div>
                                     <p className="text-[11px] font-black text-teal-600 tracking-wide">STEP {wizStep} / {WIZ_STEPS.length}</p>
-                                    <p className="text-lg font-black text-slate-800 mt-0.5">{WIZ_STEPS[wizStep-1].t}</p>
-                                    <p className="text-xs font-bold text-slate-400 mt-0.5">{WIZ_STEPS[wizStep-1].s}</p>
+                                    <p className="text-2xl font-black text-slate-800 mt-0.5">{WIZ_STEPS[wizStep-1].t}</p>
+                                    <p className="text-sm font-bold text-slate-400 mt-1">{WIZ_STEPS[wizStep-1].s}</p>
                                 </div>
                             )}
+                            <div className={isWiz ? 'flex-1 flex flex-col justify-center space-y-4 py-2' : 'space-y-3'}>
                             {stepShow(1) && (<div className="space-y-3">
                             {isWiz ? (
                                 <div className="grid grid-cols-2 gap-3">
@@ -472,7 +473,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                             <div>
                                 <label className="text-xs font-black text-slate-500 mb-1 block">날짜</label>
                                 <div className="relative">
-                                    <div className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium flex items-center gap-2 pointer-events-none">
+                                    <div className="wiz-box w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium flex items-center gap-2 pointer-events-none">
                                         <Icon.Calendar size={15} className="text-slate-400 flex-shrink-0"/>
                                         <span className={form.date ? 'text-slate-800' : 'text-slate-400'}>{form.date ? fmtMD(form.date) : '캘린더에서 날짜를 골라요'}</span>
                                     </div>
@@ -678,6 +679,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                             </button>
                         </div>
                         </div>)}
+                            </div>
                         </div>
                         {wizLoading && (
                             <div className="absolute inset-0 z-10 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center px-8 text-center">
