@@ -51,20 +51,8 @@ const TabTeam = ({
                 )}
             </div>
         ) : (<>
-        {/* 관리자 패널 토글 버튼 */}
-        {isAdminMode && (
-            <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-black text-slate-500 uppercase tracking-widest">팀 편성</p>
-                <button onClick={() => setIsTeamPanelOpen(v => !v)}
-                    className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 rounded-xl transition-all active:scale-95"
-                    style={isTeamPanelOpen ? {background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
-                    <Icon.Settings size={13}/>{isTeamPanelOpen ? '편성 모드 ON' : '편성 관리'}
-                </button>
-            </div>
-        )}
-
-        {/* ── 관리자 편성 패널 ── */}
-        {isAdminMode && isTeamPanelOpen ? (
+        {/* ── 관리자 편성 패널 (편성 관리 토글 제거 — 운영진이면 바로 편성 도구) ── */}
+        {isAdminMode ? (
             <div>
                 {/* 서브탭 */}
                 <div className="flex gap-2 mb-4">
