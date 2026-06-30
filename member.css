@@ -47,6 +47,12 @@ input:focus { outline: none; }
 .btn-apply{ background:#f97316; color:#fff; animation:moidaApplyRing 1.8s infinite; }
 .btn-apply:active{ transform:scale(.96); opacity:.9; }
 @media (prefers-reduced-motion: reduce){ .btn-apply{ animation:none!important; box-shadow:0 10px 22px -8px rgba(249,115,22,.5); } }
+/* ── 모임 등록 로딩 공(통통) ── */
+.moida-ball{ width:56px; height:56px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #ffffff 0 8%, #183FB0 9% 60%, #122E78 100%);
+  box-shadow:0 14px 20px -6px rgba(24,63,176,.4); animation:moidaBall .7s ease-in-out infinite; }
+@keyframes moidaBall{ 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-22px) scale(.94)} }
+@media (prefers-reduced-motion: reduce){ .moida-ball{ animation:none } }
 .card-white { background: white; }
 select { appearance: none; }
 .tab-bar { background: rgba(255,255,255,0.95); border-top: 1px solid #e2e8f0; backdrop-filter: blur(10px); }

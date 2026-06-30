@@ -6,6 +6,19 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
     const [form, setForm] = useState({ date:'', start:'08:00', end:'10:00', location:'', meetingType:'self', opponentName:'', maxMale:12, maxFemale:6, maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, autoRegisterManager:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false, editPin:'' });
     const [isSaving, setIsSaving] = useState(false);
     const [isLocPickerOpen, setIsLocPickerOpen] = useState(false);
+    // ── 모임 추가 마법사(단계별) — '새 모임'만 단계별. 수정은 기존 단일 폼 그대로 ──
+    const [wizStep, setWizStep] = useState(1);
+    const [wizLoading, setWizLoading] = useState(false);   // 등록 중 센스 로딩
+    const [loadIdx, setLoadIdx] = useState(0);
+    const WIZ_STEPS = [
+        { t:'어떤 모임인가요?', s:'자체전인지 매칭인지 골라요.' },
+        { t:'언제 모이나요?', s:'날짜와 시작·종료 시간을 정해요.' },
+        { t:'어디서 하나요?', s:'장소·GPS 반경·QR 출석을 정해요.' },
+        { t:'몇 명이 모이나요?', s:'정원/최대 인원을 정해요.' },
+        { t:'신청을 받을까요?', s:'선착순·신청 기간을 정해요.' },
+        { t:'거의 다 됐어요!', s:'담당자·알림 등 마지막 옵션이에요.' },
+    ];
+    const WIZ_LOAD = ['구장에 잔디를 까는 중…','골대를 단단히 고정하는 중…','조끼를 색깔별로 개는 중…','공에 바람을 넣는 중…','출석부를 펼치는 중…','호루라기를 부는 중…'];
 
     // ── 정기 모임 설정 ──
     const DOW = ['일','월','화','수','목','금','토'];
@@ -23,7 +36,10 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
     const [isOvrLocPickerOpen, setIsOvrLocPickerOpen] = useState(false);
     const [isOvrSaving, setIsOvrSaving] = useState(false);
     // 뒤로가기로 닫기 (안드로이드) — 모임 수정/추가 전체화면 · 정기설정 · 날짜별지정 (지도 선택은 자체 처리)
-    window.useMoidaBack && window.useMoidaBack(isModalOpen, () => setIsModalOpen(false));
+    window.useMoidaBack && window.useMoidaBack(isModalOpen, () => {
+        if (!editingId && wizStep > 1) setWizStep(s => Math.max(1, s - 1));   // 마법사: 이전 단계로
+        else setIsModalOpen(false);
+    });
     window.useMoidaBack && window.useMoidaBack(isRecModalOpen, () => setIsRecModalOpen(false));
     window.useMoidaBack && window.useMoidaBack(isOvrModalOpen, () => setIsOvrModalOpen(false));
 
@@ -126,6 +142,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
 
     const openAdd = () => {
         setEditingId(null);
+        setWizStep(1); setWizLoading(false);
         setForm({ date:'', start:'08:00', end:'10:00', location:'', meetingType:'self', opponentName:'', maxMale:12, maxFemale:6, maxLimit:18, managerId:'', managerName:'', isRegistrationEnabled:false, isFirstComeFirstServed:true, autoRegisterManager:true, regOpenDate:'', regOpenHour:'09', regOpenMinute:'00', regCloseDate:'', regCloseHour:'23', regCloseMinute:'59', sendPush:true, locationLat:null, locationLng:null, locationRadius:100, enableQR:false, editPin:'' });
         setIsModalOpen(true);
     };
@@ -191,6 +208,32 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
         setIsSaving(false);
     };
 
+    // 등록 중 센스 로딩 문구 회전
+    React.useEffect(() => {
+        if (!wizLoading) return;
+        setLoadIdx(0);
+        const iv = setInterval(() => setLoadIdx(i => (i + 1) % WIZ_LOAD.length), 750);
+        return () => clearInterval(iv);
+    }, [wizLoading]);
+
+    // 마법사 등록 — handleSave와 동일 저장(handleSaveMeeting) 재사용 + 센스 로딩 최소 노출
+    const wizSubmit = async () => {
+        if (wizLoading) return;
+        setWizLoading(true);
+        const t0 = Date.now();
+        const combinedForm = {
+            ...form,
+            registrationOpenAt: form.isRegistrationEnabled && form.regOpenDate ? `${form.regOpenDate}T${form.regOpenHour}:${form.regOpenMinute}` : '',
+            registrationCloseAt: form.isRegistrationEnabled && form.regCloseDate ? `${form.regCloseDate}T${form.regCloseHour}:${form.regCloseMinute}` : '',
+        };
+        let ok = false;
+        try { await handleSaveMeeting(combinedForm, null, () => { ok = true; }); } catch (e) {}
+        const left = 1500 - (Date.now() - t0);
+        if (left > 0) await new Promise(r => setTimeout(r, left));
+        setWizLoading(false);
+        if (ok) setIsModalOpen(false);
+    };
+
     // 외부(모임 정보 보기 화면의 [수정] 버튼)에서 수정 폼 열기 요청
     React.useEffect(() => {
         if (pendingEditMeeting) {
@@ -206,6 +249,8 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
         if (pendingAction) onPendingActionHandled && onPendingActionHandled();
     }, [pendingAction]);
 
+    const isWiz = !editingId;                       // 새 모임만 마법사
+    const stepShow = (n) => !isWiz || wizStep === n; // 수정모드는 전부 표시
     return (
         <div className="animate-in space-y-4">
             {!embedded && (<>
@@ -294,8 +339,19 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                 className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-500 text-sm font-black"><span className="inline-flex items-center gap-1"><Icon.X size={13}/>닫기</span></button>
                         </div>
                     </div>
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto relative">
                         <div className="max-w-lg mx-auto w-full px-5 py-4 space-y-3">
+                            {isWiz && (
+                                <div className="mb-1">
+                                    <div className="flex gap-1.5 mb-2.5">
+                                        {WIZ_STEPS.map((_, i) => <div key={i} className={`flex-1 h-1.5 rounded-full transition-all ${i < wizStep ? 'bg-teal-500' : 'bg-slate-200'}`}/>)}
+                                    </div>
+                                    <p className="text-[11px] font-black text-teal-600 tracking-wide">STEP {wizStep} / {WIZ_STEPS.length}</p>
+                                    <p className="text-lg font-black text-slate-800 mt-0.5">{WIZ_STEPS[wizStep-1].t}</p>
+                                    <p className="text-xs font-bold text-slate-400 mt-0.5">{WIZ_STEPS[wizStep-1].s}</p>
+                                </div>
+                            )}
+                            {stepShow(1) && (<div className="space-y-3">
                             <div>
                                 <label className="text-xs font-black text-slate-500 mb-1 block">모임 유형</label>
                                 <div className="flex gap-2">
@@ -316,6 +372,8 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                         className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
                                 </div>
                             )}
+                            </div>)}
+                            {stepShow(2) && (<div className="space-y-3">
                             <div>
                                 <label className="text-xs font-black text-slate-500 mb-1 block">날짜</label>
                                 <input type="date" value={form.date}
@@ -336,6 +394,8 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                         className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400"/>
                                 </div>
                             </div>
+                            </div>)}
+                            {stepShow(3) && (<div className="space-y-3">
                             <div>
                                 <label className="text-xs font-black text-slate-500 mb-1 block">장소명</label>
                                 <div className="flex gap-2">
@@ -373,6 +433,8 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                     <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${form.enableQR ? 'left-6' : 'left-0.5'}`}/>
                                 </button>
                             </div>
+                            </div>)}
+                            {stepShow(4) && (<div className="space-y-3">
                             {form.meetingType === 'match' ? (
                                 <div>
                                     <label className="text-xs font-black text-slate-500 mb-1 block">정원 (남 / 여)</label>
@@ -400,6 +462,8 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                         className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400"/>
                                 </div>
                             )}
+                            </div>)}
+                            {stepShow(6) && (<div className="space-y-3">
                             <div>
                                 <label className="text-xs font-black text-slate-500 mb-1 block">담당자</label>
                                 <select value={form.managerId}
@@ -432,6 +496,8 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                     className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400"/>
                                 <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">담당자 본인은 PIN 없이 수정할 수 있어요. PIN을 정하면 담당자가 아니어도 이 PIN으로 수정할 수 있어요.</p>
                             </div>
+                            </div>)}
+                            {stepShow(5) && (<div className="space-y-3">
                             <div className="pt-2 border-t border-slate-100">
                                 <div className="flex items-center justify-between mb-1">
                                     <label className="text-xs font-black text-slate-500">신청 창구</label>
@@ -495,6 +561,8 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                     </div>
                                 )}
                             </div>
+                            </div>)}
+                        {stepShow(6) && (<div className="space-y-3">
                         {/* 등록 시 전체 푸시 알림 (새 모임 기본 ON, 수정 기본 OFF) */}
                         <div className="flex items-center justify-between px-1 py-2 border-t border-slate-100">
                             <div className="min-w-0 pr-2">
@@ -506,15 +574,39 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                 <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${form.sendPush ? 'left-6' : 'left-0.5'}`}/>
                             </button>
                         </div>
+                        </div>)}
                         </div>
+                        {wizLoading && (
+                            <div className="absolute inset-0 z-10 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center px-8 text-center">
+                                <div className="moida-ball"/>
+                                <p className="font-black text-base text-teal-700 mt-6 min-h-[24px]">{WIZ_LOAD[loadIdx]}</p>
+                                <p className="text-xs font-bold text-slate-400 mt-1.5">잠시만요</p>
+                            </div>
+                        )}
                     </div>
                     <div className="shrink-0 border-t border-slate-100"
                         style={{paddingBottom:'max(0.75rem,env(safe-area-inset-bottom))'}}>
                         <div className="max-w-lg mx-auto w-full px-5 pt-3">
-                            <button onClick={handleSave} disabled={isSaving}
-                                className="w-full py-3 bg-teal-500 text-white rounded-2xl font-black text-sm active:scale-95 transition-all disabled:opacity-50">
-                                {isSaving ? '저장 중...' : editingId ? '수정 완료' : '모임 등록'}
-                            </button>
+                            {isWiz ? (
+                                <div className="flex gap-2">
+                                    {wizStep > 1 && (
+                                        <button onClick={() => setWizStep(s => Math.max(1, s - 1))}
+                                            className="px-5 py-3 rounded-2xl bg-slate-100 text-slate-500 font-black text-sm active:scale-95 transition-all">이전</button>
+                                    )}
+                                    {wizStep < WIZ_STEPS.length ? (
+                                        <button onClick={() => setWizStep(s => Math.min(WIZ_STEPS.length, s + 1))}
+                                            className="flex-1 py-3 rounded-2xl bg-teal-500 text-white font-black text-sm active:scale-95 transition-all">다음</button>
+                                    ) : (
+                                        <button onClick={wizSubmit} disabled={wizLoading}
+                                            className="flex-1 py-3 rounded-2xl bg-orange-500 text-white font-black text-sm shadow-lg active:scale-95 transition-all disabled:opacity-60">{wizLoading ? '등록 중…' : '✨ 등록하기'}</button>
+                                    )}
+                                </div>
+                            ) : (
+                                <button onClick={handleSave} disabled={isSaving}
+                                    className="w-full py-3 bg-teal-500 text-white rounded-2xl font-black text-sm active:scale-95 transition-all disabled:opacity-50">
+                                    {isSaving ? '저장 중...' : '수정 완료'}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
