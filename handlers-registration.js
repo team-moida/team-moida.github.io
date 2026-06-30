@@ -199,15 +199,11 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
         }
     };
 
-    // 신청 취소 시 확인 팝업을 한 번 더 띄운다 (홈/모임 탭 공통). showConfirm 없으면 바로 취소.
+    // 신청 취소 — 홈/모임 탭에서 각자 확인 팝업(순번 밀림 안내, cancelAsk)을 먼저 띄운 뒤 호출하므로
+    // 여기서 또 showConfirm을 띄우면 확인창이 2번 뜬다 → 바로 취소 실행.
     const handleCancel = () => {
         if (!meetingDate || !memberData?.memberId) return;
-        if (typeof showConfirm === 'function') {
-            const label = mType === 'match' ? '매칭 모임' : '모임';
-            showConfirm('신청 취소', `${meetingDate} ${label} 신청을 취소할까요?`, _doCancel);
-        } else {
-            _doCancel();
-        }
+        _doCancel();
     };
 
     const handleAbsent = async (reason) => {
