@@ -594,9 +594,9 @@ const NextMeetingCard = ({
                             <div className="flex-1 flex items-center justify-center py-1">
                                 <span role="button" onClick={onHomeApply}
                                     className="flex flex-col items-center justify-center rounded-full text-white active:scale-95 transition-all cursor-pointer"
-                                    style={{ width:120, height:120, background:'#f97316', boxShadow:'0 0 0 7px rgba(249,115,22,.12), 0 16px 30px -14px rgba(249,115,22,.65)' }}>
-                                    <Icon.CheckSq size={28}/>
-                                    <span className="font-black text-[16px] mt-1.5">신청하기</span>
+                                    style={{ width:180, height:180, background:'#f97316', boxShadow:'0 0 0 9px rgba(249,115,22,.12), 0 18px 34px -14px rgba(249,115,22,.65)' }}>
+                                    <Icon.CheckSq size={42}/>
+                                    <span className="font-black text-[24px] mt-2">신청하기</span>
                                 </span>
                             </div>
                         </div>
