@@ -1317,6 +1317,38 @@ const MeetingAdminHub = ({ meeting, teamStatus, matchStatus, isMatchKind, onClos
     );
 };
 
+// ─── 운영진 모임 상세 = 관리 카드 1개(모임정보·팀·매치 3줄, 각 줄 [수정/편성/생성]로 진입) ──
+// 들어가면 긴 섹션 대신 이 카드만. 줄을 누르면 해당 편집 화면으로. (출석 현황은 홈/모임정보 줄 안에서)
+const MeetingManageCard = ({ meeting, viewKind, teamStatus, matchStatus, onEditInfo, onTeam, onMatch, onQR, onDelete }) => {
+    const isMatch = viewKind === 'match';
+    const cap = isMatch ? ((meeting.maxMale || 0) + (meeting.maxFemale || 0)) : (meeting.maxLimit || 18);
+    const row = (icon, tone, name, desc, status, onAct, actLabel, ghost) => (
+        <button onClick={onAct} className="w-full flex items-center gap-3 px-4 py-4 text-left border-t border-slate-100 first:border-t-0 active:bg-slate-50 transition-colors">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: tone.bg, color: tone.fg }}>{icon}</div>
+            <div className="flex-1 min-w-0">
+                <p className="font-black text-[15.5px] text-slate-800">{name}</p>
+                <p className="text-[11.5px] font-bold text-slate-400 mt-0.5 truncate">{desc}</p>
+                <span className={`inline-block text-[10.5px] font-black px-2 py-0.5 rounded-full mt-1.5 ${status.done ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{status.label}</span>
+            </div>
+            <span className="shrink-0 flex items-center gap-0.5 text-[13px] font-black px-3.5 py-2 rounded-xl" style={ghost ? { background: '#eef2fb', color: '#122E78' } : { background: '#183FB0', color: '#fff' }}>{actLabel}<Icon.ChevronRight size={14}/></span>
+        </button>
+    );
+    return (
+        <div className="animate-in">
+            <p className="text-[11px] font-black text-slate-400 px-1 mb-2 uppercase tracking-widest">이 모임 관리</p>
+            <div className="card rounded-2xl overflow-hidden">
+                {row(<Icon.Clock size={22}/>, { bg: '#eef2fb', fg: '#122E78' }, '모임 정보', '시간·장소·정원 · 참가자·출석', { label: `${meeting.start || ''}~${meeting.end || ''} · 정원 ${cap}명`, done: true }, onEditInfo, '관리', false)}
+                {row(<Icon.Users size={22}/>, { bg: '#dcfce7', fg: '#15803d' }, isMatch ? '명단' : '팀 편성', isMatch ? '참가 명단 확인' : '팀 나누기 · 조끼색 · 확정', teamStatus, onTeam, teamStatus.done ? '수정' : '편성', !teamStatus.done)}
+                {!isMatch && row(<Icon.Swords size={20}/>, { bg: '#fee2e2', fg: '#b91c1c' }, '매치표', '대진 · 라운드 · 코트', matchStatus, onMatch, matchStatus.done ? '수정' : '생성', !matchStatus.done)}
+            </div>
+            <div className="flex gap-2 mt-3">
+                {!isMatch && onQR && <button onClick={onQR} className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl bg-slate-100 text-slate-500 font-black text-[12.5px] active:scale-95 transition-all"><Icon.QrCode size={15}/> QR 코드</button>}
+                {onDelete && <button onClick={onDelete} className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl bg-rose-50 text-rose-500 font-black text-[12.5px] active:scale-95 transition-all"><Icon.Trash size={15}/> 모임 삭제</button>}
+            </div>
+        </div>
+    );
+};
+
 // ─── 모임 상세 접이식 섹션 (출석/팀/매치를 세로로 — 제목 누르면 펼침/접힘) ──────────
 const MeetingSection = ({ title, summary, icon, open, onToggle, children }) => (
     <div className="card rounded-2xl overflow-hidden mb-3">

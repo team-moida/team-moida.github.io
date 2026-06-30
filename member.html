@@ -957,7 +957,7 @@ function App() {
                 {tab === 'meeting' && !viewMeeting && isAdminMode && (
                     <MeetingListScreen
                         meetings={visibleMeetings} isAdminMode={isAdminMode}
-                        onSelect={(m) => { setViewMeetingId(m.id); setMeetingSubTab('attend'); }}
+                        onSelect={(m) => { setViewMeetingId(m.id); setMeetingSubTab(''); }}
                         activeMeeting={activeMeeting}
                         handleSaveMeeting={handleSaveMeeting} handleDeleteMeeting={handleDeleteMeeting}
                         managers={managers} members={roster.allMembers} showAlert={showAlert}
@@ -974,27 +974,23 @@ function App() {
                 )}
                 {tab === 'meeting' && viewMeeting && isAdminMode && (
                     <div>
-                        <MeetingDetailHeader meeting={viewMeeting} onBack={() => setViewMeetingId(null)}
-                            isAdminMode={isAdminMode} onOpenAdminHub={() => setAdminHub(true)} />
+                        <MeetingDetailHeader meeting={viewMeeting}
+                            onBack={() => { if (meetingSubTab) setMeetingSubTab(''); else setViewMeetingId(null); }} />
                     </div>
                 )}
-                {/* 운영진 전용 — 운영 허브(편집 진입). 열려 있으면 아래 섹션 대신 이 화면만 */}
-                {tab === 'meeting' && viewMeeting && isAdminMode && adminHub && (
-                    <MeetingAdminHub
-                        meeting={viewMeeting} teamStatus={teamStatus} matchStatus={matchStatus}
-                        isMatchKind={viewKind === 'match'}
-                        onClose={() => setAdminHub(false)}
-                        onEditInfo={() => { setPendingEditMeeting(viewMeeting); setViewMeetingId(null); }}
-                        onTeam={() => { setAdminHub(false); setMeetingSubTab('team'); setOpenExtra([]); }}
-                        onMatch={() => { setAdminHub(false); setMeetingSubTab('match'); setOpenExtra([]); }}
-                    />
+                {/* 운영진 전용 — 관리 카드(모임정보·팀·매치 3줄). 줄을 누르면 해당 편집 화면으로 */}
+                {tab === 'meeting' && viewMeeting && isAdminMode && !meetingSubTab && (
+                    <MeetingManageCard
+                        meeting={viewMeeting} viewKind={viewKind} teamStatus={teamStatus} matchStatus={matchStatus}
+                        onEditInfo={() => { setMeetingSubTab('attend'); setOpenExtra([]); }}
+                        onTeam={() => { setMeetingSubTab('team'); setOpenExtra([]); }}
+                        onMatch={() => { setMeetingSubTab('match'); setOpenExtra([]); }}
+                        onQR={viewKind !== 'match' ? () => generateAttendQRCode(viewMeeting) : null}
+                        onDelete={() => handleDeleteMeeting(viewMeeting)} />
                 )}
-                {/* 운영진 전용 — 출석/팀/매치 상세 섹션 (회원은 간소 목록만 봄) */}
-                {tab === 'meeting' && viewMeeting && isAdminMode && !adminHub && (
-                  <MeetingSection title="출석"
-                    icon={{ el: <Icon.CheckSq size={18}/>, bg:'#eef2fb', fg:'#122E78' }}
-                    summary={mySession?.checkedIn ? '출석 완료' : attend.myRegistration?.status === 'confirmed' ? `신청 완료 · ${meetingParticipants.length}/${viewMeeting.maxLimit||18}명` : attend.myRegistration?.status === 'waiting' ? `대기 ${attend.myWaitingPosition||''}번` : `${meetingParticipants.length}/${viewMeeting.maxLimit||18}명 참여`}
-                    open={isSecOpen('attend')} onToggle={() => toggleSection('attend')}>
+                {/* 운영진 전용 — 모임 정보·출석 편집 ([수정] 진입). 회원은 간소 목록만 봄 */}
+                {tab === 'meeting' && viewMeeting && isAdminMode && meetingSubTab === 'attend' && (
+                  <div className="animate-in">
                     <TabAttend
                         viewMeeting={viewMeeting} isViewActive={isViewActive}
                         onEditMeeting={(m) => { setPendingEditMeeting(m); setViewMeetingId(null); }}
@@ -1058,14 +1054,11 @@ function App() {
                         handleUndoAbsent={handleUndoAbsent}
                         onOpenAttendModal={openAttendModal}
                     />
-                  </MeetingSection>
+                  </div>
                 )}
-                {/* 운영진 전용 — 팀 편성 */}
-                {tab === 'meeting' && viewMeeting && isAdminMode && !adminHub && (
-                  <MeetingSection title={viewKind === 'match' ? '명단' : '팀'}
-                    icon={{ el: <Icon.Users size={18}/>, bg:'#dcfce7', fg:'#15803d' }}
-                    summary={viewKind === 'match' ? `${meetingParticipants.length}명 참여` : (teamStatus.done ? `${teamStatus.label}${myTeamInfo ? ` · 내 팀 ${getTeamColorName(myTeamIdx)} ${myTeamInfo.jerseyNumber}번` : ''}` : teamStatus.label)}
-                    open={isSecOpen('team')} onToggle={() => toggleSection('team')}>
+                {/* 운영진 전용 — 팀 편성 ([편성/수정] 진입) */}
+                {tab === 'meeting' && viewMeeting && isAdminMode && meetingSubTab === 'team' && (
+                  <div className="animate-in">
                     <TabTeam
                         isAdminMode={isAdminMode} isTeamPanelOpen={team.isTeamPanelOpen} setIsTeamPanelOpen={team.setIsTeamPanelOpen}
                         teamMakerTab={team.teamMakerTab} setTeamMakerTab={team.setTeamMakerTab}
@@ -1094,14 +1087,11 @@ function App() {
                         tmDeleteConfirmed={tmDeleteConfirmed} tmDeleteSelectedDrafts={tmDeleteSelectedDrafts}
                         embedded={!isAdminMode}
                     />
-                  </MeetingSection>
+                  </div>
                 )}
-                {/* 운영진 전용 — 매치 관리 (매칭 모임 제외) */}
-                {tab === 'meeting' && viewMeeting && viewKind !== 'match' && isAdminMode && !adminHub && (
-                  <MeetingSection title="매치"
-                    icon={{ el: <Icon.Swords size={16}/>, bg:'#fee2e2', fg:'#b91c1c' }}
-                    summary={matchStatus.label}
-                    open={isSecOpen('match')} onToggle={() => toggleSection('match')}>
+                {/* 운영진 전용 — 매치 관리 ([생성/수정] 진입, 매칭 모임 제외) */}
+                {tab === 'meeting' && viewMeeting && viewKind !== 'match' && isAdminMode && meetingSubTab === 'match' && (
+                  <div className="animate-in">
                     <TabMatch
                         isAdminMode={isAdminMode} isMatchPanelOpen={match.isMatchPanelOpen} setIsMatchPanelOpen={match.setIsMatchPanelOpen}
                         matchAdminView={match.matchAdminView} setMatchAdminView={match.setMatchAdminView}
@@ -1124,7 +1114,7 @@ function App() {
                         setIsPresetModalOpen={match.setIsPresetModalOpen}
                         embedded={!isAdminMode}
                     />
-                  </MeetingSection>
+                  </div>
                 )}
                 {/* (지금 할 일은 맨 위로 이동) */}
                 {/* 회비 탭 제거(단계 3) — 회비/벌금 카드·DevDuesToggle은 MY 탭으로 일원화 */}
