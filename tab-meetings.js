@@ -336,6 +336,19 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
             </div>
         );
     };
+    // 캘린더로 고르는 날짜 필드 (2단계 날짜와 동일한 모양 — 투명 date input + 월/일 표시)
+    const dateField = (value, onChange, placeholder = '날짜 선택') => (
+        <div className="relative flex-1 min-w-0">
+            <div className="wiz-box w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium flex items-center gap-2 pointer-events-none">
+                <Icon.Calendar size={15} className="text-slate-400 flex-shrink-0"/>
+                <span className={value ? 'text-slate-800' : 'text-slate-400'}>{value ? fmtMD(value) : placeholder}</span>
+            </div>
+            <input type="date" value={value || ''}
+                onChange={e => onChange(e.target.value)}
+                onClick={e => { try { e.currentTarget.showPicker && e.currentTarget.showPicker(); } catch (_) {} }}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"/>
+        </div>
+    );
     return (
         <div className="animate-in space-y-4">
             {!embedded && (<>
@@ -644,9 +657,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                         <div>
                                             <label className="text-xs font-black text-slate-500 mb-1 block">신청 시작</label>
                                             <div className="flex gap-2">
-                                                <input type="date" value={form.regOpenDate}
-                                                    onChange={e => setForm(f => ({...f, regOpenDate: e.target.value}))}
-                                                    className="flex-1 min-w-0 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+                                                {dateField(form.regOpenDate, v => setForm(f => ({...f, regOpenDate: v})), '신청 시작일')}
                                                 <select value={form.regOpenHour}
                                                     onChange={e => setForm(f => ({...f, regOpenHour: e.target.value}))}
                                                     className="w-16 border border-slate-200 rounded-xl px-2 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400">
@@ -662,9 +673,7 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                         <div>
                                             <label className="text-xs font-black text-slate-500 mb-1 block">신청 마감</label>
                                             <div className="flex gap-2">
-                                                <input type="date" value={form.regCloseDate}
-                                                    onChange={e => setForm(f => ({...f, regCloseDate: e.target.value}))}
-                                                    className="flex-1 min-w-0 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+                                                {dateField(form.regCloseDate, v => setForm(f => ({...f, regCloseDate: v})), '신청 마감일')}
                                                 <select value={form.regCloseHour}
                                                     onChange={e => setForm(f => ({...f, regCloseHour: e.target.value}))}
                                                     className="w-16 border border-slate-200 rounded-xl px-2 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400">

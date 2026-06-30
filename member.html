@@ -169,7 +169,10 @@ function App() {
     const devUnlocked = (() => { try { return localStorage.getItem('moida_dev') === '1'; } catch(e) { return false; } })();
     const viewMode = (() => { try { return localStorage.getItem('moida_view_mode') || 'dev'; } catch(e) { return 'dev'; } })();
     const isDeveloper = devUnlocked;
-    const roleIsAdmin = ADMIN_ROLES.includes(memberData?.role);
+    // 역할은 라이브(memberInfo, Firestore 실시간)를 우선 — 로그인 후 운영진으로 승격돼도 재로그인 없이 즉시 반영.
+    // memberInfo 로드 전(null)에는 로그인 시 저장된 스냅샷(memberData.role)로 폴백.
+    const myRole = memberInfo?.role || memberData?.role;
+    const roleIsAdmin = ADMIN_ROLES.includes(myRole);
     const effAdmin = isDeveloper ? (viewMode !== 'member') : roleIsAdmin;
     const isAdmin = effAdmin;
     const isAdminMode = effAdmin;
