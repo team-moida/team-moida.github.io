@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>모임 상세 정돈안 LAB</title>
+<style>
+  :root{ --accent:#183FB0; --accent-deep:#122E78; --ink:#0f172a; --sub:#64748b; --line:#e6eaf2; --bg:#f4f6fa;
+         --red:#ef4444; --live:#C2F94A; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; font-family:'Pretendard',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:radial-gradient(125% 90% at 50% -8%, #e8ecf9 0%, #f3f5fb 46%, #f4f6fa 100%); min-height:100vh; color:var(--ink); user-select:none; }
+  .wrap{ max-width:440px; margin:0 auto; padding:16px 16px calc(28px + env(safe-area-inset-bottom)); }
+  h1{ font-size:18px; font-weight:900; margin:6px 4px 2px; }
+  .lead{ font-size:12px; font-weight:700; color:#94a3b8; margin:0 4px 14px; line-height:1.6; }
+  .seclabel{ font-size:12px; font-weight:900; color:var(--accent); margin:18px 4px 8px; }
+  .seg{ display:flex; gap:5px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:5px; box-shadow:0 4px 14px rgba(0,0,0,.05); }
+  .seg button{ flex:1; border:0; background:transparent; border-radius:10px; padding:10px 4px; font-weight:900; font-size:12px; color:#64748b; cursor:pointer; font-family:inherit; }
+  .seg button.on{ background:var(--accent); color:#fff; }
+
+  .detail{ margin-top:12px; }
+  /* 상단 바 */
+  .topbar{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .topbar .bk{ width:38px; height:38px; border-radius:11px; background:#fff; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:18px; color:#64748b; cursor:pointer; }
+  .topbar .tt{ flex:1; font-size:15px; font-weight:900; }
+  .topbar .op{ border:0; font-family:inherit; font-weight:900; font-size:12px; border-radius:10px; padding:8px 12px; background:#eef2fb; color:var(--accent-deep); cursor:pointer; }
+
+  /* 히어로 (홈 카드 톤) */
+  .hero{ border-radius:22px; padding:20px; color:#fff; box-shadow:0 16px 34px -12px rgba(24,63,176,.5); background:linear-gradient(160deg,#1d47bd,#16357f); transition:background .3s; }
+  .hero.vest{ background:#ef4444; box-shadow:0 16px 34px -12px rgba(239,68,68,.5); }
+  .hero .chip{ display:inline-block; font-size:11px; font-weight:900; background:rgba(255,255,255,.22); padding:4px 10px; border-radius:999px; }
+  .hero .big{ font-size:24px; font-weight:900; margin:11px 0 2px; letter-spacing:-.01em; }
+  .hero .meta{ font-size:13px; font-weight:700; color:rgba(255,255,255,.85); line-height:1.7; }
+  .hero .meta b{ color:#fff; }
+  .hr{ height:1px; background:rgba(255,255,255,.2); margin:15px 0; }
+  /* 내 상태 줄 */
+  .me{ display:flex; align-items:center; gap:13px; }
+  .me .num{ width:62px; height:62px; border-radius:18px; background:#fff; display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:900; flex-shrink:0; }
+  .me .mtx b{ font-size:17px; font-weight:900; display:block; }
+  .me .mtx span{ font-size:12.5px; font-weight:800; color:rgba(255,255,255,.78); }
+  /* 액션 버튼 */
+  .act{ width:100%; border:0; font-family:inherit; font-weight:900; font-size:15px; color:#fff; border-radius:15px; padding:15px; margin-top:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; }
+  .act.apply{ background:#f97316; box-shadow:0 12px 24px -12px rgba(249,115,22,.6); }
+  .act.attend{ background:#fff; color:var(--accent-deep); }
+  .act.ghost{ background:rgba(255,255,255,.16); border:1.5px solid rgba(255,255,255,.4); }
+  .countbar{ margin-top:14px; }
+  .countbar .lab{ display:flex; justify-content:space-between; font-size:12px; font-weight:900; color:rgba(255,255,255,.85); margin-bottom:6px; }
+  .bar{ height:8px; border-radius:999px; background:rgba(255,255,255,.22); overflow:hidden; }
+  .bar > i{ display:block; height:100%; border-radius:999px; background:var(--live); }
+
+  /* 요약 카드 (인원·팀·매치) */
+  .cards{ margin-top:14px; display:flex; flex-direction:column; gap:10px; }
+  .sum{ background:#fff; border:1px solid var(--line); border-radius:18px; overflow:hidden; box-shadow:0 4px 14px rgba(0,0,0,.04); }
+  .sumhead{ width:100%; text-align:left; border:0; background:#fff; font-family:inherit; padding:15px; display:flex; align-items:center; gap:13px; cursor:pointer; }
+  .sumhead .ic{ width:44px; height:44px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:21px; flex-shrink:0; }
+  .sumhead .tx{ flex:1; min-width:0; }
+  .sumhead .tx b{ font-size:15px; font-weight:900; display:block; }
+  .sumhead .tx span{ font-size:12.5px; font-weight:800; color:#94a3b8; }
+  .sumhead .ar{ color:#cbd5e1; font-weight:900; transition:transform .25s; }
+  .sum.open .ar{ transform:rotate(90deg); }
+  .acc{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .28s cubic-bezier(.4,0,.2,1); }
+  .sum.open .acc{ grid-template-rows:1fr; }
+  .accin{ overflow:hidden; min-height:0; }
+  .accpad{ padding:0 15px 15px; }
+
+  .row{ display:flex; align-items:center; gap:9px; padding:8px 0; border-top:1px solid #f1f5f9; }
+  .av{ width:28px; height:28px; border-radius:8px; background:#eef2fb; color:var(--accent-deep); font-weight:900; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .row .nm{ font-size:13px; font-weight:800; flex:1; } .row .tg{ font-size:10.5px; font-weight:900; color:#94a3b8; }
+  .teamline{ display:flex; align-items:center; gap:7px; padding:7px 0; }
+  .dot{ width:20px; height:20px; border-radius:7px; flex-shrink:0; }
+  .teamline .tn{ font-size:13px; font-weight:900; } .teamline .cnt{ font-size:11.5px; font-weight:800; color:#94a3b8; margin-left:auto; }
+  .mr{ display:flex; align-items:center; gap:8px; padding:8px 0; border-top:1px solid #f1f5f9; font-size:12.5px; font-weight:800; }
+  .mr .rd{ font-weight:900; color:var(--accent-deep); width:30px; }
+
+  .note{ font-size:12px; font-weight:800; color:#475569; margin:14px 4px 0; line-height:1.7; background:#fff; border:1px solid var(--line); border-radius:14px; padding:13px 14px; }
+  .note b{ color:var(--accent-deep); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>모임 상세 — 정돈안 LAB</h1>
+  <p class="lead">모임 하나에 들어갔을 때 화면을 <b>홈 탭처럼 깔끔하게</b>. ① 핵심을 히어로로, ② 인원·팀·매치는 <b>요약 한 줄</b>로 보여주고 자세한 건 탭하면 펼쳐요. 위에서 시점을 바꿔 히어로가 깔끔히 변하는 것도 보세요.</p>
+
+  <div class="seclabel">시점 (히어로가 바뀌어요)</div>
+  <div class="seg" id="seg">
+    <button data-v="apply" class="on">신청</button>
+    <button data-v="reveal">팀 발표</button>
+    <button data-v="play">경기중</button>
+  </div>
+
+  <div class="detail">
+    <div class="topbar"><div class="bk">‹</div><div class="tt">7/5(토) 정기모임</div><button class="op">⚙ 운영</button></div>
+    <div id="hero"></div>
+    <div class="cards" id="cards"></div>
+    <p class="note">정돈 핵심: 들어가면 <b>내 상태·할 일</b>이 가장 크게(홈과 동일 톤). 인원·팀·매치는 <b>요약 카드</b>라 한눈에, 누르면 명단/팀/매치표가 펼쳐져요. 운영진은 우상단 <b>⚙ 운영</b>으로 편집. 지금은 출석/팀/매치 섹션에 정보가 한꺼번에 쏟아지던 걸 이렇게 접어 정리합니다.</p>
+  </div>
+</div>
+
+<script>
+let phase='apply', open={members:false,team:false,match:false};
+
+function heroHTML(){
+  if(phase==='reveal'){
+    return `<div class="hero vest">
+      <span class="chip">팀 발표 · D-day</span>
+      <div class="big">오늘 김모이님은</div>
+      <div class="me" style="margin-top:6px">
+        <div class="num" style="color:#ef4444">7</div>
+        <div class="mtx"><b>빨강 7번이에요!</b><span>2팀 · 빨강 조끼 · 20:00 ○○풋살장</span></div>
+      </div>
+      <button class="act attend">지금 출석 체크하기</button>
+    </div>`;
+  }
+  if(phase==='play'){
+    return `<div class="hero">
+      <span class="chip" style="background:var(--live);color:#15171E">● 진행 중 · 2라운드</span>
+      <div class="big">내 경기 · 코트 A</div>
+      <div class="me" style="margin-top:8px">
+        <div class="num" style="color:#ef4444;width:48px;height:48px;font-size:22px;border-radius:14px">7</div>
+        <div class="mtx"><b>🟥 빨강 vs 🟦 파랑</b><span>다음: 3라운드 쉼</span></div>
+      </div>
+      <button class="act ghost">매치표 크게 보기</button>
+    </div>`;
+  }
+  // 신청
+  return `<div class="hero">
+    <span class="chip">정기모임 · D-3</span>
+    <div class="big">7월 5일 (토) 20:00</div>
+    <div class="meta">📍 <b>○○풋살장 A</b> · ⏰ 20:00~22:00<br>🧑‍💼 담당 김총무</div>
+    <div class="countbar"><div class="lab"><span>현재 인원</span><span>13 / 18명</span></div><div class="bar"><i style="width:72%"></i></div></div>
+    <div class="hr"></div>
+    <div class="me">
+      <div class="num" style="color:#f97316;font-size:24px;width:50px;height:50px;border-radius:15px">✓</div>
+      <div class="mtx"><b>신청 완료 · 13번째</b><span>선착순 13 / 18명</span></div>
+    </div>
+    <button class="act ghost">신청 취소</button>
+  </div>`;
+}
+
+function card(key,icon,bg,fg,name,summary,bodyHTML){
+  const o=open[key];
+  return `<div class="sum ${o?'open':''}" data-k="${key}">
+    <button class="sumhead"><div class="ic" style="background:${bg};color:${fg}">${icon}</div>
+      <div class="tx"><b>${name}</b><span>${summary}</span></div><div class="ar">›</div></button>
+    <div class="acc"><div class="accin"><div class="accpad">${bodyHTML}</div></div></div>
+  </div>`;
+}
+
+function membersBody(){
+  const p=(av,nm,tg)=>`<div class="row"><div class="av">${av}</div><div class="nm">${nm}</div><span class="tg">${tg}</span></div>`;
+  return p('김','김모이','출석')+p('이','이풋살','출석')+p('박','박패스','신청')+p('최','최슈팅','신청')+p('정','정골핑','대기 1')+
+    `<div style="text-align:center;font-size:12px;font-weight:800;color:#94a3b8;padding-top:10px">+ 8명 더</div>`;
+}
+function teamBody(){
+  const t=(c,n,cnt,me)=>`<div class="teamline"><span class="dot" style="background:${c}"></span><span class="tn">${n}팀${me?' · 내 팀':''}</span><span class="cnt">${cnt}명</span></div>`;
+  return t('#ef4444','빨강',6,true)+t('#2563eb','파랑',6,false)+t('#facc15','노랑',6,false);
+}
+function matchBody(){
+  const m=(r,t)=>`<div class="mr"><span class="rd">${r}R</span><span>${t}</span></div>`;
+  return m(1,'🟥 빨강 vs 🟨 노랑 · 코트 A')+m(2,'🟥 빨강 vs 🟦 파랑 · 코트 A')+m(3,'빨강 쉼 / 🟨 vs 🟦')+m(4,'🟥 빨강 vs 🟨 노랑 · 코트 B');
+}
+
+function render(){
+  document.getElementById('hero').innerHTML=heroHTML();
+  document.getElementById('cards').innerHTML=
+    card('members','👥','#eef2fb','#122E78','참여 인원','13명 참여 · 대기 1명',membersBody())+
+    card('team','🦺','#fee2e2','#b91c1c','팀','3팀 편성 완료 · 내 팀 🟥 빨강 7번',teamBody())+
+    card('match','⚔️','#dcfce7','#15803d','매치','5라운드 · 내 경기 2R · 코트 A',matchBody());
+  document.querySelectorAll('.sum').forEach(s=> s.querySelector('.sumhead').onclick=()=>{ const k=s.dataset.k; open[k]=!open[k]; render(); });
+}
+
+document.getElementById('seg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return;
+  document.querySelectorAll('#seg button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); phase=b.dataset.v; render(); });
+
+render();
+</script>
+</body>
+</html>
