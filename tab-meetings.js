@@ -251,6 +251,32 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
 
     const isWiz = !editingId;                       // 새 모임만 마법사
     const stepShow = (n) => !isWiz || wizStep === n; // 수정모드는 전부 표시
+    // 시간 = 시(00~23)·분(10분 단위) 드롭다운(24시간 표기). 날짜는 캘린더로 고르되 칸엔 월·일만 표시.
+    const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+    const MINS = ['00','10','20','30','40','50'];
+    const fmtMD = (d) => {
+        const [, m, da] = (d || '').split('-');
+        if (!m || !da) return '';
+        const wd = ['일','월','화','수','목','금','토'][new Date(`${d}T00:00:00`).getDay()];
+        return `${Number(m)}월 ${Number(da)}일 (${wd})`;
+    };
+    const timeSelect = (field, def) => {
+        const val = form[field] || def;
+        const hh = val.split(':')[0] || def.split(':')[0];
+        const mm = (val.split(':')[1] || '00').slice(0, 2);
+        const mins = MINS.includes(mm) ? MINS : [mm, ...MINS];   // 기존 비표준 분도 잃지 않게
+        const setHM = (h, m) => setForm(f => ({ ...f, [field]: `${h}:${m}` }));
+        return (
+            <div className="flex gap-2">
+                <select value={hh} onChange={e => setHM(e.target.value, mm)} className="flex-1 min-w-0 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400">
+                    {HOURS.map(h => <option key={h} value={h}>{h}시</option>)}
+                </select>
+                <select value={mm} onChange={e => setHM(hh, e.target.value)} className="flex-1 min-w-0 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400">
+                    {mins.map(m => <option key={m} value={m}>{m}분</option>)}
+                </select>
+            </div>
+        );
+    };
     return (
         <div className="animate-in space-y-4">
             {!embedded && (<>
@@ -399,22 +425,25 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                             {stepShow(2) && (<div className="space-y-3">
                             <div>
                                 <label className="text-xs font-black text-slate-500 mb-1 block">날짜</label>
-                                <input type="date" value={form.date}
-                                    onChange={e => setForm(f => ({...f, date: e.target.value}))}
-                                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+                                <div className="relative">
+                                    <div className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium flex items-center gap-2 pointer-events-none">
+                                        <Icon.Calendar size={15} className="text-slate-400 flex-shrink-0"/>
+                                        <span className={form.date ? 'text-slate-800' : 'text-slate-400'}>{form.date ? fmtMD(form.date) : '캘린더에서 날짜를 골라요'}</span>
+                                    </div>
+                                    <input type="date" value={form.date}
+                                        onChange={e => setForm(f => ({...f, date: e.target.value}))}
+                                        onClick={e => { try { e.currentTarget.showPicker && e.currentTarget.showPicker(); } catch (_) {} }}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"/>
+                                </div>
                             </div>
                             <div className="flex gap-3">
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0">
                                     <label className="text-xs font-black text-slate-500 mb-1 block">시작 시간</label>
-                                    <input type="time" value={form.start}
-                                        onChange={e => setForm(f => ({...f, start: e.target.value}))}
-                                        className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+                                    {timeSelect('start', '08:00')}
                                 </div>
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0">
                                     <label className="text-xs font-black text-slate-500 mb-1 block">종료 시간</label>
-                                    <input type="time" value={form.end}
-                                        onChange={e => setForm(f => ({...f, end: e.target.value}))}
-                                        className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+                                    {timeSelect('end', '10:00')}
                                 </div>
                             </div>
                             </div>)}
