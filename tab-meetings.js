@@ -352,17 +352,30 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                 </div>
                             )}
                             {stepShow(1) && (<div className="space-y-3">
-                            <div>
-                                <label className="text-xs font-black text-slate-500 mb-1 block">모임 유형</label>
-                                <div className="flex gap-2">
-                                    {[['self','자체전'],['match','매칭']].map(([v,l]) => (
+                            {isWiz ? (
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    {[['self','자체전','우리 팀끼리','Soccerball'],['match','매칭','다른 팀과','Swords']].map(([v,nm,ds,ic]) => (
                                         <button key={v} type="button" onClick={() => setForm(f => ({...f, meetingType:v}))}
-                                            className={`flex-1 min-w-0 py-2.5 rounded-xl text-sm font-black border transition-all active:scale-95 ${form.meetingType===v ? 'bg-teal-500 text-white border-teal-500' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
-                                            {l}
+                                            className={`rounded-2xl border-2 p-5 text-center transition-all active:scale-95 ${form.meetingType===v ? 'border-teal-500 bg-teal-50' : 'border-slate-200 bg-white'}`}>
+                                            <div className={`flex items-center justify-center mb-2 ${form.meetingType===v ? 'text-teal-600' : 'text-slate-300'}`}>{React.createElement(Icon[ic], {size:36})}</div>
+                                            <p className={`font-black text-base ${form.meetingType===v ? 'text-teal-700' : 'text-slate-700'}`}>{nm}</p>
+                                            <p className="text-[11px] font-bold text-slate-400 mt-0.5">{ds}</p>
                                         </button>
                                     ))}
                                 </div>
-                            </div>
+                            ) : (
+                                <div>
+                                    <label className="text-xs font-black text-slate-500 mb-1 block">모임 유형</label>
+                                    <div className="flex gap-2">
+                                        {[['self','자체전'],['match','매칭']].map(([v,l]) => (
+                                            <button key={v} type="button" onClick={() => setForm(f => ({...f, meetingType:v}))}
+                                                className={`flex-1 min-w-0 py-2.5 rounded-xl text-sm font-black border transition-all active:scale-95 ${form.meetingType===v ? 'bg-teal-500 text-white border-teal-500' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
+                                                {l}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                             {form.meetingType === 'match' && (
                                 <div>
                                     <label className="text-xs font-black text-slate-500 mb-1 block">상대팀명</label>
