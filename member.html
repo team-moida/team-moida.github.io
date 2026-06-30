@@ -930,7 +930,7 @@ function App() {
                         generateAttendQRCode={generateAttendQRCode}
                         onOpenAttendModal={openAttendModal}
                         onInlineGPS={startInlineGPS} onInlineQR={() => setIsQRScannerOpen(true)}
-                        onOpenKiosk={() => attend.setIsKioskOpen(true)}
+                        onOpenKiosk={() => { setActiveMeetingKind('self'); attend.setIsKioskOpen(true); }}
                         onEditMeeting={(m) => { setPendingEditMeeting(m); navTab('meeting-list'); }}
                         onDeleteMeeting={handleDeleteMeeting}
                         showToast={showToast} showAlert={showAlert} showConfirm={showConfirm}
@@ -1268,6 +1268,15 @@ function App() {
                     qrStatus={qrStatus} qrMessage={qrMessage} setQrStatus={setQrStatus} setIsQRScannerOpen={setIsQRScannerOpen}
                 />
             )}
+            {/* 키오스크(직접 출석) — 전역 모달. isKioskOpen이면 어느 화면에서든 전체화면으로 뜸.
+                (홈 '키오스크' 버튼에서 염 · 닫으면 그대로 홈) 데이터는 활성 모임 미러(displayMeetingSettings) 기준 */}
+            <KioskModal
+                isKioskOpen={attend.isKioskOpen} setIsKioskOpen={attend.setIsKioskOpen}
+                attendGroupedTeams={attend.attendGroupedTeams} attendActiveList={attend.attendActiveList}
+                attendCheckedInCount={attend.attendCheckedInCount} meetingSettings={displayMeetingSettings}
+                attendHandleCheckIn={attendHandleCheckIn} attendHandleUncheckIn={attendHandleUncheckIn}
+                setAttendModal={attend.setAttendModal}
+            />
             {/* 회비 신고 반려 사유 모달 (관리자) */}
             {duesReject && (
                 <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40" onClick={() => setDuesReject(null)}>

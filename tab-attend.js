@@ -2043,19 +2043,8 @@ const TabAttend = ({
             />
         )}
 
-        {/* 직접 출석(키오스크) 진입은 상단 '출석 체크 열기'(관리자 전용)로 일원화 — 하단 큰 카드 제거 */}
-
-        <KioskModal
-            isKioskOpen={isKioskOpen}
-            setIsKioskOpen={setIsKioskOpen}
-            attendGroupedTeams={attendGroupedTeams}
-            attendActiveList={attendActiveList}
-            attendCheckedInCount={attendCheckedInCount}
-            meetingSettings={meetingSettings}
-            attendHandleCheckIn={attendHandleCheckIn}
-            attendHandleUncheckIn={attendHandleUncheckIn}
-            setAttendModal={setAttendModal}
-        />
+        {/* 키오스크(직접 출석) 모달은 member.html 최상위(전역)에서 렌더 — 어느 화면에서든 뜨도록 이동.
+            (홈 '키오스크' 버튼 진입, isKioskOpen 기준) 여기서는 중복 렌더 방지를 위해 두지 않는다. */}
     </div>
     );
 };

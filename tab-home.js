@@ -529,7 +529,7 @@ const NextMeetingCard = ({
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                     {isAdminMode && isActive && kind === 'self' && onOpenKiosk && (
-                        <span role="button" onClick={(e)=>{ e.stopPropagation(); onTabChange('attend', kind, meeting.id || getMeetingId(meeting)); onOpenKiosk(); }}
+                        <span role="button" onClick={(e)=>{ e.stopPropagation(); onOpenKiosk(); }}
                             className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-white/25 text-white active:scale-95 cursor-pointer">
                             <Icon.Clipboard size={12}/> 키오스크
                         </span>
