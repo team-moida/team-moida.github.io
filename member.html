@@ -947,7 +947,14 @@ function App() {
                         onNavigateMeeting={(a)=>navTab('attend', a.linkKind==='match'?'match':'self', a.linkMeetingId)}
                     />
                 )}
-                {tab === 'meeting' && !viewMeeting && (
+                {/* 회원: 간소 모임 목록(탭하면 그 자리 펼침 — 간단정보 + 신청/취소). 운영진은 아래 관리 목록 */}
+                {tab === 'meeting' && !isAdminMode && (
+                    <MemberMeetingList
+                        meetings={visibleMeetings} memberData={memberData}
+                        expandId={viewMeetingId} onGoHome={() => setTab('home')}
+                        showToast={showToast} showAlert={showAlert} showConfirm={showConfirm} />
+                )}
+                {tab === 'meeting' && !viewMeeting && isAdminMode && (
                     <MeetingListScreen
                         meetings={visibleMeetings} isAdminMode={isAdminMode}
                         onSelect={(m) => { setViewMeetingId(m.id); setMeetingSubTab('attend'); }}
@@ -965,7 +972,7 @@ function App() {
                         onDeleteOneTest={(m) => deleteOneTestMeeting({ meeting: m, showAlert, showConfirm })}
                     />
                 )}
-                {tab === 'meeting' && viewMeeting && (
+                {tab === 'meeting' && viewMeeting && isAdminMode && (
                     <div>
                         <MeetingDetailHeader meeting={viewMeeting} onBack={() => setViewMeetingId(null)}
                             isAdminMode={isAdminMode} onOpenAdminHub={() => setAdminHub(true)} />
@@ -982,8 +989,8 @@ function App() {
                         onMatch={() => { setAdminHub(false); setMeetingSubTab('match'); setOpenExtra([]); }}
                     />
                 )}
-                {/* 회원=지금 할 일(맨 위) / 관리자=출석 서브탭 */}
-                {tab === 'meeting' && viewMeeting && !(isAdminMode && adminHub) && (
+                {/* 운영진 전용 — 출석/팀/매치 상세 섹션 (회원은 간소 목록만 봄) */}
+                {tab === 'meeting' && viewMeeting && isAdminMode && !adminHub && (
                   <MeetingSection title="출석"
                     icon={{ el: <Icon.CheckSq size={18}/>, bg:'#eef2fb', fg:'#122E78' }}
                     summary={mySession?.checkedIn ? '출석 완료' : attend.myRegistration?.status === 'confirmed' ? `신청 완료 · ${meetingParticipants.length}/${viewMeeting.maxLimit||18}명` : attend.myRegistration?.status === 'waiting' ? `대기 ${attend.myWaitingPosition||''}번` : `${meetingParticipants.length}/${viewMeeting.maxLimit||18}명 참여`}
@@ -1053,8 +1060,8 @@ function App() {
                     />
                   </MeetingSection>
                 )}
-                {/* 회원=내 팀 / 관리자=팀 편성 */}
-                {tab === 'meeting' && viewMeeting && !(isAdminMode && adminHub) && (
+                {/* 운영진 전용 — 팀 편성 */}
+                {tab === 'meeting' && viewMeeting && isAdminMode && !adminHub && (
                   <MeetingSection title={viewKind === 'match' ? '명단' : '팀'}
                     icon={{ el: <Icon.Users size={18}/>, bg:'#dcfce7', fg:'#15803d' }}
                     summary={viewKind === 'match' ? `${meetingParticipants.length}명 참여` : (teamStatus.done ? `${teamStatus.label}${myTeamInfo ? ` · 내 팀 ${getTeamColorName(myTeamIdx)} ${myTeamInfo.jerseyNumber}번` : ''}` : teamStatus.label)}
@@ -1089,8 +1096,8 @@ function App() {
                     />
                   </MeetingSection>
                 )}
-                {/* 회원=경기 / 관리자=매치 관리 (매칭 모임 제외) */}
-                {tab === 'meeting' && viewMeeting && viewKind !== 'match' && !(isAdminMode && adminHub) && (
+                {/* 운영진 전용 — 매치 관리 (매칭 모임 제외) */}
+                {tab === 'meeting' && viewMeeting && viewKind !== 'match' && isAdminMode && !adminHub && (
                   <MeetingSection title="매치"
                     icon={{ el: <Icon.Swords size={16}/>, bg:'#fee2e2', fg:'#b91c1c' }}
                     summary={matchStatus.label}
