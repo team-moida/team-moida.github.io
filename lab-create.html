@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>모임 생성 LAB</title>
+<style>
+  :root{
+    --accent:#183FB0; --accent-deep:#122E78; --orange:#f97316; --violet:#7c3aed;
+    --ink:#0f172a; --sub:#475569; --mute:#94A3B8; --line:#e7ebf3;
+    --bg:#F4F6FB; --card:#fff; --success:#10B981;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Pretendard',-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+    padding:env(safe-area-inset-top) 0 calc(24px + env(safe-area-inset-bottom));}
+  .wrap{max-width:440px; margin:0 auto; padding:18px 16px;}
+  h1{font-size:20px; font-weight:900; margin:6px 2px 3px; letter-spacing:-.02em;}
+  .lead{font-size:12.5px; color:var(--mute); font-weight:700; margin:0 2px 16px; line-height:1.55;}
+  /* 모드 토글 */
+  .modes{display:flex; gap:6px; background:#e8ecf6; padding:5px; border-radius:16px; margin-bottom:18px;}
+  .modes button{flex:1; border:0; background:transparent; padding:11px 8px; border-radius:12px;
+    font-family:inherit; font-weight:900; font-size:13px; color:var(--sub); cursor:pointer; transition:.15s;}
+  .modes button.on{background:#fff; color:var(--accent-deep); box-shadow:0 2px 8px rgba(0,0,0,.08);}
+  .view{display:none;} .view.on{display:block;}
+
+  /* 공통 카드/필드 */
+  .card{background:var(--card); border-radius:20px; box-shadow:0 4px 14px rgba(0,0,0,.05); padding:18px 16px;}
+  label.l{display:block; font-size:12px; font-weight:900; color:var(--sub); margin:0 0 6px;}
+  .fld{width:100%; border:1px solid var(--line); border-radius:12px; padding:11px 12px; font-size:14px;
+    font-family:inherit; font-weight:600; color:var(--ink); background:#fff; outline:none;}
+  .fld:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(24,63,176,.12);}
+  .row{display:flex; gap:10px;} .row>*{flex:1; min-width:0;}
+  .hint{font-size:11px; color:var(--mute); font-weight:700; margin:6px 0 0; line-height:1.5;}
+  .field{margin-bottom:14px;}
+  /* 토글 */
+  .tg{width:46px; height:26px; border-radius:999px; background:#cbd5e1; position:relative; border:0; cursor:pointer; flex-shrink:0; transition:.18s;}
+  .tg .k{position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.25); transition:.18s;}
+  .tg.on{background:var(--accent);} .tg.on .k{left:23px;}
+  .tg.on.orange{background:var(--orange);} .tg.on.violet{background:var(--violet);} .tg.on.green{background:var(--success);}
+  .tgrow{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .tgrow .tt{font-size:13px; font-weight:900; color:var(--ink);}
+  .tgrow .ts{font-size:11px; font-weight:700; color:var(--mute); margin-top:2px;}
+  /* 칩/선택 */
+  .chips{display:flex; gap:6px;} .chips.w{flex-wrap:wrap;}
+  .chip{flex:1; min-width:0; border:1px solid var(--line); background:#f8fafc; color:var(--sub);
+    border-radius:12px; padding:9px 6px; font-weight:900; font-size:12.5px; cursor:pointer; font-family:inherit; transition:.12s;}
+  .chip.on{background:var(--accent); color:#fff; border-color:var(--accent);}
+  .seglbl{font-size:10px; color:var(--mute); font-weight:900; text-align:center; margin-top:4px;}
+
+  /* ── 현재 방식 뷰 ── */
+  .tag{display:inline-block; font-size:10px; font-weight:900; color:#fff; background:#94a3b8; padding:1px 6px; border-radius:6px; margin-left:6px; vertical-align:middle;}
+  .tag.self{background:var(--accent);} .tag.match{background:var(--violet);}
+  .cur-note{background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; font-size:11.5px; font-weight:800;
+    border-radius:12px; padding:10px 12px; margin-bottom:14px; line-height:1.5;}
+
+  /* ── 마법사 뷰 ── */
+  .prog{display:flex; gap:5px; margin-bottom:8px;}
+  .prog .seg{flex:1; height:5px; border-radius:999px; background:#e2e8f0; transition:.25s;}
+  .prog .seg.done{background:var(--accent);}
+  .stepmeta{font-size:11px; font-weight:900; color:var(--accent); letter-spacing:.04em; margin-bottom:10px;}
+  .q{font-size:19px; font-weight:900; letter-spacing:-.02em; margin:0 0 4px;}
+  .qsub{font-size:12.5px; color:var(--mute); font-weight:700; margin:0 0 18px; line-height:1.5;}
+  .step{display:none; animation:slideIn .28s ease;} .step.on{display:block;}
+  @keyframes slideIn{from{opacity:0; transform:translateX(14px);} to{opacity:1; transform:none;}}
+  /* 큰 선택 카드(유형) */
+  .pick{display:flex; gap:10px;}
+  .pick button{flex:1; border:2px solid var(--line); background:#fff; border-radius:18px; padding:20px 12px;
+    font-family:inherit; cursor:pointer; text-align:center; transition:.14s;}
+  .pick button.on{border-color:var(--accent); background:#eef2fb;}
+  .pick .ic{font-size:30px; line-height:1;} .pick .nm{font-weight:900; font-size:15px; margin-top:8px; color:var(--ink);}
+  .pick .ds{font-size:11px; color:var(--mute); font-weight:700; margin-top:3px;}
+  /* 숫자 스텝퍼 */
+  .step2{display:flex; align-items:center; gap:14px; justify-content:center; padding:6px 0;}
+  .step2 button{width:48px; height:48px; border-radius:14px; border:1px solid var(--line); background:#f8fafc;
+    font-size:24px; font-weight:900; color:var(--accent); cursor:pointer; font-family:inherit;}
+  .step2 .nv{font-size:34px; font-weight:900; min-width:64px; text-align:center;}
+  .step2 .un{font-size:13px; color:var(--mute); font-weight:800;}
+  /* 요약 */
+  .sum{background:#f8fafc; border:1px solid var(--line); border-radius:14px; padding:4px 14px;}
+  .sum .r{display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px solid #eef1f7; font-size:13px;}
+  .sum .r:last-child{border-bottom:0;} .sum .r .kk{color:var(--mute); font-weight:800;} .sum .r .vv{font-weight:900; color:var(--ink); text-align:right;}
+  /* 하단 버튼 */
+  .nav{display:flex; gap:10px; margin-top:20px;}
+  .btn{border:0; border-radius:16px; font-family:inherit; font-weight:900; cursor:pointer; padding:15px; font-size:15px; transition:transform .08s;}
+  .btn:active{transform:scale(.97);}
+  .btn-prev{background:#eef1f7; color:var(--sub); flex:0 0 96px;}
+  .btn-next{background:var(--accent); color:#fff; flex:1; box-shadow:0 10px 22px -8px rgba(24,63,176,.5);}
+  .btn-go{background:var(--orange); color:#fff; flex:1; box-shadow:0 12px 26px -8px rgba(249,115,22,.6);}
+
+  /* 로딩 */
+  .load{position:fixed; inset:0; background:rgba(244,246,251,.96); backdrop-filter:blur(3px);
+    display:none; flex-direction:column; align-items:center; justify-content:center; z-index:50; padding:30px; text-align:center;}
+  .load.on{display:flex;}
+  .ball{width:62px; height:62px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff 0 8%, var(--accent) 9% 60%, var(--accent-deep) 100%);
+    animation:bounce 0.7s ease-in-out infinite; box-shadow:0 14px 20px -6px rgba(24,63,176,.4);}
+  @keyframes bounce{0%,100%{transform:translateY(0) scale(1);} 50%{transform:translateY(-26px) scale(.94);}}
+  .load .msg{font-size:15px; font-weight:900; color:var(--accent-deep); margin-top:26px; min-height:22px;}
+  .load .sub{font-size:12px; color:var(--mute); font-weight:700; margin-top:6px;}
+  /* 완료 */
+  .done{display:none; text-align:center; padding:24px 6px;}
+  .done.on{display:block; animation:slideIn .3s ease;}
+  .done .ck{width:74px; height:74px; border-radius:50%; background:var(--success); color:#fff; font-size:38px;
+    display:flex; align-items:center; justify-content:center; margin:0 auto 16px; box-shadow:0 14px 26px -8px rgba(16,185,129,.6);}
+  .done h2{font-size:20px; font-weight:900; margin:0 0 6px;} .done p{font-size:12.5px; color:var(--mute); font-weight:700; margin:0 0 18px;}
+  .restart{background:#eef1f7; color:var(--sub); border:0; border-radius:14px; padding:13px 22px; font-weight:900; font-family:inherit; font-size:14px; cursor:pointer; margin-top:18px;}
+  .footnote{font-size:11px; color:var(--mute); font-weight:700; text-align:center; margin-top:22px; line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🧪 모임 생성 LAB</h1>
+  <p class="lead">현재 "한 화면에 다 입력" 방식과, 제안하는 "단계별 마법사"를 비교해 보세요. 현재 앱의 모든 기능이 양쪽에 다 들어 있어요.</p>
+
+  <div class="modes">
+    <button id="m-cur" class="on" onclick="setMode('cur')">현재 방식</button>
+    <button id="m-wiz" onclick="setMode('wiz')">단계별 (제안)</button>
+  </div>
+
+  <!-- ───────────── 현재 방식 ───────────── -->
+  <div id="view-cur" class="view on">
+    <div class="cur-note">⚠️ 지금은 이 모든 항목이 <b>한 화면에 한꺼번에</b> 나와요. 처음 하는 운영진은 어디부터 봐야 할지 막막할 수 있어요. (스크롤하면서 전부 확인해 보세요)</div>
+    <div class="card">
+      <div class="field"><label class="l">모임 유형</label>
+        <div class="chips"><button class="chip on">자체전</button><button class="chip">매칭</button></div></div>
+      <div class="field"><label class="l">상대팀명 <span class="tag match">매칭일 때</span></label><input class="fld" placeholder="예: FC 상대팀"></div>
+      <div class="field"><label class="l">날짜</label><input type="date" class="fld"></div>
+      <div class="field"><label class="l">시간</label><div class="row"><input type="time" class="fld" value="08:00"><input type="time" class="fld" value="10:00"></div></div>
+      <div class="field"><label class="l">장소명 · 지도(GPS 핀)</label><div class="row"><input class="fld" placeholder="예: 잠실 풋살파크" style="flex:3"><button class="chip" style="flex:1">📍 지도</button></div></div>
+      <div class="field"><label class="l">GPS 인정 반경</label><div class="chips"><button class="chip">30m</button><button class="chip">50m</button><button class="chip on">100m</button><button class="chip">150m</button><button class="chip">200m</button></div></div>
+      <div class="field"><div class="tgrow"><div><div class="tt">출석 방식 · QR 허용</div><div class="ts">GPS가 기본, QR을 추가로 허용</div></div><button class="tg violet" onclick="this.classList.toggle('on')"><span class="k"></span></button></div></div>
+      <div class="field"><label class="l">최대 인원 <span class="tag self">자체전</span></label><input type="number" class="fld" value="18"></div>
+      <div class="field"><label class="l">정원 (남/여) <span class="tag match">매칭</span></label><div class="row"><input type="number" class="fld" value="12"><input type="number" class="fld" value="6"></div></div>
+      <div class="field"><label class="l">담당자</label><select class="fld"><option>담당자 없음</option><option>홍길동</option></select></div>
+      <div class="field"><div class="tgrow"><div><div class="tt">담당자 자동 1번 등록</div><div class="ts">ON: 담당자를 명단 1번으로 자동 신청</div></div><button class="tg on" onclick="this.classList.toggle('on')"><span class="k"></span></button></div></div>
+      <div class="field"><label class="l">수정 잠금 PIN (4자리, 선택)</label><input class="fld" inputmode="numeric" maxlength="4" placeholder="비우면 담당자 본인만 수정"></div>
+      <div class="field"><div class="tgrow"><div><div class="tt">신청 창구 받기</div><div class="ts">켜면 선착순/신청기간 설정이 추가로 나와요</div></div><button class="tg orange" onclick="this.classList.toggle('on')"><span class="k"></span></button></div></div>
+      <div class="field"><div class="tgrow"><div><div class="tt">선착순 제한 <span class="tag self">자체전</span></div><div class="ts">OFF: 정원 초과해도 모두 확정</div></div><button class="tg on orange" onclick="this.classList.toggle('on')"><span class="k"></span></button></div></div>
+      <div class="field"><label class="l">신청 시작</label><div class="row"><input type="date" class="fld"><select class="fld" style="flex:.6"><option>09시</option></select><select class="fld" style="flex:.6"><option>00분</option></select></div></div>
+      <div class="field"><label class="l">신청 마감</label><div class="row"><input type="date" class="fld"><select class="fld" style="flex:.6"><option>23시</option></select><select class="fld" style="flex:.6"><option>59분</option></select></div></div>
+      <div class="field" style="margin-bottom:0"><div class="tgrow"><div><div class="tt">📣 등록 시 전체 알림 보내기</div><div class="ts">모임 정보·신청기간이 푸시로 전체 발송</div></div><button class="tg on" onclick="this.classList.toggle('on')"><span class="k"></span></button></div></div>
+    </div>
+    <p class="footnote">위처럼 한 번에 다 보여요. 항목이 16개+라, 익숙하지 않으면 놓치기 쉬워요.<br>→ 위 "단계별 (제안)" 탭을 눌러 비교해 보세요.</p>
+  </div>
+
+  <!-- ───────────── 단계별 마법사 ───────────── -->
+  <div id="view-wiz" class="view">
+    <div class="prog" id="prog"></div>
+    <div id="stepmeta" class="stepmeta"></div>
+    <div class="card" id="wizcard">
+
+      <!-- STEP 1 유형 -->
+      <div class="step on" data-step="1">
+        <p class="q">어떤 모임인가요?</p>
+        <p class="qsub">우리끼리 하는 자체전인지, 다른 팀과 붙는 매칭인지 골라요.</p>
+        <div class="pick">
+          <button id="pk-self" class="on" onclick="pickType('self')"><div class="ic">⚽</div><div class="nm">자체전</div><div class="ds">우리 팀끼리</div></button>
+          <button id="pk-match" onclick="pickType('match')"><div class="ic">🆚</div><div class="nm">매칭</div><div class="ds">다른 팀과</div></button>
+        </div>
+        <div id="oppwrap" class="field" style="margin-top:16px; display:none">
+          <label class="l">상대팀명</label><input class="fld" placeholder="예: FC 상대팀">
+        </div>
+      </div>
+
+      <!-- STEP 2 날짜·시간 -->
+      <div class="step" data-step="2">
+        <p class="q">언제 모이나요?</p>
+        <p class="qsub">날짜와 시작·종료 시간을 정해요.</p>
+        <div class="field"><label class="l">날짜</label><input type="date" class="fld"></div>
+        <div class="row"><div><label class="l">시작</label><input type="time" class="fld" value="08:00"></div><div><label class="l">종료</label><input type="time" class="fld" value="10:00"></div></div>
+      </div>
+
+      <!-- STEP 3 장소 -->
+      <div class="step" data-step="3">
+        <p class="q">어디서 하나요?</p>
+        <p class="qsub">장소를 적고, 지도에서 핀을 찍으면 GPS 출석이 돼요.</p>
+        <div class="field"><label class="l">장소명</label><div class="row"><input class="fld" placeholder="예: 잠실 풋살파크" style="flex:3"><button class="chip" style="flex:1">📍 지도</button></div></div>
+        <div class="field"><label class="l">GPS 인정 반경</label><div class="chips"><button class="chip">30m</button><button class="chip">50m</button><button class="chip on">100m</button><button class="chip">150m</button><button class="chip">200m</button></div></div>
+        <div class="field" style="margin-bottom:0"><div class="tgrow"><div><div class="tt">QR 출석도 허용</div><div class="ts">GPS가 기본 · QR을 추가로 켜요</div></div><button class="tg violet" onclick="this.classList.toggle('on')"><span class="k"></span></button></div></div>
+      </div>
+
+      <!-- STEP 4 인원 -->
+      <div class="step" data-step="4">
+        <p class="q">몇 명이 모이나요?</p>
+        <p class="qsub" id="cap-sub">참여 가능한 최대 인원을 정해요.</p>
+        <div id="cap-self">
+          <div class="step2"><button onclick="bump(-1)">−</button><div><div class="nv" id="capv">18</div><div class="un" style="text-align:center">명</div></div><button onclick="bump(1)">＋</button></div>
+        </div>
+        <div id="cap-match" style="display:none">
+          <div class="row">
+            <div><label class="l" style="text-align:center">남자</label><input type="number" class="fld" value="12" style="text-align:center"></div>
+            <div><label class="l" style="text-align:center">여자</label><input type="number" class="fld" value="6" style="text-align:center"></div>
+          </div>
+          <p class="hint" style="text-align:center; color:var(--accent); font-weight:900">총 정원 18명</p>
+        </div>
+      </div>
+
+      <!-- STEP 5 신청 -->
+      <div class="step" data-step="5">
+        <p class="q">신청을 받을까요?</p>
+        <p class="qsub">회원들이 직접 신청하게 할지, 운영진이 명단을 짤지 정해요.</p>
+        <div class="field"><div class="tgrow"><div><div class="tt">신청 창구 열기</div><div class="ts">끄면 운영진이 명단을 직접 구성</div></div><button id="tg-reg" class="tg orange" onclick="toggleReg()"><span class="k"></span></button></div></div>
+        <div id="reg-detail" style="display:none">
+          <div class="field" id="fcfs-row"><div class="tgrow"><div><div class="tt">선착순 제한</div><div class="ts">OFF: 정원 초과해도 모두 확정</div></div><button class="tg on orange" onclick="this.classList.toggle('on')"><span class="k"></span></button></div></div>
+          <p class="hint" id="match-note" style="display:none; background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; padding:9px 11px; border-radius:11px;">매칭은 남/여 정원 기준 선착순이에요. 정원이 차면 같은 성별만 대기로 넘어가요.</p>
+          <div class="field"><label class="l">신청 시작</label><div class="row"><input type="date" class="fld" style="flex:2"><select class="fld"><option>09시</option></select><select class="fld"><option>00분</option></select></div></div>
+          <div class="field" style="margin-bottom:0"><label class="l">신청 마감</label><div class="row"><input type="date" class="fld" style="flex:2"><select class="fld"><option>23시</option></select><select class="fld"><option>59분</option></select></div></div>
+        </div>
+        <p class="hint" id="reg-off-note">지금은 신청을 받지 않아요. 운영진이 출석 화면에서 명단을 직접 추가해요.</p>
+      </div>
+
+      <!-- STEP 6 마무리 -->
+      <div class="step" data-step="6">
+        <p class="q">거의 다 됐어요!</p>
+        <p class="qsub">담당자와 마지막 옵션만 정하면 끝나요.</p>
+        <div class="field"><label class="l">담당자</label><select class="fld" onchange="document.getElementById('autoreg').style.display=this.selectedIndex?'block':'none'"><option>담당자 없음</option><option>홍길동</option><option>김운영</option></select></div>
+        <div class="field" id="autoreg" style="display:none"><div class="tgrow"><div><div class="tt">담당자 자동 1번 등록</div><div class="ts">담당자를 명단 1번으로 자동 신청</div></div><button class="tg on" onclick="this.classList.toggle('on')"><span class="k"></span></button></div></div>
+        <div class="field"><label class="l">수정 잠금 PIN (4자리, 선택)</label><input class="fld" inputmode="numeric" maxlength="4" placeholder="비우면 담당자 본인만 수정"></div>
+        <div class="field"><div class="tgrow"><div><div class="tt">📣 등록 시 전체 알림</div><div class="ts">모임 정보·신청기간 푸시 발송</div></div><button class="tg on green" onclick="this.classList.toggle('on')"><span class="k"></span></button></div></div>
+        <div class="sum">
+          <div class="r"><span class="kk">유형</span><span class="vv" id="s-type">자체전</span></div>
+          <div class="r"><span class="kk">인원</span><span class="vv" id="s-cap">18명</span></div>
+          <div class="r"><span class="kk">신청</span><span class="vv" id="s-reg">받지 않음</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="nav" id="nav">
+      <button class="btn btn-prev" id="btnPrev" onclick="prev()" style="display:none">이전</button>
+      <button class="btn btn-next" id="btnNext" onclick="next()">다음</button>
+    </div>
+
+    <!-- 완료 -->
+    <div class="done" id="done">
+      <div class="ck">✓</div>
+      <h2>모임이 만들어졌어요!</h2>
+      <p>회원들에게 알림이 발송됐어요.</p>
+      <div class="sum" style="text-align:left; max-width:300px; margin:0 auto">
+        <div class="r"><span class="kk">유형</span><span class="vv" id="d-type">자체전</span></div>
+        <div class="r"><span class="kk">인원</span><span class="vv" id="d-cap">18명</span></div>
+      </div>
+      <button class="restart" onclick="restart()">처음부터 다시 보기</button>
+    </div>
+
+    <p class="footnote">한 번에 한 가지만 물어보니 처음 하는 운영진도 따라오기 쉬워요.<br>이 화면은 흐름 제안용 시안이에요(실제 저장 안 됨).</p>
+  </div>
+</div>
+
+<!-- 로딩 오버레이 -->
+<div class="load" id="load">
+  <div class="ball"></div>
+  <div class="msg" id="loadmsg">모임을 만드는 중…</div>
+  <div class="sub">잠시만요</div>
+</div>
+
+<script>
+  var mtype='self', reg=false, step=1, cap=18, TOTAL=6;
+
+  function setMode(m){
+    document.getElementById('m-cur').classList.toggle('on', m==='cur');
+    document.getElementById('m-wiz').classList.toggle('on', m==='wiz');
+    document.getElementById('view-cur').classList.toggle('on', m==='cur');
+    document.getElementById('view-wiz').classList.toggle('on', m==='wiz');
+  }
+
+  function pickType(t){
+    mtype=t;
+    document.getElementById('pk-self').classList.toggle('on', t==='self');
+    document.getElementById('pk-match').classList.toggle('on', t==='match');
+    document.getElementById('oppwrap').style.display = t==='match'?'block':'none';
+    // step4 인원
+    document.getElementById('cap-self').style.display = t==='match'?'none':'block';
+    document.getElementById('cap-match').style.display = t==='match'?'block':'none';
+    document.getElementById('cap-sub').textContent = t==='match'?'남자·여자 정원을 각각 정해요.':'참여 가능한 최대 인원을 정해요.';
+    // step5 매칭 안내/선착순행
+    document.getElementById('fcfs-row').style.display = t==='match'?'none':'block';
+    document.getElementById('match-note').style.display = t==='match'?'block':'none';
+  }
+
+  function bump(d){ cap=Math.max(1,Math.min(40,cap+d)); document.getElementById('capv').textContent=cap; }
+
+  function toggleReg(){
+    reg=!reg;
+    document.getElementById('tg-reg').classList.toggle('on', reg);
+    document.getElementById('reg-detail').style.display = reg?'block':'none';
+    document.getElementById('reg-off-note').style.display = reg?'none':'block';
+  }
+
+  function renderProg(){
+    var p=document.getElementById('prog'); p.innerHTML='';
+    for(var i=1;i<=TOTAL;i++){ var s=document.createElement('div'); s.className='seg'+(i<=step?' done':''); p.appendChild(s); }
+    var titles=['모임 유형','날짜·시간','장소','인원','신청 방식','마무리'];
+    document.getElementById('stepmeta').textContent='STEP '+step+' / '+TOTAL+' · '+titles[step-1];
+  }
+  function showStep(){
+    document.querySelectorAll('#wizcard .step').forEach(function(el){ el.classList.toggle('on', +el.dataset.step===step); });
+    document.getElementById('btnPrev').style.display = step>1?'block':'none';
+    var nx=document.getElementById('btnNext');
+    if(step===TOTAL){ nx.textContent='✨ 등록하기'; nx.className='btn btn-go'; nx.onclick=submit; }
+    else { nx.textContent='다음'; nx.className='btn btn-next'; nx.onclick=next; }
+    // 요약 갱신
+    document.getElementById('s-type').textContent = mtype==='match'?'매칭':'자체전';
+    document.getElementById('s-cap').textContent = mtype==='match'?'정원제':(cap+'명');
+    document.getElementById('s-reg').textContent = reg?'선착순 신청':'받지 않음';
+    renderProg();
+  }
+  function next(){ if(step<TOTAL){ step++; showStep(); window.scrollTo({top:0,behavior:'smooth'}); } }
+  function prev(){ if(step>1){ step--; showStep(); window.scrollTo({top:0,behavior:'smooth'}); } }
+
+  var LOAD_MSGS=[
+    '구장에 잔디를 까는 중…','골대를 단단히 고정하는 중…','조끼를 색깔별로 개는 중…',
+    '공에 바람을 넣는 중…','물통에 얼음을 채우는 중…','출석부를 펼치는 중…','호루라기를 부는 중…'];
+  function submit(){
+    var L=document.getElementById('load'); L.classList.add('on');
+    var i=0, mEl=document.getElementById('loadmsg');
+    mEl.textContent=LOAD_MSGS[0];
+    var iv=setInterval(function(){ i=(i+1)%LOAD_MSGS.length; mEl.textContent=LOAD_MSGS[i]; }, 850);
+    setTimeout(function(){
+      clearInterval(iv); L.classList.remove('on');
+      document.getElementById('nav').style.display='none';
+      document.getElementById('wizcard').style.display='none';
+      document.getElementById('prog').style.display='none';
+      document.getElementById('stepmeta').style.display='none';
+      document.getElementById('d-type').textContent = mtype==='match'?'매칭':'자체전';
+      document.getElementById('d-cap').textContent = mtype==='match'?'정원제':(cap+'명');
+      document.getElementById('done').classList.add('on');
+    }, 3300);
+  }
+  function restart(){
+    step=1; mtype='self'; reg=false; cap=18;
+    pickType('self'); document.getElementById('tg-reg').classList.remove('on');
+    document.getElementById('reg-detail').style.display='none'; document.getElementById('reg-off-note').style.display='block';
+    document.getElementById('capv').textContent='18';
+    document.getElementById('done').classList.remove('on');
+    document.getElementById('wizcard').style.display='block';
+    document.getElementById('prog').style.display='flex';
+    document.getElementById('stepmeta').style.display='block';
+    document.getElementById('nav').style.display='flex';
+    showStep();
+  }
+
+  showStep();
+</script>
+</body>
+</html>
