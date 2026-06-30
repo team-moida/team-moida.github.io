@@ -863,7 +863,7 @@ const NextMeetingCard = ({
                     <p className="text-[18px] font-black text-slate-900">신청을 취소할까요?</p>
                     <div className="mt-3.5 text-left text-[12px] font-bold leading-relaxed rounded-2xl px-3.5 py-3"
                         style={{ background:'#fff7ed', border:'1px solid #fed7aa', color:'#9a3412' }}>
-                        지금 취소하면 다시 신청할 때 <b>순번이 맨 뒤로 밀려요.</b> 정원이 찼다면 대기로 넘어갈 수 있어요.
+                        지금 취소하면 다시 신청할 때 <b className="whitespace-nowrap">순번이 맨 뒤로 밀려요.</b> 정원이 찼다면 대기로 넘어갈 수 있어요.
                     </div>
                     <div className="flex gap-2 mt-5">
                         <button onClick={() => setCancelAsk(false)}
