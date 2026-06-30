@@ -478,6 +478,7 @@ const NextMeetingCard = ({
     const absentFine = absentType === 'noshow_1' ? 10000 : absentType === 'noshow_2' ? 20000 : 0;
     const isNoshowStage = absentType === 'noshow_1' || absentType === 'noshow_2';
     const absentColor = absentFine === 20000 ? '#EF4444' : absentFine === 10000 ? '#EA580C' : '#F59E0B'; // 당일=빨강/전날=진주황/불참=노랑
+    const absentFineLabel = absentType === 'noshow_2' ? '당일 노쇼 벌금 2만원' : absentType === 'noshow_1' ? '노쇼 벌금 1만원' : '미리 알리면 벌금 없음';
     const undoAbsentOk = (myReg?.status === 'absent' || myReg?.status === 'noshow') && typeof getAbsentType === 'function' && !!getAbsentType(meeting.date, meeting.end);
     const onAbsentConfirm = () => { if (regHandlers) regHandlers.handleAbsent(absentReason.trim()); setAbsentAsk(false); setAbsentReason(''); };
     const onUndoAbsent = (e) => { if (e) e.stopPropagation(); if (regHandlers) regHandlers.handleUndoAbsent(); };
@@ -589,7 +590,7 @@ const NextMeetingCard = ({
                                     <span className={`flex items-center gap-1 text-sm font-black ${ink80}`}><Icon.Check size={15} className="flex-shrink-0"/>참가 확정</span>
                                     <div>
                                         <p className={`text-[11px] font-black ${ink70} mb-0.5`}>못 가게 됐다면</p>
-                                        <p className={`text-[15px] font-black ${ink} leading-snug`}>{absentFine>0 ? `노쇼 벌금 ${absentFine/10000}만원` : '미리 알리면 벌금 없음'}</p>
+                                        <p className={`text-[15px] font-black ${ink} leading-snug`}>{absentFineLabel}</p>
                                     </div>
                                     <p className={`text-[11px] font-black ${ink70} leading-relaxed`}>탭하면 사유를 적고<br/>{isNoshowStage?'노쇼':'불참'}을 알려요</p>
                                 </div>
@@ -598,7 +599,7 @@ const NextMeetingCard = ({
                             <div>
                                 <div className="flex items-center justify-between mb-2">
                                     <span className={`flex items-center gap-1 text-sm font-black ${ink}`}><Icon.Check size={14} className="flex-shrink-0"/>참가 확정</span>
-                                    <span className={`text-[11px] font-black ${ink70}`}>{absentFine>0?`노쇼 ${absentFine/10000}만원`:'불참 벌금 없음'}</span>
+                                    <span className={`text-[11px] font-black ${ink70}`}>{absentFineLabel}</span>
                                 </div>
                                 <span role="button" onClick={(e)=>{ e.stopPropagation(); setAbsentAsk(true); }}
                                     className="w-full flex items-center justify-center gap-2 rounded-2xl font-black cursor-pointer py-3 text-sm text-white active:scale-95"
@@ -942,7 +943,7 @@ const NextMeetingCard = ({
                         <Icon.AlertTriangle size={30}/>
                     </div>
                     <p className="text-[18px] font-black text-slate-900 text-center">{absentType==='noshow_2' ? '당일 노쇼 신청' : isNoshowStage ? '노쇼 신청' : '불참 신청'}</p>
-                    <p className="text-[12.5px] font-bold text-slate-400 text-center mt-1.5 leading-relaxed">{absentFine>0 ? `노쇼로 기록되고 벌금 ${absentFine/10000}만원이 부과돼요.` : '미리 알려주셔서 벌금 없이 처리돼요.'}</p>
+                    <p className="text-[12.5px] font-bold text-slate-400 text-center mt-1.5 leading-relaxed">{absentType==='noshow_2' ? '당일 노쇼로 기록되고 벌금 2만원이 부과돼요.' : absentFine>0 ? '노쇼로 기록되고 벌금 1만원이 부과돼요.' : '미리 알려주셔서 벌금 없이 처리돼요.'}</p>
                     <textarea value={absentReason} onChange={e => setAbsentReason(e.target.value)} rows={2} maxLength={200}
                         placeholder={isNoshowStage ? '노쇼 사유 (선택) — 예: 갑작스런 일정' : '불참 사유 (선택) — 예: 컨디션 난조'}
                         className="w-full mt-4 border border-slate-200 rounded-2xl px-3.5 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-200"/>

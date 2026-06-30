@@ -381,7 +381,7 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
     // 홈 탭/LAB와 동일: 단계별 라벨·색 (불참=amber / 노쇼=진주황 / 당일노쇼=빨강)
     const absentBtnCls = absentFine === 20000 ? 'bg-red-500 text-white' : absentFine === 10000 ? 'bg-orange-600 text-white' : 'bg-amber-500 text-white';
     const absentBtnLabel = absentType === 'noshow_2' ? '당일 노쇼 신청' : absentFine > 0 ? '노쇼 신청' : '불참 신청';
-    const absentFineLabel = absentFine > 0 ? `노쇼 · 벌금 ${absentFine / 10000}만원` : '미리 알리면 벌금 없음';
+    const absentFineLabel = absentType === 'noshow_2' ? '당일 노쇼 · 벌금 2만원' : absentFine > 0 ? '노쇼 · 벌금 1만원' : '미리 알리면 벌금 없음';
     // 불참/노쇼 취소(다시 신청) 가능 여부 — 불참·노쇼 상태이고, 아직 모임 시간 구간 안일 때
     const undoAbsentOk = (myRegistration?.status === 'absent' || myRegistration?.status === 'noshow') && typeof getAbsentType === 'function' && !!getAbsentType(meetingSettings.date, meetingSettings.end);
 
@@ -466,8 +466,10 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
                         absentConfirm ? (
                             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3">
                                 <p className="text-sm font-black text-slate-700 text-center mb-3 whitespace-pre-line">
-                                    {absentFine > 0
-                                        ? `노쇼로 처리됩니다.\n벌금 ${absentFine / 10000}만원이 부과됩니다.`
+                                    {absentType === 'noshow_2'
+                                        ? '당일 노쇼로 처리됩니다.\n벌금 2만원이 부과됩니다.'
+                                        : absentFine > 0
+                                        ? '노쇼로 처리됩니다.\n벌금 1만원이 부과됩니다.'
                                         : '불참 처리됩니다.\n출석 명단에서 제외됩니다.'}
                                 </p>
                                 <textarea value={absentReason} onChange={e => setAbsentReason(e.target.value)}
