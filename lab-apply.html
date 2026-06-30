@@ -26,7 +26,11 @@
   .card{ background:#fff; border:1px solid #e2e8f0; border-radius:20px; box-shadow:0 4px 14px rgba(0,0,0,.05); padding:22px 20px; }
   .chead{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
   .chead .t{ font-size:11px; font-weight:900; color:var(--orange); text-transform:uppercase; letter-spacing:.12em; }
-  .chead .c{ font-size:12px; font-weight:900; color:#94a3b8; }
+  /* 우측 상단 인원 카운트 — 시인성 높인 알약 배지 */
+  .chead .c{ display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:900; color:var(--accent-deep); background:#e7edfa; padding:7px 13px; border-radius:999px; line-height:1; }
+  .chead .c svg{ opacity:.8; }
+  .chead .c b{ font-size:17px; }
+  .chead .c.full{ color:#92400e; background:#fef0c7; }
   .center{ display:flex; flex-direction:column; align-items:center; }
 
   /* ── 원형 (차분하게: 정적 헤일로 + 부드러운 그림자, 펄스 없음) ── */
@@ -42,11 +46,6 @@
   .bar:active{ transform:scale(.98); }
   .bar.c-apply{ background:var(--orange); color:#fff; box-shadow:0 12px 26px -12px rgba(249,115,22,.55); }
   .bar.c-cancel{ background:#fff; color:#64748b; border:1.5px solid #e9edf3; box-shadow:none; }
-
-  /* 적용 후 내 순번 칩 */
-  .mychip{ margin-top:14px; display:inline-flex; align-items:center; gap:6px; background:#eef2fb; color:var(--accent-deep); font-weight:900; font-size:12.5px; padding:7px 14px; border-radius:999px; }
-  .mychip.wait{ background:#fef3c7; color:#92400e; }
-  .mychip.hide{ display:none; }
 
   /* ── 완료 팝업 ── */
   .modal-bg{ position:fixed; inset:0; background:rgba(15,23,42,.46); backdrop-filter:blur(2px); display:none; align-items:center; justify-content:center; padding:26px; z-index:10; }
@@ -91,11 +90,10 @@
     <div class="chead"><span class="t">선착순 신청</span><span class="c" id="count">12 / 18명</span></div>
     <div class="center">
       <div data-slot></div>
-      <span class="mychip hide" id="mychip"></span>
     </div>
   </div>
 
-  <p class="hint">신청하기↔신청취소가 같은 자리·같은 모양으로 토글돼요. 완료 순번은 팝업으로 한 번 + 칩으로 계속 보여줘요.<br>색/크기/팝업 문구·헤일로 세기는 더 조절할 수 있어요.</p>
+  <p class="hint">신청하기↔신청취소가 같은 자리·같은 모양으로 토글돼요. 순번은 신청 시 팝업으로 안내하고, 평소엔 우측 상단 인원 배지로 현황을 보여줘요.<br>색/크기/배지 모양은 더 조절할 수 있어요.</p>
 </div>
 
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
@@ -105,8 +103,8 @@
 let shape='circle', full=false, st='apply';
 const MAX=18, CONF=12;                       // 정원 18, 현재 확정 12명
 const slot=document.querySelector('[data-slot]');
-const mychip=document.getElementById('mychip');
 const countEl=document.getElementById('count');
+const ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
 const modalBg=document.getElementById('modalBg');
 const modal=document.getElementById('modal');
 
@@ -130,15 +128,14 @@ function render(){
     el.onclick = apply ? doApply : doCancel;
     slot.appendChild(el);
   }
-  // 내 순번 칩
-  if(st==='applied'){
-    mychip.classList.remove('hide');
-    mychip.className='mychip '+(full?'wait':'');
-    mychip.textContent = full ? `대기 ${myPos()}번` : `참가 ${myPos()}번`;
-    countEl.textContent = full ? `${MAX} / ${MAX}명 · 대기` : `${CONF+1} / ${MAX}명`;
+  // 우측 상단 인원 카운트 (시인성 배지)
+  if(full){
+    countEl.className='c full';
+    countEl.innerHTML = `${ICON}<span><b>${MAX}</b> / ${MAX}명 · 마감</span>`;
   } else {
-    mychip.classList.add('hide');
-    countEl.textContent = full ? `${MAX} / ${MAX}명` : `${CONF} / ${MAX}명`;
+    countEl.className='c';
+    const n = st==='applied' ? CONF+1 : CONF;
+    countEl.innerHTML = `${ICON}<span><b>${n}</b> / ${MAX}명</span>`;
   }
 }
 
