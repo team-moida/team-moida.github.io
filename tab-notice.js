@@ -55,8 +55,6 @@ const TabNotice = ({ announcements, isAdminMode, isDeveloper, canManage = () => 
         if (selectedId && !list.some(a => a.id === selectedId)) setSelectedId(null);
     }, [list, selectedId]);
 
-    const selected = selectedId ? list.find(a => a.id === selectedId) : null;
-
     const toggleCheck = (id) => setCheckedIds(prev =>
         prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
@@ -81,49 +79,7 @@ const TabNotice = ({ announcements, isAdminMode, isDeveloper, canManage = () => 
         );
     }
 
-    // ── 상세 화면 ──────────────────────────────────────────────────────────────
-    if (selected) {
-        return (
-            <div className="animate-in">
-                <div className="flex items-center gap-2 mb-4">
-                    <button onClick={() => setSelectedId(null)} className="p-2 -ml-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-all flex items-center gap-1 font-black text-sm">
-                        <Icon.ChevronLeft size={18}/> 목록
-                    </button>
-                </div>
-                <div className="card rounded-2xl p-5">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <NoticeBadge category={selected.category} />
-                            {isAnnDone(selected) && <NoticeDoneBadge />}
-                            <h2 className="font-black text-lg text-slate-800 min-w-0">{selected.title}</h2>
-                        </div>
-                        <span className="text-[11px] text-slate-400 whitespace-nowrap flex-shrink-0 mt-1">{fmtNoticeDate(selected.sentAt)}</span>
-                    </div>
-                    <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{selected.body}</p>
-                    {selected.sentBy && <p className="text-xs text-slate-400 mt-4">{selected.sentBy}</p>}
-                    {selected.linkMeetingId && (isAnnDone(selected)
-                        ? <p className="w-full mt-4 py-2.5 rounded-xl bg-slate-100 text-slate-400 font-black text-sm text-center">종료된 모임입니다</p>
-                        : (onNavigateMeeting && (
-                            <button onClick={() => onNavigateMeeting(selected)}
-                                className="w-full mt-4 py-2.5 rounded-xl bg-teal-500 text-white font-black text-sm active:scale-95 transition-all flex items-center justify-center gap-1.5">
-                                신청하러 가기 <Icon.ChevronRight size={16}/>
-                            </button>
-                        )))}
-                    {isAdminMode && (canManage(selected)
-                        ? (
-                            <div className="flex gap-2 mt-5 pt-4 border-t border-slate-100">
-                                <button onClick={() => onEdit(selected)} className="flex-1 py-2.5 rounded-xl bg-blue-50 text-blue-500 font-black text-sm active:scale-95 transition-all">수정</button>
-                                <button onClick={() => onDeleteOne(selected.id)} className="flex-1 py-2.5 rounded-xl bg-red-50 text-red-500 font-black text-sm active:scale-95 transition-all">삭제</button>
-                            </div>
-                        ) : (
-                            <p className="text-[11px] text-slate-400 font-bold text-center mt-5 pt-4 border-t border-slate-100">올린 사람만 수정·삭제할 수 있어요</p>
-                        ))}
-                </div>
-            </div>
-        );
-    }
-
-    // ── 목록 화면 ──────────────────────────────────────────────────────────────
+    // ── 목록 화면 (글 탭 → 그 자리에서 펼침 = 아코디언) ──────────────────────────
     return (
         <div className="animate-in">
             {/* 상단: 간결한 헤더 (뒤로 + 종 + 작은 제목) — 다른 탭과 통일 */}
@@ -200,33 +156,65 @@ const TabNotice = ({ announcements, isAdminMode, isDeveloper, canManage = () => 
                         <p className="font-black text-sm">등록된 공지가 없습니다</p>
                     </div>
                 ) : (
-                    list.map((a, i) => (
-                        <button key={a.id}
-                            onClick={() => selectMode ? (canManage(a) && toggleCheck(a.id)) : setSelectedId(a.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 transition-colors ${i > 0 ? 'border-t border-slate-100' : ''} ${isAnnDone(a) ? 'opacity-60' : ''} ${selectMode && !canManage(a) ? 'opacity-40' : ''}`}>
-                            {selectMode && (
-                                canManage(a) ? (
-                                    <span className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center border-2 transition-all ${checkedIds.includes(a.id) ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-300'}`}>
-                                        {checkedIds.includes(a.id) && <Icon.Check size={12}/>}
-                                    </span>
-                                ) : (
-                                    <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center text-[9px] font-black text-slate-300">잠금</span>
-                                )
-                            )}
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                    <NoticeBadge category={a.category} />
-                                    {isAnnDone(a) && <NoticeDoneBadge />}
-                                    <p className="font-black text-[14.5px] text-slate-800 truncate">{a.title}</p>
+                    list.map((a, i) => {
+                        const open = !selectMode && selectedId === a.id;
+                        return (
+                        <div key={a.id} className={i > 0 ? 'border-t border-slate-100' : ''}>
+                            <button
+                                onClick={() => selectMode ? (canManage(a) && toggleCheck(a.id)) : setSelectedId(prev => prev === a.id ? null : a.id)}
+                                className={`w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-50 transition-colors ${isAnnDone(a) ? 'opacity-60' : ''} ${selectMode && !canManage(a) ? 'opacity-40' : ''}`}>
+                                {selectMode && (
+                                    canManage(a) ? (
+                                        <span className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center border-2 transition-all ${checkedIds.includes(a.id) ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-300'}`}>
+                                            {checkedIds.includes(a.id) && <Icon.Check size={12}/>}
+                                        </span>
+                                    ) : (
+                                        <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center text-[9px] font-black text-slate-300">잠금</span>
+                                    )
+                                )}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                        <NoticeBadge category={a.category} />
+                                        {isAnnDone(a) && <NoticeDoneBadge />}
+                                        <p className={`font-black text-[14.5px] text-slate-800 ${open ? '' : 'truncate'}`}>{a.title}</p>
+                                    </div>
+                                    <p className="text-[11.5px] text-slate-400 mt-1.5 truncate font-bold">{a.sentBy || '관리자'}</p>
                                 </div>
-                                <p className="text-[11.5px] text-slate-400 mt-1.5 truncate font-bold">{a.sentBy || '관리자'}</p>
-                            </div>
-                            <div className="flex flex-col items-end gap-1.5 shrink-0">
-                                <span className="text-[10.5px] text-slate-400 font-bold whitespace-nowrap">{fmtNoticeDate(a.sentAt)}</span>
-                                {!selectMode && <Icon.ChevronRight size={16} className="text-slate-300"/>}
-                            </div>
-                        </button>
-                    ))
+                                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                    <span className="text-[10.5px] text-slate-400 font-bold whitespace-nowrap">{fmtNoticeDate(a.sentAt)}</span>
+                                    {!selectMode && <Icon.ChevronRight size={16} className={`text-slate-300 transition-transform ${open ? 'rotate-90' : ''}`}/>}
+                                </div>
+                            </button>
+                            {/* 펼침 본문 (아코디언) — 같은 자리에서 슬라이드로 열림/닫힘 */}
+                            {!selectMode && (
+                                <div className={`acc-wrap ${open ? 'open' : ''}`}>
+                                    <div className="acc-inner">
+                                        <div className="px-4 pb-4">
+                                            <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{a.body}</p>
+                                            {a.linkMeetingId && (isAnnDone(a)
+                                                ? <p className="w-full mt-4 py-2.5 rounded-xl bg-slate-100 text-slate-400 font-black text-sm text-center">종료된 모임입니다</p>
+                                                : (onNavigateMeeting && (
+                                                    <button onClick={() => onNavigateMeeting(a)}
+                                                        className="w-full mt-4 py-2.5 rounded-xl bg-teal-500 text-white font-black text-sm active:scale-95 transition-all flex items-center justify-center gap-1.5">
+                                                        신청하러 가기 <Icon.ChevronRight size={16}/>
+                                                    </button>
+                                                )))}
+                                            {isAdminMode && (canManage(a)
+                                                ? (
+                                                    <div className="flex gap-2 mt-4 pt-4 border-t border-slate-100">
+                                                        <button onClick={() => onEdit(a)} className="flex-1 py-2.5 rounded-xl bg-blue-50 text-blue-500 font-black text-sm active:scale-95 transition-all">수정</button>
+                                                        <button onClick={() => onDeleteOne(a.id)} className="flex-1 py-2.5 rounded-xl bg-red-50 text-red-500 font-black text-sm active:scale-95 transition-all">삭제</button>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-[11px] text-slate-400 font-bold text-center mt-4 pt-4 border-t border-slate-100">올린 사람만 수정·삭제할 수 있어요</p>
+                                                ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        );
+                    })
                 )}
             </div>
         </div>

@@ -85,6 +85,12 @@ select { appearance: none; }
 .content-pb { padding-bottom: calc(8rem + env(safe-area-inset-bottom)); }
 .qr-scan-line { animation: scanLine 2s ease-in-out infinite; }
 @keyframes scanLine { 0%{top:8px} 50%{top:calc(100% - 10px)} 100%{top:8px} }
+/* ── 게시판 아코디언(글 펼침) ── 높이 자동 + 부드러운 슬라이드 */
+.acc-wrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows .32s cubic-bezier(.4,0,.2,1)}
+.acc-wrap.open{grid-template-rows:1fr}
+.acc-inner{overflow:hidden;min-height:0;opacity:0;transition:opacity .26s ease}
+.acc-wrap.open .acc-inner{opacity:1}
+@media (prefers-reduced-motion: reduce){ .acc-wrap,.acc-inner{transition:none} }
 .member-header-bg{background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
 /* ── 페이지별 다크모드 ── */
 html.dark .card{background:var(--t-surface)!important;border-color:var(--t-border)!important}
