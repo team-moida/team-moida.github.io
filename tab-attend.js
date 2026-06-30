@@ -378,8 +378,10 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
     // 불참/노쇼 시간 구간 (신청마감 후 + 참가확정 상태일 때만 계산)
     const absentType = (isAfterClose && myRegistration?.status === 'confirmed' && typeof getAbsentType === 'function') ? getAbsentType(meetingSettings.date, meetingSettings.end) : null;
     const absentFine = absentType === 'noshow_1' ? 10000 : absentType === 'noshow_2' ? 20000 : 0;
-    const absentBtnCls = absentFine === 20000 ? 'bg-red-500 text-white' : absentFine === 10000 ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-600';
-    const absentBtnLabel = absentFine > 0 ? `불참 신청 (노쇼 · ${absentFine / 10000}만원 벌금)` : '불참 신청 (벌금 없음)';
+    // 홈 탭/LAB와 동일: 단계별 라벨·색 (불참=amber / 노쇼=진주황 / 당일노쇼=빨강)
+    const absentBtnCls = absentFine === 20000 ? 'bg-red-500 text-white' : absentFine === 10000 ? 'bg-orange-600 text-white' : 'bg-amber-500 text-white';
+    const absentBtnLabel = absentType === 'noshow_2' ? '당일 노쇼 신청' : absentFine > 0 ? '노쇼 신청' : '불참 신청';
+    const absentFineLabel = absentFine > 0 ? `노쇼 · 벌금 ${absentFine / 10000}만원` : '미리 알리면 벌금 없음';
     // 불참/노쇼 취소(다시 신청) 가능 여부 — 불참·노쇼 상태이고, 아직 모임 시간 구간 안일 때
     const undoAbsentOk = (myRegistration?.status === 'absent' || myRegistration?.status === 'noshow') && typeof getAbsentType === 'function' && !!getAbsentType(meetingSettings.date, meetingSettings.end);
 
@@ -487,6 +489,7 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
                                     className={`w-full py-2.5 rounded-2xl font-black text-sm active:scale-95 ${absentBtnCls}`}>
                                     {absentBtnLabel}
                                 </button>
+                                <p className="text-[11px] text-slate-400 text-center mt-1.5">못 가게 됐다면 · {absentFineLabel}</p>
                             </div>
                         )
                     )}
