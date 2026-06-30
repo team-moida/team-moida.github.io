@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>현재 회원 모임 탭 (재현)</title>
+<style>
+  :root{ --accent:#183FB0; --accent-deep:#122E78; --teal:#0d9488; --ink:#0f172a; --sub:#64748b; --line:#e6eaf2; --bg:#f4f6fa; --live:#C2F94A; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; font-family:'Pretendard',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:radial-gradient(125% 90% at 50% -8%, #e8ecf9 0%, #f3f5fb 46%, #f4f6fa 100%); min-height:100vh; color:var(--ink); user-select:none; }
+  .wrap{ max-width:440px; margin:0 auto; padding:14px 14px calc(28px + env(safe-area-inset-bottom)); }
+  h1{ font-size:17px; font-weight:900; margin:4px 4px 2px; }
+  .lead{ font-size:12px; font-weight:700; color:#94a3b8; margin:0 4px 12px; line-height:1.6; }
+  .crumb{ font-size:11px; font-weight:900; color:var(--accent); margin:0 4px 8px; }
+
+  .card{ background:#fff; border:1px solid var(--line); border-radius:18px; box-shadow:0 4px 14px rgba(0,0,0,.04); }
+  /* ── 목록 카드 ── */
+  .mlist{ display:flex; flex-direction:column; gap:10px; }
+  .mrow{ width:100%; text-align:left; border:0; background:#fff; font-family:inherit; display:flex; align-items:center; gap:12px; padding:12px; cursor:pointer; }
+  .dchip{ width:58px; height:58px; border-radius:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; color:#fff; }
+  .dchip b{ font-size:22px; font-weight:900; line-height:1; } .dchip span{ font-size:10px; font-weight:900; margin-top:2px; letter-spacing:.05em; opacity:.9; }
+  .mid{ flex:1; min-width:0; }
+  .mid .t{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .mid .t b{ font-size:15px; font-weight:900; }
+  .badge{ font-size:10px; font-weight:900; padding:2px 8px; border-radius:999px; }
+  .badge.live{ background:#f43f5e; color:#fff; } .badge.today{ background:#ccfbf1; color:#0f766e; } .badge.soon{ background:#fff1f2; color:#e11d48; } .badge.dday{ background:#f1f5f9; color:#64748b; }
+  .mid .meta{ font-size:12.5px; font-weight:700; color:var(--sub); margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mid .mgr{ font-size:11px; font-weight:700; color:#94a3b8; margin-top:2px; }
+  .cap{ text-align:center; flex-shrink:0; padding-left:2px; }
+  .cap b{ font-size:20px; font-weight:900; color:var(--teal); line-height:1; display:block; } .cap span{ font-size:10px; font-weight:900; color:#94a3b8; }
+
+  /* ── 상세 ── */
+  .dhead{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .dhead .bk{ width:38px; height:38px; border-radius:12px; background:#f1f5f9; color:#64748b; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer; flex-shrink:0; }
+  .dhead .tag{ font-size:10px; font-weight:900; color:#fff; padding:2px 8px; border-radius:8px; }
+  .dhead .dt{ font-size:15px; font-weight:900; }
+  .dhead .pl{ font-size:11px; font-weight:700; color:#94a3b8; margin-top:1px; display:flex; align-items:center; gap:3px; }
+
+  .sec{ margin-bottom:12px; overflow:hidden; }
+  .sechead{ width:100%; text-align:left; border:0; background:#fff; font-family:inherit; padding:14px; display:flex; align-items:center; gap:12px; cursor:pointer; }
+  .sechead .ic{ width:36px; height:36px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0; }
+  .sechead .st{ flex:1; min-width:0; } .sechead .st b{ font-size:15px; font-weight:900; } .sechead .st span{ font-size:12px; font-weight:700; color:#94a3b8; display:block; margin-top:2px; }
+  .sechead .ar{ color:#cbd5e1; font-weight:900; transition:transform .25s; }
+  .sec.open .ar{ transform:rotate(90deg); }
+  .acc{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .28s cubic-bezier(.4,0,.2,1); }
+  .sec.open .acc{ grid-template-rows:1fr; } .accin{ overflow:hidden; min-height:0; } .accpad{ padding:0 10px 12px; }
+
+  /* 출석 섹션 내부 */
+  .regcard{ background:#fff; border:1px solid #eef2f6; border-radius:14px; padding:14px; }
+  .reghead{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .reghead .lbl{ font-size:11px; font-weight:900; color:#f97316; letter-spacing:.1em; text-transform:uppercase; }
+  .pill{ display:inline-flex; align-items:center; gap:5px; font-size:13px; font-weight:900; background:#e7edfa; color:#122E78; padding:6px 12px; border-radius:999px; }
+  .pill b{ font-size:15px; }
+  .cancelbtn{ width:100%; border:0; background:#f1f5f9; color:#64748b; font-family:inherit; font-weight:900; font-size:14px; border-radius:14px; padding:11px; cursor:pointer; }
+  .attendnote{ display:flex; align-items:center; gap:6px; font-size:12px; font-weight:800; color:#94a3b8; margin-top:10px; }
+
+  /* 팀 섹션 */
+  .teamhd{ display:flex; align-items:baseline; gap:8px; margin:2px 2px 10px; } .teamhd b{ font-size:17px; font-weight:900; } .teamhd span{ font-size:12px; font-weight:800; color:#94a3b8; }
+  .tgrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .tcard{ border-radius:16px; padding:13px; border:1px solid var(--line); }
+  .tcard.mine{ border-color:var(--teal); background:#f0fdfa; }
+  .tcard .th{ display:flex; align-items:center; gap:7px; margin-bottom:8px; }
+  .tcard .tb{ width:30px; height:30px; border-radius:10px; color:#fff; font-weight:900; font-size:13px; display:flex; align-items:center; justify-content:center; }
+  .tcard .me{ font-size:9px; font-weight:900; color:var(--teal); text-transform:uppercase; }
+  .tcard .pl{ font-size:12px; font-weight:900; padding:2px 0; display:flex; gap:5px; }
+  .tcard .pl.you{ color:var(--teal); } .tcard .pl.oth{ color:#94a3b8; } .tcard .pl i{ opacity:.5; width:13px; text-align:right; font-style:normal; }
+  .closed{ text-align:center; color:#94a3b8; padding:18px; } .closed b{ font-size:13px; font-weight:900; display:block; } .closed span{ font-size:11px; }
+
+  /* 매치 섹션 */
+  .mround{ background:#fff; border:1px solid #eef2f6; border-radius:14px; padding:13px; }
+  .mround .rl{ font-size:11px; font-weight:900; color:#94a3b8; margin-bottom:8px; }
+  .matchup{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .matchup .d{ width:20px; height:20px; border-radius:6px; } .matchup b{ font-size:14px; font-weight:900; } .matchup .vs{ font-size:12px; font-style:italic; color:#cbd5e1; font-weight:900; } .matchup .ct{ margin-left:auto; font-size:12px; font-weight:900; color:#94a3b8; }
+  .bigbtn{ width:100%; border:0; background:#eef2fb; color:var(--accent-deep); font-family:inherit; font-weight:900; font-size:13px; border-radius:12px; padding:11px; margin-top:10px; cursor:pointer; }
+
+  .note{ font-size:12px; font-weight:800; color:#475569; margin:14px 4px 0; line-height:1.7; background:#fff; border:1px solid var(--line); border-radius:14px; padding:13px 14px; }
+  .note b{ color:var(--accent-deep); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>현재 회원 모임 탭 (있는 그대로 재현)</h1>
+  <p class="lead">지금 <b>일반 회원</b>이 모임 탭에서 보는 화면이에요. 운영진 도구(추가·수정·삭제·예정/기록 토글·⚙운영)는 회원에겐 안 보입니다.</p>
+  <div id="stage"></div>
+  <p class="note" id="note"></p>
+</div>
+
+<script>
+let view='list', open={attend:true,team:false,match:false};
+const ORANGE='#f97316';
+const VEST={ red:'#ef4444', blue:'#2563eb', yellow:'#facc15' };
+
+const MEET=[
+  { kind:'self',  day:5,  mon:'JUL', dow:'토', time:'20:00', place:'○○풋살장 A', mgr:'김총무', badge:{t:'오늘',cls:'today'}, cap:18 },
+  { kind:'self',  day:12, mon:'JUL', dow:'토', time:'20:00', place:'○○풋살장 A', mgr:'김총무', badge:{t:'D-7',cls:'dday'},  cap:18 },
+  { kind:'match', day:15, mon:'JUL', dow:'화', time:'19:00', place:'△△구장', mgr:'이매니저', opp:'FC번개', badge:{t:'D-10',cls:'dday'}, cap:10 },
+];
+
+function listHTML(){
+  const rows=MEET.map((m,i)=>{
+    const isM=m.kind==='match';
+    const chipBg=isM?'#C2F94A':'#183FB0', chipFg=isM?'#15171E':'#fff';
+    const meta=`${m.dow} ${m.time} · ${m.place}${isM&&m.opp?` · vs ${m.opp}`:''}`;
+    return `<button class="mrow" data-go="detail">
+      <div class="dchip" style="background:${chipBg};color:${chipFg}"><b>${m.day}</b><span>${m.mon.slice(0,3)}</span></div>
+      <div class="mid"><div class="t"><b>${isM?'매칭':'정기모임'}</b><span class="badge ${m.badge.cls}">${m.badge.t}</span></div>
+        <div class="meta">${meta}</div><div class="mgr">담당 ${m.mgr}</div></div>
+      <div class="cap"><b>${m.cap}</b><span>정원</span></div>
+    </button>`;
+  }).join('');
+  return `<div class="crumb">모임 탭 · 예정</div><div class="mlist">${rows}</div>`;
+}
+
+function detailHTML(){
+  // 대표 상태: 신청 완료 + 팀 발표됨(빨강 7번) + 매치 생성됨
+  const team=(c,name,me,members)=>`<div class="tcard ${me?'mine':''}">
+    <div class="th"><span class="tb" style="background:${c}">${name[0]}</span>${me?'<span class="me">내 팀</span>':''}</div>
+    ${members.map((p,i)=>`<div class="pl ${p.you?'you':'oth'}"><i>${i+1}.</i>${p.n}${p.w?' W':''}</div>`).join('')}</div>`;
+  return `<div class="crumb">모임 탭 · 예정 › 상세</div>
+  <div class="dhead"><div class="bk" data-go="list">‹</div>
+    <div><span class="tag" style="background:#183FB0">정기</span>
+      <div class="dt" style="margin-top:3px">7월 5일 (토) · 20:00~22:00</div>
+      <div class="pl">📍 ○○풋살장 A</div></div></div>
+
+  <div class="card sec ${open.attend?'open':''}" data-sec="attend">
+    <button class="sechead"><div class="ic" style="background:#eef2fb;color:#122E78">🗓️</div>
+      <div class="st"><b>출석</b><span>신청 완료 · 13/18명</span></div><div class="ar">›</div></button>
+    <div class="acc"><div class="accin"><div class="accpad">
+      <div class="regcard">
+        <div class="reghead"><span class="lbl">선착순 신청</span><span class="pill">👥 <b>13</b> / 18명</span></div>
+        <button class="cancelbtn">신청 취소</button>
+        <div class="attendnote">🕒 모임 당일에 출석 체크가 열립니다</div>
+      </div>
+    </div></div></div>
+  </div>
+
+  <div class="card sec ${open.team?'open':''}" data-sec="team">
+    <button class="sechead"><div class="ic" style="background:#dcfce7;color:#15803d">🦺</div>
+      <div class="st"><b>팀</b><span>3팀 확정 · 내 팀 빨강 7번</span></div><div class="ar">›</div></button>
+    <div class="acc"><div class="accin"><div class="accpad">
+      <div class="teamhd"><b>내 팀</b><span>3팀 편성 완료</span></div>
+      <div class="tgrid">
+        ${team(VEST.red,'빨강',true,[{n:'김모이',you:true},{n:'이풋살'},{n:'박패스'},{n:'정골핑',w:true}])}
+        ${team(VEST.blue,'파랑',false,[{n:'최슈팅'},{n:'강드리블'},{n:'윤킥',w:true},{n:'장수비'}])}
+        ${team(VEST.yellow,'노랑',false,[{n:'한골',},{n:'서패스'},{n:'문지기'},{n:'오버랩',w:true}])}
+      </div>
+    </div></div></div>
+  </div>
+
+  <div class="card sec ${open.match?'open':''}" data-sec="match">
+    <button class="sechead"><div class="ic" style="background:#fee2e2;color:#b91c1c">⚔️</div>
+      <div class="st"><b>매치</b><span>5라운드 생성됨</span></div><div class="ar">›</div></button>
+    <div class="acc"><div class="accin"><div class="accpad">
+      <div class="mround">
+        <div class="rl">현재 2라운드 / 5 · 내 경기</div>
+        <div class="matchup"><span class="d" style="background:${VEST.red}"></span><b>빨강팀</b><span class="vs">vs</span><span class="d" style="background:${VEST.blue}"></span><b>파랑팀</b><span class="ct">코트 A</span></div>
+      </div>
+      <button class="bigbtn">매치판 크게 보기</button>
+    </div></div></div>
+  </div>`;
+}
+
+function render(){
+  const stage=document.getElementById('stage');
+  stage.innerHTML = view==='list' ? listHTML() : detailHTML();
+  document.getElementById('note').textContent = view==='list'
+    ? '목록 — 회원은 예정 모임만 봐요(예정/기록 토글·추가/수정/삭제는 운영진 전용). 날짜칩(정기=인디고·매칭=라임)+상태배지(오늘/D-day/LIVE)+정원.'
+    : '상세 — 출석/팀/매치 접이식. 출석은 신청·출석, 팀은 내 팀(공개 전엔 "비공개 중"), 매치는 내 경기+크게보기. 운영진만 ⚙운영으로 편집.';
+  stage.querySelectorAll('[data-go]').forEach(b=> b.onclick=()=>{ view=b.dataset.go; if(view==='detail') open={attend:true,team:false,match:false}; render(); });
+  stage.querySelectorAll('.sec').forEach(s=> s.querySelector('.sechead').onclick=()=>{ const k=s.dataset.sec; open[k]=!open[k]; render(); });
+}
+render();
+</script>
+</body>
+</html>
