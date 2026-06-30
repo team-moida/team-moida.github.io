@@ -1023,12 +1023,12 @@ const MeetingListScreen = ({
 };
 
 // ─── 모임 상세 상단 헤더 (뒤로가기 + 모임 요약) ──────────────────────────────────
-const MeetingDetailHeader = ({ meeting, onBack }) => {
+const MeetingDetailHeader = ({ meeting, onBack, isAdminMode, onOpenAdminHub }) => {
     const kind = (meeting.meetingType || 'self') === 'match' ? 'match' : 'self';
     const cfg = MEETING_KIND[kind];
     const dayInfo = computeMeetingDay(meeting.date, meeting.start);
     return (
-        <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-center gap-2.5 mb-3">
             <button onClick={onBack} className="p-2 rounded-xl bg-slate-100 text-slate-600 shrink-0 active:scale-95 transition-all">
                 <Icon.ArrowLeft size={18}/>
             </button>
@@ -1041,6 +1041,39 @@ const MeetingDetailHeader = ({ meeting, onBack }) => {
                 <p className="font-black text-slate-800 truncate mt-0.5">{fmtMeetingDate(meeting.date)} · {meeting.start}~{meeting.end}</p>
                 {meeting.location && <p className="text-[11px] text-slate-400 truncate flex items-center gap-1"><Icon.MapPin size={11} className="flex-shrink-0"/><span className="truncate">{meeting.location}</span></p>}
             </div>
+            {isAdminMode && onOpenAdminHub && (
+                <button onClick={onOpenAdminHub} className="shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl text-white font-black text-[12.5px] active:scale-95 transition-all" style={{background:'#183FB0'}}>
+                    <Icon.Settings size={14}/> 운영
+                </button>
+            )}
+        </div>
+    );
+};
+
+// ─── 운영 허브 (운영진 전용 편집 진입 — 모임정보·팀·매치 3카드) ──────────────────
+// 회원 화면(섹션)은 그대로 두고, 운영진이 '운영' 버튼으로 들어와 편집할 3가지만 본다.
+const MeetingAdminHub = ({ meeting, teamStatus, matchStatus, isMatchKind, onClose, onEditInfo, onTeam, onMatch }) => {
+    const card = (icon, tone, name, desc, status, onAct, actLabel) => (
+        <button onClick={onAct} className="w-full text-left card rounded-2xl p-4 mb-3 flex items-center gap-3.5 active:scale-[0.99] transition-transform">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{background:tone.bg, color:tone.fg}}>{icon}</div>
+            <div className="flex-1 min-w-0">
+                <p className="font-black text-[15.5px] text-slate-800">{name}</p>
+                <p className="text-[12px] font-bold text-slate-400 mt-0.5 truncate">{desc}</p>
+                <span className={`inline-block text-[10.5px] font-black px-2 py-0.5 rounded-full mt-1.5 ${status.done ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{status.label}</span>
+            </div>
+            <span className="shrink-0 flex items-center gap-0.5 text-[12.5px] font-black text-teal-600">{actLabel}<Icon.ChevronRight size={15}/></span>
+        </button>
+    );
+    return (
+        <div className="animate-in">
+            <div className="flex items-center gap-2 mb-3">
+                <button onClick={onClose} className="p-2 rounded-xl bg-slate-100 text-slate-600 shrink-0 active:scale-95 transition-all"><Icon.ArrowLeft size={18}/></button>
+                <div className="flex items-center gap-1.5"><Icon.Settings size={17} className="text-teal-700"/><h2 className="font-black text-lg text-slate-800">운영 · 편집</h2></div>
+            </div>
+            <p className="text-[12px] font-bold text-slate-400 mb-3 px-1">편집할 항목만 고르세요. 회원 화면은 그대로예요.</p>
+            {card(<Icon.Clock size={22}/>, {bg:'#eef2fb',fg:'#122E78'}, '모임 정보', `${meeting.start||''}~${meeting.end||''} · ${meeting.location||'장소 미정'}`, {label:`정원 ${meeting.maxLimit||18}명`, done:true}, onEditInfo, '수정')}
+            {card(<Icon.Users size={22}/>, {bg:'#dcfce7',fg:'#15803d'}, '팀 편성', '팀 나누기 · 조끼색 · 확정', teamStatus, onTeam, teamStatus.done?'수정':'편성')}
+            {!isMatchKind && card(<Icon.Swords size={20}/>, {bg:'#fee2e2',fg:'#b91c1c'}, '매치표', '대진 · 라운드 · 코트', matchStatus, onMatch, matchStatus.done?'수정':'생성')}
         </div>
     );
 };

@@ -115,7 +115,8 @@ function App() {
     });
     // 모임 상세 섹션 다중 펼침: meetingSubTab(주 펼침)에 더해 추가로 펼친 섹션들을 함께 펼친다
     const [openExtra, setOpenExtra] = useState([]);
-    React.useEffect(() => { setOpenExtra([]); }, [viewMeetingId]);
+    const [adminHub, setAdminHub] = useState(false);   // 운영 허브(편집 진입) 열림 — 운영진 전용
+    React.useEffect(() => { setOpenExtra([]); setAdminHub(false); }, [viewMeetingId]);
     const isSecOpen = (k) => meetingSubTab === k || openExtra.includes(k);
     const toggleSection = (k) => {
         if (meetingSubTab === k || openExtra.includes(k)) {
@@ -349,6 +350,14 @@ function App() {
     const isLiveSelfView = !viewMeeting || (viewKind === 'self' && !!meetingSettings?.date && viewMeeting.date === meetingSettings.date);
     const match = useMatch({ isAdminMode, meetingSettings: effectiveSelfMeeting, confirmedDrafts: team.confirmedDrafts, isLiveView: isLiveSelfView });
     const { scheduleData, matchViewMode, setMatchViewMode } = match;
+    // 운영 허브 카드 상태 (팀/매치 완료 여부 한 줄)
+    const teamStatus = (team.teamDraftData?.teams?.length)
+        ? { label: `${team.teamDraftData.teams.length}팀 확정`, done: true }
+        : { label: '아직 안 나눔', done: false };
+    const _matchRounds = Array.isArray(scheduleData?.rounds) ? scheduleData.rounds.length
+        : Array.isArray(scheduleData?.schedule) ? scheduleData.schedule.length
+        : Array.isArray(scheduleData) ? scheduleData.length : 0;
+    const matchStatus = _matchRounds > 0 ? { label: `${_matchRounds}라운드 생성됨`, done: true } : { label: '아직 안 만듦', done: false };
     const attend = useAttend({
         isAdminMode, memberData, meetingSettings: displayMeetingSettings,
         tmSessionData: team.tmSessionData,
@@ -958,11 +967,23 @@ function App() {
                 )}
                 {tab === 'meeting' && viewMeeting && (
                     <div>
-                        <MeetingDetailHeader meeting={viewMeeting} onBack={() => setViewMeetingId(null)} />
+                        <MeetingDetailHeader meeting={viewMeeting} onBack={() => setViewMeetingId(null)}
+                            isAdminMode={isAdminMode} onOpenAdminHub={() => setAdminHub(true)} />
                     </div>
                 )}
+                {/* 운영진 전용 — 운영 허브(편집 진입). 열려 있으면 아래 섹션 대신 이 화면만 */}
+                {tab === 'meeting' && viewMeeting && isAdminMode && adminHub && (
+                    <MeetingAdminHub
+                        meeting={viewMeeting} teamStatus={teamStatus} matchStatus={matchStatus}
+                        isMatchKind={viewKind === 'match'}
+                        onClose={() => setAdminHub(false)}
+                        onEditInfo={() => { setPendingEditMeeting(viewMeeting); setViewMeetingId(null); }}
+                        onTeam={() => { setAdminHub(false); setMeetingSubTab('team'); setOpenExtra([]); }}
+                        onMatch={() => { setAdminHub(false); setMeetingSubTab('match'); setOpenExtra([]); }}
+                    />
+                )}
                 {/* 회원=지금 할 일(맨 위) / 관리자=출석 서브탭 */}
-                {tab === 'meeting' && viewMeeting && (
+                {tab === 'meeting' && viewMeeting && !(isAdminMode && adminHub) && (
                   <MeetingSection title="출석" open={isSecOpen('attend')} onToggle={() => toggleSection('attend')}>
                     <TabAttend
                         viewMeeting={viewMeeting} isViewActive={isViewActive}
@@ -1030,7 +1051,7 @@ function App() {
                   </MeetingSection>
                 )}
                 {/* 회원=내 팀 / 관리자=팀 편성 */}
-                {tab === 'meeting' && viewMeeting && (
+                {tab === 'meeting' && viewMeeting && !(isAdminMode && adminHub) && (
                   <MeetingSection title={viewKind === 'match' ? '명단' : '팀'} open={isSecOpen('team')} onToggle={() => toggleSection('team')}>
                     <TabTeam
                         isAdminMode={isAdminMode} isTeamPanelOpen={team.isTeamPanelOpen} setIsTeamPanelOpen={team.setIsTeamPanelOpen}
@@ -1063,7 +1084,7 @@ function App() {
                   </MeetingSection>
                 )}
                 {/* 회원=경기 / 관리자=매치 관리 (매칭 모임 제외) */}
-                {tab === 'meeting' && viewMeeting && viewKind !== 'match' && (
+                {tab === 'meeting' && viewMeeting && viewKind !== 'match' && !(isAdminMode && adminHub) && (
                   <MeetingSection title="매치" open={isSecOpen('match')} onToggle={() => toggleSection('match')}>
                     <TabMatch
                         isAdminMode={isAdminMode} isMatchPanelOpen={match.isMatchPanelOpen} setIsMatchPanelOpen={match.setIsMatchPanelOpen}
