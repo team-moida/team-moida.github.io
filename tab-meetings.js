@@ -353,15 +353,25 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                             )}
                             {stepShow(1) && (<div className="space-y-3">
                             {isWiz ? (
-                                <div className="grid grid-cols-2 gap-2.5">
-                                    {[['self','자체전','우리 팀끼리','Soccerball'],['match','매칭','다른 팀과','Swords']].map(([v,nm,ds,ic]) => (
-                                        <button key={v} type="button" onClick={() => setForm(f => ({...f, meetingType:v}))}
-                                            className={`rounded-2xl border-2 p-5 text-center transition-all active:scale-95 ${form.meetingType===v ? 'border-teal-500 bg-teal-50' : 'border-slate-200 bg-white'}`}>
-                                            <div className={`flex items-center justify-center mb-2 ${form.meetingType===v ? 'text-teal-600' : 'text-slate-300'}`}>{React.createElement(Icon[ic], {size:36})}</div>
-                                            <p className={`font-black text-base ${form.meetingType===v ? 'text-teal-700' : 'text-slate-700'}`}>{nm}</p>
-                                            <p className="text-[11px] font-bold text-slate-400 mt-0.5">{ds}</p>
-                                        </button>
-                                    ))}
+                                <div className="grid grid-cols-2 gap-3">
+                                    {[['self','자체전','우리 팀끼리','Soccerball'],['match','매칭','다른 팀과','Swords']].map(([v,nm,ds,ic]) => {
+                                        const on = form.meetingType === v;
+                                        const lime = v === 'match';   // 매칭=라임 / 자체전=인디고 (홈 모임카드 색과 동일)
+                                        const bg = on ? (lime ? '#C2F94A' : '#183FB0') : '#ffffff';
+                                        const bd = on ? (lime ? '#C2F94A' : '#183FB0') : '#e2e8f0';
+                                        const main = on ? (lime ? 'text-[#15171E]' : 'text-white') : 'text-slate-700';
+                                        const subc = on ? (lime ? 'text-[#15171E]/65' : 'text-white/75') : 'text-slate-400';
+                                        const iconc = on ? (lime ? 'text-[#15171E]' : 'text-white') : 'text-slate-300';
+                                        return (
+                                            <button key={v} type="button" onClick={() => setForm(f => ({...f, meetingType:v}))}
+                                                className="rounded-2xl border-2 py-10 px-4 text-center transition-all active:scale-95 flex flex-col items-center justify-center"
+                                                style={{ background:bg, borderColor:bd, ...(on ? { boxShadow: lime ? '0 12px 26px -10px rgba(194,249,74,.7)' : '0 12px 26px -10px rgba(24,63,176,.55)' } : {}) }}>
+                                                <div className={`mb-3 ${iconc}`}>{React.createElement(Icon[ic], {size:46})}</div>
+                                                <p className={`font-black text-lg ${main}`}>{nm}</p>
+                                                <p className={`text-xs font-bold mt-1 ${subc}`}>{ds}</p>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <div>
