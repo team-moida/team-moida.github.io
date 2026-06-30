@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>모임 목록 — 펼침 LAB</title>
+<style>
+  :root{ --accent:#183FB0; --accent-deep:#122E78; --ink:#0f172a; --sub:#64748b; --line:#e6eaf2; --bg:#f4f6fa; --live:#C2F94A; --lime-deep:#3f6212; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; font-family:'Pretendard',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:radial-gradient(125% 90% at 50% -8%, #e8ecf9 0%, #f3f5fb 46%, #f4f6fa 100%); min-height:100vh; color:var(--ink); user-select:none; }
+  .wrap{ max-width:440px; margin:0 auto; padding:16px 16px calc(28px + env(safe-area-inset-bottom)); }
+  h1{ font-size:18px; font-weight:900; margin:6px 4px 2px; }
+  .lead{ font-size:12px; font-weight:700; color:#94a3b8; margin:0 4px 14px; line-height:1.6; }
+  .seclabel{ font-size:12px; font-weight:900; color:var(--accent); margin:18px 4px 9px; }
+
+  .list{ display:flex; flex-direction:column; gap:10px; }
+  .mc{ background:#fff; border:1px solid var(--line); border-radius:18px; overflow:hidden; box-shadow:0 4px 14px rgba(0,0,0,.04); }
+  .mc.hl{ border-color:transparent; box-shadow:0 0 0 2px var(--live), 0 10px 24px -10px rgba(63,98,18,.35); }
+  .head{ width:100%; text-align:left; border:0; background:#fff; font-family:inherit; padding:13px; display:flex; align-items:center; gap:13px; cursor:pointer; }
+  .datepill{ width:50px; height:54px; border-radius:14px; background:#eef2fb; color:var(--accent-deep); display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; }
+  .datepill b{ font-size:21px; font-weight:900; line-height:1; }
+  .datepill span{ font-size:11px; font-weight:900; margin-top:2px; }
+  .datepill.match{ background:#f0fdf4; color:#15803d; }
+  .datepill.live{ background:var(--live); color:var(--lime-deep); }
+  .info{ flex:1; min-width:0; }
+  .info .ttl{ font-size:15px; font-weight:900; display:flex; align-items:center; gap:7px; min-width:0; }
+  .info .ttl .nm{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .info .meta{ font-size:12px; font-weight:700; color:#94a3b8; margin-top:3px; line-height:1.5; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .chev{ color:#cbd5e1; font-weight:900; font-size:18px; flex-shrink:0; transition:transform .25s; }
+  .mc.open .chev{ transform:rotate(90deg); }
+
+  .chip{ font-size:11px; font-weight:900; padding:3px 9px; border-radius:999px; flex-shrink:0; white-space:nowrap; }
+  .chip.open{ background:#eef2fb; color:var(--accent-deep); }
+  .chip.done{ background:#dcfce7; color:#15803d; }
+  .chip.closed{ background:#f1f5f9; color:#94a3b8; }
+  .chip.live{ background:var(--live); color:#15171E; }
+
+  /* 펼침 */
+  .acc{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .28s cubic-bezier(.4,0,.2,1); }
+  .mc.open .acc{ grid-template-rows:1fr; }
+  .accin{ overflow:hidden; min-height:0; }
+  .accpad{ padding:0 13px 14px; }
+  /* 펼친 안: 내 상태 + 액션 */
+  .me{ display:flex; align-items:center; gap:11px; background:#f8fafc; border:1px solid #eef2f6; border-radius:14px; padding:12px; }
+  .me .big{ width:46px; height:46px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:21px; font-weight:900; flex-shrink:0; color:#fff; }
+  .me .mt b{ font-size:14.5px; font-weight:900; display:block; } .me .mt span{ font-size:12px; font-weight:800; color:#94a3b8; }
+  .act{ width:100%; border:0; font-family:inherit; font-weight:900; font-size:14px; border-radius:13px; padding:12px; margin-top:10px; cursor:pointer; }
+  .act.apply{ background:#f97316; color:#fff; box-shadow:0 10px 22px -12px rgba(249,115,22,.55); }
+  .act.ghost{ background:#f1f5f9; color:#475569; }
+  /* 요약 행 (인원/팀/매치) */
+  .srow{ display:flex; align-items:center; gap:10px; padding:11px 2px; border-top:1px solid #f1f5f9; }
+  .srow .ic{ width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+  .srow .l{ font-size:13px; font-weight:900; width:42px; flex-shrink:0; }
+  .srow .v{ flex:1; font-size:12.5px; font-weight:800; color:var(--sub); }
+  .srow .go{ font-size:12px; font-weight:900; color:var(--accent); }
+  .opbar{ margin-top:11px; display:flex; justify-content:flex-end; }
+  .opbtn{ border:0; font-family:inherit; font-weight:900; font-size:12px; border-radius:10px; padding:8px 12px; background:#eef2fb; color:var(--accent-deep); cursor:pointer; }
+
+  .note{ font-size:12px; font-weight:800; color:#475569; margin:16px 4px 0; line-height:1.7; background:#fff; border:1px solid var(--line); border-radius:14px; padding:13px 14px; }
+  .note b{ color:var(--accent-deep); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>모임 목록 — 탭하면 펼침</h1>
+  <p class="lead">목록 카드는 <b>컴팩트 + 작은 상태 칩</b>. 카드를 <b>누르면 별도 화면으로 안 가고 그 자리에서 펼쳐져</b> 핵심(내 상태·신청/출석·인원·팀·매치)을 보여줘요. 다른 걸 누르면 접힘(게시판과 같은 느낌). 무거운 편집은 그 안 ⚙운영으로.</p>
+
+  <div class="seclabel">예정 모임 · 눌러보세요</div>
+  <div class="list" id="list"></div>
+
+  <p class="note">탭하면 펼침 = 목록을 떠나지 않고 핵심만 빠르게. 진행 중인 1개만 라임 테두리로 강조. 팀 편성·매치표·모임설정 같은 <b>깊은 편집만</b> ⚙운영 → 포커스 화면으로.</p>
+</div>
+
+<script>
+let openId = 0;   // 첫 카드 펼쳐둠(시연용)
+const MEET=[
+  { kind:'live', day:5, dow:'토', title:'정기모임', time:'20:00~22:00', place:'○○풋살장 A', hl:true, chip:{t:'● 진행 중',cls:'live'},
+    me:{ bg:'#ef4444', ico:'7', t:'🟥 빨강 vs 🟦 파랑', s:'2라운드 진행 · 코트 A' }, act:{cls:'ghost',t:'매치표 크게 보기'},
+    rows:[['👥','#eef2fb','인원','18명 참여'],['🦺','#fee2e2','팀','3팀 · 내 팀 빨강 7번'],['⚔️','#dcfce7','매치','5R · 지금 2R']] },
+  { kind:'self', day:12, dow:'토', title:'정기모임', time:'20:00', place:'○○풋살장 A', chip:{t:'신청 완료',cls:'done'},
+    me:{ bg:'#f97316', ico:'✓', t:'신청 완료 · 13번째', s:'선착순 13 / 18명 · D-7' }, act:{cls:'ghost',t:'신청 취소'},
+    rows:[['👥','#eef2fb','인원','13 / 18명 · 대기 1'],['🦺','#fee2e2','팀','아직 안 나눔'],['⚔️','#dcfce7','매치','아직 안 만듦']] },
+  { kind:'match', day:15, dow:'화', title:'매칭 vs FC번개', time:'19:00', place:'△△구장', chip:{t:'접수중',cls:'open'},
+    me:{ bg:'#16357f', ico:'?', t:'아직 신청 안 함', s:'남 4/6 · 여 2/4 · D-10' }, act:{cls:'apply',t:'신청하기'},
+    rows:[['👥','#eef2fb','인원','남 4/6 · 여 2/4']] },
+  { kind:'self', day:19, dow:'토', title:'정기모임', time:'20:00', place:'○○풋살장 A', chip:{t:'접수중 9/18',cls:'open'},
+    me:{ bg:'#16357f', ico:'?', t:'아직 신청 안 함', s:'선착순 9 / 18명 · D-14' }, act:{cls:'apply',t:'신청하기'},
+    rows:[['👥','#eef2fb','인원','9 / 18명']] },
+  { kind:'self', day:3, dow:'목', title:'번개 모임', time:'21:00', place:'□□체육관', chip:{t:'신청 마감',cls:'closed'},
+    me:{ bg:'#10b981', ico:'✓', t:'참가 확정', s:'신청 마감 · 12/12명' }, act:null,
+    rows:[['👥','#eef2fb','인원','12 / 12명 마감'],['🦺','#fee2e2','팀','2팀 · 내 팀 파랑 3번']] },
+];
+
+function bodyHTML(m){
+  const rows=m.rows.map(r=>`<div class="srow"><div class="ic" style="background:${r[1]}">${r[0]}</div><div class="l">${r[2]}</div><div class="v">${r[3]}</div><div class="go">›</div></div>`).join('');
+  const act = m.act ? `<button class="act ${m.act.cls}">${m.act.t}</button>` : '';
+  return `<div class="accpad">
+    <div class="me"><div class="big" style="background:${m.me.bg}">${m.me.ico}</div><div class="mt"><b>${m.me.t}</b><span>${m.me.s}</span></div></div>
+    ${act}
+    ${rows}
+    <div class="opbar"><button class="opbtn">⚙ 운영 (편집)</button></div>
+  </div>`;
+}
+
+function render(){
+  const list=document.getElementById('list');
+  list.innerHTML=MEET.map((m,i)=>{
+    const open=openId===i;
+    const dp = m.kind==='live'?'live':m.kind==='match'?'match':'';
+    return `<div class="mc${m.hl?' hl':''}${open?' open':''}" data-i="${i}">
+      <button class="head">
+        <div class="datepill ${dp}"><b>${m.day}</b><span>${m.dow}</span></div>
+        <div class="info"><div class="ttl"><span class="nm">${m.title}</span><span class="chip ${m.chip.cls}">${m.chip.t}</span></div>
+          <div class="meta">⏰ ${m.time} · 📍 ${m.place}</div></div>
+        <div class="chev">›</div>
+      </button>
+      <div class="acc"><div class="accin">${bodyHTML(m)}</div></div>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.mc').forEach(c=> c.querySelector('.head').onclick=()=>{ const i=+c.dataset.i; openId = openId===i ? null : i; render(); });
+}
+render();
+</script>
+</body>
+</html>
