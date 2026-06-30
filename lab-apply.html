@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>신청 버튼 원형 LAB</title>
+<title>신청 버튼 LAB</title>
 <style>
-  :root{ --accent:#183FB0; --accent-deep:#122E78; --orange:#f97316; --lime:#C2F94A; --lime-ink:#15171E; --danger:#EF4444; }
+  :root{ --accent:#183FB0; --accent-deep:#122E78; --orange:#f97316; --warn:#F59E0B; }
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   body{
     margin:0; font-family:'Pretendard',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
@@ -15,140 +15,164 @@
   .wrap{ max-width:440px; margin:0 auto; padding:16px 16px calc(28px + env(safe-area-inset-bottom)); }
   h1{ font-size:18px; font-weight:900; margin:6px 4px 2px; }
   .lead{ font-size:12px; font-weight:700; color:#94a3b8; margin:0 4px 16px; line-height:1.55; }
-  .seclabel{ font-size:12px; font-weight:900; color:var(--accent); margin:22px 4px 8px; letter-spacing:.02em; }
+  .seclabel{ font-size:12px; font-weight:900; color:var(--accent); margin:20px 4px 8px; letter-spacing:.02em; }
   .seclabel small{ color:#94a3b8; font-weight:800; }
 
-  /* 색 토글 */
-  .seg{ display:flex; gap:6px; background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:5px; box-shadow:0 4px 14px rgba(0,0,0,.05); }
+  .controls{ display:flex; gap:8px; }
+  .seg{ display:flex; gap:6px; background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:5px; box-shadow:0 4px 14px rgba(0,0,0,.05); flex:1; }
   .seg button{ flex:1; border:0; background:transparent; border-radius:10px; padding:10px 4px; font-weight:900; font-size:12.5px; color:#64748b; cursor:pointer; font-family:inherit; }
-  .seg button.on{ color:#fff; }
-  .seg button.on[data-c="lime"]{ background:var(--lime); color:var(--lime-ink); }
-  .seg button.on[data-c="orange"]{ background:var(--orange); }
+  .seg button.on{ background:var(--accent); color:#fff; }
 
-  .card{ background:#fff; border:1px solid #e2e8f0; border-radius:20px; box-shadow:0 4px 14px rgba(0,0,0,.05); padding:20px; }
-  .chead{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .card{ background:#fff; border:1px solid #e2e8f0; border-radius:20px; box-shadow:0 4px 14px rgba(0,0,0,.05); padding:22px 20px; }
+  .chead{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
   .chead .t{ font-size:11px; font-weight:900; color:var(--orange); text-transform:uppercase; letter-spacing:.12em; }
   .chead .c{ font-size:12px; font-weight:900; color:#94a3b8; }
-  .center{ display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .center{ display:flex; flex-direction:column; align-items:center; }
 
-  /* 원 (모든 상태 동일 크기) */
-  .circle{ width:168px; height:168px; border-radius:50%; border:0; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; transition:transform .12s, background .2s; }
-  .circle:active{ transform:scale(.96); }
-  .circle .big{ font-weight:900; font-size:22px; }
-  .circle .sub{ font-size:11.5px; font-weight:800; opacity:.85; margin-top:3px; }
-  .circle .chk{ font-size:46px; line-height:1; }
-  .circle .lbl{ font-weight:900; font-size:17px; margin-top:5px; }
+  /* ── 원형 (차분하게: 정적 헤일로 + 부드러운 그림자, 펄스 없음) ── */
+  .circle{ width:160px; height:160px; border-radius:50%; border:0; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; transition:transform .14s ease, box-shadow .2s, background .2s; font-family:inherit; }
+  .circle:active{ transform:scale(.97); }
+  .circle .big{ font-weight:900; font-size:21px; letter-spacing:.01em; }
+  .circle .sub{ font-size:11px; font-weight:800; opacity:.82; margin-top:4px; }
+  .c-apply{ background:var(--orange); color:#fff; box-shadow:0 0 0 7px rgba(249,115,22,.10), 0 16px 30px -14px rgba(249,115,22,.6); }
+  .c-cancel{ background:#fff; color:#94a3b8; border:1.5px solid #e9edf3; box-shadow:0 6px 16px -10px rgba(15,23,42,.18); }
 
-  .c-apply-lime{ background:var(--lime); color:var(--lime-ink); animation:ringLime 1.8s infinite; }
-  .c-apply-orange{ background:var(--orange); color:#fff; animation:ringOrange 1.8s infinite; }
-  .c-done{ background:var(--accent); color:#fff; box-shadow:0 14px 30px -10px rgba(24,63,176,.55); }
-  .c-cancel{ background:var(--danger); color:#fff; box-shadow:0 14px 30px -10px rgba(239,68,68,.5); }
+  /* ── 가로 버튼 ── */
+  .bar{ width:100%; border:0; border-radius:16px; font-weight:900; font-size:15px; padding:17px; cursor:pointer; transition:transform .14s, background .2s; font-family:inherit; }
+  .bar:active{ transform:scale(.98); }
+  .bar.c-apply{ background:var(--orange); color:#fff; box-shadow:0 12px 26px -12px rgba(249,115,22,.55); }
+  .bar.c-cancel{ background:#fff; color:#64748b; border:1.5px solid #e9edf3; box-shadow:none; }
 
-  @keyframes ringLime{
-    0%{ box-shadow:0 0 0 0 rgba(194,249,74,.7), 0 12px 26px -6px rgba(133,180,30,.45); }
-    70%{ box-shadow:0 0 0 18px rgba(194,249,74,0), 0 12px 26px -6px rgba(133,180,30,.45); }
-    100%{ box-shadow:0 0 0 0 rgba(194,249,74,0), 0 12px 26px -6px rgba(133,180,30,.45); }
-  }
-  @keyframes ringOrange{
-    0%{ box-shadow:0 0 0 0 rgba(249,115,22,.55), 0 12px 26px -6px rgba(249,115,22,.5); }
-    70%{ box-shadow:0 0 0 18px rgba(249,115,22,0), 0 12px 26px -6px rgba(249,115,22,.5); }
-    100%{ box-shadow:0 0 0 0 rgba(249,115,22,0), 0 12px 26px -6px rgba(249,115,22,.5); }
-  }
-  @media (prefers-reduced-motion: reduce){ .c-apply-lime,.c-apply-orange{ animation:none; } }
+  /* 적용 후 내 순번 칩 */
+  .mychip{ margin-top:14px; display:inline-flex; align-items:center; gap:6px; background:#eef2fb; color:var(--accent-deep); font-weight:900; font-size:12.5px; padding:7px 14px; border-radius:999px; }
+  .mychip.wait{ background:#fef3c7; color:#92400e; }
+  .mychip.hide{ display:none; }
 
-  .helper{ font-size:12px; font-weight:800; color:#94a3b8; margin-top:14px; min-height:18px; text-align:center; }
-  .keep{ margin-top:8px; border:0; background:transparent; color:#94a3b8; font-weight:800; font-size:12px; padding:6px 12px; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
-  .keep.hide{ display:none; }
-
-  /* 현재안(비교용) */
-  .cur-apply{ width:100%; border:0; border-radius:16px; background:var(--orange); color:#fff; font-weight:900; font-size:14px; padding:15px; }
-  .cur-box{ width:100%; background:#eef2fb; border:1px solid #c7d2f0; border-radius:16px; padding:14px; text-align:center; font-weight:900; color:var(--accent-deep); margin-bottom:12px; }
-  .cur-cancel{ width:100%; border:0; border-radius:16px; background:#f1f5f9; color:#64748b; font-weight:900; font-size:14px; padding:12px; }
+  /* ── 완료 팝업 ── */
+  .modal-bg{ position:fixed; inset:0; background:rgba(15,23,42,.46); backdrop-filter:blur(2px); display:none; align-items:center; justify-content:center; padding:26px; z-index:10; }
+  .modal-bg.show{ display:flex; animation:bgIn .18s ease-out; }
+  .modal{ background:#fff; border-radius:26px; padding:30px 24px 22px; max-width:320px; width:100%; text-align:center; box-shadow:0 30px 70px -22px rgba(0,0,0,.45); animation:popIn .26s cubic-bezier(.22,1,.36,1); }
+  @keyframes bgIn{ from{opacity:0} }
+  @keyframes popIn{ from{opacity:0;transform:translateY(10px) scale(.96)} }
+  .badge{ width:66px; height:66px; border-radius:50%; margin:0 auto 16px; display:flex; align-items:center; justify-content:center; font-size:34px; color:#fff; }
+  .badge.ok{ background:var(--accent); box-shadow:0 12px 26px -10px rgba(24,63,176,.55); }
+  .badge.wait{ background:var(--warn); box-shadow:0 12px 26px -10px rgba(245,158,11,.5); }
+  .modal .mt{ font-size:13px; font-weight:900; color:#94a3b8; }
+  .modal .mnum{ font-size:34px; font-weight:900; color:#0f172a; margin:4px 0 2px; letter-spacing:-.01em; }
+  .modal .mnum b{ color:var(--orange); }
+  .modal .mnum.wait b{ color:var(--warn); }
+  .modal .msub{ font-size:12.5px; font-weight:800; color:#94a3b8; line-height:1.5; margin-top:4px; }
+  .modal .mok{ margin-top:20px; width:100%; border:0; border-radius:16px; background:var(--orange); color:#fff; font-weight:900; font-size:15px; padding:14px; cursor:pointer; font-family:inherit; }
 
   .hint{ text-align:center; font-size:12px; font-weight:800; color:#94a3b8; margin:18px 4px 0; line-height:1.6; }
+
+  #toast{ position:fixed; left:50%; bottom:32px; transform:translateX(-50%); background:#0f172a; color:#fff; font-weight:900; font-size:13px; padding:11px 18px; border-radius:999px; z-index:11; box-shadow:0 10px 30px rgba(0,0,0,.25); opacity:0; transition:.2s; pointer-events:none; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>신청 버튼 · 원형 + 탭 취소 LAB</h1>
-  <p class="lead">① <b>신청하기</b> 색을 라임/주황으로 비교해 보고 ② <b>참가 확정 원을 누르면 "신청 취소"</b>로 바뀌어 취소되는 흐름을 직접 눌러보세요. (실수 방지로 한 번 더 눌러 확정)</p>
+  <h1>신청 버튼 LAB · 다듬은 버전</h1>
+  <p class="lead">신청하기(주황)를 누르면 <b>완료 팝업 + 내 순번</b>이 뜨고, 버튼은 바로 <b>신청 취소</b>로 바뀝니다. 별도 '참가 확정'은 없어요. 글로우는 빼고 차분하게 다듬었어요.</p>
 
-  <p class="seclabel">신청하기 색</p>
-  <div class="seg" id="seg">
-    <button data-c="lime" class="on">라임</button>
-    <button data-c="orange">주황</button>
-  </div>
-
-  <p class="seclabel">새 안 <small>· 같은 크기 원 · 확정을 눌러 취소</small></p>
-  <div class="card">
-    <div class="chead"><span class="t">선착순 신청</span><span class="c">12 / 18명</span></div>
-    <div class="center">
-      <div data-slot></div>
-      <p class="helper" id="helper"></p>
-      <button class="keep hide" id="keep">아니요, 그대로 둘게요</button>
+  <div class="seclabel">옵션</div>
+  <div class="controls">
+    <div class="seg" id="segShape">
+      <button data-v="circle" class="on">원형</button>
+      <button data-v="bar">가로 버튼</button>
+    </div>
+    <div class="seg" id="segFull">
+      <button data-v="open" class="on">정원 여유</button>
+      <button data-v="full">정원 마감</button>
     </div>
   </div>
 
-  <p class="seclabel">현재 <small>· 사각형 (비교용)</small></p>
+  <div class="seclabel">미리보기 <small>· 눌러보세요</small></div>
   <div class="card">
-    <div class="chead"><span class="t">선착순 신청</span><span class="c">12 / 18명</span></div>
-    <button class="cur-apply">신청하기</button>
-    <div style="height:14px"></div>
-    <div class="cur-box">참가 확정 ✓</div>
-    <button class="cur-cancel">신청 취소</button>
+    <div class="chead"><span class="t">선착순 신청</span><span class="c" id="count">12 / 18명</span></div>
+    <div class="center">
+      <div data-slot></div>
+      <span class="mychip hide" id="mychip"></span>
+    </div>
   </div>
 
-  <p class="hint">신청하기·참가 확정·신청 취소 원이 모두 같은 크기라 탭해도 모양이 안 튀어요.<br>색·크기·"한 번 더 확인" 여부는 더 조절할 수 있어요.</p>
+  <p class="hint">신청하기↔신청취소가 같은 자리·같은 모양으로 토글돼요. 완료 순번은 팝업으로 한 번 + 칩으로 계속 보여줘요.<br>색/크기/팝업 문구·헤일로 세기는 더 조절할 수 있어요.</p>
 </div>
 
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+<div id="toast"></div>
+
 <script>
-let color = 'lime';     // 'lime' | 'orange'
-let st = 'apply';       // 'apply' | 'done' | 'cancel'
-const slot = document.querySelector('[data-slot]');
-const helper = document.getElementById('helper');
-const keepBtn = document.getElementById('keep');
+let shape='circle', full=false, st='apply';
+const MAX=18, CONF=12;                       // 정원 18, 현재 확정 12명
+const slot=document.querySelector('[data-slot]');
+const mychip=document.getElementById('mychip');
+const countEl=document.getElementById('count');
+const modalBg=document.getElementById('modalBg');
+const modal=document.getElementById('modal');
+
+function myPos(){ return full ? 3 : CONF+1; }      // 여유→참가 13번 / 마감→대기 3번
 
 function render(){
-  slot.innerHTML = '';
-  keepBtn.classList.add('hide');
-  const el = document.createElement('button');
-  el.className = 'circle';
-  if(st==='apply'){
-    el.classList.add(color==='lime'?'c-apply-lime':'c-apply-orange');
-    el.innerHTML = `<span class="big">신청하기</span><span class="sub">탭하면 신청</span>`;
-    el.onclick = ()=>{ st='done'; render(); };
-    helper.textContent = '';
-  } else if(st==='done'){
-    el.classList.add('c-done');
-    el.innerHTML = `<span class="chk">✓</span><span class="lbl">참가 확정</span>`;
-    el.onclick = ()=>{ st='cancel'; render(); };
-    helper.textContent = '원을 누르면 신청을 취소할 수 있어요';
+  slot.innerHTML='';
+  const apply = st==='apply';
+  if(shape==='circle'){
+    const el=document.createElement('button');
+    el.className='circle '+(apply?'c-apply':'c-cancel');
+    el.innerHTML = apply
+      ? `<span class="big">신청하기</span><span class="sub">탭하면 신청</span>`
+      : `<span class="big">신청 취소</span><span class="sub">탭하면 취소</span>`;
+    el.onclick = apply ? doApply : doCancel;
+    slot.appendChild(el);
   } else {
-    el.classList.add('c-cancel');
-    el.innerHTML = `<span class="big">신청 취소</span><span class="sub">한 번 더 누르면 취소</span>`;
-    el.onclick = ()=>{ st='apply'; render(); flash('신청이 취소되었어요'); };
-    helper.textContent = '정말 취소할까요?';
-    keepBtn.classList.remove('hide');
+    const el=document.createElement('button');
+    el.className='bar '+(apply?'c-apply':'c-cancel');
+    el.textContent = apply ? '신청하기' : '신청 취소';
+    el.onclick = apply ? doApply : doCancel;
+    slot.appendChild(el);
   }
-  slot.appendChild(el);
-}
-keepBtn.onclick = ()=>{ st='done'; render(); };
-
-let toastT;
-function flash(msg){
-  let t = document.getElementById('toast');
-  if(!t){ t=document.createElement('div'); t.id='toast';
-    t.style.cssText='position:fixed;left:50%;bottom:32px;transform:translateX(-50%);background:#0f172a;color:#fff;font-weight:900;font-size:13px;padding:11px 18px;border-radius:999px;z-index:9;box-shadow:0 10px 30px rgba(0,0,0,.25);opacity:0;transition:.2s';
-    document.body.appendChild(t); }
-  t.textContent=msg; t.style.opacity='1';
-  clearTimeout(toastT); toastT=setTimeout(()=>{ t.style.opacity='0'; }, 1400);
+  // 내 순번 칩
+  if(st==='applied'){
+    mychip.classList.remove('hide');
+    mychip.className='mychip '+(full?'wait':'');
+    mychip.textContent = full ? `대기 ${myPos()}번` : `참가 ${myPos()}번`;
+    countEl.textContent = full ? `${MAX} / ${MAX}명 · 대기` : `${CONF+1} / ${MAX}명`;
+  } else {
+    mychip.classList.add('hide');
+    countEl.textContent = full ? `${MAX} / ${MAX}명` : `${CONF} / ${MAX}명`;
+  }
 }
 
-document.getElementById('seg').addEventListener('click', e=>{
-  const b=e.target.closest('button'); if(!b) return;
-  document.querySelectorAll('#seg button').forEach(x=>x.classList.remove('on'));
-  b.classList.add('on'); color=b.dataset.c; render();
-});
+function doApply(){
+  // 완료 팝업
+  if(full){
+    modal.innerHTML = `
+      <div class="badge wait">🕒</div>
+      <div class="mt">대기 신청 완료</div>
+      <div class="mnum wait">대기 <b>${myPos()}</b>번</div>
+      <div class="msub">정원이 차서 대기로 등록됐어요.<br>자리가 나면 자동으로 확정돼요.</div>
+      <button class="mok">확인</button>`;
+  } else {
+    modal.innerHTML = `
+      <div class="badge ok">✓</div>
+      <div class="mt">신청 완료</div>
+      <div class="mnum">참가 <b>${myPos()}</b>번째</div>
+      <div class="msub">선착순 ${myPos()} / ${MAX}명으로 신청됐어요.</div>
+      <button class="mok">확인</button>`;
+  }
+  modalBg.classList.add('show');
+  modal.querySelector('.mok').onclick = ()=>{ modalBg.classList.remove('show'); st='applied'; render(); };
+}
+function doCancel(){ st='apply'; render(); flash('신청이 취소되었어요'); }
+
+modalBg.onclick = (e)=>{ if(e.target===modalBg){ modalBg.classList.remove('show'); st='applied'; render(); } };
+
+let toastT; const toast=document.getElementById('toast');
+function flash(msg){ toast.textContent=msg; toast.style.opacity='1'; clearTimeout(toastT); toastT=setTimeout(()=>toast.style.opacity='0',1400); }
+
+document.getElementById('segShape').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return;
+  document.querySelectorAll('#segShape button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); shape=b.dataset.v; render(); });
+document.getElementById('segFull').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return;
+  document.querySelectorAll('#segFull button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); full=(b.dataset.v==='full'); st='apply'; render(); });
 
 render();
 </script>
