@@ -566,12 +566,25 @@ const NextMeetingCard = ({
                         </div>
                     ) : myReg?.status === 'confirmed' ? (
                         (fillOn && !(teamReady && myTeamInfo)) ? (
-                            <div className="flex flex-col items-center justify-center gap-4 py-2 text-center">
-                                <div className="flex items-center justify-center rounded-full" style={{width:120, height:120, background: dark?'rgba(0,0,0,0.10)':'rgba(255,255,255,0.16)'}}>
-                                    <Icon.Check size={64} className={ink}/>
+                            /* 신청하기 원과 같은 자리·같은 크기 토글 — 원이 '신청 취소'로 바뀜 + 우측 정보 */
+                            <div className="w-full flex-1 flex items-center justify-center gap-6 py-1">
+                                <span role="button" onClick={(e)=>{ e.stopPropagation(); setCancelAsk(true); }}
+                                    className={`flex-shrink-0 flex flex-col items-center justify-center rounded-full active:scale-95 transition-all cursor-pointer ${ink}`}
+                                    style={{ width:180, height:180, background: dark?'rgba(0,0,0,0.10)':'rgba(255,255,255,0.16)', border: `2px solid ${dark?'rgba(0,0,0,0.16)':'rgba(255,255,255,0.40)'}` }}>
+                                    <Icon.Check size={40}/>
+                                    <span className="font-black text-[22px] mt-1.5">신청 취소</span>
+                                </span>
+                                <div className="flex flex-col gap-3 min-w-0">
+                                    <span className={`flex items-center gap-1 text-sm font-black ${ink80}`}><Icon.Check size={15} className="flex-shrink-0"/>신청 완료</span>
+                                    <div>
+                                        <p className={`text-[11px] font-black ${ink70} mb-0.5`}>현재 인원</p>
+                                        <p className={`text-[26px] font-black ${ink} leading-none`}>{curCount}<span className="text-base font-black ml-0.5">명</span></p>
+                                    </div>
+                                    <div>
+                                        <p className={`text-[11px] font-black ${ink70} mb-0.5`}>정원</p>
+                                        <p className={`text-[26px] font-black ${ink} leading-none`}>{kind==='match' ? <span className="text-[19px]">남 {meeting.maxMale||0} · 여 {meeting.maxFemale||0}</span> : <>{meeting.maxLimit||18}<span className="text-base font-black ml-0.5">명</span></>}</p>
+                                    </div>
                                 </div>
-                                <span className={`text-3xl font-black ${ink}`}>신청 완료</span>
-                                <span role="button" onClick={(e)=>{ e.stopPropagation(); setCancelAsk(true); }} className={`text-sm font-black px-5 py-2.5 rounded-full ${chip} active:scale-95 cursor-pointer`}>신청 취소</span>
                             </div>
                         ) : (
                             <div className="flex items-center justify-between gap-2">
@@ -580,10 +593,32 @@ const NextMeetingCard = ({
                             </div>
                         )
                     ) : myReg?.status === 'waiting' ? (
-                        <div className="flex items-center justify-between gap-2">
-                            <span className={`flex items-center gap-1.5 text-sm font-black ${ink} min-w-0`}><Icon.Clock size={16} className="flex-shrink-0"/><span className="truncate">대기 {myReg.waitingNumber || ''}번</span></span>
-                            <span role="button" onClick={(e)=>{ e.stopPropagation(); setCancelAsk(true); }} className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${chip} active:scale-95 cursor-pointer flex-shrink-0`}>신청 취소</span>
-                        </div>
+                        (fillOn && !(teamReady && myTeamInfo)) ? (
+                            <div className="w-full flex-1 flex items-center justify-center gap-6 py-1">
+                                <span role="button" onClick={(e)=>{ e.stopPropagation(); setCancelAsk(true); }}
+                                    className={`flex-shrink-0 flex flex-col items-center justify-center rounded-full active:scale-95 transition-all cursor-pointer ${ink}`}
+                                    style={{ width:180, height:180, background: dark?'rgba(0,0,0,0.10)':'rgba(255,255,255,0.16)', border: `2px solid ${dark?'rgba(0,0,0,0.16)':'rgba(255,255,255,0.40)'}` }}>
+                                    <Icon.Clock size={38}/>
+                                    <span className="font-black text-[22px] mt-1.5">신청 취소</span>
+                                </span>
+                                <div className="flex flex-col gap-3 min-w-0">
+                                    <span className={`flex items-center gap-1 text-sm font-black ${ink80}`}><Icon.Clock size={15} className="flex-shrink-0"/>대기 중</span>
+                                    <div>
+                                        <p className={`text-[11px] font-black ${ink70} mb-0.5`}>내 대기 순번</p>
+                                        <p className={`text-[26px] font-black ${ink} leading-none`}>{myReg.waitingNumber || '-'}<span className="text-base font-black ml-0.5">번</span></p>
+                                    </div>
+                                    <div>
+                                        <p className={`text-[11px] font-black ${ink70} mb-0.5`}>현재 인원</p>
+                                        <p className={`text-[26px] font-black ${ink} leading-none`}>{curCount}<span className="text-base font-black ml-0.5">명</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-between gap-2">
+                                <span className={`flex items-center gap-1.5 text-sm font-black ${ink} min-w-0`}><Icon.Clock size={16} className="flex-shrink-0"/><span className="truncate">대기 {myReg.waitingNumber || ''}번</span></span>
+                                <span role="button" onClick={(e)=>{ e.stopPropagation(); setCancelAsk(true); }} className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${chip} active:scale-95 cursor-pointer flex-shrink-0`}>신청 취소</span>
+                            </div>
+                        )
                     ) : (myReg?.status === 'absent' || myReg?.status === 'noshow') ? (
                         <div className={`flex items-center gap-1.5 text-xs font-black ${ink70}`}><Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">{myReg.status === 'noshow' ? '노쇼 처리됨' : '불참 처리됨'}</span></div>
                     ) : regAfterClose ? (
