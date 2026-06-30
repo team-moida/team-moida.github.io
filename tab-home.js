@@ -586,18 +586,23 @@ const NextMeetingCard = ({
                     ) : (regDuesBlock && regDuesUnpaid) ? (
                         <div className={`text-xs font-black ${ink70} text-center py-1`}>회비 미납 — 신청할 수 없어요</div>
                     ) : fillOn ? (
-                        <div className="w-full flex flex-col flex-1">
-                            <div className="flex items-center justify-between mb-3">
-                                <span className={`font-black ${ink80} text-sm`}>{kind==='match' ? '매칭 신청' : (regFCFS ? '선착순 신청' : '모임 신청')}</span>
-                                {regFCFS && kind!=='match' && <span className={`font-black ${ink70} text-base`}>{curCount} / {meeting.maxLimit||18}명</span>}
-                            </div>
-                            <div className="flex-1 flex items-center justify-center py-1">
-                                <span role="button" onClick={onHomeApply}
-                                    className="flex flex-col items-center justify-center rounded-full text-white active:scale-95 transition-all cursor-pointer"
-                                    style={{ width:180, height:180, background:'#f97316', boxShadow:'0 0 0 9px rgba(249,115,22,.12), 0 18px 34px -14px rgba(249,115,22,.65)' }}>
-                                    <Icon.CheckSq size={42}/>
-                                    <span className="font-black text-[24px] mt-2">신청하기</span>
-                                </span>
+                        <div className="w-full flex-1 flex items-center justify-center gap-6 py-1">
+                            <span role="button" onClick={onHomeApply}
+                                className="flex-shrink-0 flex flex-col items-center justify-center rounded-full text-white active:scale-95 transition-all cursor-pointer"
+                                style={{ width:180, height:180, background:'#f97316', boxShadow:'0 0 0 9px rgba(249,115,22,.12), 0 18px 34px -14px rgba(249,115,22,.65)' }}>
+                                <Icon.CheckSq size={42}/>
+                                <span className="font-black text-[24px] mt-2">신청하기</span>
+                            </span>
+                            <div className="flex flex-col gap-3 min-w-0">
+                                <span className={`text-sm font-black ${ink80}`}>{kind==='match' ? '매칭 신청' : (regFCFS ? '선착순 신청' : '모임 신청')}</span>
+                                <div>
+                                    <p className={`text-[11px] font-black ${ink70} mb-0.5`}>현재 인원</p>
+                                    <p className={`text-[26px] font-black ${ink} leading-none`}>{curCount}<span className="text-base font-black ml-0.5">명</span></p>
+                                </div>
+                                <div>
+                                    <p className={`text-[11px] font-black ${ink70} mb-0.5`}>정원</p>
+                                    <p className={`text-[26px] font-black ${ink} leading-none`}>{kind==='match' ? <span className="text-[19px]">남 {meeting.maxMale||0} · 여 {meeting.maxFemale||0}</span> : <>{meeting.maxLimit||18}<span className="text-base font-black ml-0.5">명</span></>}</p>
+                                </div>
                             </div>
                         </div>
                     ) : (
