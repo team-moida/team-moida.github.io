@@ -506,6 +506,20 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                     </div>
                                     <p className="text-[11px] text-teal-600 font-black mt-1.5 text-center">총 정원 {(parseInt(form.maxMale)||0)+(parseInt(form.maxFemale)||0)}명</p>
                                 </div>
+                            ) : isWiz ? (
+                                <div className="flex items-center justify-center gap-5 py-3">
+                                    <button type="button" onClick={() => setForm(f => ({...f, maxLimit: Math.max(1, (parseInt(f.maxLimit)||18) - 1)}))}
+                                        className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center active:scale-90 transition-all"><Icon.Minus size={22}/></button>
+                                    <div className="flex flex-col items-center">
+                                        <input type="number" inputMode="numeric" value={form.maxLimit} min={1} max={60}
+                                            onChange={e => setForm(f => ({...f, maxLimit: e.target.value === '' ? '' : (parseInt(e.target.value)||0)}))}
+                                            onBlur={e => { if (!(parseInt(e.target.value) >= 1)) setForm(f => ({...f, maxLimit: 18})); }}
+                                            className="moida-num-bare w-24 text-center text-4xl font-black text-teal-600 bg-transparent border-0 focus:outline-none"/>
+                                        <span className="text-xs font-black text-slate-400 -mt-1">명</span>
+                                    </div>
+                                    <button type="button" onClick={() => setForm(f => ({...f, maxLimit: Math.min(60, (parseInt(f.maxLimit)||18) + 1)}))}
+                                        className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center active:scale-90 transition-all"><Icon.Plus size={22}/></button>
+                                </div>
                             ) : (
                                 <div>
                                     <label className="text-xs font-black text-slate-500 mb-1 block">최대 인원</label>
