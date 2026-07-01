@@ -246,8 +246,14 @@ function App() {
             showAlert('반려 완료', `${r.memberName || '회원'}님께 반려 알림을 보냈어요.`);
         } catch(e) { console.error(e); showAlert('오류', '반려 처리에 실패했어요.'); }
     };
-    const [toast, setToast] = useState({ show:false, msg:'', type:'info' });
-    const showToast = (msg, type='info') => { setToast({show:true,msg,type}); setTimeout(()=>setToast(p=>({...p,show:false})),3000); };
+    const [toast, setToast] = useState({ show:false, msg:'', type:'info', leaving:false });
+    const toastSeqRef = React.useRef(0);
+    const showToast = (msg, type='info') => {
+        const id = ++toastSeqRef.current;
+        setToast({show:true,msg,type,leaving:false});
+        setTimeout(()=>{ if (toastSeqRef.current===id) setToast(p=>({...p,leaving:true})); },3000);   // 3초 뒤 페이드 시작
+        setTimeout(()=>{ if (toastSeqRef.current===id) setToast(p=>({...p,show:false,leaving:false})); },3300);   // 페이드(0.28초) 뒤 제거
+    };
     const [gpsStatus, setGpsStatus] = useState('idle');
     const [distance, setDistance] = useState(null);
     const [isCheckingIn, setIsCheckingIn] = useState(false);
@@ -255,6 +261,7 @@ function App() {
     const [qrMessage, setQrMessage] = useState('');
     const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
     const [attendModalOpen, setAttendModalOpen] = useState(false);
+    const [attendClosing, setAttendClosing] = useState(false); // 출석 모달 닫힐 때 페이드아웃용
     const [dismissedMeetingId, setDismissedMeetingId] = useState(null); // F-2a-1b 자동표시 대비(이번엔 onClose 기록만)
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [lastScannedQR, setLastScannedQR] = useState({ token:null, date:null });
@@ -343,8 +350,13 @@ function App() {
         }
     };
     // 출석 풀스크린 모달 열기/닫기 (홈 카드 '출석하기' → 열기, X/뒤로/빈영역 → 닫기). F-2a-1a
-    const openAttendModal = () => { setDismissedMeetingId(null); setAttendModalOpen(true); };
-    const closeAttendModal = () => { setAttendModalOpen(false); setDismissedMeetingId(getMeetingId(meetingSettings)); };
+    const openAttendModal = () => { setDismissedMeetingId(null); setAttendClosing(false); setAttendModalOpen(true); };
+    // 페이드아웃 후 실제 닫기 (자동닫힘·X/빈영역·뒤로 공통). recordDismiss=수동 닫기만 dismiss 기록.
+    const doCloseAttend = (recordDismiss) => {
+        setAttendClosing(true);
+        setTimeout(() => { setAttendModalOpen(false); setAttendClosing(false); if (recordDismiss) setDismissedMeetingId(getMeetingId(meetingSettings)); }, 280);
+    };
+    const closeAttendModal = () => doCloseAttend(true);
     const roster = useRoster({ isAdminMode });
     const team = useTeam({ isAdminMode, meetingSettings: effectiveMeeting, allMembers: roster.allMembers });
     // 짝1: 지금 보는 자기(self) 매치표가 '살아있는 모임(미러)' 것인지 — 워치용 활성 매치표를 그때만 갱신(지난/다른 모임 구경 중엔 안 건드림).
@@ -426,7 +438,7 @@ function App() {
     // ── Android 뒤로가기: 오버레이(등록소) → 화면 히스토리(직전 탭/상세) → 홈 → 종료 ──
     // member.html 레벨 모달들도 같은 등록소에 등록 (자식 오버레이와 동일하게 LIFO 처리)
     useMoidaBack(isQRScannerOpen, () => setIsQRScannerOpen(false));
-    useMoidaBack(attendModalOpen, () => setAttendModalOpen(false));
+    useMoidaBack(attendModalOpen, () => doCloseAttend(false));
     useMoidaBack(attend.isKioskOpen, () => attend.setIsKioskOpen(false));
     useMoidaBack(announcementModal.open, () => setAnnouncementModal(m => ({ ...m, open: false })));
     useMoidaBack(isProfileModalOpen, () => setIsProfileModalOpen(false));
@@ -592,7 +604,7 @@ function App() {
     // F-2a-1b 완료 자동닫힘 — 출석 완료되면 "출석 완료!"를 약 1.2초 보여주고 모달을 자동으로 닫음.
     useEffect(() => {
         if (!attendModalOpen || !mySession?.checkedIn) return;
-        const t = setTimeout(() => setAttendModalOpen(false), 1200);
+        const t = setTimeout(() => doCloseAttend(false), 1200);
         return () => clearTimeout(t);
     }, [attendModalOpen, mySession?.checkedIn]);
 
@@ -1215,7 +1227,7 @@ function App() {
             </div>}
 
             {toast.show && (
-                <div className={`fixed bottom-28 left-1/2 -translate-x-1/2 px-5 py-3 rounded-full text-sm font-black shadow-xl z-50 whitespace-nowrap transition-all ${toast.type==='error'?'bg-red-500 text-white':toast.type==='success'?'bg-emerald-500 text-white':'bg-slate-700 text-white'}`}>
+                <div className={`fixed bottom-28 left-1/2 -translate-x-1/2 px-5 py-3 rounded-full text-sm font-black shadow-xl z-50 whitespace-nowrap transition-all ${toast.type==='error'?'bg-red-500 text-white':toast.type==='success'?'bg-emerald-500 text-white':'bg-slate-700 text-white'} ${toast.leaving?'pop-out':''}`}>
                     {toast.msg}
                 </div>
             )}
@@ -1277,6 +1289,7 @@ function App() {
             {/* 출석 풀스크린 모달 (홈 카드 '출석하기') — CheckInPanel(GPS/QR) F-2a-1a */}
             {attendModalOpen && (
                 <AttendModal
+                    closing={attendClosing}
                     onClose={closeAttendModal} meeting={displayMeetingSettings}
                     mySession={mySession} meetingSettings={displayMeetingSettings}
                     gpsStatus={gpsStatus} distance={distance} setGpsStatus={setGpsStatus}

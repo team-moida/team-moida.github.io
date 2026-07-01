@@ -130,14 +130,14 @@ function CheckInPanel({
 // 출석 풀스크린 모달 — 홈 카드에서 CheckInPanel(GPS/QR)을 띄움(F-2a-1a). 매치판 모달과 같은 풀스크린 패턴.
 // z-[60] < QR스캐너(9999) → QR이 위에 뜸. 닫기 = X / 빈 본문영역 탭 / 뒤로가기(member.html useMoidaBack).
 function AttendModal({
-    onClose, meeting,
+    onClose, meeting, closing,
     mySession, meetingSettings,
     gpsStatus, distance, setGpsStatus,
     handleGPSCheckIn, handleGPSAttend, isCheckingIn,
     qrStatus, qrMessage, setQrStatus, setIsQRScannerOpen,
 }) {
     return (
-        <div className="fixed inset-0 z-[60] flex flex-col bg-slate-50"
+        <div className={`fixed inset-0 z-[60] flex flex-col bg-slate-50${closing ? ' pop-out' : ''}`}
             style={{paddingTop:'env(safe-area-inset-top)', paddingBottom:'env(safe-area-inset-bottom)'}}>
             <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3 border-b border-slate-200 bg-white">
                 <div className="min-w-0">

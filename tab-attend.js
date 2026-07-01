@@ -36,6 +36,8 @@ const KioskModal = ({
 }) => {
     const [confirmTarget, setConfirmTarget] = React.useState(null);
     const [flash, setFlash] = React.useState(null);   // 출석 완료 휘발성 표시(잠깐 떴다 자동으로 사라짐)
+    const [flashClosing, setFlashClosing] = React.useState(false);   // 사라질 때 페이드아웃용
+    const flashRef = React.useRef(null);   // 최신 flash 대상(연속 체크인 경합 판별)
     if (!isKioskOpen) return null;
 
     const closePopup = () => setConfirmTarget(null);
@@ -43,8 +45,11 @@ const KioskModal = ({
         const who = confirmTarget;
         attendHandleCheckIn(who, {silent:true});   // 키오스크는 자체 팝업으로 끝 — '출석 완료' 모달 중복 방지
         closePopup();
+        flashRef.current = who;
+        setFlashClosing(false);
         setFlash(who);
-        setTimeout(() => setFlash(cur => cur === who ? null : cur), 1600);   // 1.6초 뒤 자동 사라짐(이후 다른 체크인이면 유지)
+        setTimeout(() => { if (flashRef.current === who) setFlashClosing(true); }, 1600);   // 1.6초 뒤 페이드 시작(이후 다른 체크인이면 유지)
+        setTimeout(() => { if (flashRef.current === who) { flashRef.current = null; setFlash(null); setFlashClosing(false); } }, 1900);   // 페이드(0.28초) 뒤 실제 제거
     };
     const teamBadgeClass = confirmTarget?.teamIdx != null ? getTeamBadge(confirmTarget.teamIdx) : 'bg-teal-500';
     const teamColorLabel = confirmTarget?.teamIdx != null ? getTeamColorName(confirmTarget.teamIdx) : '';
@@ -220,8 +225,8 @@ const KioskModal = ({
                 const fColor = flash.teamIdx != null ? getTeamColorName(flash.teamIdx) : '';
                 return (
                     <div style={{position:'absolute',inset:0,zIndex:9,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'center',justifyContent:'center',padding:'24px',pointerEvents:'none'}}
-                        className="animate-fade-in">
-                        <div className={fBadge} style={{borderRadius:'28px',width:'100%',maxWidth:'320px',padding:'36px 24px',textAlign:'center',boxShadow:'0 25px 50px rgba(0,0,0,0.4)'}}>
+                        className={flashClosing ? 'pop-out' : 'animate-fade-in'}>
+                        <div className={`${fBadge}${flashClosing ? ' pop-card-out' : ''}`} style={{borderRadius:'28px',width:'100%',maxWidth:'320px',padding:'36px 24px',textAlign:'center',boxShadow:'0 25px 50px rgba(0,0,0,0.4)'}}>
                             <div style={{width:'76px',height:'76px',borderRadius:'50%',background:fLight?'rgba(0,0,0,0.12)':'rgba(255,255,255,0.25)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>
                                 <Icon.Check size={46} style={{color:fTxt}}/>
                             </div>
