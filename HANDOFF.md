@@ -3,13 +3,18 @@
 > 다른 PC/새 세션에서 이어갈 때 이 파일부터 읽으세요.
 > 자세한 작업 규칙·금지사항은 `CLAUDE.md`에 있습니다(꼭 같이 읽기).
 
-**마지막 갱신:** 2026-06-30 (밤) · **SW 캐시:** `moida-v341` · **표시버전:** `v1.13.0` · **마지막 커밋:** `af1a30a`
+**마지막 갱신:** 2026-07-01 · **SW 캐시:** `moida-v351` · **표시버전:** `v1.16.2` · **마지막 커밋:** `0be8676`
 **라이브:** team-moida/team-moida.github.io · **Firebase:** moida-otpfc
 **최종 제품:** `member.html` 통합앱 (회원·운영진·개발자). ※ 옛 독립 관리자 HTML(attendance/roster/team-maker/match/index)은 화제 금지.
 
 ---
 
-## 오늘 세션 (v339 → v341, 자동배포됨 — `4adf494`·`af1a30a`)
+## 오늘 세션 (2026-07-01, v1.14.0 → v1.16.2, 전부 배포됨)
+- **홈탭 무스크롤 + 모임카드 캐러셀**(v1.14.x): 홈은 어떤 기기서도 세로 스크롤 없음(`h-[100dvh]`·`flex-1 min-h-0`·`overflow-hidden`). 카드 2개(정기+매칭)는 좌우 스와이프(snap-x + `.no-sb`). 홈 카드 그림자는 컬러 글로우 제거→중립(homeRich). → tab-home.js(TabHome fit/renderCard/캐러셀), member.html(홈 h-[100dvh]), member.css(.no-sb).
+- **매치판 크게보기 = 작은 칩 + 팝업 내 탭**(v1.15.0): 홈 카드 헤더 우측 **'매치판' 칩**(키오스크/QR 스타일)→누르면 MatchBoardModal. 모달 상단에 **[내 경기 / 전체 경기] 세그먼트 탭**(기존 고정 `mode` prop을 내부 `viewMode` state로). 회원=내경기 기본·관리자=전체 기본. → tab-home.js(칩+모달), tab-match.js(MatchBoardModal viewMode+탭).
+- **홈 카드 이번 경기 상대/구장 + 번호 유니폼화**(v1.16.0~1.16.2): 팀 발표(조끼카드)에 "이번 경기 상대는 / OO팀이에요! / 📍O구장에서 만나요"를 조끼 설명과 **쌍둥이 컴팩트 문장**으로 추가. 번호 배지 **흰패치→조끼색+흰 링**(유니폼, 밝은 조끼는 번호 어둡게). 배지 56px 세로 컴팩트(카드 한 화면). **출석 후에도 조끼색 카드 유지**(teamReveal에서 !checkedIn 제거) + 팀 섹션을 출석 전/후 동일 컴팩트로 통일(옛 인디고 vs박스 제거), 경기 끝나면 "모두 끝났어요! 👏". 데이터=기존 `getMyCurrentRoundMatch` 재사용. → tab-home.js(NextMeetingCard). LAB=lab-round-opponent.html.
+
+## 이전 세션 (v339 → v341, 자동배포됨 — `4adf494`·`af1a30a`)
 - **매치표 인라인 편집**(관리자, 매치탭→매치 관리→매치표): 팀 배지를 **탭해서 선택 → 같은 라운드의 다른 팀(또는 휴식 팀) 탭하면 교체**, PC는 드래그. 휴식↔코트 교체 시 휴식 명단 자동 갱신. **같은 라운드 안에서만** 교체(라운드당 한 팀 한 번 규칙 보존). 저장(💾)은 이미 저장된 표면 **그 문서 덮어쓰기**(새 문서 양산 방지)+워치 동기화. → tab-match.js(`renderEditTeam`/`onPick`/`onDropSlot`/picked + 선택됨 바), handlers-match.js(`matchEditSwap`, matchSaveSchedule 덮어쓰기 분기), member.html(matchEditSwap 전달). 생성 알고리즘(buildRotationSchedule)은 안 건드림.
 - **매치판 '크게 보기' → 홈 탭 이동**: 매치탭 진입버튼은 이미 제거돼 있었음 → 홈 정기모임 카드에 **"매치판 크게 보기"** 버튼 추가(매치표 있을 때만, `Icon.Tv`). 회원=내 경기 / 관리자=전체 대진+라운드 컨트롤. MatchBoardModal **정의는 tab-match.js에 두고 홈에서 재사용**(전역). → tab-home.js(NextMeetingCard에 boardOpen+버튼+모달, TabHome서 매치 컨트롤 prop 전달), member.html(matchLocalIndex/matchCompleted/onMatchPrev·Next·Toggle·AutoAdvance를 TabHome에 전달).
 - **키오스크 수정 (홈에서만 열기)**: 모임탭 간소화로 독립 출석화면이 없어져 **KioskModal이 뜨는 TabAttend가 '팀→명단(rosterOnly)'에서만 마운트**되던 게 원인 — 홈 키오스크 버튼은 `attend` 서브탭으로 보내 KioskModal 없는 화면을 띄우고 isKioskOpen=true가 하단탭만 숨김(=빈 화면). **해결: KioskModal을 member.html 최상위 전역 모달로 이동**(isKioskOpen이면 어느 화면이든 뜸), TabAttend 내부 중복 제거. 홈 '키오스크' 버튼은 **화면 이동 없이** 열고(닫으면 홈 유지), 열 때 `setActiveMeetingKind('self')`로 활성 모임을 정기로 맞춤. 데이터는 기존처럼 displayMeetingSettings(활성 모임 미러) 기준. → member.html(전역 KioskModal + onOpenKiosk), tab-home.js(버튼), tab-attend.js(중복 제거).
@@ -30,10 +35,14 @@
 
 > 그 이전 세션: MY 탭 신설(tab-my.js), 회칙→게시판 통합, 시맨틱버전 v1.0.x, 회비 '가입 월'(duesStartMonth)·명단 '빠른 년생'(isFastYear). / 그 전: 매칭카드 라임색, 개근왕 통계, 모임 보관함(soft-delete, 아래 핵심구조).
 
-## 진행 중 / 다음에 할 일 (내일 사무실에서 이어가기)
-- **★키오스크 실기기 확인**: 오늘 전역 모달로 고치고 배포(v341)했으나 사용자 화면에선 아직 "안 뜸". **배포 지연/캐시로 추정**(테스트 시점 라이브가 v340이었음). 내일 **앱 완전 종료 후 재실행/강력 새로고침**으로 v341 받아 확인. 그래도 안 뜨면 실제 버그 → KioskModal 전역 마운트·`attend.isKioskOpen` 전달·`Icon.Tv` 버튼 동작 추적. (member.html 전역 KioskModal, tab-home.js 버튼)
-- **보류: '매치 관리' 토글 제거 + 설정 직접 노출** (팀편성 v1.12.0 방식). 사용자가 요청했고 **분석 완료**(워크플로): tab-match.js **284행 `{isAdminMode && isMatchPanelOpen ?` → `{isAdminMode ?`** 로 바꾸고 토글 버튼(272~281행) 제거하면 됨. 회원 뷰(557행 else)는 손대지 말 것. member.html의 자동닫기 `setIsMatchPanelOpen(false)`(842행 근처)·`adminModeLabel`의 '매치 관리 모드'(859행)는 팀탭처럼 **무해한 잔존**으로 그냥 둠. 첫 화면은 matchAdminView 기본 'setup'(use-match.js:7) → 첫 매치표 로드 시 'results' 전환(use-match.js:73). **승인 후 적용.**
-- **lab 페이지 정리**: 저장소에 lab-*.html 다수 누적(lab-create, lab-apply, lab-absence, lab-match-rotation, lab-meeting-*, lab-member-now 등). **확정/적용 끝난 것 삭제**(noindex). lab-activity.html은 이미 제거됨.
+## 진행 중 / 다음에 할 일
+- **매치 설정 UI 간소화** (미착수): 매치 생성은 이미 고정회전(라운드로빈)으로 바뀜. 이제 설정 화면을 **구장(몇 면·6v6/5v5) + 시간(시작~종료·한 판 분)만** 남기고 구장 프리셋·랜덤·**strictCourtSize 토글(v1.13.0 이후 무효)** 제거. 위치=match/match-generator.js(매치판 UI L56~) + member.html 매치 설정(tab-match.js / handlers-match.js matchConfig). LAB=lab-match-rotation.html(간단설정판) 참고.
+- **lab 페이지 정리**: 저장소에 lab-*.html 다수 누적(lab-create, lab-apply, lab-absence, lab-match-rotation, lab-meeting-*, lab-round-opponent 등). **확정/적용 끝난 것 삭제**(noindex).
+
+## 최근 마무리된 것 (참고)
+- 매치판 크게보기 → 홈 카드 이식 **완료**(v1.15.0, 위 오늘 세션).
+- '매치 관리' 토글 제거 → 매치 탭 바로 도구 노출 **완료**(팀편성 v1.12.0 방식으로 처리됨).
+- 키오스크 전역 모달(v341) — 실기기 확인 후 별도 이슈 보고 없음(정상 추정).
 
 ## 핵심 구조 — 삭제한 모임 보관함 (꼭 이해)
 - 모임 삭제 = 영구삭제 아님 → **soft-delete** (`meetings.deleted = true`). 신청·명단(weekly_session)은 복원 위해 **유지**, 출석기록(history)은 `trashed:true`(통계 제외).
