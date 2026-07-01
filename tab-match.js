@@ -363,7 +363,7 @@ const TabMatch = ({
                         <button onClick={() => setAdvOpen(v => !v)}
                             className="w-full flex items-center justify-between px-4 py-3 card border-slate-100 rounded-2xl text-sm font-black text-slate-600">
                             <span>고급 설정 <span className="text-slate-400 font-bold">(경기 시간 · 구장 이름 · 모임)</span></span>
-                            <Icon.ChevronDown size={16} className={`transition-transform ${advOpen?'rotate-180':''}`}/>
+                            <span className="text-slate-400 text-base leading-none">{advOpen ? '▾' : '▸'}</span>
                         </button>
                         {advOpen && (
                             <div className="space-y-3">
