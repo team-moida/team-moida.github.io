@@ -3,13 +3,20 @@
 > 다른 PC/새 세션에서 이어갈 때 이 파일부터 읽으세요.
 > 자세한 작업 규칙·금지사항은 `CLAUDE.md`에 있습니다(꼭 같이 읽기).
 
-**마지막 갱신:** 2026-07-01 · **SW 캐시:** `moida-v351` · **표시버전:** `v1.16.2` · **마지막 커밋:** `0be8676`
+**마지막 갱신:** 2026-07-01 · **SW 캐시:** `moida-v371` · **표시버전:** `v1.23.1` · **마지막 커밋:** `ff3738c`
 **라이브:** team-moida/team-moida.github.io · **Firebase:** moida-otpfc
 **최종 제품:** `member.html` 통합앱 (회원·운영진·개발자). ※ 옛 독립 관리자 HTML(attendance/roster/team-maker/match/index)은 화제 금지.
 
 ---
 
-## 오늘 세션 (2026-07-01, v1.14.0 → v1.16.2, 전부 배포됨)
+## 오늘 세션 이어서 (2026-07-01, v1.16.3 → v1.23.1, 전부 배포됨)
+- **흰화면 버그 수정**(v1.21.2, `074e20d`): 새 모임 모집 중 명단/팀 진입 시 `(a.createdAt||'').localeCompare is not a function` 크래시. 원인=실제 신청 흐름(handlers-registration.js)이 `weekly_session.createdAt`을 `serverTimestamp()`로 저장→읽으면 Timestamp 객체라 localeCompare 불가(테스트 모임은 ISO 문자열이라 안 깨짐). **해결**: tab-attend.js 명단 정렬을 `ms()` 안전비교로(이미 만든 모임도 재생성 없이 복구) + 저장도 ISO 문자열로 통일. use-team.js/use-attend.js는 이미 `ms()` 써서 안전했음.
+- **회비 탭 이 달 활동회원 남/여/전체**(v1.22.0, `c3bdf70`): 회비 서브탭 월 선택 아래에 카드. 기준=그 달 가입+탈퇴 제외+휴식/특별휴식 제외(운영진 포함) = **미응답 기준과 동일**. → use-roster.js(`activeGenderCounts`), tab-roster.js, member.html.
+- **불참·노쇼 확인 목록 + 담당자 변경**(v1.23.0, `d58a3d7`): ① 모임 탭 명단 상단에 **불참·노쇼 신청 목록**(이름·상태·사유·시각·벌금, 운영진 전용) — 불참은 weekly_session에서 삭제돼 명단에 안 남으므로 `registrations` 직접 구독. ② **담당자 [변경]** — 운영진 목록에서 새 담당자 선택→`meetings.managerId/Name` 갱신(+현재 미러 모임이면 미러 담당자만 merge). 이후 불참/노쇼 알림은 새 담당자에게. → tab-attend.js(패널·목록·팝업, TabAttend에 `managers`/`onChangeManager`), handlers-meetings.js(`changeMeetingManager`), member.html.
+- **담당자 본인 불참 → 교체 팝업 자동**(v1.23.1, `ff3738c`): 모임 탭 신청카드(RegistrationCard)에서 담당자 본인이 불참/노쇼 확정 시 담당자 교체 팝업 자동 오픈(`isMeetingManager` 판정). 팝업은 TabAttend 최상위로 이동(서브탭 무관 표시). → tab-attend.js.
+- (앞부분 v1.16.3~1.21.1) 홈 회비 미납 표시 버그(monthly_checks 직접 구독), 명단 필터 정리(월납/반년·1년납/휴식·특별휴식/미납 한 줄, 소제목 구분)+목록 이미지 공유, 회비 탭 반년/1년납 **종료예정 상단 하이라이트**, 홈 카드 **미참 버튼**+운영진 신청/미참/미응답 표시, 미응답 기준=그 달 활동회원(운영진 포함)−휴식.
+
+## 오늘 세션 앞부분 (2026-07-01, v1.14.0 → v1.16.2, 전부 배포됨)
 - **홈탭 무스크롤 + 모임카드 캐러셀**(v1.14.x): 홈은 어떤 기기서도 세로 스크롤 없음(`h-[100dvh]`·`flex-1 min-h-0`·`overflow-hidden`). 카드 2개(정기+매칭)는 좌우 스와이프(snap-x + `.no-sb`). 홈 카드 그림자는 컬러 글로우 제거→중립(homeRich). → tab-home.js(TabHome fit/renderCard/캐러셀), member.html(홈 h-[100dvh]), member.css(.no-sb).
 - **매치판 크게보기 = 작은 칩 + 팝업 내 탭**(v1.15.0): 홈 카드 헤더 우측 **'매치판' 칩**(키오스크/QR 스타일)→누르면 MatchBoardModal. 모달 상단에 **[내 경기 / 전체 경기] 세그먼트 탭**(기존 고정 `mode` prop을 내부 `viewMode` state로). 회원=내경기 기본·관리자=전체 기본. → tab-home.js(칩+모달), tab-match.js(MatchBoardModal viewMode+탭).
 - **홈 카드 이번 경기 상대/구장 + 번호 유니폼화**(v1.16.0~1.16.2): 팀 발표(조끼카드)에 "이번 경기 상대는 / OO팀이에요! / 📍O구장에서 만나요"를 조끼 설명과 **쌍둥이 컴팩트 문장**으로 추가. 번호 배지 **흰패치→조끼색+흰 링**(유니폼, 밝은 조끼는 번호 어둡게). 배지 56px 세로 컴팩트(카드 한 화면). **출석 후에도 조끼색 카드 유지**(teamReveal에서 !checkedIn 제거) + 팀 섹션을 출석 전/후 동일 컴팩트로 통일(옛 인디고 vs박스 제거), 경기 끝나면 "모두 끝났어요! 👏". 데이터=기존 `getMyCurrentRoundMatch` 재사용. → tab-home.js(NextMeetingCard). LAB=lab-round-opponent.html.
@@ -36,6 +43,7 @@
 > 그 이전 세션: MY 탭 신설(tab-my.js), 회칙→게시판 통합, 시맨틱버전 v1.0.x, 회비 '가입 월'(duesStartMonth)·명단 '빠른 년생'(isFastYear). / 그 전: 매칭카드 라임색, 개근왕 통계, 모임 보관함(soft-delete, 아래 핵심구조).
 
 ## 진행 중 / 다음에 할 일
+- **홈 카드에서도 담당자 불참 시 교체 팝업** (사용자 확인 대기): 현재는 **모임 탭 상세 신청카드**에서만 담당자 불참→교체 팝업이 뜸. 홈 "다음 모임" 카드(tab-home.js NextMeetingCard)에서 불참할 때도 뜨게 할지 사용자에게 물어둔 상태. 원하면 NextMeetingCard에 `managers`/`onChangeManager`+팝업 배선 필요(팝업은 tab-attend.js에 있어 공유 불가 → 별도로 넣어야 함).
 - **매치 설정 UI 간소화** (미착수): 매치 생성은 이미 고정회전(라운드로빈)으로 바뀜. 이제 설정 화면을 **구장(몇 면·6v6/5v5) + 시간(시작~종료·한 판 분)만** 남기고 구장 프리셋·랜덤·**strictCourtSize 토글(v1.13.0 이후 무효)** 제거. 위치=match/match-generator.js(매치판 UI L56~) + member.html 매치 설정(tab-match.js / handlers-match.js matchConfig). LAB=lab-match-rotation.html(간단설정판) 참고.
 - **lab 페이지 정리**: 저장소에 lab-*.html 다수 누적(lab-create, lab-apply, lab-absence, lab-match-rotation, lab-meeting-*, lab-round-opponent 등). **확정/적용 끝난 것 삭제**(noindex).
 
