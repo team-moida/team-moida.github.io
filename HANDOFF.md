@@ -3,7 +3,7 @@
 > 다른 PC/새 세션에서 이어갈 때 이 파일부터 읽으세요.
 > 자세한 작업 규칙·금지사항은 `CLAUDE.md`에 있습니다(꼭 같이 읽기).
 
-**마지막 갱신:** 2026-07-02 · **SW 캐시:** `moida-v379` · **표시버전:** `v1.23.7` · **마지막 커밋:** `f2646b6`(자동배포)
+**마지막 갱신:** 2026-07-02 (밤, 맥) · **SW 캐시:** `moida-v380` · **표시버전:** `v1.24.1` · **마지막 커밋:** 오늘 수동 push
 **라이브:** team-moida/team-moida.github.io · **Firebase:** moida-otpfc
 **최종 제품:** `member.html` 통합앱 (회원·운영진·개발자). ※ 옛 독립 관리자 HTML(attendance/roster/team-maker/match/index)은 화제 금지.
 
@@ -14,11 +14,18 @@
 - **자동 새로고침**: sw-register.js(공용, member.html·index.html 로드)가 앱 재실행/포커스 시 `reg.update()` → 새 SW 활성화(controllerchange) 시 1회 자동 새로고침. 캐시 수동삭제 불필요.
 - **★ 내용 변경 시 sw.js(CACHE_NAME) 올리지 말 것**: 캐시버스터가 코드파일을 항상 최신으로 받으므로 CACHE_NAME 안 올려도 됨. sw.js를 바꾸면 '새 SW 설치'가 필요해지고 그건 CDN 10분을 거쳐 **오히려 반영이 늦어짐**. 표시버전(tab-my.js·index.html)만 올리면 앱 재실행 시 즉시 반영. sw.js는 **SW/캐시 로직 자체가 바뀔 때만** 올린다.
 
-## 오늘 세션 (2026-07-02, v1.23.1 → v1.23.7, 자동배포됨)
+## 오늘 세션 (2026-07-02, v1.23.1 → v1.24.1, 배포됨)
 - **자동 닫힘 팝업 페이드아웃**(v1.23.3~4): 신청완료 팝업 + 키오스크 '출석완료' 플래시 + 출석 풀스크린 모달 + 하단 토스트가 '팟!' 대신 스르륵 사라지게. member.css `.pop-out`/`.pop-card-out` 재사용(신규 CSS 없음), closing 플래그+지연 언마운트. → tab-attend.js·tab-home.js·member.html·check-in-panel.js·member.css.
 - **담당자 불참/노쇼 취소 시 담당자 복귀**(v1.23.5): 담당 운영진이 자기 모임 불참/노쇼하면 meetings에 `managerAbsentId` 표시 → 취소하면 그 사람으로 담당자 원상복구(+미러 동기화). → handlers-registration.js(handleAbsent 표시, handleUndoAbsent 복구).
 - **키오스크 '출석완료' 오표시 버그**(v1.23.5): 출석시간 아닐 때 '출석불가' 뒤에 '출석완료' 플래시가 겹쳐 뜨던 것 → attendHandleCheckIn이 성공/실패(true/false) 반환, 키오스크 handleConfirm이 **성공일 때만** 플래시. → handlers-attend.js·tab-attend.js.
 - **자동 새로고침 + CDN 우회**(v1.23.6~7): 위 '개발 환경 규칙' 참고. sw-register.js 신규 + sw.js 캐시버스터. → sw-register.js·sw.js·member.html·index.html.
+- **★매치 관리 화면 단순화**(v1.24.0): 관리자 매치 설정 7단계→4단계. ① **'매치 관리 ON' 토글 제거→진입 즉시 열림** (tab-match.js 렌더게이트를 `isAdminMode ?`로, member.html:884 라벨 조건에서 `match.isMatchPanelOpen` 제거). ② 설정 = 확정팀(자동 표시)+**구장 수 ＋/－ · 구장별 5vs5/6vs6**(=`matchConfig.fieldTypes[i]`) → [경기 순서 만들기]. 나머지(모임선택·날짜·시간·경기/휴식/교체·구장이름·프리셋·strict)는 **[고급 설정] 아코디언(`advOpen`)** 으로 접음. ③ 통계 탭은 매치표 생성 후에만 표시. ④ **모임 날짜/시간 자동채움**(use-match.js useEffect: meetingSettings→matchConfig, 모임 바뀔 때만). **핵심(buildRotationSchedule 생성·저장·워치 동기화)은 무변경**, UI 동선만. 시안=lab-match-admin.html. → tab-match.js·use-match.js·member.html.
+- **흰화면 에러 수정**(v1.24.1): 위 단순화에서 쓴 `Icon.ChevronDown`이 member-icons.js에 **없어서** React #130 크래시(전체 흰화면) → 텍스트 화살표(▸/▾)로 교체. (★새 규칙 첫 적용: sw.js 안 올리고 표시버전만 v1.24.1) → tab-match.js. **교훈: 새 아이콘은 반드시 member-icons.js 존재 확인**(현재 Chevron은 Left/Right만 있음, Down/Up 없음).
+
+## 다음에 할 일 (내일 사무실에서)
+- **매치 단순화 실기기 검증**: 관리자로 [모임→예정모임→운영→매치표] 진입 시 토글 없이 바로 열리는지 / 구장 수·**구장별 5:5·6:6 다르게** 설정 후 [경기 순서 만들기] 정상 생성 / 저장 후 회원 홈 '매치판'에 순서 뜨는지 / [고급 설정] 펼쳐 시간·구장이름 수정 되는지. 이상하면 lab-match-admin.html 시안 대비 조정.
+- (미해결) 매치표가 이미 있을 때 진입 첫 화면을 '매치표(생성 후)'로 자동 전환할지 — 이번엔 보류(부모 state 타이밍). 원하면 추가.
+- (지난 HANDOFF 잔여) lab-*.html 정리.
 
 ## 오늘 세션 이어서 (2026-07-01, v1.16.3 → v1.23.1, 전부 배포됨)
 - **흰화면 버그 수정**(v1.21.2, `074e20d`): 새 모임 모집 중 명단/팀 진입 시 `(a.createdAt||'').localeCompare is not a function` 크래시. 원인=실제 신청 흐름(handlers-registration.js)이 `weekly_session.createdAt`을 `serverTimestamp()`로 저장→읽으면 Timestamp 객체라 localeCompare 불가(테스트 모임은 ISO 문자열이라 안 깨짐). **해결**: tab-attend.js 명단 정렬을 `ms()` 안전비교로(이미 만든 모임도 재생성 없이 복구) + 저장도 ISO 문자열로 통일. use-team.js/use-attend.js는 이미 `ms()` 써서 안전했음.
