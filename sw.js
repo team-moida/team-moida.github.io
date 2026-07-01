@@ -32,7 +32,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ── 기존 캐시 로직 ──────────────────────────────────────
-const CACHE_NAME = 'moida-v378';
+const CACHE_NAME = 'moida-v379';
 const CACHE_URLS = [
     '/index.html',
     '/tailwind-config.js',
@@ -75,10 +75,12 @@ self.addEventListener('fetch', event => {
         url.includes('gstatic.com')
     ) return;
 
-    // HTML/JS/CSS는 HTTP 캐시 우회 → 항상 서버에서 최신 파일 수신
+    // HTML/JS/CSS는 HTTP 캐시 + GitHub Pages CDN(Fastly, 최대 10분)까지 우회 → 항상 최신 수신.
+    // 매 요청마다 유니크 쿼리(_cb)를 붙여 CDN이 저장본을 못 쓰고 원본에서 새로 받게 한다.
+    // 캐시 저장·오프라인 폴백은 원래 URL(event.request) 기준이라 오프라인도 정상 동작.
     const isCodeFile = /\.(html|js|css)(\?|$)/.test(url);
     const fetchRequest = isCodeFile
-        ? new Request(event.request, { cache: 'no-store' })
+        ? new Request(url + (url.includes('?') ? '&' : '?') + '_cb=' + Date.now(), { cache: 'no-store' })
         : event.request;
 
     event.respondWith(
