@@ -309,25 +309,6 @@ async function exportRosterList(fileLabel, showToast, showAlert) {
         link.click();
     } catch (e) { notify('이미지 내보내기 실패', 'error'); }
 }
-// 가로 칩 줄을 PC에서 마우스 드래그로 좌우 스크롤 (터치는 기본 스크롤 사용). ref 콜백으로 1회 바인딩.
-const attachDragScroll = (el) => {
-    if (!el || el._dragScroll) return;
-    el._dragScroll = true;
-    el.addEventListener('mousedown', (e) => {
-        const startX = e.pageX, startScroll = el.scrollLeft; let moved = false;
-        el.style.cursor = 'grabbing';
-        const onMove = (me) => { const dx = me.pageX - startX; if (Math.abs(dx) > 4) moved = true; el.scrollLeft = startScroll - dx; };
-        const onUp = () => {
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
-            el.style.cursor = 'grab';
-            el._dragged = moved;   // 드래그였으면 바로 뒤따르는 click(칩 선택)을 취소
-        };
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onUp);
-    });
-    el.addEventListener('click', (e) => { if (el._dragged) { e.preventDefault(); e.stopPropagation(); el._dragged = false; } }, true);
-};
 // ─── 명단 탭 (관리자 모드 전용) ──────────────────────────────────────────────
 const TabRoster = ({
     rosterSubTab, setRosterSubTab,
@@ -455,7 +436,7 @@ const TabRoster = ({
                     <p className="font-black text-lg text-slate-800">{targetMonth.replace('-','년 ')}월</p>
                     <button onClick={()=>moveMonth(1)} className="p-2 rounded-xl bg-slate-100 text-slate-600"><Icon.ChevronRight size={18}/></button>
                 </div>
-                <div ref={attachDragScroll} style={{cursor:'grab'}} className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-4 select-none">
+                <div className="flex flex-wrap gap-2 mb-4">
                     {[
                         {key:'all',label:`전체 ${filterCounts.all}`},
                         {key:'monthly',label:`월납 ${filterCounts.monthly}`},
