@@ -83,6 +83,9 @@ select { appearance: none; }
 .tab-bar { background: rgba(255,255,255,0.95); border-top: 1px solid #e2e8f0; backdrop-filter: blur(10px); }
 .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
 .content-pb { padding-bottom: calc(8rem + env(safe-area-inset-bottom)); }
+/* 가로 스와이프 캐러셀 — 스크롤바 숨김 */
+.no-sb { scrollbar-width: none; -ms-overflow-style: none; }
+.no-sb::-webkit-scrollbar { display: none; }
 .qr-scan-line { animation: scanLine 2s ease-in-out infinite; }
 @keyframes scanLine { 0%{top:8px} 50%{top:calc(100% - 10px)} 100%{top:8px} }
 /* ── 게시판 아코디언(글 펼침) ── 높이 자동 + 부드러운 슬라이드 */

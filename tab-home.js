@@ -382,7 +382,7 @@ const NextMeetingCard = ({
     mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount, scheduleData,
     matchLocalIndex, matchCompleted, onMatchPrev, onMatchNext, onMatchToggleComplete, onMatchAutoAdvance,
     isMeetingOver, isMeetingEndSaved, onEndMeeting, onGenerateQR, onEditMeeting, onDeleteMeeting,
-    onOpenAttendModal, onInlineGPS, onInlineQR, enableQR, onOpenKiosk, fill,
+    onOpenAttendModal, onInlineGPS, onInlineQR, enableQR, onOpenKiosk, fill, fitFill,
 }) => {
     const [boardOpen, setBoardOpen] = React.useState(false);
     window.useMoidaBack?.(boardOpen, () => setBoardOpen(false));
@@ -492,7 +492,7 @@ const NextMeetingCard = ({
     const fillRef = React.useRef(null);
     const [fillH, setFillH] = React.useState(null);
     React.useEffect(() => {
-        if (!fill) { setFillH(null); return; }
+        if (!fill || fitFill) { setFillH(null); return; }   // fitFill=부모(flex) 높이를 100%로 채움 → 측정 불필요
         const calc = () => {
             const el = fillRef.current; if (!el) return;
             const top = el.getBoundingClientRect().top;
@@ -515,13 +515,13 @@ const NextMeetingCard = ({
         window.addEventListener('resize', calc);
         return () => { clearTimeout(tid); clearTimeout(tid2); window.removeEventListener('resize', calc); };
     }, [fill, meeting?.date, kind]);
-    const fillOn = fill && !!fillH;
+    const fillOn = fitFill || (fill && !!fillH);
 
     return (
-        <div className="relative" ref={fillRef}>
+        <div className={`relative ${fitFill ? 'h-full' : ''}`} ref={fillRef}>
         <button onClick={()=> onTabChange('attend', kind, meeting.id || getMeetingId(meeting))}
             className={`w-full rounded-3xl p-5 text-left ${ink} transition-all${showInlineAttend ? '' : ' active:scale-98'}${showOverlay ? ' blur-sm' : ''}${fillOn ? ' flex flex-col' : ''}`}
-            style={{ background: cardBg, boxShadow: cardShadow, ...(fillOn ? { minHeight: fillH + 'px' } : {}) }}>
+            style={{ background: cardBg, boxShadow: cardShadow, ...(fitFill ? { height: '100%' } : fillOn ? { minHeight: fillH + 'px' } : {}) }}>
             <div className="flex items-center justify-between gap-2 mb-2.5">
                 <div className="flex items-center gap-1.5 min-w-0">
                     <p className={`text-xs font-black uppercase tracking-widest ${ink80}`}>{cfg.label}</p>
@@ -1995,8 +1995,9 @@ const TabHome = ({
     generateAttendQRCode, onEditMeeting, onDeleteMeeting, onOpenAttendModal,
     onInlineGPS, onInlineQR, onOpenKiosk,
     showToast, showAlert, showConfirm,
-    regDuesUnpaid, regDuesBlock, regPenaltyUnpaid, regPenaltyTotal,
+    regDuesUnpaid, regDuesBlock, regPenaltyUnpaid, regPenaltyTotal, fit,
 }) => {
+    const [activeCard, setActiveCard] = React.useState(0);   // 카드 2개일 때 가로 스와이프 인디케이터
     // 정기/매칭 다음 모임 분리 (회원이 둘 다 참여할 수 있어 종류별 카드로 표시)
     // 종료(done) + 지난 날짜 모임은 홈 '다음 모임'에서 제외 (끝난 모임은 기록 탭에서만)
     const upcoming = (meetings || []).filter(m => m && m.status !== 'done' && m.date && computeMeetingDay(m.date, m.start)?.type !== 'past');
@@ -2031,44 +2032,71 @@ const TabHome = ({
                 : computeMeetingDay(c.meeting.date, c.meeting.start);
             return { ...c, isActive, dayInfo };
         });
+    // 모임 카드 하나 렌더 (fit=부모 높이 채움). 단일/스와이프 양쪽에서 재사용.
+    const renderCard = (c) => (
+        <NextMeetingCard fitFill={!!fit} fill={!fit && meetingCards.length === 1} key={c.kind} meeting={c.meeting} kind={c.kind} isActive={c.isActive}
+            dayInfo={c.dayInfo} darkMode={darkMode} isAdminMode={isAdminMode} onTabChange={onTabChange} members={members}
+            mySession={mySession} teamReady={teamReady} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
+            allowFromDisplay={allowFromDisplay} participantCount={participantCount} scheduleData={scheduleData}
+            matchLocalIndex={matchLocalIndex} matchCompleted={matchCompleted}
+            onMatchPrev={onMatchPrev} onMatchNext={onMatchNext} onMatchToggleComplete={onMatchToggleComplete} onMatchAutoAdvance={onMatchAutoAdvance}
+            isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting}
+            onGenerateQR={generateAttendQRCode} onEditMeeting={onEditMeeting} onDeleteMeeting={onDeleteMeeting}
+            onOpenAttendModal={onOpenAttendModal} onInlineGPS={onInlineGPS} onInlineQR={onInlineQR}
+            enableQR={meetingSettings?.enableQR} onOpenKiosk={onOpenKiosk}
+            memberData={memberData} showToast={showToast} showAlert={showAlert} showConfirm={showConfirm}
+            regDuesUnpaid={regDuesUnpaid} regDuesBlock={regDuesBlock} regPenaltyUnpaid={regPenaltyUnpaid} regPenaltyTotal={regPenaltyTotal} />
+    );
+    const onCarouselScroll = (e) => { const el = e.currentTarget; const i = Math.round(el.scrollLeft / Math.max(1, el.clientWidth)); if (i !== activeCard) setActiveCard(i); };
+
     return (
-    <div className="stagger space-y-3">
+    <div className={fit ? 'flex-1 min-h-0 flex flex-col gap-3' : 'stagger space-y-3'}>
         {/* 회비 납부 신고 (관리자 전용 · 대기 신고가 있을 때만 — 홈에서 한눈에 확정/삭제) */}
-        {isAdminMode && <DuesReportsHomeCard duesReports={duesReports} onConfirm={onConfirmDuesReport} onReject={onRejectDuesReport} onGoDuesTab={onGoDuesTab} />}
+        {isAdminMode && <div className="shrink-0"><DuesReportsHomeCard duesReports={duesReports} onConfirm={onConfirmDuesReport} onReject={onRejectDuesReport} onGoDuesTab={onGoDuesTab} /></div>}
 
         {/* 회비 납부 시기 배너 (납부 시기일 때만 표시 · 누르면 회비 탭으로 이동) */}
-        <DuesAccountCard mode="banner" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} onGoDues={() => onTabChange('my')} />
+        <div className="shrink-0"><DuesAccountCard mode="banner" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} onGoDues={() => onTabChange('my')} /></div>
 
         {/* 미납 벌금 배너 (회원 · 미납 있을 때만 · 누르면 회비 탭으로 이동) */}
-        <PenaltyPayCard mode="banner" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} onGoDues={() => onTabChange('my')} />
+        <div className="shrink-0"><PenaltyPayCard mode="banner" isAdminMode={isAdminMode} memberName={memberName} memberInfo={memberInfo} onGoDues={() => onTabChange('my')} /></div>
 
-        {/* 다음 모임 — 정기/매칭 종류별로 분리해 색상으로 구분 (탭하면 모임 탭으로 이동) */}
-        {meetingCards.length > 0 ? meetingCards.map(c => (
-            <NextMeetingCard key={c.kind} fill={meetingCards.length === 1} meeting={c.meeting} kind={c.kind} isActive={c.isActive}
-                dayInfo={c.dayInfo} darkMode={darkMode} isAdminMode={isAdminMode} onTabChange={onTabChange} members={members}
-                mySession={mySession} teamReady={teamReady} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
-                allowFromDisplay={allowFromDisplay} participantCount={participantCount} scheduleData={scheduleData}
-                matchLocalIndex={matchLocalIndex} matchCompleted={matchCompleted}
-                onMatchPrev={onMatchPrev} onMatchNext={onMatchNext} onMatchToggleComplete={onMatchToggleComplete} onMatchAutoAdvance={onMatchAutoAdvance}
-                isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting}
-                onGenerateQR={generateAttendQRCode} onEditMeeting={onEditMeeting} onDeleteMeeting={onDeleteMeeting}
-                onOpenAttendModal={onOpenAttendModal} onInlineGPS={onInlineGPS} onInlineQR={onInlineQR}
-                enableQR={meetingSettings?.enableQR} onOpenKiosk={onOpenKiosk}
-                memberData={memberData} showToast={showToast} showAlert={showAlert} showConfirm={showConfirm}
-                regDuesUnpaid={regDuesUnpaid} regDuesBlock={regDuesBlock} regPenaltyUnpaid={regPenaltyUnpaid} regPenaltyTotal={regPenaltyTotal} />
-        )) : (
-            <>
+        {/* 다음 모임 — fit: 1개는 화면 채움, 2개는 가로 스와이프 / 비-fit: 세로 나열 */}
+        {meetingCards.length > 0 ? (
+            fit ? (
+                <div className="flex-1 min-h-0 flex flex-col">
+                    {meetingCards.length === 1 ? (
+                        <div className="flex-1 min-h-0">{renderCard(meetingCards[0])}</div>
+                    ) : (
+                        <>
+                            <div className="flex-1 min-h-0 flex overflow-x-auto snap-x snap-mandatory gap-3 -mx-4 px-4 no-sb" onScroll={onCarouselScroll}>
+                                {meetingCards.map(c => (
+                                    <div key={c.kind} className="snap-center shrink-0 w-full h-full overflow-hidden">{renderCard(c)}</div>
+                                ))}
+                            </div>
+                            <div className="shrink-0 flex justify-center items-center gap-1.5 pt-2">
+                                {meetingCards.map((c, i) => (
+                                    <span key={i} className={`h-1.5 rounded-full transition-all ${i === activeCard ? 'w-5 bg-teal-500' : 'w-1.5 bg-slate-300'}`}/>
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </div>
+            ) : (
+                meetingCards.map(c => renderCard(c))
+            )
+        ) : (
+            <div className={fit ? 'flex-1 min-h-0 overflow-hidden space-y-3' : ''}>
                 {/* 정기모임 켜져 있으면 다음 회차 미리보기, 아니면 작은 '없음' 카드 */}
                 <RecurringPreviewCard onTabChange={onTabChange} />
                 {/* 휑한 홈 채우기 — 예정 모임 없을 때만 내 활동 요약(자세히는 MY 탭) */}
                 <MyActivitySummaryCard attendHistory={attendHistory} memberInfo={memberInfo} onTabChange={onTabChange} />
-            </>
+            </div>
         )}
 
         {/* 내 출석 현황 카드는 MY 탭으로 이동(정의는 위 MyAttendanceCard, 호출은 tab-my.js) */}
 
-        {/* iOS PWA 설치 안내 */}
-        {/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone && (
+        {/* iOS PWA 설치 안내 (fit=무스크롤 홈에선 숨김 — 공간 확보) */}
+        {!fit && /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone && (
             <div className="card rounded-2xl p-4 border-orange-100">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0"><Icon.Smartphone size={20} className="text-orange-500"/></div>
