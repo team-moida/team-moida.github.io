@@ -270,6 +270,20 @@ const RosterStatsView = ({ activeMembers, attendHistory, attendHistoryTrash = []
         </div>
     );
 };
+// ─── 명단 회비 목록 이미지 저장 (현재 필터 목록을 그대로 캡처) ───
+const ROSTER_FILTER_LABELS = { all:'전체', monthly:'월납', half:'반년납', full:'1년납', rest:'휴식', special:'특별휴식', unpaid:'미납', expiring:'종료예정' };
+async function captureRosterList(fileLabel, showAlert) {
+    await new Promise(r => setTimeout(r, 60));   // 렌더 안정 대기
+    try {
+        const el = document.getElementById('roster-capture-area');
+        if (!el) return;
+        const canvas = await window.html2canvas(el, { scale: 2, backgroundColor: '#f8fafc', useCORS: true });
+        const link = document.createElement('a');
+        link.download = `모이다_명단_${fileLabel}.jpg`;
+        link.href = canvas.toDataURL('image/jpeg', 0.92);
+        link.click();
+    } catch (e) { showAlert && showAlert('오류', '이미지 저장 실패'); }
+}
 // ─── 명단 탭 (관리자 모드 전용) ──────────────────────────────────────────────
 const TabRoster = ({
     rosterSubTab, setRosterSubTab,
@@ -403,6 +417,7 @@ const TabRoster = ({
                         {key:'monthly',label:`월납 ${filterCounts.monthly}`},
                         {key:'half',label:`반년 ${filterCounts.half}`},
                         {key:'full',label:`1년 ${filterCounts.full}`},
+                        {key:'expiring',label:`종료예정 ${filterCounts.expiring}`},
                         {key:'rest',label:`휴식 ${filterCounts.rest}`},
                         {key:'special',label:`특별휴식 ${filterCounts.special}`},
                         {key:'unpaid',label:`미납 ${filterCounts.unpaid}`},
@@ -413,7 +428,15 @@ const TabRoster = ({
                         </button>
                     ))}
                 </div>
-                <div className="space-y-2">
+                <div className="flex justify-end mb-2">
+                    <button onClick={()=>captureRosterList(`${targetMonth}_${ROSTER_FILTER_LABELS[filterCategory]||''}`, showAlert)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 font-black text-xs active:scale-95 transition-all"><Icon.Camera size={14}/>이미지 저장</button>
+                </div>
+                <div id="roster-capture-area" style={{background:'#f8fafc'}} className="rounded-2xl p-2">
+                    <div className="px-1 pt-0.5 pb-2.5">
+                        <p className="font-black text-slate-800 text-[15px]">{targetMonth.replace('-','년 ')}월 · {ROSTER_FILTER_LABELS[filterCategory]||'전체'} <span className="text-teal-500">{filteredMembers.length}명</span></p>
+                    </div>
+                    <div className="space-y-2">
                     {filteredMembers.map(m=>{
                         const statusType = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
                         const cfg = statusConfig[statusType] || statusConfig.unpaid;
@@ -442,6 +465,7 @@ const TabRoster = ({
                             </button>
                         );
                     })}
+                    </div>
                 </div>
             </div>
         )}
