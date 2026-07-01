@@ -1393,6 +1393,7 @@ const TabAttend = ({
     isKioskOpen, setIsKioskOpen, attendHandleCheckIn, attendHandleUncheckIn,
     isMeetingOver, attendHandleEndMeeting,
     viewMeeting, isViewActive, onEditMeeting,
+    managers = [], onChangeManager,
     myRegistration, regConfirmedCount, myWaitingPosition, handleRegister, handleCancel, handleAbsent, handleUndoAbsent,
     onOpenAttendModal,
 }) => {
@@ -1400,6 +1401,28 @@ const TabAttend = ({
     const selectedMeeting = viewMeeting;
     const [isSelecting, setIsSelecting] = React.useState(false);
     const [selMonthlyStatuses, setSelMonthlyStatuses] = React.useState({});
+    // 담당자 변경 팝업
+    const [mgrPickOpen, setMgrPickOpen] = React.useState(false);
+    // 이 모임의 불참·노쇼 신청 목록 (운영진 확인용) — registrations에서 직접 구독. 불참은 명단에서 사라지므로 여기서만 보임.
+    const [absentRegs, setAbsentRegs] = React.useState([]);
+    React.useEffect(() => {
+        if (!isAdminMode || !selectedMeeting?.date) { setAbsentRegs([]); return; }
+        const mid = (typeof getMeetingId === 'function') ? getMeetingId(selectedMeeting) : selectedMeeting.date;
+        const _ms = (v) => v?.toMillis?.() ?? (v?.seconds ? v.seconds * 1000 : (typeof v === 'string' ? (Date.parse(v) || 0) : 0));
+        const unsub = getCol('registrations').where('meetingId', '==', mid).onSnapshot(snap => {
+            const list = snap.docs.map(d => d.data())
+                .filter(r => r.status === 'absent' || r.status === 'noshow')
+                .sort((a, b) => _ms(b.absentAt) - _ms(a.absentAt));   // 최근 신청 먼저
+            setAbsentRegs(list);
+        }, () => setAbsentRegs([]));
+        return () => unsub();
+    }, [isAdminMode, selectedMeeting?.date, selectedMeeting?.meetingType]);
+    const _fmtAbsAt = (v) => {
+        const t = v?.toMillis?.() ?? (v?.seconds ? v.seconds * 1000 : (typeof v === 'string' ? (Date.parse(v) || 0) : 0));
+        if (!t) return '';
+        const d = new Date(t);
+        return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    };
 
     // 선택한 모임의 '그 달' 회비 상태(monthly_checks) 로드
     React.useEffect(() => {
@@ -1578,6 +1601,67 @@ const TabAttend = ({
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* 담당자 (운영진 전용 · 변경 가능) — 담당자가 못 올 때 다른 운영진으로 교체 */}
+                                {isAdminMode && rosterOnly && (
+                                    <div className="card border-slate-100 rounded-2xl p-4 mb-4">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <span className="text-[11px] font-black text-slate-400 shrink-0">담당</span>
+                                                <span className="text-sm font-black text-slate-800 truncate">{selectedMeeting.managerName || '미지정'}</span>
+                                            </div>
+                                            <button onClick={() => setMgrPickOpen(true)} className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-500 text-xs font-black active:scale-95 transition-all"><Icon.Users size={13}/> 변경</button>
+                                        </div>
+                                    </div>
+                                )}
+                                {/* 불참·노쇼 신청 (운영진 전용) — 푸시 알림을 놓쳐도 여기서 확인 */}
+                                {isAdminMode && absentRegs.length > 0 && (
+                                    <div className="card border-slate-100 rounded-2xl p-4 mb-4">
+                                        <p className="text-xs font-black text-slate-700 uppercase tracking-widest mb-3 flex items-center gap-1.5"><Icon.AlertTriangle size={13} className="text-amber-500"/>불참 · 노쇼 신청 <span className="text-amber-500">{absentRegs.length}명</span></p>
+                                        <div className="space-y-2">
+                                            {absentRegs.map((r, i) => {
+                                                const no = r.status === 'noshow';
+                                                return (
+                                                    <div key={(r.memberId || '') + i} className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50">
+                                                        <span className={`shrink-0 text-[10px] font-black px-2 py-1 rounded-lg ${no ? 'bg-rose-100 text-rose-600' : 'bg-slate-200 text-slate-600'}`}>{no ? '노쇼' : '불참'}</span>
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                                <span className="text-sm font-black text-slate-800">{r.name || '회원'}</span>
+                                                                {no && (r.noShowFine || 0) > 0 && <span className="text-[11px] font-black text-rose-500">벌금 {(r.noShowFine / 10000)}만원</span>}
+                                                            </div>
+                                                            <p className={`text-[12px] font-bold mt-0.5 break-words ${r.absentReason ? 'text-slate-500' : 'text-slate-400'}`}>{r.absentReason ? `사유: ${r.absentReason}` : '사유 없음'}</p>
+                                                        </div>
+                                                        <span className="shrink-0 text-[10px] font-black text-slate-400">{_fmtAbsAt(r.absentAt)}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                                {/* 담당자 변경 팝업 */}
+                                {mgrPickOpen && (
+                                    <div className="fixed inset-0 z-[80] bg-black/40 flex items-end sm:items-center justify-center p-4" onClick={() => setMgrPickOpen(false)}>
+                                        <div className="bg-white rounded-3xl p-5 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+                                            <p className="text-lg font-black text-slate-900">담당자 변경</p>
+                                            <p className="text-xs font-bold text-slate-400 mt-1 mb-4">{selectedMeeting.date} 모임 담당자를 선택하세요. 이후 불참·노쇼 알림이 새 담당자에게 갑니다.</p>
+                                            <div className="space-y-1.5 max-h-[52vh] overflow-y-auto">
+                                                {(managers || []).map(m => {
+                                                    const cur = selectedMeeting.managerId === m.id;
+                                                    return (
+                                                        <button key={m.id} onClick={() => { onChangeManager && onChangeManager(selectedMeeting, m.id, m.name); setMgrPickOpen(false); }}
+                                                            className={`w-full flex items-center justify-between gap-2 p-3.5 rounded-2xl border text-left active:scale-95 transition-all ${cur ? 'bg-teal-50 border-teal-300' : 'card border-slate-100'}`}>
+                                                            <span className="font-black text-sm text-slate-800">{m.name}<span className="text-[11px] text-slate-400 font-bold ml-1.5">{m.role}</span></span>
+                                                            {cur && <Icon.Check size={16} className="text-teal-500 shrink-0"/>}
+                                                        </button>
+                                                    );
+                                                })}
+                                                <button onClick={() => { onChangeManager && onChangeManager(selectedMeeting, '', ''); setMgrPickOpen(false); }}
+                                                    className="w-full p-3.5 rounded-2xl border card border-slate-100 text-left text-sm font-black text-slate-400 active:scale-95 transition-all">담당자 없음</button>
+                                            </div>
+                                            <button onClick={() => setMgrPickOpen(false)} className="w-full mt-4 py-3 rounded-2xl bg-slate-100 text-slate-500 font-black text-sm active:scale-95">닫기</button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* 모임 정보 (읽기 전용) — 명단 전용 모드에선 숨김(모임 정보 카드 줄에서 따로 봄) */}
                                 {!rosterOnly && (

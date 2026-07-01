@@ -291,7 +291,22 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
         } catch (e) { showAlert('오류', '삭제 실패: ' + e.message); }
     });
 
-    return { activeMeeting, activeSelf, activeMatch, handleSaveMeeting, handleDeleteMeeting, restoreMeeting, purgeMeeting };
+    // 담당자만 교체 (모임 전체 수정 없이) — 담당자 본인이 못 올 때 다른 운영진에게 넘긴다.
+    // meetings 문서의 managerId/Name만 갱신 → 이후 불참·노쇼 알림은 자동으로 새 담당자에게 감(functions는 meetings에서 읽음).
+    const changeMeetingManager = async (meeting, managerId, managerName) => {
+        if (!meeting?.id) return;
+        try {
+            await getMeetingsCol().doc(meeting.id).update({ managerId: managerId || '', managerName: managerName || '' });
+            // 현재(미러) 모임이면 미러 담당자도 맞춘다 — 담당자 필드만 merge(인원수·상태는 안 건드림)
+            const activeOfType = ((meeting.meetingType || 'self') === 'match') ? activeMatch : activeSelf;
+            if (activeOfType && activeOfType.id === meeting.id) {
+                const mirrorId = (meeting.meetingType || 'self') === 'match' ? 'meeting_schedule_match' : 'meeting_schedule_v2';
+                await getSettingsCol().doc(mirrorId).set({ managerId: managerId || '', managerName: managerName || '' }, { merge: true });
+            }
+        } catch (e) { showAlert('오류', '담당자 변경 실패: ' + e.message); }
+    };
+
+    return { activeMeeting, activeSelf, activeMatch, handleSaveMeeting, handleDeleteMeeting, restoreMeeting, purgeMeeting, changeMeetingManager };
 }
 
 // ── 정기 모임 자동 생성 설정 (전역 헬퍼: member.html · attendance.html 공유) ──
