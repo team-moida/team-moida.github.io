@@ -10,6 +10,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
     <script>(function(){if(localStorage.getItem('moida_theme')==='dark')document.documentElement.classList.add('dark');})();</script>
+    <script src="sw-register.js"></script>
     <!-- TWA 네이티브 FCM 토큰 캡처: index.html에서 먼저 localStorage에 저장 → member.html use-fcm.js가 로그인 후 Firestore 저장 -->
     <script>(function(){try{var p=new URLSearchParams(location.search);var nt=p.get('nativeToken');if(nt){localStorage.setItem('pendingNativeToken',nt);p.delete('nativeToken');var s=p.toString();history.replaceState(null,'',location.pathname+(s?'?'+s:'')+location.hash);}}catch(e){}})();</script>
     <link rel="stylesheet" href="index.css">
@@ -247,7 +248,7 @@
             <div class="w-6 h-6 border-2 border-teal-500 border-t-transparent rounded-full spin"></div>
         </div>
 
-        <p class="text-center text-slate-400 text-[10px] mt-8">모이다 v1.23.5 · OTP FC © 2026</p>
+        <p class="text-center text-slate-400 text-[10px] mt-8">모이다 v1.23.6 · OTP FC © 2026</p>
     </div>
 
     <!-- 토스트 -->
