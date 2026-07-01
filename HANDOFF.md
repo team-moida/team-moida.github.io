@@ -3,11 +3,21 @@
 > 다른 PC/새 세션에서 이어갈 때 이 파일부터 읽으세요.
 > 자세한 작업 규칙·금지사항은 `CLAUDE.md`에 있습니다(꼭 같이 읽기).
 
-**마지막 갱신:** 2026-07-01 · **SW 캐시:** `moida-v371` · **표시버전:** `v1.23.1` · **마지막 커밋:** `ff3738c`
+**마지막 갱신:** 2026-07-02 · **SW 캐시:** `moida-v379` · **표시버전:** `v1.23.7` · **마지막 커밋:** `f2646b6`(자동배포)
 **라이브:** team-moida/team-moida.github.io · **Firebase:** moida-otpfc
 **최종 제품:** `member.html` 통합앱 (회원·운영진·개발자). ※ 옛 독립 관리자 HTML(attendance/roster/team-maker/match/index)은 화제 금지.
 
 ---
+
+## ⚙️ 개발 환경 규칙 (상시 — 매 세션 유지)
+- **CDN 우회 ON 유지**: GitHub Pages CDN이 파일을 10분 캐시(`cache-control: max-age=600`)해 배포 반영이 최대 10분 늦음 → sw.js fetch 핸들러가 코드파일(html/js/css)에 `?_cb=Date.now()`를 붙여 CDN을 건너뛰고 원본에서 **즉시 최신** 수신. **개발 기간엔 계속 ON.** (체감 속도저하 없음·데이터 동일 — 원래도 no-store로 매번 네트워크 수신이었음, 차이는 CDN엣지 vs 원본 거리뿐). 서비스 안정기에 끄려면 sw.js의 `_cb` 라인을 예전 `new Request(event.request,{cache:'no-store'})`로 되돌리면 됨. **매일 껐다 켜지 말 것**(전환 자체가 CDN 10분에 걸려 역효과).
+- **자동 새로고침**: sw-register.js(공용, member.html·index.html 로드)가 앱 재실행/포커스 시 `reg.update()` → 새 SW 활성화(controllerchange) 시 1회 자동 새로고침. 캐시 수동삭제 불필요.
+
+## 오늘 세션 (2026-07-02, v1.23.1 → v1.23.7, 자동배포됨)
+- **자동 닫힘 팝업 페이드아웃**(v1.23.3~4): 신청완료 팝업 + 키오스크 '출석완료' 플래시 + 출석 풀스크린 모달 + 하단 토스트가 '팟!' 대신 스르륵 사라지게. member.css `.pop-out`/`.pop-card-out` 재사용(신규 CSS 없음), closing 플래그+지연 언마운트. → tab-attend.js·tab-home.js·member.html·check-in-panel.js·member.css.
+- **담당자 불참/노쇼 취소 시 담당자 복귀**(v1.23.5): 담당 운영진이 자기 모임 불참/노쇼하면 meetings에 `managerAbsentId` 표시 → 취소하면 그 사람으로 담당자 원상복구(+미러 동기화). → handlers-registration.js(handleAbsent 표시, handleUndoAbsent 복구).
+- **키오스크 '출석완료' 오표시 버그**(v1.23.5): 출석시간 아닐 때 '출석불가' 뒤에 '출석완료' 플래시가 겹쳐 뜨던 것 → attendHandleCheckIn이 성공/실패(true/false) 반환, 키오스크 handleConfirm이 **성공일 때만** 플래시. → handlers-attend.js·tab-attend.js.
+- **자동 새로고침 + CDN 우회**(v1.23.6~7): 위 '개발 환경 규칙' 참고. sw-register.js 신규 + sw.js 캐시버스터. → sw-register.js·sw.js·member.html·index.html.
 
 ## 오늘 세션 이어서 (2026-07-01, v1.16.3 → v1.23.1, 전부 배포됨)
 - **흰화면 버그 수정**(v1.21.2, `074e20d`): 새 모임 모집 중 명단/팀 진입 시 `(a.createdAt||'').localeCompare is not a function` 크래시. 원인=실제 신청 흐름(handlers-registration.js)이 `weekly_session.createdAt`을 `serverTimestamp()`로 저장→읽으면 Timestamp 객체라 localeCompare 불가(테스트 모임은 ISO 문자열이라 안 깨짐). **해결**: tab-attend.js 명단 정렬을 `ms()` 안전비교로(이미 만든 모임도 재생성 없이 복구) + 저장도 ISO 문자열로 통일. use-team.js/use-attend.js는 이미 `ms()` 써서 안전했음.
