@@ -382,7 +382,7 @@ const NextMeetingCard = ({
     mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount, scheduleData,
     matchLocalIndex, matchCompleted, onMatchPrev, onMatchNext, onMatchToggleComplete, onMatchAutoAdvance,
     isMeetingOver, isMeetingEndSaved, onEndMeeting, onGenerateQR, onEditMeeting, onDeleteMeeting,
-    onOpenAttendModal, onInlineGPS, onInlineQR, enableQR, onOpenKiosk, fill, fitFill,
+    onOpenAttendModal, onInlineGPS, onInlineQR, enableQR, onOpenKiosk, fill, fitFill, homeRich,
 }) => {
     const [boardOpen, setBoardOpen] = React.useState(false);
     window.useMoidaBack?.(boardOpen, () => setBoardOpen(false));
@@ -515,13 +515,14 @@ const NextMeetingCard = ({
         window.addEventListener('resize', calc);
         return () => { clearTimeout(tid); clearTimeout(tid2); window.removeEventListener('resize', calc); };
     }, [fill, meeting?.date, kind]);
-    const fillOn = fitFill || (fill && !!fillH);
+    // fillOn = 큰(원형 신청버튼) 레이아웃. homeRich면 높이 안 늘려도 큰 레이아웃 유지.
+    const fillOn = homeRich || fitFill || (fill && !!fillH);
 
     return (
         <div className={`relative ${fitFill ? 'h-full' : ''}`} ref={fillRef}>
         <button onClick={()=> onTabChange('attend', kind, meeting.id || getMeetingId(meeting))}
             className={`w-full rounded-3xl p-5 text-left ${ink} transition-all${showInlineAttend ? '' : ' active:scale-98'}${showOverlay ? ' blur-sm' : ''}${fillOn ? ' flex flex-col' : ''}`}
-            style={{ background: cardBg, boxShadow: cardShadow, ...(fitFill ? { height: '100%' } : fillOn ? { minHeight: fillH + 'px' } : {}) }}>
+            style={{ background: cardBg, boxShadow: cardShadow, ...(fitFill ? { height: '100%' } : (fillOn && fillH) ? { minHeight: fillH + 'px' } : {}) }}>
             <div className="flex items-center justify-between gap-2 mb-2.5">
                 <div className="flex items-center gap-1.5 min-w-0">
                     <p className={`text-xs font-black uppercase tracking-widest ${ink80}`}>{cfg.label}</p>
@@ -2032,9 +2033,9 @@ const TabHome = ({
                 : computeMeetingDay(c.meeting.date, c.meeting.start);
             return { ...c, isActive, dayInfo };
         });
-    // 모임 카드 하나 렌더 (자연 크기 — 채우지 않고 flex 중앙에 배치). 단일/스와이프 양쪽에서 재사용.
+    // 모임 카드 하나 렌더 (자연 크기 — 채우지 않고 flex 중앙에 배치). homeRich=원형 신청버튼 등 큰 레이아웃 유지.
     const renderCard = (c) => (
-        <NextMeetingCard key={c.kind} meeting={c.meeting} kind={c.kind} isActive={c.isActive}
+        <NextMeetingCard key={c.kind} homeRich={!!fit} meeting={c.meeting} kind={c.kind} isActive={c.isActive}
             dayInfo={c.dayInfo} darkMode={darkMode} isAdminMode={isAdminMode} onTabChange={onTabChange} members={members}
             mySession={mySession} teamReady={teamReady} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
             allowFromDisplay={allowFromDisplay} participantCount={participantCount} scheduleData={scheduleData}
