@@ -2033,9 +2033,9 @@ const TabHome = ({
                 : computeMeetingDay(c.meeting.date, c.meeting.start);
             return { ...c, isActive, dayInfo };
         });
-    // 모임 카드 하나 렌더 (자연 크기 — 채우지 않고 flex 중앙에 배치). homeRich=원형 신청버튼 등 큰 레이아웃 유지.
+    // 모임 카드 하나 렌더. fit이면 공지~하단탭 공간을 꽉 채움(fitFill) + 내부 내용은 fillOn이 분배/중앙 배치.
     const renderCard = (c) => (
-        <NextMeetingCard key={c.kind} homeRich={!!fit} meeting={c.meeting} kind={c.kind} isActive={c.isActive}
+        <NextMeetingCard key={c.kind} fitFill={!!fit} homeRich={!!fit} meeting={c.meeting} kind={c.kind} isActive={c.isActive}
             dayInfo={c.dayInfo} darkMode={darkMode} isAdminMode={isAdminMode} onTabChange={onTabChange} members={members}
             mySession={mySession} teamReady={teamReady} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
             allowFromDisplay={allowFromDisplay} participantCount={participantCount} scheduleData={scheduleData}
@@ -2066,12 +2066,12 @@ const TabHome = ({
             fit ? (
                 <div className="flex-1 min-h-0 flex flex-col">
                     {meetingCards.length === 1 ? (
-                        <div className="flex-1 min-h-0 flex flex-col justify-center overflow-hidden">{renderCard(meetingCards[0])}</div>
+                        <div className="flex-1 min-h-0 overflow-hidden">{renderCard(meetingCards[0])}</div>
                     ) : (
                         <>
-                            <div className="flex-1 min-h-0 flex items-center overflow-x-auto snap-x snap-mandatory gap-3 -mx-4 px-4 no-sb" onScroll={onCarouselScroll}>
+                            <div className="flex-1 min-h-0 flex overflow-x-auto snap-x snap-mandatory gap-3 -mx-4 px-4 no-sb" onScroll={onCarouselScroll}>
                                 {meetingCards.map(c => (
-                                    <div key={c.kind} className="snap-center shrink-0 w-full">{renderCard(c)}</div>
+                                    <div key={c.kind} className="snap-center shrink-0 w-full h-full overflow-hidden">{renderCard(c)}</div>
                                 ))}
                             </div>
                             <div className="shrink-0 flex justify-center items-center gap-1.5 pt-2">
