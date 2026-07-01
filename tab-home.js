@@ -839,16 +839,47 @@ const NextMeetingCard = ({
                         )
                     ) : teamReady && myTeamInfo ? (
                         fillOn ? (
-                            <div className="flex items-center justify-center gap-5 py-2">
-                                {/* 흰 번호패치(저지 느낌) — 조끼색 카드 위에서도 항상 잘 보이게 */}
-                                <div className="flex items-center justify-center rounded-3xl bg-white flex-shrink-0" style={{width:128, height:128, boxShadow:'0 8px 20px rgba(0,0,0,0.18)'}}>
-                                    <span className="font-black leading-none" style={{fontSize:64, color: vestNumColor}}>{myTeamInfo.jerseyNumber}</span>
+                            <div className="py-2">
+                                <div className="flex items-center justify-center gap-5">
+                                    {/* 흰 번호패치(저지 느낌) — 조끼색 카드 위에서도 항상 잘 보이게 */}
+                                    <div className="flex items-center justify-center rounded-3xl bg-white flex-shrink-0" style={{width:128, height:128, boxShadow:'0 8px 20px rgba(0,0,0,0.18)'}}>
+                                        <span className="font-black leading-none" style={{fontSize:64, color: vestNumColor}}>{myTeamInfo.jerseyNumber}</span>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className={`text-[15px] font-black ${ink85} leading-snug`}>오늘 {memberData?.name || '회원'}님은</p>
+                                        <p className={`text-2xl font-black ${ink} leading-snug mt-0.5`}>{getTeamColorName(myTeamIdx)}색 {myTeamInfo.jerseyNumber}번<span className="text-lg">이에요!</span></p>
+                                        <p className={`text-xs font-black ${ink70} mt-2`}>{myTeamInfo.teamName}팀 · {getTeamColorName(myTeamIdx)} 조끼</p>
+                                    </div>
                                 </div>
-                                <div className="min-w-0">
-                                    <p className={`text-[15px] font-black ${ink85} leading-snug`}>오늘 {memberData?.name || '회원'}님은</p>
-                                    <p className={`text-2xl font-black ${ink} leading-snug mt-0.5`}>{getTeamColorName(myTeamIdx)}색 {myTeamInfo.jerseyNumber}번<span className="text-lg">이에요!</span></p>
-                                    <p className={`text-xs font-black ${ink70} mt-2`}>{myTeamInfo.teamName}팀 · {getTeamColorName(myTeamIdx)} 조끼</p>
-                                </div>
+                                {/* 이번 경기 상대 — 조끼 발표와 같은 문장 스타일(카드색 위), 상대 배지만 상대 조끼색. 확정 매치표 있을 때만 */}
+                                {(() => {
+                                    const r = getMyCurrentRoundMatch(scheduleData, myTeamInfo.teamName);
+                                    if (!r || r.allDone) return null;
+                                    const oppLight = (r.oppIdx === 2 || r.oppIdx === 3); // 연두·노랑 = 밝은 조끼 → 배지 글자 어둡게
+                                    return (
+                                        <div className="mt-4 pt-4 flex items-center justify-center gap-5" style={{borderTop:`1px solid ${softBorder}`}}>
+                                            {r.resting ? (<>
+                                                <div className="flex items-center justify-center rounded-3xl flex-shrink-0" style={{width:104, height:104, background: dark?'rgba(0,0,0,0.12)':'rgba(255,255,255,0.22)'}}>
+                                                    <Icon.Coffee size={46} className={ink}/>
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className={`text-[15px] font-black ${ink85} leading-snug`}>이번 라운드는</p>
+                                                    <p className={`text-2xl font-black ${ink} leading-snug mt-0.5`}>쉬어가요</p>
+                                                    <p className={`text-xs font-black ${ink70} mt-2`}>다음 경기를 기다려 주세요</p>
+                                                </div>
+                                            </>) : r.opponent ? (<>
+                                                <div className={`flex items-center justify-center rounded-3xl flex-shrink-0 ${getTeamBadge(r.oppIdx)}`} style={{width:104, height:104, boxShadow:'0 8px 20px rgba(0,0,0,0.18)'}}>
+                                                    <span className="font-black leading-none" style={{fontSize:52, color: oppLight?'#15171E':'#ffffff'}}>{r.opponent}</span>
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className={`text-[15px] font-black ${ink85} leading-snug`}>이번 경기 상대는</p>
+                                                    <p className={`text-2xl font-black ${ink} leading-snug mt-0.5`}>{getTeamColorName(r.oppIdx)}팀<span className="text-lg">이에요!</span></p>
+                                                    <p className={`text-xs font-black ${ink70} mt-2 flex items-center gap-1`}><Icon.MapPin size={13} className="flex-shrink-0"/>{r.fieldName}에서 만나요</p>
+                                                </div>
+                                            </>) : null}
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         ) : (
                             <div className="flex items-center gap-2.5">
