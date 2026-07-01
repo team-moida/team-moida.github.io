@@ -512,12 +512,13 @@ const TabRoster = ({
                 {/* 이미지 캡처 전용 시트 — 화면 밖에 렌더. 카드 대신 심플 블록 리스트라 글씨 치우침 없음 */}
                 <div id="roster-capture-sheet" style={{position:'absolute',left:'-99999px',top:0,width:'380px',background:'#ffffff',padding:'22px',fontFamily:"'Pretendard Variable', Pretendard, sans-serif"}}>
                     <div style={{fontWeight:900,fontSize:'17px',color:'#122E78',paddingBottom:'12px',borderBottom:'2px solid #e2e8f0',marginBottom:'6px'}}>{targetMonth.replace('-','년 ')}월 · {ROSTER_FILTER_LABELS[filterCategory]||'전체'} {filteredMembers.length}명</div>
-                    {filteredMembers.map((m,i)=>{
+                    {filteredMembers.map((m)=>{
                         const info = getMembershipStatus(m, targetMonth);
                         return (
                             <div key={m.id} style={{padding:'9px 2px',borderBottom:'1px solid #f1f5f9',fontSize:'15px',color:'#0f172a'}}>
-                                <span style={{fontWeight:900}}>{i+1}. {m.name}</span>
-                                {filterCategory==='expiring' && info?.active && <span style={{fontWeight:700,fontSize:'12px',color:'#64748b',marginLeft:'8px'}}>만료 {info.endDateFormatted}</span>}
+                                <span style={{display:'inline-block',width:'6px',height:'6px',borderRadius:'50%',background:'#183FB0',marginRight:'10px',verticalAlign:'middle'}}></span>
+                                <span style={{fontWeight:900,verticalAlign:'middle'}}>{m.name}</span>
+                                {filterCategory==='expiring' && info?.active && <span style={{fontWeight:700,fontSize:'12px',color:'#64748b',marginLeft:'8px',verticalAlign:'middle'}}>만료 {info.endDateFormatted}</span>}
                             </div>
                         );
                     })}
