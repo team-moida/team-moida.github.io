@@ -273,6 +273,8 @@ const RosterStatsView = ({ activeMembers, attendHistory, attendHistoryTrash = []
 // ─── 명단 회비 목록 이미지 내보내기 (현재 필터 목록 캡처) ───
 // 스마트 분기: 모바일=공유 시트(카톡 바로) → PC=클립보드 복사(붙여넣기) → 실패 시 다운로드.
 const ROSTER_FILTER_LABELS = { all:'전체', monthly:'월납', half:'반년납', full:'1년납', rest:'휴식', special:'특별휴식', unpaid:'미납', expiring:'종료예정' };
+// 필터별 제목/번호 색 (앱 상태 배지 색과 맞춤). 미납=빨강·반년납=파랑 …
+const ROSTER_FILTER_COLORS = { all:'#122E78', monthly:'#059669', half:'#2563EB', full:'#4F46E5', rest:'#D97706', special:'#EA580C', unpaid:'#E11D48', expiring:'#B45309' };
 async function exportRosterList(fileLabel, showToast, showAlert) {
     await new Promise(r => setTimeout(r, 60));   // 렌더 안정 대기
     const notify = (msg, type) => { try { showToast ? showToast(msg, type) : (showAlert && showAlert('안내', msg)); } catch(_) {} };
@@ -510,15 +512,16 @@ const TabRoster = ({
                     </div>
                 </div>
                 {/* 이미지 캡처 전용 시트 — 화면 밖에 렌더. 카드 대신 심플 블록 리스트라 글씨 치우침 없음 */}
-                <div id="roster-capture-sheet" style={{position:'absolute',left:'-99999px',top:0,width:'380px',background:'#ffffff',padding:'22px',fontFamily:"'Pretendard Variable', Pretendard, sans-serif"}}>
-                    <div style={{fontWeight:900,fontSize:'17px',color:'#122E78',paddingBottom:'12px',borderBottom:'2px solid #e2e8f0',marginBottom:'6px'}}>{targetMonth.replace('-','년 ')}월 · {ROSTER_FILTER_LABELS[filterCategory]||'전체'} {filteredMembers.length}명</div>
-                    {filteredMembers.map((m)=>{
+                <div id="roster-capture-sheet" style={{position:'absolute',left:'-99999px',top:0,width:'380px',background:'#ffffff',padding:'26px 24px',fontFamily:"'Pretendard Variable', Pretendard, sans-serif"}}>
+                    <div style={{fontWeight:900,fontSize:'12px',color:'#1e293b',letterSpacing:'0.08em',marginBottom:'3px'}}>OTP FC · {targetMonth.replace('-','년 ')}월</div>
+                    <div style={{fontWeight:900,fontSize:'22px',marginBottom:'16px'}}><span style={{color: ROSTER_FILTER_COLORS[filterCategory]||'#122E78'}}>{ROSTER_FILTER_LABELS[filterCategory]||'전체'}</span> <span style={{color:'#1e293b',fontSize:'16px'}}>{filteredMembers.length}명</span></div>
+                    {filteredMembers.map((m,i)=>{
                         const info = getMembershipStatus(m, targetMonth);
                         return (
-                            <div key={m.id} style={{padding:'9px 2px',borderBottom:'1px solid #f1f5f9',fontSize:'15px',color:'#0f172a'}}>
-                                <span style={{display:'inline-block',width:'6px',height:'6px',borderRadius:'50%',background:'#183FB0',marginRight:'10px',verticalAlign:'middle'}}></span>
-                                <span style={{fontWeight:900,verticalAlign:'middle'}}>{m.name}</span>
-                                {filterCategory==='expiring' && info?.active && <span style={{fontWeight:700,fontSize:'12px',color:'#64748b',marginLeft:'8px',verticalAlign:'middle'}}>만료 {info.endDateFormatted}</span>}
+                            <div key={m.id} style={{padding:'13px 2px',borderBottom:'1px solid #f4f6fa'}}>
+                                <span style={{display:'inline-block',minWidth:'22px',textAlign:'right',fontWeight:900,fontSize:'15px',color:(ROSTER_FILTER_COLORS[filterCategory]||'#122E78')+'66',marginRight:'14px',verticalAlign:'middle'}}>{i+1}</span>
+                                <span style={{fontWeight:800,fontSize:'16px',color:'#1e293b',verticalAlign:'middle'}}>{m.name}</span>
+                                {filterCategory==='expiring' && info?.active && <span style={{fontWeight:700,fontSize:'12px',color:'#475569',marginLeft:'8px',verticalAlign:'middle'}}>만료 {info.endDateFormatted}</span>}
                             </div>
                         );
                     })}
