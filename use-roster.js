@@ -91,9 +91,16 @@ function useRoster({ isAdminMode }) {
         });
         return counts;
     }, [activeMembers, monthlyStatuses, monthlyReasons, targetMonth]);
+    // 반년납/1년납 이번(보는) 달 종료 예정(남은 1개월) — 회비 탭 상단 하이라이트용 (filterCounts.expiring과 동일 기준)
+    const expiringMembers = useMemo(() => (
+        [...activeMembers]
+            .filter(m => joinedByMonth(m, targetMonth) && getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth) !== 'staff')
+            .filter(m => { const ms = getMembershipStatus(m, targetMonth); return ms && ms.active && ms.remaining <= 1; })
+            .sort((a, b) => a.name.localeCompare(b.name))
+    ), [activeMembers, monthlyStatuses, monthlyReasons, targetMonth]);
 
     return {
-        allMembers, activeMembers, resignedMembers, filteredMembers, filterCounts,
+        allMembers, activeMembers, resignedMembers, filteredMembers, filterCounts, expiringMembers,
         rosterSubTab, setRosterSubTab,
         targetMonth, setTargetMonth,
         filterCategory, setFilterCategory,

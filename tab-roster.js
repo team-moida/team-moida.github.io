@@ -320,7 +320,7 @@ const TabRoster = ({
     handleRestoreResigned, setDeletingMember,
     moveMonth, targetMonth,
     filterCounts, filterCategory, setFilterCategory,
-    filteredMembers,
+    filteredMembers, expiringMembers = [],
     monthlyStatuses, monthlyReasons,
     monthlyPaymentDates, duesReports = {},
     handleBillingMemberClick, onConfirmDuesReport, onRejectDuesReport,
@@ -410,6 +410,24 @@ const TabRoster = ({
         {/* ── 회비 서브탭 ── */}
         {rosterSubTab === 'monthly' && (
             <div>
+                {/* 종료 예정(반년납·1년납 이번 달 만료) 상단 하이라이트 — 운영진 갱신 안내용 */}
+                {expiringMembers.length > 0 && (
+                    <div className="mb-3 rounded-2xl p-3 bg-amber-50 border border-amber-200">
+                        <p className="text-sm font-black text-amber-700 mb-2 flex items-center gap-1.5"><Icon.Clock size={14} className="flex-shrink-0"/>반년납·1년납 종료 예정 {expiringMembers.length}명 · 갱신 안내가 필요해요</p>
+                        <div className="space-y-1.5">
+                            {expiringMembers.map(m => {
+                                const einfo = getMembershipStatus(m, targetMonth);
+                                return (
+                                    <button key={m.id} onClick={()=>handleBillingMemberClick(m)} className="w-full flex items-center gap-2 bg-white rounded-xl px-3 py-2 text-left active:scale-95 transition-all">
+                                        <span className="font-black text-slate-800 text-sm">{m.name}</span>
+                                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg inline-flex items-center leading-none ${statusConfig[einfo?.type==='반년'?'half':'full'].color}`}>{einfo?.type}납</span>
+                                        <span className="ml-auto text-[11px] font-black text-amber-700 flex-shrink-0">만료 {einfo?.endDateFormatted}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
                 {(() => {
                     const pend = Object.values(duesReports||{}).filter(r=>r&&r.status==='pending');
                     if (!pend.length) return null;
