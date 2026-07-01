@@ -279,7 +279,15 @@ async function exportRosterList(fileLabel, showToast, showAlert) {
     try {
         const el = document.getElementById('roster-capture-area');
         if (!el) return;
-        const canvas = await window.html2canvas(el, { scale: 2, backgroundColor: '#f8fafc', useCORS: true });
+        // 캡처 동안 상태 배지 숨김 — html2canvas에서 배지 글씨가 치우쳐 찍히는 문제 회피(카테고리는 제목에 이미 표시됨)
+        const badges = Array.from(el.querySelectorAll('.roster-badge'));
+        badges.forEach(b => { b.style.display = 'none'; });
+        let canvas;
+        try {
+            canvas = await window.html2canvas(el, { scale: 2, backgroundColor: '#f8fafc', useCORS: true });
+        } finally {
+            badges.forEach(b => { b.style.display = ''; });
+        }
         const fileName = `모이다_명단_${fileLabel}`;
         const isMobile = /iphone|ipad|ipod|android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent)); // iPadOS=Mac+터치
         // 1) 모바일: 공유 시트(파일) → 카톡 등으로 바로 전송
@@ -492,12 +500,12 @@ const TabRoster = ({
                                         <span className="font-black text-slate-800">{m.name}</span>
                                         {statusType==='rest'&&info?.active
                                             ? <>
-                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg inline-flex items-center leading-none ${statusConfig[info.type==='반년'?'half':'full'].color}`}>{info.type}납</span>
-                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg inline-flex items-center leading-none ${cfg.color}`}>휴식 중</span>
+                                                <span className={`roster-badge text-[9px] font-black px-1.5 py-0.5 rounded-lg inline-flex items-center leading-none ${statusConfig[info.type==='반년'?'half':'full'].color}`}>{info.type}납</span>
+                                                <span className={`roster-badge text-[9px] font-black px-1.5 py-0.5 rounded-lg inline-flex items-center leading-none ${cfg.color}`}>휴식 중</span>
                                               </>
-                                            : <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg inline-flex items-center leading-none ${cfg.color}`}>{cfg.label}</span>
+                                            : <span className={`roster-badge text-[9px] font-black px-1.5 py-0.5 rounded-lg inline-flex items-center leading-none ${cfg.color}`}>{cfg.label}</span>
                                         }
-                                        {duesReports[m.id]?.status==='pending' && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-lg bg-amber-100 text-amber-700 inline-flex items-center leading-none gap-1"><Icon.Mail size={10} className="flex-shrink-0"/>{DUES_LABELS[duesReports[m.id].payType]||'신고'} {wonFmt(duesReports[m.id].amount)}</span>}
+                                        {duesReports[m.id]?.status==='pending' && <span className="roster-badge text-[9px] font-black px-1.5 py-0.5 rounded-lg bg-amber-100 text-amber-700 inline-flex items-center leading-none gap-1"><Icon.Mail size={10} className="flex-shrink-0"/>{DUES_LABELS[duesReports[m.id].payType]||'신고'} {wonFmt(duesReports[m.id].amount)}</span>}
                                     </div>
                                     {info?.active&&<p className="text-[10px] text-slate-400 mt-0.5">만료: {info.endDateFormatted} · 잔여휴식 {info.remainingRest}회</p>}
                                     {payDate&&<p className="text-[10px] text-slate-400 mt-0.5">납부일: {payDate}</p>}
