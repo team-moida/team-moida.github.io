@@ -74,8 +74,10 @@ function useRoster({ isAdminMode }) {
         let list = [...activeMembers].filter(m => joinedByMonth(m, targetMonth)).sort((a,b) => a.name.localeCompare(b.name));
         if (filterCategory === 'longterm') {        // 반년납+1년납 통합
             list = list.filter(m => { const t = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth); return t === 'half' || t === 'full'; });
-        } else if (filterCategory === 'restall') {  // 휴식+특별휴식 통합
-            list = list.filter(m => { const t = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth); return t === 'rest' || t === 'special'; });
+        } else if (filterCategory === 'restall') {  // 휴식+특별휴식 통합 (휴식 위 → 특별휴식 아래)
+            const _rrank = m => getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth) === 'special' ? 1 : 0;
+            list = list.filter(m => { const t = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth); return t === 'rest' || t === 'special'; })
+                       .sort((a, b) => _rrank(a) - _rrank(b) || a.name.localeCompare(b.name));
         } else if (filterCategory !== 'all') {
             list = list.filter(m => getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth) === filterCategory);
         }

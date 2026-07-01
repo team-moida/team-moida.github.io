@@ -272,7 +272,7 @@ const RosterStatsView = ({ activeMembers, attendHistory, attendHistoryTrash = []
 };
 // ─── 명단 회비 목록 이미지 내보내기 (현재 필터 목록 캡처) ───
 // 스마트 분기: 모바일=공유 시트(카톡 바로) → PC=클립보드 복사(붙여넣기) → 실패 시 다운로드.
-const ROSTER_FILTER_LABELS = { all:'전체', monthly:'월납', longterm:'반년·1년납', restall:'휴식', unpaid:'미납' };
+const ROSTER_FILTER_LABELS = { all:'전체', monthly:'월납', longterm:'반년·1년납', restall:'휴식·특별휴식', unpaid:'미납' };
 // 필터별 제목/번호 색 (앱 상태 배지 색과 맞춤). 미납=빨강·반년1년납=인디고·휴식=앰버 …
 const ROSTER_FILTER_COLORS = { all:'#122E78', monthly:'#059669', longterm:'#4F46E5', restall:'#D97706', unpaid:'#E11D48' };
 async function exportRosterList(fileLabel, showToast, showAlert) {
@@ -459,7 +459,7 @@ const TabRoster = ({
                         {key:'all',label:`전체 ${filterCounts.all}`},
                         {key:'monthly',label:`월납 ${filterCounts.monthly}`},
                         {key:'longterm',label:`반년·1년납 ${filterCounts.longterm}`},
-                        {key:'restall',label:`휴식 ${filterCounts.restall}`},
+                        {key:'restall',label:`휴식·특별휴식 ${filterCounts.restall}`},
                         {key:'unpaid',label:`미납 ${filterCounts.unpaid}`},
                     ].map(f=>(
                         <button key={f.key} onClick={()=>setFilterCategory(f.key)}
@@ -477,13 +477,16 @@ const TabRoster = ({
                         <p className="font-black text-slate-800 text-[15px]">{targetMonth.replace('-','년 ')}월 · {ROSTER_FILTER_LABELS[filterCategory]||'전체'} <span className="text-teal-500">{filteredMembers.length}명</span></p>
                     </div>
                     <div className="space-y-2">
-                    {filteredMembers.map(m=>{
+                    {filteredMembers.map((m, idx)=>{
                         const statusType = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
                         const cfg = statusConfig[statusType] || statusConfig.unpaid;
                         const info = getMembershipStatus(m, targetMonth);
                         const payDate = monthlyPaymentDates[m.id];
+                        const showSub = filterCategory==='restall' && (idx===0 || getMemberStatusType(filteredMembers[idx-1], monthlyStatuses, monthlyReasons, targetMonth) !== statusType);
                         return (
-                            <button key={m.id} onClick={()=>handleBillingMemberClick(m)}
+                            <React.Fragment key={m.id}>
+                            {showSub && <p className="text-[11px] font-black text-slate-400 tracking-wide px-1 pt-1">{statusType==='special'?'특별휴식':'휴식'}</p>}
+                            <button onClick={()=>handleBillingMemberClick(m)}
                                 className="w-full flex items-center gap-3 p-4 card border-slate-100 rounded-2xl text-left hover:border-teal-100 transition-all">
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
@@ -503,6 +506,7 @@ const TabRoster = ({
                                 </div>
                                 <Icon.ChevronRight size={16} className="text-slate-300 flex-shrink-0"/>
                             </button>
+                            </React.Fragment>
                         );
                     })}
                     </div>
@@ -512,13 +516,16 @@ const TabRoster = ({
                     <div style={{fontWeight:900,fontSize:'12px',color:'#1e293b',letterSpacing:'0.08em',marginBottom:'3px'}}>OTP FC · {targetMonth.replace('-','년 ')}월</div>
                     <div style={{fontWeight:900,fontSize:'22px',marginBottom:'16px'}}><span style={{color: ROSTER_FILTER_COLORS[filterCategory]||'#122E78'}}>{ROSTER_FILTER_LABELS[filterCategory]||'전체'}</span> <span style={{color:'#1e293b',fontSize:'16px'}}>{filteredMembers.length}명</span></div>
                     {filteredMembers.map((m,i)=>{
-                        const info = getMembershipStatus(m, targetMonth);
+                        const sst = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
+                        const showSub = filterCategory==='restall' && (i===0 || getMemberStatusType(filteredMembers[i-1], monthlyStatuses, monthlyReasons, targetMonth) !== sst);
                         return (
-                            <div key={m.id} style={{padding:'13px 2px',borderBottom:'1px solid #f4f6fa'}}>
+                            <React.Fragment key={m.id}>
+                            {showSub && <div style={{fontWeight:900,fontSize:'12px',color:'#94a3b8',letterSpacing:'0.04em',marginTop:i===0?'2px':'14px',marginBottom:'2px'}}>{sst==='special'?'특별휴식':'휴식'}</div>}
+                            <div style={{padding:'13px 2px',borderBottom:'1px solid #f4f6fa'}}>
                                 <span style={{display:'inline-block',minWidth:'22px',textAlign:'right',fontWeight:900,fontSize:'15px',color:(ROSTER_FILTER_COLORS[filterCategory]||'#122E78')+'66',marginRight:'14px',verticalAlign:'middle'}}>{i+1}</span>
                                 <span style={{fontWeight:800,fontSize:'16px',color:'#1e293b',verticalAlign:'middle'}}>{m.name}</span>
-                                {filterCategory==='expiring' && info?.active && <span style={{fontWeight:700,fontSize:'12px',color:'#475569',marginLeft:'8px',verticalAlign:'middle'}}>만료 {info.endDateFormatted}</span>}
                             </div>
+                            </React.Fragment>
                         );
                     })}
                 </div>
