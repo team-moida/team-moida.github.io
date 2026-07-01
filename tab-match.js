@@ -47,7 +47,8 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
         return () => { mq.removeEventListener ? mq.removeEventListener('change', on) : mq.removeListener(on); };
     }, []);
     // 관리자: 실제 진행 라운드(currentIndex)를 따라가며 이동·종료 제어 / 회원: 자유 탐색(browseIdx)
-    const wantMine = mode === 'mine';     // 'mine'=내 팀만 크게 / 'all'=구장별 전체 대진
+    const [viewMode, setViewMode] = React.useState(mode); // 'mine'=내 경기만 / 'all'=전체 경기 (팝업 상단 탭으로 전환)
+    const wantMine = viewMode === 'mine'; // 'mine'=내 팀만 크게 / 'all'=구장별 전체 대진
     const ctrl = isAdmin && !wantMine;    // 라이브 컨트롤(전체 대진 + 라운드 종료/자동진행) = 관리자 & 전체 모드
     const myTeam = myTeamInfo?.teamName || null;
     const myTeamIdx = myTeamInfo?.teamIdx ?? 0;
@@ -96,6 +97,13 @@ const MatchBoardModal = ({ sessions, fieldNames, startIndex, dateLabel, onClose,
                 </div>
                 <button onClick={() => setTimerOpen(v => !v)} aria-label={timerOpen ? '타이머 숨기기' : '타이머 보기'} style={{width:'clamp(40px,7vmin,52px)',height:'clamp(40px,7vmin,52px)',borderRadius:'14px',background:timerOpen?'var(--c-accent-deep)':'#f1f5f9',color:timerOpen?'white':'#64748b',border:'none',fontWeight:900,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon.Clock size={22}/></button>
                 <button onClick={onClose} style={{width:'clamp(40px,7vmin,52px)',height:'clamp(40px,7vmin,52px)',borderRadius:'14px',background:'#f1f5f9',color:'#64748b',border:'none',fontWeight:900,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon.X size={22}/></button>
+            </div>
+            {/* 보기 전환 탭 — 내 경기 / 전체 경기 */}
+            <div style={{flexShrink:0,background:'white',borderBottom:'1px solid var(--c-border)',padding:'0 16px 10px',display:'flex',justifyContent:'center'}}>
+                <div style={{display:'inline-flex',background:'#f1f5f9',borderRadius:'12px',padding:'4px',gap:'4px'}}>
+                    <button onClick={() => setViewMode('mine')} style={{border:'none',borderRadius:'9px',padding:'8px clamp(16px,4vmin,26px)',fontWeight:900,fontSize:'clamp(0.85rem,2vmin,1.05rem)',background:wantMine?'var(--c-accent-deep)':'transparent',color:wantMine?'white':'#64748b'}}>내 경기</button>
+                    <button onClick={() => setViewMode('all')} style={{border:'none',borderRadius:'9px',padding:'8px clamp(16px,4vmin,26px)',fontWeight:900,fontSize:'clamp(0.85rem,2vmin,1.05rem)',background:!wantMine?'var(--c-accent-deep)':'transparent',color:!wantMine?'white':'#64748b'}}>전체 경기</button>
+                </div>
             </div>
             {/* 본문 (스크롤 없음 — 한 화면에 맞춰 배치) */}
             <div style={{flex:'1 1 0%',minHeight:0,overflow:'hidden',display:'flex',flexDirection:'column',padding:'clamp(10px,2vmin,22px)',gap:'clamp(8px,1.5vmin,16px)'}}>

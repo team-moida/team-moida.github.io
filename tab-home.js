@@ -542,6 +542,13 @@ const NextMeetingCard = ({
                             <Icon.QrCode size={12}/> QR
                         </span>
                     )}
+                    {/* 매치판 크게 보기 — 확정 매치표가 있으면 작은 칩으로 진입(팝업 안에서 내 경기/전체 경기 전환) */}
+                    {hasBoard && (
+                        <span role="button" onClick={(e)=>{ e.stopPropagation(); setBoardOpen(true); }}
+                            className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg bg-white/25 text-white active:scale-95 cursor-pointer">
+                            <Icon.Tv size={12}/> 매치판
+                        </span>
+                    )}
                     {dayInfo && dayInfo.type !== 'past' && dayInfo.label && (
                         dayInfo.type==='started' ? (
                             <span className={`text-xs font-black px-3 py-1 rounded-full moida-pulse-live ${dark?'bg-[#15171E] text-live':'bg-live text-[#15171E]'}`}>{dayInfo.label}</span>
@@ -860,15 +867,6 @@ const NextMeetingCard = ({
                     <div className={`flex items-center gap-1.5 text-xs ${ink70}`}>
                         <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">모임이 가까워지면 출석·팀 정보가 표시됩니다</span>
                     </div>
-                </div>
-            )}
-            {/* 매치판 크게 보기 — 확정 매치표가 있으면 진입(회원=내 경기 / 관리자=전체 대진·라운드 컨트롤) */}
-            {hasBoard && (
-                <div className="mt-3">
-                    <span role="button" onClick={(e)=>{ e.stopPropagation(); setBoardOpen(true); }}
-                        className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-black text-sm ${chip} active:scale-95 cursor-pointer`}>
-                        <Icon.Tv size={16}/> 매치판 크게 보기
-                    </span>
                 </div>
             )}
             {/* 관리자: 카드에서 바로 수정/삭제 */}
