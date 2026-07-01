@@ -393,7 +393,7 @@ const NextMeetingCard = ({
     // 정기(self) 모임에서 팀이 확정·공개(teamReady)되고 내 팀이 정해지면(출석 전) 카드 배경=내 조끼색.
     const VEST_HEX = ['#ec4899','#38bdf8','#a3e635','#facc15','#2563eb','#ef4444']; // 핑크·하늘·연두·노랑·파랑·빨강 (getTeamBadge 순서)
     const vestLightText = (myTeamIdx === 2 || myTeamIdx === 3); // 연두·노랑 = 밝은 조끼 → 어두운 글자
-    const teamReveal = kind === 'self' && teamReady && !!myTeamInfo && myTeamIdx >= 0 && !mySession?.checkedIn;
+    const teamReveal = kind === 'self' && teamReady && !!myTeamInfo && myTeamIdx >= 0; // 출석 후에도 조끼색 유지(내 팀 카드)
     const vestNumColor = vestLightText ? '#1e293b' : (VEST_HEX[myTeamIdx] || '#1e293b'); // 흰 번호패치 안 숫자색
     // 매칭=라임(밝은)→어두운 글자 / 정기=인디고→흰 글자 / 팀공개=조끼색(밝으면 어두운 글자)
     const dark = teamReveal ? vestLightText : (kind === 'match');
@@ -738,14 +738,7 @@ const NextMeetingCard = ({
                             <span className={`flex items-center gap-1.5 text-sm font-black ${dark?'text-emerald-700':'text-live'} min-w-0`}>
                                 <Icon.Check size={16} className="flex-shrink-0"/><span className="truncate">출석 완료</span>
                             </span>
-                            {(kind === 'self' && myTeamInfo) ? (
-                                <span className="ml-auto flex items-center gap-2 text-sm font-black text-white flex-shrink-0">
-                                    <span className="truncate">내 팀 · {myTeamInfo.teamName}팀 {myTeamInfo.jerseyNumber}번</span>
-                                    <span className={`w-7 h-7 rounded-lg flex-shrink-0 ring-1 ring-white/30 ${getTeamBadge(myTeamIdx)}`}></span>
-                                </span>
-                            ) : (
-                                <span className={`ml-auto text-xs font-black ${ink70} flex-shrink-0`}>{mySession.checkInTime}</span>
-                            )}
+                            <span className={`ml-auto text-xs font-black ${ink70} flex-shrink-0`}>{mySession.checkInTime}</span>
                         </div>
                     ) : (dayInfo.type==='today' || dayInfo.type==='started') ? (
                         (kind === 'self' && teamReady) ? (
@@ -797,47 +790,7 @@ const NextMeetingCard = ({
                         <div className={`flex items-center gap-1.5 text-sm font-black ${ink} min-w-0`}>
                             <Icon.Users size={16} className={`flex-shrink-0 ${ink80}`}/><span className="truncate">참여 명단 {curCount}명</span>
                         </div>
-                    ) : mySession?.checkedIn ? (
-                        /* F-2b 1단계 — 출석 완료(정기) 시 내 조끼·번호 + 현재 라운드 내 경기 (화면만, 매치표·조끼색 읽기만) */
-                        !myTeamInfo ? (
-                            <div className="flex items-center gap-1.5 text-xs text-white/70">
-                                <Icon.Users size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">팀 편성 준비 중</span>
-                            </div>
-                        ) : (
-                            (() => {
-                                    const r = getMyCurrentRoundMatch(scheduleData, myTeamInfo.teamName);
-                                    if (!r) return (
-                                        <div className="flex items-center gap-1.5 text-xs text-white/70 px-3 py-2 rounded-xl" style={{background:'rgba(255,255,255,0.12)'}}>
-                                            <Icon.Calendar size={14} className="flex-shrink-0 opacity-70"/><span className="truncate">매치표 준비 중</span>
-                                        </div>
-                                    );
-                                    if (r.allDone) return (
-                                        <div className="flex items-center gap-1.5 text-sm font-black text-white px-3 py-2.5 rounded-xl" style={{background:'rgba(255,255,255,0.18)'}}>
-                                            <Icon.Check size={15} className="flex-shrink-0"/><span className="truncate">모든 경기 종료</span>
-                                        </div>
-                                    );
-                                    return (
-                                        <div className="px-4 py-3.5 rounded-2xl" style={{background:'rgba(255,255,255,0.1)'}}>
-                                            <p className="text-[11px] font-black text-white/65 mb-2 tracking-wide">현재 {r.roundNo}라운드 <span className="text-white/40">/ {r.total}</span> · 내 경기</p>
-                                            {r.resting ? (
-                                                <span className="flex items-center gap-1.5 text-sm font-black text-white min-w-0"><Icon.Coffee size={15} className="flex-shrink-0"/><span className="truncate">이번 라운드는 쉼</span></span>
-                                            ) : r.opponent ? (
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                    <span className={`w-5 h-5 rounded-md flex-shrink-0 ring-1 ring-white/25 ${getTeamBadge(myTeamIdx)}`}></span>
-                                                    <span className="text-[15px] font-black text-white flex-shrink-0">{myTeamInfo.teamName}팀</span>
-                                                    <span className="text-xs font-black italic text-white/50 flex-shrink-0">vs</span>
-                                                    <span className={`w-5 h-5 rounded-md flex-shrink-0 ring-1 ring-white/25 ${getTeamBadge(r.oppIdx)}`}></span>
-                                                    <span className="text-[15px] font-black text-white flex-shrink-0">{r.opponent}팀</span>
-                                                    <span className="ml-auto text-xs font-black text-white/60 flex-shrink-0">{r.fieldName}</span>
-                                                </div>
-                                            ) : (
-                                                <span className="text-sm text-white/70">경기 정보 없음</span>
-                                            )}
-                                        </div>
-                                    );
-                            })()
-                        )
-                    ) : teamReady && myTeamInfo ? (
+                    ) : myTeamInfo && (teamReady || mySession?.checkedIn) ? (
                         fillOn ? (
                             <div className="py-1">
                                 {/* 내 유니폼 번호 — 조끼색 배지 + 흰 링(카드와 같은 색이어도 떠 보이게) */}
@@ -853,7 +806,19 @@ const NextMeetingCard = ({
                                 {/* 이번 경기 상대 — 확정 매치표 있을 때만, 조끼 발표와 같은 문장 스타일. 상대 배지만 상대 조끼색 */}
                                 {(() => {
                                     const r = getMyCurrentRoundMatch(scheduleData, myTeamInfo.teamName);
-                                    if (!r || r.allDone) return null;
+                                    if (!r) return null;
+                                    if (r.allDone) return (
+                                        <div className="mt-2.5 pt-2.5 flex items-center gap-3" style={{borderTop:`1px solid ${softBorder}`}}>
+                                            <div className="flex items-center justify-center rounded-2xl flex-shrink-0" style={{width:56, height:56, background: dark?'rgba(0,0,0,0.12)':'rgba(255,255,255,0.22)'}}>
+                                                <Icon.Check size={28} className={ink}/>
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className={`text-xs font-black ${ink85} leading-snug`}>오늘 경기는</p>
+                                                <p className={`text-[17px] font-black ${ink} leading-snug mt-0.5`}>모두 끝났어요!</p>
+                                                <p className={`text-[11px] font-black ${ink70} mt-1`}>수고하셨어요 👏</p>
+                                            </div>
+                                        </div>
+                                    );
                                     const oppLight = (r.oppIdx === 2 || r.oppIdx === 3); // 연두·노랑 = 밝은 조끼 → 배지 글자 어둡게
                                     return (
                                         <div className="mt-2.5 pt-2.5 flex items-center gap-3" style={{borderTop:`1px solid ${softBorder}`}}>
@@ -885,6 +850,10 @@ const NextMeetingCard = ({
                                 <span className={`text-sm font-black ${ink} min-w-0 truncate`}>오늘 {memberData?.name || '회원'}님은 {getTeamColorName(myTeamIdx)}색 {myTeamInfo.jerseyNumber}번!</span>
                             </div>
                         )
+                    ) : mySession?.checkedIn ? (
+                        <div className={`flex items-center gap-1.5 text-xs ${ink70}`}>
+                            <Icon.Users size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">팀 편성 준비 중</span>
+                        </div>
                     ) : (
                         <div className="flex items-center gap-1.5 text-xs text-white/70">
                             <Icon.Users size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">팀 편성 비공개 중{allowFromDisplay?` · ${allowFromDisplay}부터 공개`:''}</span>
