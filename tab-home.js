@@ -379,7 +379,7 @@ const fmtRegDT = (iso) => {
 const NextMeetingCard = ({
     meeting, kind, isActive, dayInfo, darkMode, isAdminMode, onTabChange, members,
     memberData, showToast, showAlert, showConfirm, regDuesUnpaid, regDuesBlock, regPenaltyUnpaid, regPenaltyTotal,
-    mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount, rosterCount, scheduleData,
+    mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount, scheduleData,
     matchLocalIndex, matchCompleted, onMatchPrev, onMatchNext, onMatchToggleComplete, onMatchAutoAdvance,
     isMeetingOver, isMeetingEndSaved, onEndMeeting, onGenerateQR, onEditMeeting, onDeleteMeeting,
     onOpenAttendModal, onInlineGPS, onInlineQR, enableQR, onOpenKiosk, fill, fitFill, homeRich,
@@ -485,7 +485,25 @@ const NextMeetingCard = ({
         }, () => setRegAgg({ applied: 0, declined: 0 }));
         return () => unsub();
     }, [isAdminMode, showRegBlock, meeting?.date, meeting?.meetingType]);
-    const undecidedCount = Math.max(0, (rosterCount || 0) - regAgg.applied - regAgg.declined);
+    // 미응답 분모 = 그 '모임 달'의 활동회원(운영진 포함) 중 휴식·특별휴식 제외(게스트처럼 미응답에서 뺌).
+    const [monthStatuses, setMonthStatuses] = React.useState({});
+    React.useEffect(() => {
+        if (!isAdminMode || !showRegBlock || !meeting?.date) { setMonthStatuses({}); return; }
+        const mm = String(meeting.date).substring(0, 7);
+        const unsub = getCol('monthly_checks').doc(mm).onSnapshot(d => setMonthStatuses((d.exists && d.data().statuses) || {}), () => setMonthStatuses({}));
+        return () => unsub();
+    }, [isAdminMode, showRegBlock, meeting?.date]);
+    const eligibleCount = React.useMemo(() => {
+        if (!isAdminMode || !meeting?.date) return 0;
+        const mm = String(meeting.date).substring(0, 7);
+        return (members || []).filter(m => {
+            if (m.isResigned) return false;
+            if (typeof joinedByMonth === 'function' && !joinedByMonth(m, mm)) return false;
+            const resting = monthStatuses[m.id] === 'rest' || (m.isSpecialRest && mm >= (m.specialRestStartMonth || '0000-00'));
+            return !resting;   // 휴식·특별휴식 제외 (운영진·미납은 포함)
+        }).length;
+    }, [isAdminMode, members, monthStatuses, meeting?.date]);
+    const undecidedCount = Math.max(0, eligibleCount - regAgg.applied - regAgg.declined);
     const _now = Date.now();
     const _regOpenMs = meeting?.registrationOpenAt ? new Date(meeting.registrationOpenAt).getTime() : null;
     const _regCloseMs = meeting?.registrationCloseAt ? new Date(meeting.registrationCloseAt).getTime() : null;
@@ -1995,7 +2013,7 @@ const MyActivitySummaryCard = ({ attendHistory, memberInfo, onTabChange }) => {
 const TabHome = ({
     notifPermission, registerFcmToken, onTabChange,
     meetingDayInfo, teamReady, allowFromDisplay,
-    myTeamInfo, myTeamIdx, memberData, memberInfo, meetings, members, participantCount, rosterCount, scheduleData, attendHistory,
+    myTeamInfo, myTeamIdx, memberData, memberInfo, meetings, members, participantCount, scheduleData, attendHistory,
     matchLocalIndex, matchCompleted, onMatchPrev, onMatchNext, onMatchToggleComplete, onMatchAutoAdvance,
     mySession, meetingSettings, meetingSettingsMatch, darkMode,
     memberName, announcements, onOpenAnnouncements,
@@ -2046,7 +2064,7 @@ const TabHome = ({
         <NextMeetingCard key={c.kind} homeRich={!!fit} meeting={c.meeting} kind={c.kind} isActive={c.isActive}
             dayInfo={c.dayInfo} darkMode={darkMode} isAdminMode={isAdminMode} onTabChange={onTabChange} members={members}
             mySession={mySession} teamReady={teamReady} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
-            allowFromDisplay={allowFromDisplay} participantCount={participantCount} rosterCount={rosterCount} scheduleData={scheduleData}
+            allowFromDisplay={allowFromDisplay} participantCount={participantCount} scheduleData={scheduleData}
             matchLocalIndex={matchLocalIndex} matchCompleted={matchCompleted}
             onMatchPrev={onMatchPrev} onMatchNext={onMatchNext} onMatchToggleComplete={onMatchToggleComplete} onMatchAutoAdvance={onMatchAutoAdvance}
             isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting}
