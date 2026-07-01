@@ -750,7 +750,7 @@ function App() {
         meetings
     });
 
-    const { activeMeeting, activeSelf, activeMatch, handleSaveMeeting, handleDeleteMeeting, restoreMeeting, purgeMeeting, changeMeetingManager } = makeMeetingHandlers({ meetings, showAlert, showConfirm });
+    const { activeMeeting, activeSelf, activeMatch, handleSaveMeeting, handleDeleteMeeting, restoreMeeting, purgeMeeting, changeMeetingManager } = makeMeetingHandlers({ meetings, showAlert, showConfirm, isDevMode });
     // 기록 탭 삭제 — 모임 문서 + 저장된 출석 기록(history) + 잔여 신청/세션 함께 삭제
     const handleDeleteMeetingRecord = (meeting, hist) => {
         const kindLabel = (meeting.meetingType === 'match') ? '매칭' : '정기';

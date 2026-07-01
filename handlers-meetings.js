@@ -34,7 +34,7 @@ function composeMeetingAnnouncement(data) {
     return { title, body: lines.join('\n') };
 }
 
-function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
+function makeMeetingHandlers({ meetings, showAlert, showConfirm, isDevMode = false }) {
     const activeMeeting = getActiveMeeting(meetings);
     const activeSelf = getActiveMeeting((meetings || []).filter(m => (m.meetingType||'self') !== 'match'));
     const activeMatch = getActiveMeeting((meetings || []).filter(m => (m.meetingType||'self') === 'match'));
@@ -147,10 +147,10 @@ function makeMeetingHandlers({ meetings, showAlert, showConfirm }) {
                 await syncMirror(newTypeActive.id === docId ? data : newTypeActive);
             }
 
-            // 등록 시 [모임] 공지 자동 게시 — 새 정기모임은 항상, 그 외(수정·매칭)는 푸시 토글 ON일 때.
+            // 등록 시 [모임] 공지 자동 게시 — '전체 알림 보내기'(sendPush) 토글을 그대로 따름.
+            // 개발자 모드로 만들면 공지·푸시 모두 생략(회원에게 알림 안 감). 공지 문서를 아예 안 만들면 서버도 전송 안 함.
             // 공지를 누르면 그 모임의 신청 화면으로 이동(linkMeetingId/linkKind). 실패해도 모임 저장은 유지.
-            const isNewSelfMeeting = !editingId && meetingType === 'self';
-            if (isNewSelfMeeting || formData.sendPush) {
+            if (formData.sendPush && !isDevMode) {
                 try {
                     const ann = composeMeetingAnnouncement(data);
                     await getCol('notifications').add({
