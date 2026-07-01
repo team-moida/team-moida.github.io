@@ -320,7 +320,7 @@ const TabRoster = ({
     handleRestoreResigned, setDeletingMember,
     moveMonth, targetMonth,
     filterCounts, filterCategory, setFilterCategory,
-    filteredMembers, expiringMembers = [],
+    filteredMembers, expiringMembers = [], activeGenderCounts = {male:0,female:0,total:0},
     monthlyStatuses, monthlyReasons,
     monthlyPaymentDates, duesReports = {},
     handleBillingMemberClick, onConfirmDuesReport, onRejectDuesReport,
@@ -453,6 +453,26 @@ const TabRoster = ({
                     <button onClick={()=>moveMonth(-1)} className="p-2 rounded-xl bg-slate-100 text-slate-600"><Icon.ChevronLeft size={18}/></button>
                     <p className="font-black text-lg text-slate-800">{targetMonth.replace('-','년 ')}월</p>
                     <button onClick={()=>moveMonth(1)} className="p-2 rounded-xl bg-slate-100 text-slate-600"><Icon.ChevronRight size={18}/></button>
+                </div>
+                {/* 이 달 활동회원 남/여/전체 (휴식·특별휴식 제외 · 운영진 포함) */}
+                <div className="card rounded-2xl p-3.5 mb-4">
+                    <p className="text-[11px] font-black text-slate-400 mb-2.5 flex items-center gap-1"><Icon.Users size={12}/>이 달 활동회원 · 휴식 제외</p>
+                    <div className="flex items-center justify-around text-center">
+                        <div className="flex flex-col items-center">
+                            <span className="text-[11px] font-black text-slate-400 mb-0.5">전체</span>
+                            <span className="text-xl font-black text-[#122E78]">{activeGenderCounts.total}<span className="text-xs font-bold text-slate-400 ml-0.5">명</span></span>
+                        </div>
+                        <div className="w-px h-8 bg-slate-200"></div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-[11px] font-black text-slate-400 mb-0.5">남</span>
+                            <span className="text-xl font-black text-slate-700">{activeGenderCounts.male}<span className="text-xs font-bold text-slate-400 ml-0.5">명</span></span>
+                        </div>
+                        <div className="w-px h-8 bg-slate-200"></div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-[11px] font-black text-slate-400 mb-0.5">여</span>
+                            <span className="text-xl font-black text-slate-700">{activeGenderCounts.female}<span className="text-xs font-bold text-slate-400 ml-0.5">명</span></span>
+                        </div>
+                    </div>
                 </div>
                 <div className="flex flex-wrap gap-2 mb-4">
                     {[

@@ -103,9 +103,21 @@ function useRoster({ isAdminMode }) {
             .filter(m => { const ms = getMembershipStatus(m, targetMonth); return ms && ms.active && ms.remaining <= 1; })
             .sort((a, b) => a.name.localeCompare(b.name))
     ), [activeMembers, monthlyStatuses, monthlyReasons, targetMonth]);
+    // 이 달 활동회원 성별 카운트 — 그 달 가입 + 탈퇴 아님 + 휴식·특별휴식 제외(운영진 포함). '미응답 기준'과 동일.
+    const activeGenderCounts = useMemo(() => {
+        const c = { male: 0, female: 0, total: 0 };
+        activeMembers.forEach(m => {
+            if (!joinedByMonth(m, targetMonth)) return;
+            const type = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
+            if (type === 'rest' || type === 'special') return;   // 휴식·특별휴식 제외
+            c.total++;
+            if (String(m.gender || '').startsWith('여')) c.female++; else c.male++;
+        });
+        return c;
+    }, [activeMembers, monthlyStatuses, monthlyReasons, targetMonth]);
 
     return {
-        allMembers, activeMembers, resignedMembers, filteredMembers, filterCounts, expiringMembers,
+        allMembers, activeMembers, resignedMembers, filteredMembers, filterCounts, expiringMembers, activeGenderCounts,
         rosterSubTab, setRosterSubTab,
         targetMonth, setTargetMonth,
         filterCategory, setFilterCategory,
