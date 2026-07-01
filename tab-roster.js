@@ -272,9 +272,9 @@ const RosterStatsView = ({ activeMembers, attendHistory, attendHistoryTrash = []
 };
 // ─── 명단 회비 목록 이미지 내보내기 (현재 필터 목록 캡처) ───
 // 스마트 분기: 모바일=공유 시트(카톡 바로) → PC=클립보드 복사(붙여넣기) → 실패 시 다운로드.
-const ROSTER_FILTER_LABELS = { all:'전체', monthly:'월납', half:'반년납', full:'1년납', rest:'휴식', special:'특별휴식', unpaid:'미납', expiring:'종료예정' };
-// 필터별 제목/번호 색 (앱 상태 배지 색과 맞춤). 미납=빨강·반년납=파랑 …
-const ROSTER_FILTER_COLORS = { all:'#122E78', monthly:'#059669', half:'#2563EB', full:'#4F46E5', rest:'#D97706', special:'#EA580C', unpaid:'#E11D48', expiring:'#B45309' };
+const ROSTER_FILTER_LABELS = { all:'전체', monthly:'월납', longterm:'반년·1년납', restall:'휴식', unpaid:'미납' };
+// 필터별 제목/번호 색 (앱 상태 배지 색과 맞춤). 미납=빨강·반년1년납=인디고·휴식=앰버 …
+const ROSTER_FILTER_COLORS = { all:'#122E78', monthly:'#059669', longterm:'#4F46E5', restall:'#D97706', unpaid:'#E11D48' };
 async function exportRosterList(fileLabel, showToast, showAlert) {
     await new Promise(r => setTimeout(r, 60));   // 렌더 안정 대기
     const notify = (msg, type) => { try { showToast ? showToast(msg, type) : (showAlert && showAlert('안내', msg)); } catch(_) {} };
@@ -458,10 +458,8 @@ const TabRoster = ({
                     {[
                         {key:'all',label:`전체 ${filterCounts.all}`},
                         {key:'monthly',label:`월납 ${filterCounts.monthly}`},
-                        {key:'half',label:`반년 ${filterCounts.half}`},
-                        {key:'full',label:`1년 ${filterCounts.full}`},
-                        {key:'rest',label:`휴식 ${filterCounts.rest}`},
-                        {key:'special',label:`특별휴식 ${filterCounts.special}`},
+                        {key:'longterm',label:`반년·1년납 ${filterCounts.longterm}`},
+                        {key:'restall',label:`휴식 ${filterCounts.restall}`},
                         {key:'unpaid',label:`미납 ${filterCounts.unpaid}`},
                     ].map(f=>(
                         <button key={f.key} onClick={()=>setFilterCategory(f.key)}

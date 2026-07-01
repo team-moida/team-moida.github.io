@@ -72,18 +72,25 @@ function useRoster({ isAdminMode }) {
     const filteredMembers = useMemo(() => {
         // 보는 달이 회원의 '가입월(duesStartMonth)'보다 이전이면 제외 — 그 달엔 회원이 아니므로 미납으로도 안 뜸
         let list = [...activeMembers].filter(m => joinedByMonth(m, targetMonth)).sort((a,b) => a.name.localeCompare(b.name));
-        if (filterCategory !== 'all') {
+        if (filterCategory === 'longterm') {        // 반년납+1년납 통합
+            list = list.filter(m => { const t = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth); return t === 'half' || t === 'full'; });
+        } else if (filterCategory === 'restall') {  // 휴식+특별휴식 통합
+            list = list.filter(m => { const t = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth); return t === 'rest' || t === 'special'; });
+        } else if (filterCategory !== 'all') {
             list = list.filter(m => getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth) === filterCategory);
         }
         return list;
     }, [activeMembers, filterCategory, monthlyStatuses, monthlyReasons, targetMonth]);
     const filterCounts = useMemo(() => {
-        const counts = {all:0, monthly:0, half:0, full:0, rest:0, special:0, unpaid:0};
+        const counts = {all:0, monthly:0, longterm:0, restall:0, unpaid:0};
         activeMembers.forEach(m => {
             if (!joinedByMonth(m, targetMonth)) return;   // 그 달 가입월 이전 회원은 인원수에서도 제외
             counts.all++;
             const type = getMemberStatusType(m, monthlyStatuses, monthlyReasons, targetMonth);
-            if (type !== 'staff' && counts[type] !== undefined) counts[type]++;
+            if (type === 'staff') return;
+            if (type === 'half' || type === 'full') counts.longterm++;       // 반년납+1년납
+            else if (type === 'rest' || type === 'special') counts.restall++; // 휴식+특별휴식
+            else if (counts[type] !== undefined) counts[type]++;              // monthly / unpaid
         });
         return counts;
     }, [activeMembers, monthlyStatuses, monthlyReasons, targetMonth]);
