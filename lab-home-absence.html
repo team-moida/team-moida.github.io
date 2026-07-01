@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LAB · 홈 카드 신청/미참 버튼</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" />
+<style>
+  :root{ --accent:#183FB0; --deep:#122E78; --orange:#f97316; }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  body{ font-family:'Pretendard Variable',Pretendard,-apple-system,sans-serif; background:#dfe4ec; color:#0f172a; padding:20px 14px 60px; }
+  .wrap{ max-width:420px; margin:0 auto; }
+  h1{ font-size:15px; font-weight:900; color:#334155; margin-bottom:4px; }
+  .sub{ font-size:12px; color:#64748b; font-weight:700; margin-bottom:14px; line-height:1.5; }
+  .cap{ font-size:11px; font-weight:900; color:#94A3B8; margin:0 4px 6px; }
+  .seg{ display:inline-flex; background:#cbd5e1; border-radius:12px; padding:4px; gap:4px; margin-bottom:12px; flex-wrap:wrap; }
+  .seg button{ border:none; border-radius:9px; padding:8px 14px; font-weight:900; font-size:12px; cursor:pointer; background:transparent; color:#475569; }
+  .seg button.on{ background:#fff; color:var(--deep); box-shadow:0 1px 3px rgba(0,0,0,.12); }
+  /* 카드 */
+  .card{ border-radius:24px; padding:20px; color:#fff; background:var(--accent); box-shadow:0 10px 28px -10px rgba(18,46,120,.5); }
+  .chdr{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .klabel{ font-size:11px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; opacity:.8; }
+  .dbadge{ font-size:11px; font-weight:900; padding:4px 12px; border-radius:999px; background:rgba(255,255,255,.22); }
+  .cdate{ font-size:22px; font-weight:900; line-height:1.15; }
+  .cmeta{ font-size:12px; font-weight:800; opacity:.82; margin-top:3px; }
+  .divider{ height:1px; background:rgba(255,255,255,.2); margin:16px 0; }
+  /* 버튼 공통 */
+  .btn{ border:none; border-radius:16px; font-weight:900; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:7px; }
+  .b-apply{ background:var(--orange); color:#fff; box-shadow:0 10px 22px -10px rgba(249,115,22,.6); }
+  .b-ghost{ background:rgba(255,255,255,.14); color:#fff; border:1.5px solid rgba(255,255,255,.35); }
+  .info{ font-size:12px; font-weight:900; opacity:.85; margin-bottom:10px; }
+  .info b{ font-size:16px; }
+  /* 원형(옵션 A) */
+  .circle{ width:150px; height:150px; border-radius:50%; flex-direction:column; font-size:20px;
+    box-shadow:0 0 0 8px rgba(249,115,22,.12), 0 16px 30px -12px rgba(249,115,22,.65); }
+  .circle .ic{ font-size:34px; }
+  /* 상태(신청완료/미참) */
+  .statebox{ display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.12); border-radius:16px; padding:14px 16px; }
+  .pill{ font-size:15px; font-weight:900; display:inline-flex; align-items:center; gap:8px; }
+  .undo{ margin-left:auto; font-size:12px; font-weight:900; background:rgba(255,255,255,.18); border:none; color:#fff; border-radius:10px; padding:8px 14px; cursor:pointer; }
+  .note{ font-size:11.5px; color:#475569; font-weight:800; text-align:center; margin-top:14px; line-height:1.6; background:#fff; border-radius:14px; padding:12px; box-shadow:0 4px 14px rgba(0,0,0,.05); }
+  .note b{ color:#122E78; }
+  .icon{ width:1em; height:1em; display:inline-block; vertical-align:-.12em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>홈 카드 · 신청 / 미참 버튼</h1>
+  <p class="sub">회원이 "미참"을 눌러 의사를 밝히면, 신청하기가 사라지고 운영진은 인원을 정확히 셀 수 있어요.</p>
+
+  <p class="cap">배치</p>
+  <div class="seg" id="segV">
+    <button data-v="A" class="on">A · 원형+미참</button>
+    <button data-v="B">B · 좌우 2버튼</button>
+    <button data-v="C">C · 스택 2버튼</button>
+  </div>
+  <p class="cap">상태</p>
+  <div class="seg" id="segS">
+    <button data-s="idle" class="on">미정</button>
+    <button data-s="applied">신청함</button>
+    <button data-s="absent">미참함</button>
+  </div>
+
+  <div id="host"></div>
+
+  <p class="note" id="note"></p>
+</div>
+
+<script>
+  const svg=(p)=>`<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  const iCheck=svg('<polyline points="20 6 9 17 4 12"/>');
+  const iX=svg('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>');
+  const iMinus=svg('<circle cx="12" cy="12" r="9"/><line x1="8" y1="12" x2="16" y2="12"/>');
+  let v='A', s='idle';
+
+  function idleArea(v){
+    if(v==='A') return `
+      <div style="display:flex;align-items:center;gap:18px">
+        <button class="btn b-apply circle"><span class="ic">${iCheck}</span>신청하기</button>
+        <div style="min-width:0">
+          <p class="info" style="margin-bottom:14px">현재 인원<br><b>12</b> / 18명</p>
+          <button class="btn b-ghost" style="padding:11px 20px;font-size:14px;width:100%">${iMinus} 미참</button>
+        </div>
+      </div>`;
+    if(v==='B') return `
+      <p class="info">현재 <b>12</b> / 18명 · 아직 12명이 응답 안 함</p>
+      <div style="display:flex;gap:10px">
+        <button class="btn b-apply" style="flex:1.7;padding:16px;font-size:16px">${iCheck} 신청하기</button>
+        <button class="btn b-ghost" style="flex:1;padding:16px;font-size:15px">${iMinus} 미참</button>
+      </div>`;
+    return `
+      <p class="info">현재 <b>12</b> / 18명</p>
+      <button class="btn b-apply" style="width:100%;padding:16px;font-size:16px;margin-bottom:10px">${iCheck} 신청하기</button>
+      <button class="btn b-ghost" style="width:100%;padding:14px;font-size:15px">${iMinus} 이번엔 미참할게요</button>`;
+  }
+  function appliedArea(){
+    return `<div class="statebox">
+      <span class="pill" style="color:#C2F94A">${iCheck} 신청 완료!</span>
+      <button class="undo">취소</button>
+    </div>`;
+  }
+  function absentArea(){
+    return `<div class="statebox" style="background:rgba(255,255,255,.08)">
+      <span class="pill" style="opacity:.85">${iMinus} 이번 모임 미참</span>
+      <button class="undo">되돌리기</button>
+    </div>`;
+  }
+
+  const NOTES = {
+    idle: '회원이 <b>신청하기 / 미참</b> 중 하나를 고를 수 있어요. 아직 안 고른 사람 = 미응답.',
+    applied: '신청하면 카드가 <b>신청 완료</b>로 바뀌고, 취소로 되돌릴 수 있어요.',
+    absent: '미참하면 <b>신청하기가 사라져</b> 회원도 편하고, 운영진은 이 사람을 "안 올 사람"으로 카운트해요.'
+  };
+
+  function render(){
+    let area = s==='idle'?idleArea(v):s==='applied'?appliedArea():absentArea();
+    document.getElementById('host').innerHTML = `
+      <div class="card">
+        <div class="chdr"><span class="klabel">정기모임</span><span class="dbadge">D-4</span></div>
+        <div class="cdate">7월 5일 (일)</div>
+        <div class="cmeta">08:00 ~ 10:00 · 플랩 스타디움 수원</div>
+        <div class="divider"></div>
+        ${area}
+      </div>`;
+    document.getElementById('note').innerHTML = `운영진 시점 → <b>신청 12 · 미참 3 · 미응답 5</b> 로 명확!<br>${NOTES[s]}`;
+  }
+  document.querySelectorAll('#segV button').forEach(b=>b.addEventListener('click',()=>{v=b.dataset.v;document.querySelectorAll('#segV button').forEach(x=>x.classList.toggle('on',x===b));render();}));
+  document.querySelectorAll('#segS button').forEach(b=>b.addEventListener('click',()=>{s=b.dataset.s;document.querySelectorAll('#segS button').forEach(x=>x.classList.toggle('on',x===b));render();}));
+  render();
+</script>
+</body>
+</html>
