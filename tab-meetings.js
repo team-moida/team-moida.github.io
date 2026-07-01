@@ -706,12 +706,12 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                                 {dateField(form.regOpenDate, v => setForm(f => ({...f, regOpenDate: v})), '신청 시작일')}
                                                 <select value={form.regOpenHour}
                                                     onChange={e => setForm(f => ({...f, regOpenHour: e.target.value}))}
-                                                    className="w-16 border border-slate-200 rounded-xl px-2 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400">
+                                                    className="w-[4.5rem] border border-slate-200 rounded-xl pl-2 pr-6 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400">
                                                     {Array.from({length:24},(_,i)=>String(i).padStart(2,'0')).map(h=><option key={h} value={h}>{h}시</option>)}
                                                 </select>
                                                 <select value={form.regOpenMinute}
                                                     onChange={e => setForm(f => ({...f, regOpenMinute: e.target.value}))}
-                                                    className="w-16 border border-slate-200 rounded-xl px-2 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400">
+                                                    className="w-[4.5rem] border border-slate-200 rounded-xl pl-2 pr-6 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400">
                                                     {['00','10','20','30','40','50'].map(mn=><option key={mn} value={mn}>{mn}분</option>)}
                                                 </select>
                                             </div>
@@ -722,12 +722,12 @@ function MeetingsTab({ meetings = [], activeMeeting, handleSaveMeeting, handleDe
                                                 {dateField(form.regCloseDate, v => setForm(f => ({...f, regCloseDate: v})), '신청 마감일')}
                                                 <select value={form.regCloseHour}
                                                     onChange={e => setForm(f => ({...f, regCloseHour: e.target.value}))}
-                                                    className="w-16 border border-slate-200 rounded-xl px-2 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400">
+                                                    className="w-[4.5rem] border border-slate-200 rounded-xl pl-2 pr-6 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400">
                                                     {Array.from({length:24},(_,i)=>String(i).padStart(2,'0')).map(h=><option key={h} value={h}>{h}시</option>)}
                                                 </select>
                                                 <select value={form.regCloseMinute}
                                                     onChange={e => setForm(f => ({...f, regCloseMinute: e.target.value}))}
-                                                    className="w-16 border border-slate-200 rounded-xl px-2 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400">
+                                                    className="w-[4.5rem] border border-slate-200 rounded-xl pl-2 pr-6 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400">
                                                     {['00','10','20','30','40','50'].map(mn=><option key={mn} value={mn}>{mn}분</option>)}
                                                 </select>
                                             </div>
