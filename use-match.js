@@ -29,6 +29,13 @@ function useMatch({ isAdminMode, meetingSettings, confirmedDrafts, isLiveView })
     const lastManualOpRef = React.useRef(0);
     const MANUAL_GUARD_MS = 4000;
 
+    // 보고 있는 모임이 정해지면 매치 설정의 날짜·시간·장소를 자동으로 맞춘다 → [모임 선택] 없이 바로 순서 생성 가능.
+    // 모임의 날짜/시간이 바뀔 때만 동기화 → 관리자가 고급설정에서 시간을 바꿔도 덮어쓰지 않음.
+    useEffect(() => {
+        if (!meetingSettings?.date) return;
+        setMatchConfig(p => ({ ...p, meetingDate: meetingSettings.date, startTime: meetingSettings.start || p.startTime, endTime: meetingSettings.end || p.endTime, location: meetingSettings.location || p.location }));
+    }, [meetingSettings?.date, meetingSettings?.start, meetingSettings?.end, meetingSettings?.location]);
+
     useEffect(() => {
         if (!meetingSettings?.date) { setScheduleData(null); return; }
         const mid = getMeetingId(meetingSettings);

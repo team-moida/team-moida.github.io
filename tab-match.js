@@ -265,6 +265,7 @@ const TabMatch = ({
         );
     };
     const [selectedMeetingId, setSelectedMeetingId] = React.useState('');
+    const [advOpen, setAdvOpen] = React.useState(false);   // 고급 설정 펼침
     // 모임 선택 시 그 모임의 날짜·시간·장소를 매치 설정에 자동 채움
     const pickMeeting = (mid) => {
         setSelectedMeetingId(mid);
@@ -276,24 +277,20 @@ const TabMatch = ({
     // (매치판 크게 보기는 홈 탭 모임카드로 이식됨 — MatchBoardModal 정의는 홈에서 재사용)
     return (
     <div className="animate-in">
-        {/* 관리자 패널 토글 버튼 */}
+        {/* 관리자 매치 관리 헤더 (진입 즉시 열림 — 토글 없음) */}
         {isAdminMode && (
-            <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-black text-slate-500 uppercase tracking-widest">매치</p>
-                <button onClick={() => setIsMatchPanelOpen(v => !v)}
-                    className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 rounded-xl transition-all active:scale-95"
-                    style={isMatchPanelOpen ? {background:'linear-gradient(135deg,var(--c-accent),var(--c-accent-deep))',color:'white'} : {background:'rgba(203,213,225,0.7)',color:'#64748b'}}>
-                    <Icon.Settings size={13}/>{isMatchPanelOpen ? '매치 관리 ON' : '매치 관리'}
-                </button>
+            <div className="flex items-center gap-1.5 mb-3">
+                <Icon.Settings size={13} className="text-slate-400"/>
+                <p className="text-xs font-black text-slate-500 uppercase tracking-widest">매치 관리</p>
             </div>
         )}
 
-        {/* ── 관리자 매치 패널 ── */}
-        {isAdminMode && isMatchPanelOpen ? (
+        {/* ── 관리자 매치 패널 (관리자는 항상 열림) ── */}
+        {isAdminMode ? (
             <div className="reveal">
                 {/* 서브탭 */}
                 <div className="flex gap-2 mb-4">
-                    {[['setup','설정'],['results','매치표'],['stats','통계']].map(([v,l]) => (
+                    {[['setup','설정'],['results','매치표'],...(localSchedule.list.length>0?[['stats','통계']]:[])].map(([v,l]) => (
                         <button key={v} onClick={() => setMatchAdminView(v)}
                             className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${matchAdminView===v?'bg-teal-500 text-white shadow':'text-slate-400 bg-slate-100'}`}>{l}</button>
                     ))}
@@ -310,125 +307,158 @@ const TabMatch = ({
                     )}
                 </div>
 
-                {/* 설정 탭 */}
+                {/* 설정 탭 — 팀(자동) + 구장 수·구장별 인원 → 경기 순서 만들기 (세밀 설정은 고급) */}
                 {matchAdminView === 'setup' && (
                     <div className="space-y-3">
-                        <div className="card border-slate-100 rounded-2xl p-4">
-                            <p className="text-[10px] font-black text-teal-500 uppercase tracking-widest mb-3">기본 설정</p>
-                            <div className="space-y-3">
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 mb-1">모임 선택</p>
-                                    <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-black text-sm" value={selectedMeetingId} onChange={e => pickMeeting(e.target.value)}>
-                                        <option value="">직접 입력</option>
-                                        {pickableMeetings.map(m => (
-                                            <option key={m.id} value={m.id}>{fmtMeetingDate(m.date)} {(m.meetingType==='match'?'매칭':'정기')} · {m.location||'장소 미정'}</option>
-                                        ))}
-                                    </select>
-                                    {matchConfig.location && <p className="text-[11px] font-black text-teal-600 mt-1.5 flex items-center gap-1"><Icon.MapPin size={12} className="flex-shrink-0"/>{matchConfig.location}</p>}
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 mb-1">모임 날짜</p>
-                                    <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-black text-sm text-center" style={{userSelect:'text'}}
-                                        value={matchConfig.meetingDate} onChange={e => setMatchConfig(p => ({...p, meetingDate:e.target.value}))}/>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {[['startTime','시작'],['endTime','종료']].map(([key,label]) => (
-                                        <div key={key}>
-                                            <p className={`text-[10px] font-black mb-1 ${key==='endTime'?'text-rose-400':'text-slate-400'}`}>{label} 시간</p>
-                                            <div className="flex gap-1">
-                                                <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-1 py-2 text-xs font-black" value={splitTime(matchConfig[key]).h} onChange={e => setMatchConfig(p => ({...p,[key]:`${e.target.value}:${splitTime(p[key]).m}`}))}>
-                                                    {Array.from({length:24},(_,i)=>String(i).padStart(2,'0')).map(h=><option key={h} value={h}>{h}시</option>)}
-                                                </select>
-                                                <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-1 py-2 text-xs font-black" value={splitTime(matchConfig[key]).m} onChange={e => setMatchConfig(p => ({...p,[key]:`${splitTime(p[key]).h}:${e.target.value}`}))}>
-                                                    {['00','10','20','30','40','50'].map(m=><option key={m} value={m}>{m}분</option>)}
-                                                </select>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {[['matchDuration','경기 시간(분)'],['breakDuration','휴식 시간(분)']].map(([key,label]) => (
-                                        <div key={key}>
-                                            <p className="text-[10px] font-black text-slate-400 mb-1">{label}</p>
-                                            <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 font-black text-center text-sm" style={{userSelect:'text'}}
-                                                value={matchConfig[key]} onChange={e => setMatchConfig(p => ({...p,[key]:parseInt(e.target.value)||matchConfig[key]}))}/>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="mt-2">
-                                    <p className="text-[10px] font-black text-slate-400 mb-1">교체 시간(분) · 워치 기본값 (30초 단위)</p>
-                                    <input type="number" step="0.5" min="0.5" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 font-black text-center text-sm" style={{userSelect:'text'}}
-                                        value={(matchConfig.subIntervalSec ?? 180)/60} onChange={e => { const v = parseFloat(e.target.value); if(!v||v<=0) return; setMatchConfig(p => ({...p, subIntervalSec: Math.round(v*60/30)*30})); }}/>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="card border-slate-100 rounded-2xl p-4">
-                            <div className="flex items-center justify-between mb-3">
-                                <p className="text-[10px] font-black text-teal-500 uppercase tracking-widest">구장 프리셋</p>
-                                <button onClick={() => setIsPresetModalOpen(true)} className="text-xs font-black text-teal-500 bg-teal-50 px-2.5 py-1 rounded-lg">+ 추가</button>
-                            </div>
-                            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-3">
-                                <button onClick={() => setSelectedPresetId('manual')} className={`shrink-0 px-3 py-2 rounded-xl font-black text-xs border-2 transition-all ${selectedPresetId==='manual'?'bg-teal-500 text-white border-teal-500':'bg-white text-slate-500 border-slate-200'}`}>직접 입력</button>
-                                {presets.map(p => (
-                                    <button key={p.id} onClick={() => matchHandlePresetSelect(p)} className={`shrink-0 px-3 py-2 rounded-xl font-black text-xs border-2 transition-all ${selectedPresetId===p.id?'bg-teal-500 text-white border-teal-500':'bg-white text-slate-600 border-slate-200'}`}>{p.name}</button>
-                                ))}
-                            </div>
-                            {selectedPresetId !== 'manual' && (
-                                <div className="bg-teal-50 rounded-xl p-3 mb-3">
-                                    <p className="text-[10px] font-black text-teal-600 mb-2">세부 구장 선택</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {presets.find(p=>p.id===selectedPresetId)?.fieldNames.map((name,i) => (
-                                            <button key={i} onClick={() => matchToggleSubCourt(i)}
-                                                className={`px-2.5 py-1.5 rounded-lg font-black text-xs border transition-all ${presetToggles[i]?'bg-teal-500 text-white border-teal-500':'bg-white text-slate-500 border-slate-200'}`}>
-                                                {name}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                            {selectedPresetId === 'manual' && (
-                                <div className="space-y-2 mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-xs font-black text-slate-500 flex-1">구장 수: {matchConfig.courtCount}</p>
-                                        <button onClick={() => { if(matchConfig.courtCount>1){ const fn=[...matchConfig.fieldNames];fn.pop();const ft=[...matchConfig.fieldTypes];ft.pop();setMatchConfig(p=>({...p,courtCount:p.courtCount-1,fieldNames:fn,fieldTypes:ft})); }}} className="p-2 rounded-lg bg-slate-100 text-slate-600"><Icon.Minus size={13}/></button>
-                                        <button onClick={() => { if(matchConfig.courtCount<6){ const fn=[...matchConfig.fieldNames,`${matchConfig.courtCount+1}구장`];const ft=[...matchConfig.fieldTypes,'6vs6'];setMatchConfig(p=>({...p,courtCount:p.courtCount+1,fieldNames:fn,fieldTypes:ft})); }}} className="p-2 rounded-lg bg-slate-100 text-slate-600"><Icon.Plus size={13}/></button>
-                                    </div>
-                                    {matchConfig.fieldNames.map((name,i) => (
-                                        <div key={i} className="flex gap-2 items-center">
-                                            <input type="text" className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-black" style={{userSelect:'text'}} value={name}
-                                                onChange={e => { const fn=[...matchConfig.fieldNames];fn[i]=e.target.value;setMatchConfig(p=>({...p,fieldNames:fn})); }}/>
-                                            <select className="shrink-0 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-black" value={matchConfig.fieldTypes[i]}
-                                                onChange={e => { const ft=[...matchConfig.fieldTypes];ft[i]=e.target.value;setMatchConfig(p=>({...p,fieldTypes:ft})); }}>
-                                                <option value="6vs6">6vs6</option><option value="5vs5">5vs5</option>
-                                            </select>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                            <button onClick={() => setMatchConfig(p => ({...p, strictCourtSize:!p.strictCourtSize}))}
-                                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${matchConfig.strictCourtSize?'bg-teal-50 border-teal-200':'bg-white border-slate-200'}`}>
-                                <div className={`w-4 h-4 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${matchConfig.strictCourtSize?'bg-teal-500 border-teal-500':'border-slate-300'}`}>
-                                    {matchConfig.strictCourtSize && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-                                </div>
-                                <span className="text-xs font-black text-slate-700">5vs5 구장에 6명 이상 팀 배정 제외</span>
-                            </button>
-                        </div>
-
-                        {confirmedDrafts.length > 0 && (() => {
+                        {/* 확정 팀 편성 (자동) */}
+                        {confirmedDrafts.length > 0 ? (() => {
                             const latest = [...confirmedDrafts].sort((a,b) => (b.meetingDate||'').localeCompare(a.meetingDate||''))[0];
                             return latest ? (
-                                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
-                                    <p className="text-xs font-black text-emerald-600 flex items-center gap-1"><Icon.Check size={13} className="flex-shrink-0"/>확정된 팀 편성: {latest.meetingDate}</p>
-                                    <p className="text-xs text-emerald-500 mt-0.5">{latest.teams?.length}팀 · {latest.teams?.reduce((s,t)=>s+t.members.length,0)}명</p>
+                                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 flex items-center gap-2.5">
+                                    <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0"><Icon.Check size={16} className="text-white"/></div>
+                                    <div>
+                                        <p className="text-sm font-black text-emerald-700">{latest.teams?.length}팀 편성 완료</p>
+                                        <p className="text-[11px] font-black text-emerald-600">{latest.meetingDate} · {latest.teams?.reduce((s,t)=>s+t.members.length,0)}명 (팀 수는 팀편성 자동)</p>
+                                    </div>
                                 </div>
                             ) : null;
-                        })()}
+                        })() : (
+                            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
+                                <p className="text-sm font-black text-amber-700">먼저 팀을 편성해주세요</p>
+                                <p className="text-[11px] font-bold text-amber-600 mt-1">팀편성이 끝나야 경기 순서를 만들 수 있어요</p>
+                            </div>
+                        )}
 
+                        {/* 구장 수 · 구장별 인원 */}
+                        <div className="card border-slate-100 rounded-2xl p-4">
+                            <div className="flex items-center justify-between mb-1">
+                                <p className="text-sm font-black text-slate-700">구장 수 · 구장별 인원</p>
+                                <div className="flex items-center gap-2.5">
+                                    <button onClick={() => { if(matchConfig.courtCount>1){ const fn=[...matchConfig.fieldNames];fn.pop();const ft=[...matchConfig.fieldTypes];ft.pop();setSelectedPresetId('manual');setMatchConfig(p=>({...p,courtCount:p.courtCount-1,fieldNames:fn,fieldTypes:ft})); }}} className="w-9 h-9 rounded-xl bg-slate-100 text-teal-600 flex items-center justify-center active:scale-95"><Icon.Minus size={16}/></button>
+                                    <span className="text-2xl font-black text-slate-800 w-6 text-center">{matchConfig.courtCount}</span>
+                                    <button onClick={() => { if(matchConfig.courtCount<6){ const fn=[...matchConfig.fieldNames,`${matchConfig.courtCount+1}구장`];const ft=[...matchConfig.fieldTypes,'5vs5'];setSelectedPresetId('manual');setMatchConfig(p=>({...p,courtCount:p.courtCount+1,fieldNames:fn,fieldTypes:ft})); }}} className="w-9 h-9 rounded-xl bg-slate-100 text-teal-600 flex items-center justify-center active:scale-95"><Icon.Plus size={16}/></button>
+                                </div>
+                            </div>
+                            <p className="text-[11px] text-slate-400 font-bold mb-3">구장마다 5:5 / 6:6을 따로 정할 수 있어요</p>
+                            <div className="space-y-2">
+                                {matchConfig.fieldNames.map((name,i) => (
+                                    <div key={i} className="flex items-center gap-2 bg-slate-50 rounded-xl p-2">
+                                        <span className="text-sm font-black text-slate-600 shrink-0" style={{width:'54px'}}>{name || `${i+1}구장`}</span>
+                                        {[['5vs5','5 : 5'],['6vs6','6 : 6']].map(([t,l]) => (
+                                            <button key={t} onClick={() => { const ft=[...matchConfig.fieldTypes];ft[i]=t;setMatchConfig(p=>({...p,fieldTypes:ft})); }}
+                                                className={`flex-1 py-2 rounded-lg font-black text-xs transition-all ${matchConfig.fieldTypes[i]===t?'bg-teal-500 text-white shadow':'bg-white text-slate-500 border border-slate-200'}`}>{l}</button>
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 경기 순서 만들기 */}
                         <button onClick={matchGenerateTable} disabled={matchConfig.courtCount === 0 || !confirmedDrafts.length}
                             className="w-full py-4 bg-teal-500 text-white rounded-2xl font-black text-base shadow-xl disabled:opacity-30 flex items-center justify-center gap-2">
-                            <Icon.Calendar size={16}/> 매치 테이블 생성
+                            <Icon.Calendar size={16}/> 이 편성으로 경기 순서 만들기
                         </button>
+
+                        {/* 고급 설정 (접힘) */}
+                        <button onClick={() => setAdvOpen(v => !v)}
+                            className="w-full flex items-center justify-between px-4 py-3 card border-slate-100 rounded-2xl text-sm font-black text-slate-600">
+                            <span>고급 설정 <span className="text-slate-400 font-bold">(경기 시간 · 구장 이름 · 모임)</span></span>
+                            <Icon.ChevronDown size={16} className={`transition-transform ${advOpen?'rotate-180':''}`}/>
+                        </button>
+                        {advOpen && (
+                            <div className="space-y-3">
+                                <div className="card border-slate-100 rounded-2xl p-4">
+                                    <p className="text-[10px] font-black text-teal-500 uppercase tracking-widest mb-3">모임 · 시간</p>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-400 mb-1">모임 선택 (날짜·시간·장소 자동)</p>
+                                            <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-black text-sm" value={selectedMeetingId} onChange={e => pickMeeting(e.target.value)}>
+                                                <option value="">직접 입력</option>
+                                                {pickableMeetings.map(m => (
+                                                    <option key={m.id} value={m.id}>{fmtMeetingDate(m.date)} {(m.meetingType==='match'?'매칭':'정기')} · {m.location||'장소 미정'}</option>
+                                                ))}
+                                            </select>
+                                            {matchConfig.location && <p className="text-[11px] font-black text-teal-600 mt-1.5 flex items-center gap-1"><Icon.MapPin size={12} className="flex-shrink-0"/>{matchConfig.location}</p>}
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-400 mb-1">모임 날짜</p>
+                                            <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-black text-sm text-center" style={{userSelect:'text'}}
+                                                value={matchConfig.meetingDate} onChange={e => setMatchConfig(p => ({...p, meetingDate:e.target.value}))}/>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {[['startTime','시작'],['endTime','종료']].map(([key,label]) => (
+                                                <div key={key}>
+                                                    <p className={`text-[10px] font-black mb-1 ${key==='endTime'?'text-rose-400':'text-slate-400'}`}>{label} 시간</p>
+                                                    <div className="flex gap-1">
+                                                        <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-1 py-2 text-xs font-black" value={splitTime(matchConfig[key]).h} onChange={e => setMatchConfig(p => ({...p,[key]:`${e.target.value}:${splitTime(p[key]).m}`}))}>
+                                                            {Array.from({length:24},(_,i)=>String(i).padStart(2,'0')).map(h=><option key={h} value={h}>{h}시</option>)}
+                                                        </select>
+                                                        <select className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-1 py-2 text-xs font-black" value={splitTime(matchConfig[key]).m} onChange={e => setMatchConfig(p => ({...p,[key]:`${splitTime(p[key]).h}:${e.target.value}`}))}>
+                                                            {['00','10','20','30','40','50'].map(m=><option key={m} value={m}>{m}분</option>)}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {[['matchDuration','경기 시간(분)'],['breakDuration','휴식 시간(분)']].map(([key,label]) => (
+                                                <div key={key}>
+                                                    <p className="text-[10px] font-black text-slate-400 mb-1">{label}</p>
+                                                    <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 font-black text-center text-sm" style={{userSelect:'text'}}
+                                                        value={matchConfig[key]} onChange={e => setMatchConfig(p => ({...p,[key]:parseInt(e.target.value)||matchConfig[key]}))}/>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-400 mb-1">교체 시간(분) · 워치 기본값 (30초 단위)</p>
+                                            <input type="number" step="0.5" min="0.5" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-2.5 font-black text-center text-sm" style={{userSelect:'text'}}
+                                                value={(matchConfig.subIntervalSec ?? 180)/60} onChange={e => { const v = parseFloat(e.target.value); if(!v||v<=0) return; setMatchConfig(p => ({...p, subIntervalSec: Math.round(v*60/30)*30})); }}/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="card border-slate-100 rounded-2xl p-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <p className="text-[10px] font-black text-teal-500 uppercase tracking-widest">구장 이름 · 프리셋</p>
+                                        <button onClick={() => setIsPresetModalOpen(true)} className="text-xs font-black text-teal-500 bg-teal-50 px-2.5 py-1 rounded-lg">+ 추가</button>
+                                    </div>
+                                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-3">
+                                        <button onClick={() => setSelectedPresetId('manual')} className={`shrink-0 px-3 py-2 rounded-xl font-black text-xs border-2 transition-all ${selectedPresetId==='manual'?'bg-teal-500 text-white border-teal-500':'bg-white text-slate-500 border-slate-200'}`}>직접 입력</button>
+                                        {presets.map(p => (
+                                            <button key={p.id} onClick={() => matchHandlePresetSelect(p)} className={`shrink-0 px-3 py-2 rounded-xl font-black text-xs border-2 transition-all ${selectedPresetId===p.id?'bg-teal-500 text-white border-teal-500':'bg-white text-slate-600 border-slate-200'}`}>{p.name}</button>
+                                        ))}
+                                    </div>
+                                    {selectedPresetId !== 'manual' && (
+                                        <div className="bg-teal-50 rounded-xl p-3 mb-3">
+                                            <p className="text-[10px] font-black text-teal-600 mb-2">세부 구장 선택</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {presets.find(p=>p.id===selectedPresetId)?.fieldNames.map((name,i) => (
+                                                    <button key={i} onClick={() => matchToggleSubCourt(i)}
+                                                        className={`px-2.5 py-1.5 rounded-lg font-black text-xs border transition-all ${presetToggles[i]?'bg-teal-500 text-white border-teal-500':'bg-white text-slate-500 border-slate-200'}`}>
+                                                        {name}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {selectedPresetId === 'manual' && (
+                                        <div className="space-y-2 mb-3">
+                                            {matchConfig.fieldNames.map((name,i) => (
+                                                <input key={i} type="text" className="w-full min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-black" style={{userSelect:'text'}} value={name}
+                                                    onChange={e => { const fn=[...matchConfig.fieldNames];fn[i]=e.target.value;setMatchConfig(p=>({...p,fieldNames:fn})); }}/>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <button onClick={() => setMatchConfig(p => ({...p, strictCourtSize:!p.strictCourtSize}))}
+                                        className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${matchConfig.strictCourtSize?'bg-teal-50 border-teal-200':'bg-white border-slate-200'}`}>
+                                        <div className={`w-4 h-4 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${matchConfig.strictCourtSize?'bg-teal-500 border-teal-500':'border-slate-300'}`}>
+                                            {matchConfig.strictCourtSize && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                                        </div>
+                                        <span className="text-xs font-black text-slate-700">5vs5 구장에 6명 이상 팀 배정 제외</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 

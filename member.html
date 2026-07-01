@@ -881,7 +881,7 @@ function App() {
     const adminModeLabel = !isAdminMode ? null
         : (tab === 'meeting' && meetingSubTab === 'attend' && attend.isAttendPanelOpen) ? '출석 관리 모드'
         : (tab === 'meeting' && meetingSubTab === 'team' && team.isTeamPanelOpen) ? '편성 모드'
-        : (tab === 'meeting' && meetingSubTab === 'match' && match.isMatchPanelOpen) ? '매치 관리 모드'
+        : (tab === 'meeting' && meetingSubTab === 'match') ? '매치 관리 모드'
         : null;
 
     // 상단 안내 띠(테스트/관리/미리보기/정리) 중 화면 최상단에 실제로 뜨는 첫 번째 것에만 노치(안전영역) 패딩을 준다.
