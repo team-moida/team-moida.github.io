@@ -1531,30 +1531,8 @@ const TabAttend = ({
     return (
     <div className="animate-in space-y-4">
 
-        {/* 담당자 변경 팝업 (최상위 — 서브탭·모드 무관하게 항상 표시) */}
-        {mgrPickOpen && selectedMeeting && (
-            <div className="fixed inset-0 z-[80] bg-black/40 flex items-end sm:items-center justify-center p-4" onClick={() => setMgrPickOpen(false)}>
-                <div className="bg-white rounded-3xl p-5 w-full max-w-sm" onClick={e => e.stopPropagation()}>
-                    <p className="text-lg font-black text-slate-900">담당자 변경</p>
-                    <p className="text-xs font-bold text-slate-400 mt-1 mb-4">{selectedMeeting.date} 모임 담당자를 선택하세요. 이후 불참·노쇼 알림이 새 담당자에게 갑니다.</p>
-                    <div className="space-y-1.5 max-h-[52vh] overflow-y-auto">
-                        {(managers || []).map(m => {
-                            const cur = selectedMeeting.managerId === m.id;
-                            return (
-                                <button key={m.id} onClick={() => { onChangeManager && onChangeManager(selectedMeeting, m.id, m.name); setMgrPickOpen(false); }}
-                                    className={`w-full flex items-center justify-between gap-2 p-3.5 rounded-2xl border text-left active:scale-95 transition-all ${cur ? 'bg-teal-50 border-teal-300' : 'card border-slate-100'}`}>
-                                    <span className="font-black text-sm text-slate-800">{m.name}<span className="text-[11px] text-slate-400 font-bold ml-1.5">{m.role}</span></span>
-                                    {cur && <Icon.Check size={16} className="text-teal-500 shrink-0"/>}
-                                </button>
-                            );
-                        })}
-                        <button onClick={() => { onChangeManager && onChangeManager(selectedMeeting, '', ''); setMgrPickOpen(false); }}
-                            className="w-full p-3.5 rounded-2xl border card border-slate-100 text-left text-sm font-black text-slate-400 active:scale-95 transition-all">담당자 없음</button>
-                    </div>
-                    <button onClick={() => setMgrPickOpen(false)} className="w-full mt-4 py-3 rounded-2xl bg-slate-100 text-slate-500 font-black text-sm active:scale-95">닫기</button>
-                </div>
-            </div>
-        )}
+        {/* 담당자 변경 팝업 (공용 컴포넌트 — modals.js ManagerPickModal) */}
+        <ManagerPickModal open={mgrPickOpen} meeting={selectedMeeting} managers={managers} onPick={onChangeManager} onClose={() => setMgrPickOpen(false)} />
 
         {/* 관리자 패널 — 항상 표시 (출석 관리 토글 제거, 서브탭으로 직접 이동) */}
         {isAdminMode ? (

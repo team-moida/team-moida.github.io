@@ -383,6 +383,7 @@ const NextMeetingCard = ({
     matchLocalIndex, matchCompleted, onMatchPrev, onMatchNext, onMatchToggleComplete, onMatchAutoAdvance,
     isMeetingOver, isMeetingEndSaved, onEndMeeting, onGenerateQR, onEditMeeting, onDeleteMeeting,
     onOpenAttendModal, onInlineGPS, onInlineQR, enableQR, onOpenKiosk, fill, fitFill, homeRich,
+    managers = [], onChangeManager,
 }) => {
     const [boardOpen, setBoardOpen] = React.useState(false);
     window.useMoidaBack?.(boardOpen, () => setBoardOpen(false));
@@ -446,6 +447,7 @@ const NextMeetingCard = ({
     const [donePopup, setDonePopup] = React.useState(null);   // 신청 완료 팝업 {type:'confirmed'|'waiting', pos}
     const [cancelAsk, setCancelAsk] = React.useState(false);  // 신청 취소 확인 팝업
     const [absentAsk, setAbsentAsk] = React.useState(false);  // 불참/노쇼 신청 사유 입력 팝업
+    const [mgrPickOpen, setMgrPickOpen] = React.useState(false);  // 담당자 본인 불참/노쇼 확정 시 담당자 교체 팝업
     const [absentReason, setAbsentReason] = React.useState('');
     const [justApplied, setJustApplied] = React.useState(false);
     const prevRegStatus = React.useRef(null);
@@ -519,7 +521,9 @@ const NextMeetingCard = ({
     const absentColor = absentFine === 20000 ? '#EF4444' : absentFine === 10000 ? '#EA580C' : '#F59E0B'; // 당일=빨강/전날=진주황/불참=노랑
     const absentFineLabel = absentType === 'noshow_2' ? '당일 노쇼 벌금 2만원' : absentType === 'noshow_1' ? '노쇼 벌금 1만원' : '미리 알리면 벌금 없음';
     const undoAbsentOk = (myReg?.status === 'absent' || myReg?.status === 'noshow') && typeof getAbsentType === 'function' && !!getAbsentType(meeting.date, meeting.end);
-    const onAbsentConfirm = () => { if (regHandlers) regHandlers.handleAbsent(absentReason.trim()); setAbsentAsk(false); setAbsentReason(''); };
+    // 담당자 본인이 불참/노쇼를 확정하면 → 담당자 교체 팝업을 띄워 다른 운영진에게 넘기도록 유도
+    const isMeetingManager = isAdminMode && !!_meId && !!meeting?.managerId && _meId === meeting.managerId;
+    const onAbsentConfirm = () => { if (regHandlers) regHandlers.handleAbsent(absentReason.trim()); setAbsentAsk(false); setAbsentReason(''); if (isMeetingManager) setMgrPickOpen(true); };
     const onUndoAbsent = (e) => { if (e) e.stopPropagation(); if (regHandlers) regHandlers.handleUndoAbsent(); };
 
     // (fill) 모임 카드가 1개일 때만 — 카드를 하단탭 근처까지 세로로 채운다. 실제 위치를 측정해 minHeight 지정.
@@ -1018,6 +1022,9 @@ const NextMeetingCard = ({
                 </div>
             </div>
         )}
+
+        {/* 담당자 본인 불참/노쇼 확정 시 담당자 교체 팝업 (공용 — modals.js ManagerPickModal) */}
+        <ManagerPickModal open={mgrPickOpen} meeting={meeting} managers={managers} onPick={onChangeManager} onClose={() => setMgrPickOpen(false)} />
         </div>
     );
 };
@@ -2023,6 +2030,7 @@ const TabHome = ({
     onInlineGPS, onInlineQR, onOpenKiosk,
     showToast, showAlert, showConfirm,
     regDuesUnpaid, regDuesBlock, regPenaltyUnpaid, regPenaltyTotal, fit,
+    managers = [], onChangeManager,
 }) => {
     const [activeCard, setActiveCard] = React.useState(0);   // 카드 2개일 때 가로 스와이프 인디케이터
     // 정기/매칭 다음 모임 분리 (회원이 둘 다 참여할 수 있어 종류별 카드로 표시)
@@ -2072,6 +2080,7 @@ const TabHome = ({
             onOpenAttendModal={onOpenAttendModal} onInlineGPS={onInlineGPS} onInlineQR={onInlineQR}
             enableQR={meetingSettings?.enableQR} onOpenKiosk={onOpenKiosk}
             memberData={memberData} showToast={showToast} showAlert={showAlert} showConfirm={showConfirm}
+            managers={managers} onChangeManager={onChangeManager}
             regDuesUnpaid={regDuesUnpaid} regDuesBlock={regDuesBlock} regPenaltyUnpaid={regPenaltyUnpaid} regPenaltyTotal={regPenaltyTotal} />
     );
     const onCarouselScroll = (e) => { const el = e.currentTarget; const i = Math.round(el.scrollLeft / Math.max(1, el.clientWidth)); if (i !== activeCard) setActiveCard(i); };
