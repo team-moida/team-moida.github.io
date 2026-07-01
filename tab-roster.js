@@ -404,6 +404,7 @@ const TabRoster = ({
                         {key:'half',label:`반년 ${filterCounts.half}`},
                         {key:'full',label:`1년 ${filterCounts.full}`},
                         {key:'rest',label:`휴식 ${filterCounts.rest}`},
+                        {key:'special',label:`특별휴식 ${filterCounts.special}`},
                         {key:'unpaid',label:`미납 ${filterCounts.unpaid}`},
                     ].map(f=>(
                         <button key={f.key} onClick={()=>setFilterCategory(f.key)}
