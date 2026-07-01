@@ -80,20 +80,16 @@ tailwind.config = { theme: { extend: { colors: {
           <div class="flex items-center gap-2 p-3 rounded-xl bg-emerald-50"><span class="text-emerald-500 text-lg">✓</span><div><p class="font-black text-emerald-700 text-sm">4팀 편성 완료</p><p class="text-[11px] text-emerald-600 font-bold">빨강·파랑·노랑·초록 (팀 수는 팀편성에서 자동)</p></div></div>
 
           <div>
-            <p class="font-black text-ink text-sm mb-2">구장 수</p>
-            <div class="flex items-center justify-center gap-4">
-              <span class="stepbtn" onclick="chgCourt(-1)">－</span>
-              <span id="courtN" class="text-3xl font-black text-ink w-10 text-center">2</span>
-              <span class="stepbtn" onclick="chgCourt(1)">＋</span>
+            <div class="flex items-center justify-between mb-1">
+              <p class="font-black text-ink text-sm">구장 수 · 구장별 인원</p>
+              <div class="flex items-center gap-3">
+                <span class="stepbtn" onclick="chgCourt(-1)">－</span>
+                <span id="courtN" class="text-2xl font-black text-ink w-7 text-center">2</span>
+                <span class="stepbtn" onclick="chgCourt(1)">＋</span>
+              </div>
             </div>
-          </div>
-
-          <div>
-            <p class="font-black text-ink text-sm mb-2">구장 인원 제한</p>
-            <div class="grid grid-cols-2 gap-2">
-              <span id="s55" class="seg seg-on" onclick="setSize('5')">5 : 5</span>
-              <span id="s66" class="seg seg-off" onclick="setSize('6')">6 : 6</span>
-            </div>
+            <p class="text-[11px] text-mute font-bold mb-2">구장마다 5:5 / 6:6을 따로 정할 수 있어요</p>
+            <div id="courts" class="space-y-2"></div>
           </div>
 
           <button onclick="document.getElementById('setup').classList.add('hidden-soft');document.getElementById('made').classList.remove('hidden-soft');"
@@ -164,7 +160,7 @@ tailwind.config = { theme: { extend: { colors: {
   <div class="card p-5 mt-6" style="border:1px solid #c7d2fe;background:#f5f7ff;">
     <p class="font-black text-ink mb-2">확정 전 여쭤볼 것</p>
     <ol class="space-y-2 text-sm font-bold text-sub list-decimal pl-5">
-      <li>구장 인원을 <b class="text-ink">모든 구장 같은 값(5:5 또는 6:6)</b>으로 두면 될까요? 아니면 <b class="text-ink">구장마다 다르게</b>(A=5:5, B=6:6)도 필요한가요? (현재 알고리즘은 구장별 다른 크기도 지원해요)</li>
+      <li><span class="chip tag-good">반영됨</span> 구장 인원은 <b class="text-ink">구장마다 따로</b> (A=5:5, B=6:6 가능) — 시안에 넣었어요.</li>
       <li>경기/휴식/교체 시간과 구장 이름은 <b class="text-ink">[고급 설정]에 접어두기</b> — 괜찮을까요?</li>
     </ol>
   </div>
@@ -173,10 +169,30 @@ tailwind.config = { theme: { extend: { colors: {
 </div>
 
 <script>
-  var court = 2, size = '5';
-  function chgCourt(d){ court = Math.max(1, Math.min(6, court+d)); document.getElementById('courtN').textContent = court; echo(); }
-  function setSize(s){ size = s; document.getElementById('s55').className = 'seg ' + (s==='5'?'seg-on':'seg-off'); document.getElementById('s66').className = 'seg ' + (s==='6'?'seg-on':'seg-off'); echo(); }
-  function echo(){ document.getElementById('cfgEcho').textContent = '('+court+'구장 · '+size+':'+size+')'; }
+  var NAMES = ['A','B','C','D','E','F'];
+  var courtSizes = ['5','6'];  // 구장별 인원 (예: A=5:5, B=6:6)
+  function chgCourt(d){
+    var n = Math.max(1, Math.min(6, courtSizes.length + d));
+    while(courtSizes.length < n) courtSizes.push('5');
+    while(courtSizes.length > n) courtSizes.pop();
+    render();
+  }
+  function setCourtSize(i, s){ courtSizes[i] = s; render(); }
+  function render(){
+    document.getElementById('courtN').textContent = courtSizes.length;
+    document.getElementById('courts').innerHTML = courtSizes.map(function(sz, i){
+      var on5 = sz === '5' ? 'seg-on' : 'seg-off';
+      var on6 = sz === '6' ? 'seg-on' : 'seg-off';
+      return `<div class="flex items-center gap-2 card p-2">
+        <span class="font-black text-ink text-sm" style="width:52px">${NAMES[i]}구장</span>
+        <span class="seg flex-1 ${on5}" onclick="setCourtSize(${i},'5')">5 : 5</span>
+        <span class="seg flex-1 ${on6}" onclick="setCourtSize(${i},'6')">6 : 6</span>
+      </div>`;
+    }).join('');
+    var ce = document.getElementById('cfgEcho');
+    if(ce) ce.textContent = '(' + courtSizes.map(function(sz,i){ return NAMES[i]+' '+sz+':'+sz; }).join(' · ') + ')';
+  }
+  render();
 </script>
 </body>
 </html>
