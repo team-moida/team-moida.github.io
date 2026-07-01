@@ -3,65 +3,113 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LAB · 홈 카드 이번 라운드 상대/구장</title>
+<title>LAB · 홈 카드 컴팩트 + 상대/구장</title>
 <style>
   :root{ --accent:#183FB0; --accent-deep:#122E78; }
   *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-  body{ font-family:'Pretendard Variable',Pretendard,-apple-system,sans-serif; background:#eef1f6; color:#0f172a; padding:20px 14px 60px; }
-  .wrap{ max-width:440px; margin:0 auto; }
+  body{ font-family:'Pretendard Variable',Pretendard,-apple-system,sans-serif; background:#dfe4ec; color:#0f172a; padding:16px 14px 50px; }
+  .wrap{ max-width:420px; margin:0 auto; }
   h1{ font-size:15px; font-weight:900; color:#334155; margin-bottom:4px; }
-  .sub{ font-size:12px; color:#94A3B8; font-weight:700; margin-bottom:16px; line-height:1.5; }
-  .ctrl{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; align-items:center; }
+  .sub{ font-size:12px; color:#64748b; font-weight:700; margin-bottom:14px; line-height:1.5; }
+  .ctrl{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; align-items:center; }
   .ctrl .cap{ font-size:11px; font-weight:900; color:#94A3B8; margin-right:2px; }
-  .seg{ display:inline-flex; background:#e2e8f0; border-radius:12px; padding:4px; gap:4px; }
-  .seg button{ border:none; border-radius:9px; padding:8px 16px; font-weight:900; font-size:12px; cursor:pointer; background:transparent; color:#64748b; }
-  .seg button.on{ background:#fff; color:var(--accent-deep); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  .seg{ display:inline-flex; background:#cbd5e1; border-radius:11px; padding:3px; gap:3px; }
+  .seg button{ border:none; border-radius:8px; padding:7px 13px; font-weight:900; font-size:12px; cursor:pointer; background:transparent; color:#475569; }
+  .seg button.on{ background:#fff; color:var(--accent-deep); box-shadow:0 1px 3px rgba(0,0,0,.12); }
+
+  /* 화면 틀(가시영역 시뮬레이션) */
+  .phone{ width:100%; max-width:390px; margin:12px auto 0; height:702px; background:#f1f5f9; border-radius:34px; overflow:hidden;
+    display:flex; flex-direction:column; box-shadow:0 12px 40px -10px rgba(0,0,0,.3); border:6px solid #0f172a; }
+  .ticker{ flex-shrink:0; height:38px; display:flex; align-items:center; gap:8px; padding:0 16px; background:#fff; font-size:12px; font-weight:900; color:#475569; }
+  .ticker .dot{ width:8px; height:8px; border-radius:50%; background:#C2F94A; }
+  .content{ flex:1; min-height:0; overflow:hidden; padding:14px; display:flex; flex-direction:column; }
+  .nav{ flex-shrink:0; height:64px; background:#fff; border-top:1px solid #e2e8f0; display:flex; }
+  .nav div{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:10px; font-weight:900; color:#94a3b8; }
+  .nav div.act{ color:var(--accent-deep); }
+  .nav i{ width:20px; height:20px; border-radius:6px; background:currentColor; opacity:.85; display:block; }
+  .warnfit{ text-align:center; font-size:11px; font-weight:900; margin-top:8px; }
+
   /* 카드 */
-  .card{ border-radius:24px; padding:20px; color:#fff; box-shadow:0 6px 18px -8px rgba(15,23,42,.22); margin:16px 0; }
-  .chdr{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+  .card{ border-radius:22px; padding:18px; color:#fff; box-shadow:0 6px 18px -8px rgba(15,23,42,.22); display:flex; flex-direction:column; }
+  .chdr{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
   .klabel{ font-size:11px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; opacity:.8; }
-  .kbadge{ font-size:11px; font-weight:900; padding:4px 12px; border-radius:999px; background:rgba(255,255,255,.22); }
-  .cdate{ font-size:22px; font-weight:900; line-height:1.15; }
-  .cmeta{ font-size:12px; font-weight:800; opacity:.8; margin-top:3px; }
-  /* 조끼/상대 공통 줄(쌍둥이 구조) */
-  .row{ display:flex; align-items:center; gap:18px; }
-  .row + .row{ margin-top:14px; padding-top:14px; border-top:1px solid; border-color:currentColor; }
-  .row + .row{ position:relative; }
-  .divsoft{ opacity:.22; }               /* 구분선을 은은하게 (border-color=글자색 → 낮춤) */
-  .patch{ width:96px; height:96px; border-radius:24px; display:flex; align-items:center; justify-content:center;
-    flex-shrink:0; box-shadow:0 8px 20px rgba(0,0,0,.18); font-weight:900; font-size:50px; line-height:1; }
-  .txt .l1{ font-size:14px; font-weight:900; opacity:.85; }
-  .txt .l2{ font-size:22px; font-weight:900; line-height:1.2; margin-top:2px; }
-  .txt .l2 small{ font-size:15px; }
-  .txt .l3{ font-size:12px; font-weight:900; opacity:.7; margin-top:7px; display:inline-flex; align-items:center; gap:5px; }
+  .kbadge{ font-size:11px; font-weight:900; padding:4px 11px; border-radius:999px; background:rgba(255,255,255,.22); }
+  .cdate{ font-size:21px; font-weight:900; line-height:1.15; }
+  .cmeta{ font-size:12px; font-weight:800; opacity:.8; margin-top:2px; }
   .icon{ width:1em; height:1em; display:inline-block; vertical-align:-.12em; }
-  .rest2 .l2{ display:inline-flex; align-items:center; gap:8px; }
-  .note{ font-size:11px; color:#94A3B8; text-align:center; margin-top:6px; line-height:1.5; }
+
+  /* 출석 섹션(공통, 컴팩트) */
+  .attend{ margin-top:12px; padding-top:12px; border-top:1px solid; }
+  .attend .cta{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:11px 13px; border-radius:14px; font-weight:900; font-size:14px; }
+
+  /* 유니폼 번호 배지(조끼색 + 링) / 상대 배지 */
+  .jbadge,.obadge{ border-radius:18px; display:flex; align-items:center; justify-content:center; font-weight:900; line-height:1;
+    box-shadow:0 6px 16px rgba(0,0,0,.2); flex-shrink:0; }
+  .courtchip{ display:inline-flex; align-items:center; gap:5px; background:#fff; color:#0f172a; font-weight:900; font-size:13px; padding:6px 13px; border-radius:999px; box-shadow:0 3px 10px rgba(0,0,0,.12); }
+
+  /* team 섹션 래퍼 */
+  .team{ margin-top:12px; padding-top:12px; border-top:1px solid; }
+
+  /* A: 매치업 한 줄 */
+  .tA{ display:flex; align-items:center; justify-content:center; gap:14px; }
+  .tA .jbadge,.tA .obadge{ width:66px; height:66px; font-size:34px; }
+  .tA .col{ display:flex; flex-direction:column; align-items:center; gap:7px; }
+  .tA .col .lab{ font-size:13px; font-weight:900; }
+  .tA .vs{ font-size:20px; font-weight:900; font-style:italic; opacity:.5; }
+  .tArow2{ display:flex; justify-content:center; margin-top:11px; }
+
+  /* B: 좌우 분할 */
+  .tB{ display:flex; align-items:stretch; }
+  .tB .half{ flex:1; display:flex; align-items:center; gap:12px; padding:2px 4px; }
+  .tB .half.r{ border-left:1px solid; padding-left:14px; margin-left:4px; }
+  .tB .jbadge,.tB .obadge{ width:58px; height:58px; font-size:29px; }
+  .tB .t .k{ font-size:11px; font-weight:900; opacity:.7; }
+  .tB .t .v{ font-size:17px; font-weight:900; line-height:1.15; margin-top:1px; }
+  .tB .t .c{ font-size:11px; font-weight:900; opacity:.85; margin-top:3px; display:inline-flex; align-items:center; gap:4px; }
+
+  /* C: 세로 컴팩트(문장 유지) */
+  .tC .line{ display:flex; align-items:center; gap:13px; }
+  .tC .line + .line{ margin-top:10px; padding-top:10px; border-top:1px solid; }
+  .tC .jbadge,.tC .obadge{ width:56px; height:56px; font-size:28px; }
+  .tC .t .l1{ font-size:12px; font-weight:900; opacity:.82; }
+  .tC .t .l2{ font-size:17px; font-weight:900; line-height:1.15; margin-top:1px; }
+  .tC .t .l3{ font-size:11px; font-weight:900; opacity:.68; margin-top:3px; display:inline-flex; align-items:center; gap:4px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>홈 카드 · 이번 경기 상대/구장</h1>
-  <p class="sub">조끼 설명과 같은 문장 스타일로, 상대 안내도 카드색 위에 그대로 얹었습니다. (상대 배지만 상대 조끼색)</p>
+  <h1>홈 카드 · 한 화면 + 상대/구장</h1>
+  <p class="sub">아래 검은 틀 = 실제 화면 가시영역(공지 띠 ~ 하단탭 사이). 카드가 틀 안에 다 들어오면 OK.</p>
 
   <div class="ctrl">
-    <span class="cap">상태</span>
-    <div class="seg" id="stSeg">
-      <button data-st="play" class="on">경기 있음</button>
-      <button data-st="rest">휴식</button>
+    <span class="cap">배치</span>
+    <div class="seg" id="tSeg">
+      <button data-t="A" class="on">A · 매치업 한 줄</button>
+      <button data-t="B">B · 좌우 분할</button>
+      <button data-t="C">C · 세로 컴팩트</button>
     </div>
   </div>
   <div class="ctrl">
-    <span class="cap">내 조끼</span>
-    <div class="seg" id="meSeg">
-      <button data-me="2" class="on">연두(밝음)</button>
-      <button data-me="4">파랑(어두움)</button>
+    <span class="cap">출석</span>
+    <div class="seg" id="aSeg">
+      <button data-a="cta" class="on">체크 열림(GPS/QR)</button>
+      <button data-a="soon">곧 열림</button>
+    </div>
+    <span class="cap" style="margin-left:6px">상태</span>
+    <div class="seg" id="sSeg">
+      <button data-s="play" class="on">경기</button>
+      <button data-s="rest">휴식</button>
     </div>
   </div>
 
-  <div id="cardHost"></div>
-
-  <p class="note">※ 조끼색이 밝으면(연두·노랑) 글자·배지 글자를 자동으로 어둡게 처리합니다.</p>
+  <div class="phone">
+    <div class="ticker"><span class="dot"></span> 공지 · 이번 주 모임 안내드립니다</div>
+    <div class="content" id="content"></div>
+    <div class="nav">
+      <div class="act"><i></i>홈</div><div><i></i>모임</div><div><i></i>게시판</div><div><i></i>MY</div>
+    </div>
+  </div>
+  <p class="warnfit" id="fit"></p>
 </div>
 
 <script>
@@ -73,71 +121,95 @@
     {hex:'#2563eb', name:'파랑', light:false},
     {hex:'#ef4444', name:'빨강', light:false},
   ];
-  let meIdx = 2;                 // 내 팀(=카드색)
-  const meInfo = { name:'재원', letter:'C', jersey:3 };
-  let oppIdx = 4;               // 상대(내가 파랑이면 상대는 연두로 스왑)
+  const meIdx = 2;                         // 연두
+  const meInfo = { name:'이성훈', letter:'C', jersey:4 };
+  const oppIdx = 4, oppLetter = 'E';       // 파랑
   const court = '2구장', time = '20:00';
-  let st = 'play';
+  let layout='A', attend='cta', st='play';
 
-  const svg = (p)=>`<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
-  const iPin  = svg('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>');
-  const iCoffee = svg('<path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/>');
+  const svg=(p)=>`<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  const iPin=svg('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>');
+  const iCoffee=svg('<path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/>');
+  const iChev=svg('<path d="M9 18l6-6-6-6"/>');
 
-  function render(){
-    const v = VEST[meIdx];
-    const ink = v.light ? '#15171E' : '#fff';
-    const numColor = v.light ? '#1e293b' : v.hex;     // 흰 번호패치 안 숫자색(내 조끼색)
-    const o = VEST[oppIdx];
-    const oppInk = o.light ? '#15171E' : '#fff';
-
-    const oppRow = `
-      <div class="row rowsep">
-        <div class="patch" style="background:${o.hex}; color:${oppInk}">C</div>
-        <div class="txt">
-          <p class="l1">이번 경기 상대는</p>
-          <p class="l2">${o.name}팀<small>이에요!</small></p>
-          <p class="l3">${iPin} ${court}에서 만나요</p>
-        </div>
-      </div>`;
-
-    const restRow = `
-      <div class="row rowsep rest2">
-        <div class="patch" style="background:rgba(255,255,255,.22); color:${ink}">${iCoffee}</div>
-        <div class="txt">
-          <p class="l1">이번 라운드는</p>
-          <p class="l2">쉬어가요</p>
-          <p class="l3">다음 경기를 기다려 주세요</p>
-        </div>
-      </div>`;
-
-    document.getElementById('cardHost').innerHTML = `
-      <div class="card" style="background:${v.hex}; color:${ink}">
-        <div class="chdr">
-          <span class="klabel">정기 모임</span>
-          <span class="kbadge">오늘 · ${time}</span>
-        </div>
-        <div class="cdate">6월 30일 (일)</div>
-        <div class="cmeta">양산 실내풋살장 · 18명 참여</div>
-        <div class="row" style="margin-top:12px">
-          <div class="patch" style="background:#fff; color:${numColor}">${meInfo.jersey}</div>
-          <div class="txt">
-            <p class="l1">오늘 ${meInfo.name}님은</p>
-            <p class="l2">${v.name}색 ${meInfo.jersey}번<small>이에요!</small></p>
-            <p class="l3">${meInfo.letter}팀 · ${v.name} 조끼</p>
-          </div>
-        </div>
-        ${st==='play' ? oppRow : restRow}
-      </div>`;
-    // 구분선 은은하게(글자색 기반)
-    document.querySelectorAll('.rowsep').forEach(el=>{ el.style.borderTop='1px solid'; el.style.borderColor=ink; el.style.borderTopColor=(v.light?'rgba(21,23,30,.18)':'rgba(255,255,255,.28)'); el.style.marginTop='14px'; el.style.paddingTop='14px'; });
+  function jBadge(sizeCls){                 // 내 유니폼 번호 배지 = 조끼색 + 대비 번호 + 흰 링
+    const v=VEST[meIdx]; const num = v.light ? '#15171E' : '#fff';
+    const ring = v.light ? 'rgba(21,23,30,.28)' : 'rgba(255,255,255,.85)';
+    return `<div class="jbadge" style="background:${v.hex}; color:${num}; box-shadow:0 0 0 3px ${ring}, 0 6px 16px rgba(0,0,0,.2)">${meInfo.jersey}</div>`;
+  }
+  function oBadge(){
+    const o=VEST[oppIdx]; const t=o.light?'#15171E':'#fff';
+    return `<div class="obadge" style="background:${o.hex}; color:${t}">${oppLetter}</div>`;
   }
 
-  document.querySelectorAll('#stSeg button').forEach(b=>b.addEventListener('click',()=>{
-    st=b.dataset.st; document.querySelectorAll('#stSeg button').forEach(x=>x.classList.toggle('on',x===b)); render();
-  }));
-  document.querySelectorAll('#meSeg button').forEach(b=>b.addEventListener('click',()=>{
-    meIdx=+b.dataset.me; oppIdx = (meIdx===2?4:2); document.querySelectorAll('#meSeg button').forEach(x=>x.classList.toggle('on',x===b)); render();
-  }));
+  function teamBlock(ink, softBorder){
+    const v=VEST[meIdx], o=VEST[oppIdx];
+    const restBadge = `<div class="jbadge" style="background:rgba(127,127,127,.25); color:${ink}; box-shadow:none">${iCoffee}</div>`;
+    if(st==='rest'){
+      // 휴식 — 배치별로 간단히
+      if(layout==='A') return `<div class="team" style="border-color:${softBorder}"><div class="tA"><div class="col">${jBadge()}<span class="lab">연두 4번</span></div><span class="vs"></span><div class="col">${restBadge}<span class="lab">이번 라운드 휴식</span></div></div></div>`;
+      if(layout==='B') return `<div class="team" style="border-color:${softBorder}"><div class="tB"><div class="half">${jBadge()}<div class="t"><p class="k">나</p><p class="v">연두 4번</p></div></div><div class="half r" style="border-color:${softBorder}">${restBadge}<div class="t"><p class="v">이번 라운드<br>쉬어가요</p></div></div></div></div>`;
+      return `<div class="team" style="border-color:${softBorder}"><div class="tC"><div class="line">${jBadge()}<div class="t"><p class="l1">오늘 ${meInfo.name}님은</p><p class="l2">연두색 4번이에요!</p></div></div><div class="line" style="border-color:${softBorder}">${restBadge}<div class="t"><p class="l1">이번 라운드는</p><p class="l2">쉬어가요</p></div></div></div></div>`;
+    }
+    if(layout==='A') return `
+      <div class="team" style="border-color:${softBorder}">
+        <div class="tA">
+          <div class="col">${jBadge()}<span class="lab">연두 4번</span></div>
+          <span class="vs">VS</span>
+          <div class="col">${oBadge()}<span class="lab" style="color:${ink}">${o.name}팀</span></div>
+        </div>
+        <div class="tArow2"><span class="courtchip">${iPin}${court}</span></div>
+      </div>`;
+    if(layout==='B') return `
+      <div class="team" style="border-color:${softBorder}">
+        <div class="tB">
+          <div class="half">${jBadge()}<div class="t"><p class="k">나</p><p class="v">연두 4번</p></div></div>
+          <div class="half r" style="border-color:${softBorder}">${oBadge()}<div class="t"><p class="k">이번 상대</p><p class="v">${o.name}팀</p><p class="c">${iPin}${court}</p></div></div>
+        </div>
+      </div>`;
+    return `
+      <div class="team" style="border-color:${softBorder}">
+        <div class="tC">
+          <div class="line">${jBadge()}<div class="t"><p class="l1">오늘 ${meInfo.name}님은</p><p class="l2">연두색 4번이에요!</p></div></div>
+          <div class="line" style="border-color:${softBorder}">${oBadge()}<div class="t"><p class="l1">이번 경기 상대는</p><p class="l2" style="color:${ink}">${o.name}팀이에요!</p><p class="l3">${iPin}${court}에서 만나요</p></div></div>
+        </div>
+      </div>`;
+  }
+
+  function render(){
+    const v=VEST[meIdx];
+    const ink = v.light ? '#15171E' : '#fff';
+    const softBorder = v.light ? 'rgba(21,23,30,.16)' : 'rgba(255,255,255,.26)';
+
+    const attendHTML = attend==='cta'
+      ? `<div class="attend" style="border-color:${softBorder}">
+           <div class="cta" style="background:${v.light?'rgba(255,255,255,.55)':'rgba(255,255,255,.18)'}; color:${ink}">
+             <span>${iPin} 지금 출석 체크하기</span>${iChev}
+           </div>
+         </div>`
+      : `<div class="attend" style="border-color:${softBorder}"><p style="font-size:12px;font-weight:900;opacity:.75;color:${ink}">⏱ 19:30부터 출석 가능</p></div>`;
+
+    document.getElementById('content').innerHTML = `
+      <div class="card" style="background:${v.hex}; color:${ink}">
+        <div class="chdr"><span class="klabel">정기 모임</span><span class="kbadge">오늘 · ${time}</span></div>
+        <div class="cdate">6월 30일 (일)</div>
+        <div class="cmeta">양산 실내풋살장 · 18명 참여</div>
+        ${attendHTML}
+        ${teamBlock(ink, softBorder)}
+      </div>`;
+
+    // 맞음 여부 체크
+    const content=document.getElementById('content'), card=content.firstElementChild;
+    const fits = card.getBoundingClientRect().height <= content.clientHeight - 0.5;
+    const el=document.getElementById('fit');
+    el.textContent = fits ? '✅ 한 화면에 들어옴' : '⚠️ 아직 넘침 — 더 줄여야 함';
+    el.style.color = fits ? '#059669' : '#dc2626';
+  }
+
+  document.querySelectorAll('#tSeg button').forEach(b=>b.addEventListener('click',()=>{layout=b.dataset.t;sel('#tSeg',b);render();}));
+  document.querySelectorAll('#aSeg button').forEach(b=>b.addEventListener('click',()=>{attend=b.dataset.a;sel('#aSeg',b);render();}));
+  document.querySelectorAll('#sSeg button').forEach(b=>b.addEventListener('click',()=>{st=b.dataset.s;sel('#sSeg',b);render();}));
+  function sel(sc,b){document.querySelectorAll(sc+' button').forEach(x=>x.classList.toggle('on',x===b));}
   render();
 </script>
 </body>
