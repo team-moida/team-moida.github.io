@@ -245,6 +245,11 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
                 tx.update(meetingRef, countUpd);
                 tx.update(mirrorRef, countUpd);
 
+                // 담당자 본인이 불참/노쇼면 '되돌릴 담당자'로 표시(meetings 문서에만) → 나중에 취소하면 이 사람으로 담당 복귀
+                if (meetingSettings?.managerId && meetingSettings.managerId === memberData.memberId) {
+                    tx.set(meetingRef, { managerAbsentId: memberData.memberId }, { merge: true });
+                }
+
                 if (absentType === 'absent') {
                     tx.delete(sessionRef);
                 } else {
@@ -304,6 +309,7 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
 
         try {
             let resultStatus = 'confirmed';
+            let managerRestored = false;
             await db.runTransaction(async (tx) => {
                 const meetingDoc = await tx.get(meetingRef);
                 const regDoc = await tx.get(regRef);
@@ -381,10 +387,19 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
                     tx.update(mirrorRef, { waitingCount: FieldValue.increment(1) });
                     resultStatus = 'waiting';
                 }
+
+                // 담당자 본인이 불참/노쇼로 넘겼던 담당자 자리를, 취소하면서 이 사람으로 원상복구
+                if (meetingData.managerAbsentId && meetingData.managerAbsentId === memberData.memberId) {
+                    const revertName = reg.name || memberData.name || '';
+                    tx.update(meetingRef, { managerId: memberData.memberId, managerName: revertName, managerAbsentId: FieldValue.delete() });
+                    tx.update(mirrorRef, { managerId: memberData.memberId, managerName: revertName });
+                    managerRestored = true;
+                }
             });
 
             showToast && showToast(
-                resultStatus === 'waiting' ? '불참을 취소했어요. 정원이 차서 대기 맨 뒤로 신청됐어요.' : '불참을 취소했어요. 선착순 맨 뒤로 다시 신청됐어요.',
+                (resultStatus === 'waiting' ? '불참을 취소했어요. 정원이 차서 대기 맨 뒤로 신청됐어요.' : '불참을 취소했어요. 선착순 맨 뒤로 다시 신청됐어요.')
+                + (managerRestored ? '\n담당자로 다시 지정됐어요.' : ''),
                 'success'
             );
         } catch (e) {

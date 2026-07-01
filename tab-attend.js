@@ -41,10 +41,11 @@ const KioskModal = ({
     if (!isKioskOpen) return null;
 
     const closePopup = () => setConfirmTarget(null);
-    const handleConfirm = () => {
+    const handleConfirm = async () => {
         const who = confirmTarget;
-        attendHandleCheckIn(who, {silent:true});   // 키오스크는 자체 팝업으로 끝 — '출석 완료' 모달 중복 방지
         closePopup();
+        const ok = await attendHandleCheckIn(who, {silent:true});   // 키오스크는 자체 팝업으로 끝 — '출석 완료' 모달 중복 방지
+        if (!ok) return;   // 출석 불가(시간 아님·종료 등)면 '출석 완료' 표시 안 함
         flashRef.current = who;
         setFlashClosing(false);
         setFlash(who);

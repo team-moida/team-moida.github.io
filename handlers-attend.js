@@ -169,7 +169,8 @@ function makeAttendHandlers(ctx) {
         try {
             await getSessionCol().doc(participant.id).update({checkedIn: true, checkInTime: timeStr, status: finalStatus});
             if (!opts.silent) setAttendModal({type: 'checkin', data: {...participant, checkedIn: true, checkInTime: timeStr, status: finalStatus}});
-        } catch(e) { showAlert('오류', '출석 실패'); }
+            return true;   // 출석 성공 (키오스크가 '출석 완료' 표시 여부 판단에 사용)
+        } catch(e) { showAlert('오류', '출석 실패'); return false; }
     };
 
     const attendHandleUncheckIn = async (participant) => {
