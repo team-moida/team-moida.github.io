@@ -277,17 +277,9 @@ async function exportRosterList(fileLabel, showToast, showAlert) {
     await new Promise(r => setTimeout(r, 60));   // 렌더 안정 대기
     const notify = (msg, type) => { try { showToast ? showToast(msg, type) : (showAlert && showAlert('안내', msg)); } catch(_) {} };
     try {
-        const el = document.getElementById('roster-capture-area');
+        const el = document.getElementById('roster-capture-sheet');   // 캡처 전용 심플 리스트(치우침 없음)
         if (!el) return;
-        // 캡처 동안 상태 배지 숨김 — html2canvas에서 배지 글씨가 치우쳐 찍히는 문제 회피(카테고리는 제목에 이미 표시됨)
-        const badges = Array.from(el.querySelectorAll('.roster-badge'));
-        badges.forEach(b => { b.style.display = 'none'; });
-        let canvas;
-        try {
-            canvas = await window.html2canvas(el, { scale: 2, backgroundColor: '#f8fafc', useCORS: true });
-        } finally {
-            badges.forEach(b => { b.style.display = ''; });
-        }
+        const canvas = await window.html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
         const fileName = `모이다_명단_${fileLabel}`;
         const isMobile = /iphone|ipad|ipod|android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent)); // iPadOS=Mac+터치
         // 1) 모바일: 공유 시트(파일) → 카톡 등으로 바로 전송
@@ -516,6 +508,19 @@ const TabRoster = ({
                         );
                     })}
                     </div>
+                </div>
+                {/* 이미지 캡처 전용 시트 — 화면 밖에 렌더. 카드 대신 심플 블록 리스트라 글씨 치우침 없음 */}
+                <div id="roster-capture-sheet" style={{position:'absolute',left:'-99999px',top:0,width:'380px',background:'#ffffff',padding:'22px',fontFamily:"'Pretendard Variable', Pretendard, sans-serif"}}>
+                    <div style={{fontWeight:900,fontSize:'17px',color:'#122E78',paddingBottom:'12px',borderBottom:'2px solid #e2e8f0',marginBottom:'6px'}}>{targetMonth.replace('-','년 ')}월 · {ROSTER_FILTER_LABELS[filterCategory]||'전체'} {filteredMembers.length}명</div>
+                    {filteredMembers.map((m,i)=>{
+                        const info = getMembershipStatus(m, targetMonth);
+                        return (
+                            <div key={m.id} style={{padding:'9px 2px',borderBottom:'1px solid #f1f5f9',fontSize:'15px',color:'#0f172a'}}>
+                                <span style={{fontWeight:900}}>{i+1}. {m.name}</span>
+                                {filterCategory==='expiring' && info?.active && <span style={{fontWeight:700,fontSize:'12px',color:'#64748b',marginLeft:'8px'}}>만료 {info.endDateFormatted}</span>}
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         )}
