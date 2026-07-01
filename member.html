@@ -392,6 +392,19 @@ function App() {
         }, () => {});
         return () => unsub();
     }, [memberInfo?.id]);
+    // 내 '이번 모임 달' 회비 상태 — monthly_checks 직접 구독(관리자 아니어도 읽어야 홈 게이트가 정확).
+    // team.tmMonthlyStatuses는 관리자 모드에서만 채워져 회원 화면에선 항상 비어 있었음 → 월납 회원이 회비를 내도 '미납'으로 막히던 버그.
+    const [myMonthlyDues, setMyMonthlyDues] = useState(null); // 'paid' | 'rest' | null
+    useEffect(() => {
+        const meId = memberInfo?.id;
+        const monthStr = displayMeetingSettings?.date?.substring(0, 7) || '';
+        if (!meId || !monthStr) { setMyMonthlyDues(null); return; }
+        const unsub = getCol('monthly_checks').doc(monthStr).onSnapshot(d => {
+            const st = (d.exists && d.data().statuses) || {};
+            setMyMonthlyDues(st[meId] || null);
+        }, () => {});
+        return () => unsub();
+    }, [memberInfo?.id, displayMeetingSettings?.date]);
     const regDuesUnpaid = useMemo(() => {
         const me = memberInfo;
         if (!me) return false;
@@ -399,12 +412,11 @@ function App() {
         if (me.isSpecialRest) return false;
         const monthStr = displayMeetingSettings?.date?.substring(0, 7) || '';
         if (!joinedByMonth(me, monthStr)) return false;   // 가입월(duesStartMonth) 이전이면 미납 아님 → 신청 차단 안 함
-        const st = (team.tmMonthlyStatuses || {})[me.id];
-        if (st === 'paid' || st === 'rest') return false;
+        if (myMonthlyDues === 'paid' || myMonthlyDues === 'rest') return false;  // monthly_checks 직접 반영(관리자 확정·직접처리 모두 여기 기록됨)
         const info = (typeof getMembershipStatus === 'function') ? getMembershipStatus(me, monthStr) : null;
         if (info?.active) return false;
         return true;
-    }, [memberInfo, team.tmMonthlyStatuses, displayMeetingSettings?.date]);
+    }, [memberInfo, myMonthlyDues, displayMeetingSettings?.date]);
 
     useEffect(() => {
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
