@@ -284,6 +284,25 @@ async function captureRosterList(fileLabel, showAlert) {
         link.click();
     } catch (e) { showAlert && showAlert('오류', '이미지 저장 실패'); }
 }
+// 가로 칩 줄을 PC에서 마우스 드래그로 좌우 스크롤 (터치는 기본 스크롤 사용). ref 콜백으로 1회 바인딩.
+const attachDragScroll = (el) => {
+    if (!el || el._dragScroll) return;
+    el._dragScroll = true;
+    el.addEventListener('mousedown', (e) => {
+        const startX = e.pageX, startScroll = el.scrollLeft; let moved = false;
+        el.style.cursor = 'grabbing';
+        const onMove = (me) => { const dx = me.pageX - startX; if (Math.abs(dx) > 4) moved = true; el.scrollLeft = startScroll - dx; };
+        const onUp = () => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            el.style.cursor = 'grab';
+            el._dragged = moved;   // 드래그였으면 바로 뒤따르는 click(칩 선택)을 취소
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+    });
+    el.addEventListener('click', (e) => { if (el._dragged) { e.preventDefault(); e.stopPropagation(); el._dragged = false; } }, true);
+};
 // ─── 명단 탭 (관리자 모드 전용) ──────────────────────────────────────────────
 const TabRoster = ({
     rosterSubTab, setRosterSubTab,
@@ -411,7 +430,7 @@ const TabRoster = ({
                     <p className="font-black text-lg text-slate-800">{targetMonth.replace('-','년 ')}월</p>
                     <button onClick={()=>moveMonth(1)} className="p-2 rounded-xl bg-slate-100 text-slate-600"><Icon.ChevronRight size={18}/></button>
                 </div>
-                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-4">
+                <div ref={attachDragScroll} style={{cursor:'grab'}} className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-4 select-none">
                     {[
                         {key:'all',label:`전체 ${filterCounts.all}`},
                         {key:'monthly',label:`월납 ${filterCounts.monthly}`},
@@ -450,12 +469,12 @@ const TabRoster = ({
                                         <span className="font-black text-slate-800">{m.name}</span>
                                         {statusType==='rest'&&info?.active
                                             ? <>
-                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg ${statusConfig[info.type==='반년'?'half':'full'].color}`}>{info.type}납</span>
-                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg ${cfg.color}`}>휴식 중</span>
+                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg inline-flex items-center leading-none ${statusConfig[info.type==='반년'?'half':'full'].color}`}>{info.type}납</span>
+                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg inline-flex items-center leading-none ${cfg.color}`}>휴식 중</span>
                                               </>
-                                            : <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg ${cfg.color}`}>{cfg.label}</span>
+                                            : <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg inline-flex items-center leading-none ${cfg.color}`}>{cfg.label}</span>
                                         }
-                                        {duesReports[m.id]?.status==='pending' && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-lg bg-amber-100 text-amber-700 inline-flex items-center gap-1"><Icon.Mail size={10} className="flex-shrink-0"/>{DUES_LABELS[duesReports[m.id].payType]||'신고'} {wonFmt(duesReports[m.id].amount)}</span>}
+                                        {duesReports[m.id]?.status==='pending' && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-lg bg-amber-100 text-amber-700 inline-flex items-center leading-none gap-1"><Icon.Mail size={10} className="flex-shrink-0"/>{DUES_LABELS[duesReports[m.id].payType]||'신고'} {wonFmt(duesReports[m.id].amount)}</span>}
                                     </div>
                                     {info?.active&&<p className="text-[10px] text-slate-400 mt-0.5">만료: {info.endDateFormatted} · 잔여휴식 {info.remainingRest}회</p>}
                                     {payDate&&<p className="text-[10px] text-slate-400 mt-0.5">납부일: {payDate}</p>}
