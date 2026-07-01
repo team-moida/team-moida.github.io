@@ -6,90 +6,112 @@
 <title>LAB · 명단 캡처 이미지 디자인</title>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" />
 <style>
-  :root{ --accent:#183FB0; --accent-deep:#122E78; --soft:#E7ECFB; }
   *{ box-sizing:border-box; margin:0; padding:0; }
   body{ font-family:'Pretendard Variable',Pretendard,-apple-system,sans-serif; background:#dfe4ec; color:#0f172a; padding:20px 14px 60px; }
   .wrap{ max-width:430px; margin:0 auto; }
   h1{ font-size:15px; font-weight:900; color:#334155; margin-bottom:4px; }
   .sub{ font-size:12px; color:#64748b; font-weight:700; margin-bottom:16px; line-height:1.5; }
-  .seg{ display:inline-flex; background:#cbd5e1; border-radius:12px; padding:4px; gap:4px; margin-bottom:18px; flex-wrap:wrap; }
-  .seg button{ border:none; border-radius:9px; padding:8px 14px; font-weight:900; font-size:12px; cursor:pointer; background:transparent; color:#475569; }
-  .seg button.on{ background:#fff; color:var(--accent-deep); box-shadow:0 1px 3px rgba(0,0,0,.12); }
-  /* 캡처 시트 미리보기 */
-  .sheetwrap{ display:flex; justify-content:center; }
+  .cap{ font-size:11px; font-weight:900; color:#94A3B8; margin:0 4px 6px; }
+  .seg{ display:inline-flex; background:#cbd5e1; border-radius:12px; padding:4px; gap:4px; margin-bottom:14px; flex-wrap:wrap; }
+  .seg button{ border:none; border-radius:9px; padding:7px 12px; font-weight:900; font-size:12px; cursor:pointer; background:transparent; color:#475569; }
+  .seg button.on{ background:#fff; color:#122E78; box-shadow:0 1px 3px rgba(0,0,0,.12); }
+  .sheetwrap{ display:flex; justify-content:center; margin-top:4px; }
   .sheet{ width:380px; background:#fff; box-shadow:0 10px 30px -10px rgba(0,0,0,.25); }
   .note{ font-size:11px; color:#94A3B8; text-align:center; margin-top:12px; line-height:1.6; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>명단 캡처 이미지 · 번호 디자인</h1>
-  <p class="sub">공유/복사되는 이미지 모양입니다. 딱딱하지 않게 3가지 시안으로 만들었어요.</p>
-  <div class="seg" id="seg">
+  <h1>명단 캡처 이미지 · 필터별 색상</h1>
+  <p class="sub">공유/복사 이미지 모양입니다. 제목이 필터 색으로 바뀌어요(미납=빨강, 반년납=파랑…).</p>
+
+  <p class="cap">디자인</p>
+  <div class="seg" id="segV">
     <button data-v="A" class="on">A · 번호칩</button>
     <button data-v="B">B · 카드 알약</button>
     <button data-v="C">C · 에어리</button>
   </div>
+  <p class="cap">필터(색 확인)</p>
+  <div class="seg" id="segC"></div>
+
   <div class="sheetwrap"><div class="sheet" id="sheet"></div></div>
-  <p class="note">※ 실제 저장 이미지엔 흰 배경만, 화면 목록(카드·배지)은 그대로 유지됩니다.</p>
+  <p class="note">※ 실제 저장 이미지엔 흰 배경만. 화면 목록(카드·배지)은 그대로 유지됩니다.</p>
 </div>
 
 <script>
-  const MONTH = '2026년 07월', CAT = '미납', N = 8;
+  const MONTH = '2026년 07월';
   const names = ['박수환','봉영근','안성연','양정모','오현준','이은수','이주하','조상현'];
-  let v = 'A';
+  // 앱 상태 배지 색과 맞춘 필터별 색
+  const CATS = [
+    {key:'unpaid',  label:'미납',    color:'#E11D48'},
+    {key:'half',    label:'반년납',  color:'#2563EB'},
+    {key:'full',    label:'1년납',   color:'#4F46E5'},
+    {key:'monthly', label:'월납',    color:'#059669'},
+    {key:'expiring',label:'종료예정',color:'#B45309'},
+    {key:'special', label:'특별휴식',color:'#EA580C'},
+    {key:'rest',    label:'휴식',    color:'#D97706'},
+    {key:'all',     label:'전체',    color:'#122E78'},
+  ];
+  let v = 'A', cat = CATS[0];
+  const N = names.length;
+  const emblem = (c)=>`<div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,${c},${shade(c)});color:#fff;font-weight:900;font-size:12px;line-height:30px;text-align:center;letter-spacing:-.5px;flex:none">OTP</div>`;
+  function shade(hex){ // 살짝 어둡게(엠블럼 그라데이션용)
+    const n=parseInt(hex.slice(1),16); let r=(n>>16)-25,g=((n>>8)&255)-25,b=(n&255)-25;
+    r=Math.max(0,r);g=Math.max(0,g);b=Math.max(0,b); return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+  }
 
-  const emblem = `<div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#183FB0,#122E78);color:#fff;font-weight:900;font-size:12px;line-height:30px;text-align:center;letter-spacing:-.5px;flex:none">OTP</div>`;
-
-  // ── A: 번호칩(연한 인디고 원) ──
-  function sheetA(){
+  // ── A: 번호칩(필터색 연한 원) ──
+  function sheetA(c){
     const rows = names.map((nm,i)=>`
       <div style="display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid #f1f5f9">
-        <div style="width:26px;height:26px;border-radius:50%;background:#E7ECFB;color:#183FB0;font-weight:900;font-size:12.5px;line-height:26px;text-align:center;flex:none">${i+1}</div>
+        <div style="width:26px;height:26px;border-radius:50%;background:${c}1A;color:${c};font-weight:900;font-size:12.5px;line-height:26px;text-align:center;flex:none">${i+1}</div>
         <span style="font-weight:800;font-size:15px;color:#0f172a">${nm}</span>
       </div>`).join('');
     return `<div style="padding:22px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">${emblem}
-        <div><div style="font-weight:900;font-size:17px;color:#122E78;line-height:1.2">${MONTH} ${CAT}</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">${emblem(c)}
+        <div><div style="font-weight:900;font-size:17px;color:${c};line-height:1.2">${MONTH} ${cat.label}</div>
         <div style="font-weight:800;font-size:12px;color:#94A3B8">OTP FC · 모두 ${N}명</div></div></div>
-      <div style="height:2px;background:#e2e8f0;border-radius:2px;margin:12px 0 4px"></div>
-      ${rows}
-    </div>`;
+      <div style="height:2px;background:${c}33;border-radius:2px;margin:12px 0 4px"></div>
+      ${rows}</div>`;
   }
-  // ── B: 카드 알약(행마다 부드러운 카드) ──
-  function sheetB(){
+  // ── B: 카드 알약(번호 배지=필터색) ──
+  function sheetB(c){
     const rows = names.map((nm,i)=>`
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#F5F7FE;border-radius:14px;margin-bottom:8px">
-        <div style="width:28px;height:28px;border-radius:9px;background:#183FB0;color:#fff;font-weight:900;font-size:13px;line-height:28px;text-align:center;flex:none">${i+1}</div>
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#F6F8FC;border-radius:14px;margin-bottom:8px">
+        <div style="width:28px;height:28px;border-radius:9px;background:${c};color:#fff;font-weight:900;font-size:13px;line-height:28px;text-align:center;flex:none">${i+1}</div>
         <span style="font-weight:800;font-size:15px;color:#0f172a">${nm}</span>
       </div>`).join('');
     return `<div style="padding:22px;background:#fff">
       <div style="text-align:center;margin-bottom:16px">
-        <div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:6px">${emblem}<span style="font-weight:900;font-size:13px;color:#94A3B8;letter-spacing:.02em">OTP FC</span></div>
-        <div style="font-weight:900;font-size:19px;color:#122E78">${MONTH} · ${CAT} <span style="color:#183FB0">${N}명</span></div>
-      </div>
-      ${rows}
-    </div>`;
+        <div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:6px">${emblem(c)}<span style="font-weight:900;font-size:13px;color:#94A3B8;letter-spacing:.02em">OTP FC</span></div>
+        <div style="font-weight:900;font-size:19px;color:${c}">${MONTH} · ${cat.label} <span style="opacity:.7">${N}명</span></div>
+      </div>${rows}</div>`;
   }
-  // ── C: 에어리 미니멀(번호 강조·여백) ──
-  function sheetC(){
+  // ── C: 에어리(번호 톤다운·여백) ──
+  function sheetC(c){
     const rows = names.map((nm,i)=>`
       <div style="display:flex;align-items:baseline;gap:14px;padding:13px 2px;border-bottom:1px solid #f4f6fa">
-        <span style="font-weight:900;font-size:15px;color:#C7D0E8;min-width:22px;text-align:right">${i+1}</span>
+        <span style="font-weight:900;font-size:15px;color:${c}66;min-width:22px;text-align:right">${i+1}</span>
         <span style="font-weight:800;font-size:16px;color:#0f172a">${nm}</span>
       </div>`).join('');
     return `<div style="padding:26px 24px">
-      <div style="font-weight:900;font-size:12px;color:#183FB0;letter-spacing:.08em;margin-bottom:2px">OTP FC · ${MONTH}</div>
-      <div style="font-weight:900;font-size:22px;color:#0f172a;margin-bottom:16px">${CAT} <span style="color:#94A3B8;font-size:16px">${N}명</span></div>
-      ${rows}
-    </div>`;
+      <div style="font-weight:900;font-size:12px;color:${c};letter-spacing:.08em;margin-bottom:2px">OTP FC · ${MONTH}</div>
+      <div style="font-weight:900;font-size:22px;color:${c};margin-bottom:16px">${cat.label} <span style="color:#94A3B8;font-size:16px;font-weight:800">${N}명</span></div>
+      ${rows}</div>`;
   }
 
   function render(){
-    document.getElementById('sheet').innerHTML = v==='A'?sheetA():v==='B'?sheetB():sheetC();
+    const c = cat.color;
+    document.getElementById('sheet').innerHTML = v==='A'?sheetA(c):v==='B'?sheetB(c):sheetC(c);
   }
-  document.querySelectorAll('#seg button').forEach(b=>b.addEventListener('click',()=>{
-    v=b.dataset.v; document.querySelectorAll('#seg button').forEach(x=>x.classList.toggle('on',x===b)); render();
+  // 필터 버튼 생성
+  const segC = document.getElementById('segC');
+  segC.innerHTML = CATS.map((x,i)=>`<button data-k="${i}" class="${i===0?'on':''}">${x.label}</button>`).join('');
+  segC.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    cat = CATS[+b.dataset.k]; segC.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); render();
+  }));
+  document.querySelectorAll('#segV button').forEach(b=>b.addEventListener('click',()=>{
+    v=b.dataset.v; document.querySelectorAll('#segV button').forEach(x=>x.classList.toggle('on',x===b)); render();
   }));
   render();
 </script>
