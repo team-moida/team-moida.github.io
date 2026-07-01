@@ -1,6 +1,7 @@
 CLAUDE.md — OTP FC 모이다 프로젝트
-Version: 3.7
-Last Updated: 2026-06-27
+Version: 3.8
+Last Updated: 2026-07-01
+개발 환경: Windows PC · macOS(맥북) 겸용. 세션 환경정보(Platform: win32/darwin · Shell)로 OS를 판별해 아래 '환경별 규칙 (Windows / macOS)'을 따른다. 경로·scratchpad는 하드코딩하지 말고 주입된 값을 쓴다.
 
 프로젝트 개요
 아마추어 혼성 풋살팀 OTP FC 운영 관리 웹앱 "모이다"
@@ -139,7 +140,7 @@ QR 코드 생성 → handlers-attend-qr.js
   특히 아이콘은 분리돼 있다: icon.png = 인앱 엠블럼(OTP 팀 로고 — 헤더·첫화면·푸시), app-icon.png = 휴대폰 런처/홈추가 아이콘(모이다). "앱 아이콘만" 바꾸라면 app-icon.png만 건드린다. (실수: icon.png를 덮어 인앱 엠블럼까지 바뀜)
 - "삭제된 X를 보관/복원" 류 요청은 X의 데이터 단위를 먼저 확정한다 — 모임 문서 자체인지, 그 부산물(출석기록 history)인지. 모임 삭제는 영구삭제가 아니라 soft-delete(meetings.deleted=true), 보관함=삭제된 모임, 통계 제외=history.trashed. (실수: 보관함을 history 기반으로 만들어 예정 모임이 안 떴음)
 - 모임 상태(생성/삭제/복원)를 바꾸면 미러(현재 모임 = settings/meeting_schedule_v2 · meeting_schedule_match) 재동기화(syncMirror)를 항상 함께 고려한다. 미러를 안 맞추면 홈 키오스크(isActive)·운영진 선정(displayMeetingSettings 기준)·출석이 엉뚱한 모임을 가리킨다. (실수: 복원이 deleted만 풀고 미러를 안 맞춰 키오스크 미표시·선정 누락)
-- 커밋 메시지에 큰따옴표가 있으면 PowerShell here-string이 깨진다 → 메시지를 파일로 쓰고 git commit -F 로 커밋한다.
+- 커밋 메시지에 큰따옴표가 있으면 PowerShell(Windows)에서 here-string이 깨진다 → Windows에서는 메시지를 파일로 쓰고 git commit -F 로 커밋한다. macOS(zsh)에서는 해당 없음 — 작은따옴표 -m '...' 또는 heredoc(git commit -F - <<'EOF' … EOF)을 쓴다. (Platform으로 자동 판별 — 아래 '환경별 규칙 (Windows / macOS)' 참고)
 
 
 크로스 플랫폼 호환 (PC · Android · iOS)
@@ -258,6 +259,26 @@ PWA 및 배포
 Cloud Functions(functions/index.js) 변경은 git push가 아니라 firebase deploy --only functions 로 별도 배포한다.
 대기 승급(onRegistrationDeleted)은 registrations 복합 색인 필요 — firestore.indexes.json에 기록됨, Firebase Console에서 생성 완료 (meetingDate + status + registeredAt).
 Firestore 색인 배포: firebase deploy --only firestore:indexes
+
+## 환경별 규칙 (Windows / macOS — 자동 선택)
+이 프로젝트는 Windows PC와 macOS(맥북)에서 겸용으로 작업한다. Claude Code는 세션마다 환경정보(Platform: win32/darwin · Shell · 작업디렉토리 · scratchpad 경로)를 자동으로 주입한다. 그 값을 보고 해당 OS 규칙만 따른다. 경로·기기명·scratchpad 경로를 코드나 문서에 하드코딩하지 않는다 — 항상 주입된 값을 쓴다.
+
+공통 (OS 무관 — 어디서든 동일)
+- git 흐름(pull → 수정 → commit → push), 파일 지도·읽기 규칙·디자인 기준·박스 정렬 규칙은 OS와 무관하게 동일하다.
+- Babel 검증: 세션 scratchpad에 @babel/standalone 설치 후 검증. scratchpad 경로는 하드코딩하지 말고 주입된 경로를 쓴다.
+- Firebase 배포 명령은 OS 무관 동일: `firebase deploy --only functions` / `firebase deploy --only firestore:indexes`. 새 기기는 최초 1회 firebase-tools 설치 + firebase login(같은 계정) 필요.
+
+Windows (Platform: win32 · PowerShell 주 · Git Bash 보조)
+- 커밋 메시지에 큰따옴표가 있거나 여러 줄이면 PowerShell here-string이 깨진다 → 메시지를 파일로 써서 `git commit -F <파일>` 하거나 Git Bash에서 `git commit -F - <<'EOF' … EOF` 를 쓴다.
+- PowerShell은 `&&`·`||`·삼항이 없다 → `;` + `if ($?) { … }` 로 분기. 경로는 c:\ 역슬래시.
+
+macOS (Platform: darwin · zsh)
+- zsh는 heredoc(`git commit -F - <<'EOF' … EOF`)·`&&`·`||`·`$(…)`가 정상이다. 큰따옴표/여러 줄 커밋 메시지도 작은따옴표 `-m '...'` 또는 heredoc으로 그냥 넘긴다. (위 PowerShell here-string 회피책은 맥에 불필요.) 경로는 /Users 슬래시.
+
+주의 (커밋/푸시 정책)
+- 리포에 커밋된 .claude/settings.json의 Stop 훅이 세션 종료마다 자동 commit + push 한다(커밋 로그의 "모이다 자동 업데이트"가 이것). 이 훅은 shell:bash라 맥에서도 그대로 동작한다 → 세션만 끝나도 GitHub Pages 라이브로 배포됨. 특정 기기에서 "명시적으로 시킬 때만 push"를 원하면 그 기기에서 이 훅을 끄거나 무력화한다(문서가 아니라 훅 설정 문제).
+
+새 기기·새 세션은 저장소 루트 HANDOFF.md를 먼저 읽는다. Claude 로컬 메모리는 기기마다 따로라 git으로 동기화되지 않는다 — 기기 간 인수인계는 HANDOFF.md로만 한다.
 
 Git 규칙
 사용자가 요청하면 git pull / git push를 바로 수행한다.
