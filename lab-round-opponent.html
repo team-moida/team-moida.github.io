@@ -31,15 +31,15 @@
   .vesttxt .l2{ font-size:22px; font-weight:900; line-height:1.2; margin-top:2px; }
   .vesttxt .l2 small{ font-size:15px; }
   .vesttxt .l3{ font-size:12px; font-weight:900; opacity:.7; margin-top:7px; }
-  /* 이번 경기(상대) 패널 */
-  .panel{ margin-top:14px; border-radius:18px; padding:15px 16px; background:rgba(255,255,255,.15); display:flex; align-items:center; gap:16px; }
-  .oppbadge{ width:66px; height:66px; border-radius:18px; display:flex; align-items:center; justify-content:center; color:#fff;
-    font-weight:900; font-size:32px; flex-shrink:0; box-shadow:0 5px 14px rgba(0,0,0,.2); }
-  .matchtxt .m1{ font-size:13px; font-weight:900; opacity:.8; }
-  .matchtxt .m2{ font-size:20px; font-weight:900; line-height:1.3; margin-top:3px; }
-  .matchtxt .m2 .opp{ padding:1px 9px; border-radius:9px; color:#fff; }
-  .matchtxt .m2 .court{ color:#fff; opacity:.95; }
-  .matchtxt .m3{ font-size:15px; font-weight:900; margin-top:1px; }
+  /* 이번 경기(상대) 패널 — 세로 정렬 */
+  .panel{ margin-top:14px; border-radius:18px; padding:16px; background:rgba(255,255,255,.15);
+    display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .m1{ font-size:13px; font-weight:900; opacity:.8; letter-spacing:.02em; }
+  .vsrow{ display:flex; align-items:center; gap:14px; }
+  .vsrow .vs{ font-size:30px; font-weight:900; font-style:italic; opacity:.55; }
+  .oppbadge{ width:76px; height:76px; border-radius:20px; display:flex; align-items:center; justify-content:center;
+    font-weight:900; font-size:40px; box-shadow:0 5px 14px rgba(0,0,0,.2); }
+  .court{ font-size:20px; font-weight:900; }
   /* 휴식 */
   .rest{ margin-top:14px; border-radius:18px; padding:16px; background:rgba(255,255,255,.15); display:flex; align-items:center; justify-content:center; gap:10px; font-size:17px; font-weight:900; }
   .note{ font-size:11px; color:#94A3B8; text-align:center; margin-top:10px; line-height:1.5; }
@@ -86,12 +86,12 @@
     const oppInk = o.light ? '#15171E' : '#fff';   // 밝은 조끼면 글자 어둡게
     return `
       <div class="panel">
-        <div class="oppbadge" style="background:${o.hex}; color:${oppInk}">${oppLetter}</div>
-        <div class="matchtxt">
-          <p class="m1">이번 경기는</p>
-          <p class="m2"><span class="opp" style="background:${o.hex}; color:${oppInk}">${o.name}팀</span>과 <span class="court">${court}</span>에서</p>
-          <p class="m3">진행돼요!</p>
+        <p class="m1">이번 경기</p>
+        <div class="vsrow">
+          <span class="vs">VS</span>
+          <div class="oppbadge" style="background:${o.hex}; color:${oppInk}">${oppLetter}</div>
         </div>
+        <p class="court">${court}</p>
       </div>`;
   }
   function panelRest(){
