@@ -460,7 +460,6 @@ const TabRoster = ({
                         {key:'monthly',label:`월납 ${filterCounts.monthly}`},
                         {key:'half',label:`반년 ${filterCounts.half}`},
                         {key:'full',label:`1년 ${filterCounts.full}`},
-                        {key:'expiring',label:`종료예정 ${filterCounts.expiring}`},
                         {key:'rest',label:`휴식 ${filterCounts.rest}`},
                         {key:'special',label:`특별휴식 ${filterCounts.special}`},
                         {key:'unpaid',label:`미납 ${filterCounts.unpaid}`},
