@@ -333,6 +333,7 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
     const [absentConfirm, setAbsentConfirm] = useState(false);
     const [absentReason, setAbsentReason] = useState('');
     const [donePopup, setDonePopup] = useState(null);   // 신청 완료 팝업 {type:'confirmed'|'waiting', pos}
+    const [doneClosing, setDoneClosing] = useState(false);  // 신청 완료 팝업 닫힘(페이드아웃) 상태
     const [cancelAsk, setCancelAsk] = useState(false);  // 신청 취소 확인 팝업
     const [justApplied, setJustApplied] = useState(false);
     const prevStatus = useRef(myRegistration?.status || null);
@@ -347,6 +348,8 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
         }
         prevStatus.current = cur;
     }, [myRegistration && myRegistration.status, regConfirmedCount, myWaitingPosition, justApplied]);
+    // 신청 완료 팝업 스르륵 닫기 — 페이드아웃 애니메이션(.28s) 후 언마운트
+    const closeDone = () => { setDoneClosing(true); setTimeout(() => { setDonePopup(null); setDoneClosing(false); }, 300); };
     const onApplyClick = () => {
         if (isPreview) { setDonePopup({ type: 'confirmed', pos: (regConfirmedCount || 0) + 1 }); return; }
         setJustApplied(true);
@@ -510,10 +513,10 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
 
         {/* 신청 완료 팝업 (+내 순번) */}
         {donePopup && (
-            <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 animate-in"
+            <div className={`fixed inset-0 z-[70] flex items-center justify-center p-6 ${doneClosing ? 'pop-out' : 'animate-in'}`}
                 style={{ background:'rgba(15,23,42,.46)', backdropFilter:'blur(2px)' }}
-                onClick={() => setDonePopup(null)}>
-                <div className="bg-white rounded-3xl p-7 pt-8 max-w-[320px] w-full text-center"
+                onClick={closeDone}>
+                <div className={`bg-white rounded-3xl p-7 pt-8 max-w-[320px] w-full text-center ${doneClosing ? 'pop-card-out' : ''}`}
                     style={{ boxShadow:'0 30px 70px -22px rgba(0,0,0,.45)' }}
                     onClick={e => e.stopPropagation()}>
                     <div className="w-[66px] h-[66px] rounded-full mx-auto mb-4 flex items-center justify-center text-white"
@@ -531,7 +534,7 @@ const RegistrationCard = ({ meetingSettings, myRegistration, regConfirmedCount, 
                             ? '정원이 차서 대기로 등록됐어요.\n자리가 나면 자동으로 확정돼요.'
                             : `선착순 ${donePopup.pos} / ${maxLimit}명으로 신청됐어요.`}
                     </p>
-                    <button onClick={() => setDonePopup(null)}
+                    <button onClick={closeDone}
                         className="mt-5 w-full py-3.5 rounded-2xl text-white font-black text-[15px] active:scale-95"
                         style={{ background:'#f97316' }}>확인</button>
                 </div>

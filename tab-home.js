@@ -445,6 +445,7 @@ const NextMeetingCard = ({
     const showRegBlock = regEnabled && !!_meId;
     const [myReg, setMyReg] = React.useState(null);
     const [donePopup, setDonePopup] = React.useState(null);   // 신청 완료 팝업 {type:'confirmed'|'waiting', pos}
+    const [doneClosing, setDoneClosing] = React.useState(false);  // 신청 완료 팝업 닫힘(페이드아웃) 상태
     const [cancelAsk, setCancelAsk] = React.useState(false);  // 신청 취소 확인 팝업
     const [absentAsk, setAbsentAsk] = React.useState(false);  // 불참/노쇼 신청 사유 입력 팝업
     const [mgrPickOpen, setMgrPickOpen] = React.useState(false);  // 담당자 본인 불참/노쇼 확정 시 담당자 교체 팝업
@@ -472,6 +473,8 @@ const NextMeetingCard = ({
         }
         prevRegStatus.current = cur;
     }, [myReg && myReg.status, curCount, justApplied]);
+    // 신청 완료 팝업 스르륵 닫기 — 페이드아웃 애니메이션(.28s) 후 언마운트
+    const closeDone = () => { setDoneClosing(true); setTimeout(() => { setDonePopup(null); setDoneClosing(false); }, 300); };
     const onHomeApply = (e) => { e.stopPropagation(); if (!regHandlers) return; setJustApplied(true); regHandlers.handleRegister(); };
     const onHomeDecline = (e) => { e.stopPropagation(); if (!regHandlers) return; (typeof showConfirm === 'function' ? showConfirm('미참', '이번 모임에 미참으로 표시할까요?\n신청 버튼이 사라져요.', regHandlers.handleDecline) : regHandlers.handleDecline()); };
     const onHomeUndoDecline = (e) => { e.stopPropagation(); if (!regHandlers) return; regHandlers.handleUndoDecline(); };
@@ -935,10 +938,10 @@ const NextMeetingCard = ({
 
         {/* 신청 완료 팝업 (+내 순번) */}
         {donePopup && (
-            <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 animate-in"
+            <div className={`fixed inset-0 z-[70] flex items-center justify-center p-6 ${doneClosing ? 'pop-out' : 'animate-in'}`}
                 style={{ background:'rgba(15,23,42,.46)', backdropFilter:'blur(2px)' }}
-                onClick={() => setDonePopup(null)}>
-                <div className="bg-white rounded-3xl p-7 pt-8 max-w-[320px] w-full text-center"
+                onClick={closeDone}>
+                <div className={`bg-white rounded-3xl p-7 pt-8 max-w-[320px] w-full text-center ${doneClosing ? 'pop-card-out' : ''}`}
                     style={{ boxShadow:'0 30px 70px -22px rgba(0,0,0,.45)' }}
                     onClick={e => e.stopPropagation()}>
                     <div className="w-[66px] h-[66px] rounded-full mx-auto mb-4 flex items-center justify-center text-white"
@@ -956,7 +959,7 @@ const NextMeetingCard = ({
                             ? '정원이 차서 대기로 등록됐어요.\n자리가 나면 자동으로 확정돼요.'
                             : `선착순 ${donePopup.pos} / ${meeting.maxLimit||18}명으로 신청됐어요.`}
                     </p>
-                    <button onClick={() => setDonePopup(null)}
+                    <button onClick={closeDone}
                         className="mt-5 w-full py-3.5 rounded-2xl text-white font-black text-[15px] active:scale-95"
                         style={{ background:'#f97316' }}>확인</button>
                 </div>
