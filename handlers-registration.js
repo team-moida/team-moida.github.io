@@ -90,7 +90,7 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
                     status: 'active',
                     isGuest: false,
                     team: null,
-                    createdAt: FieldValue.serverTimestamp(),
+                    createdAt: new Date().toISOString(),
                 };
 
                 if (isMatch) {
@@ -342,7 +342,7 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
                     status: 'active',
                     isGuest: false,
                     team: null,
-                    createdAt: FieldValue.serverTimestamp(),
+                    createdAt: new Date().toISOString(),
                 };
 
                 if (isMatch) {

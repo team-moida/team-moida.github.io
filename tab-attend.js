@@ -1465,9 +1465,11 @@ const TabAttend = ({
     // 선택한 모임에 선정된 회원 명단(weekly_session)
     const selSessionList = React.useMemo(() => {
         // 선택(누른) 순서 = createdAt 오름차순. 같은 시각이면 이름순.
+        // createdAt는 문자열(ISO) 또는 Firestore Timestamp 둘 다 올 수 있어 ms()로 안전 비교(빈값은 맨 뒤).
+        const ms = (v) => v?.toMillis?.() ?? (v?.seconds ? v.seconds * 1000 : (typeof v === 'string' ? (Date.parse(v) || 0) : 0));
         return (tmSessionData || [])
             .filter(p => sessionMatchesMeeting(p, selectedMeeting))
-            .sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||'') || (a.name||'').localeCompare(b.name||''));
+            .sort((a,b)=>(ms(a.createdAt) - ms(b.createdAt)) || (a.name||'').localeCompare(b.name||''));
     }, [tmSessionData, selectedMeeting?.date, selectedMeeting?.meetingType]);
     // 누른 순서대로 번호(1,2,3…) — memberId 기준. 제거 시 자동으로 당겨짐(rank 재계산).
     const pickOrder = React.useMemo(() => {
