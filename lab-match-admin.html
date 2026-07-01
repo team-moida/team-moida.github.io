@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>매치 관리 단순화 시안 (lab)</title>
+<title>매치 관리 단순화 시안 v2 (lab)</title>
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
 <script>
 tailwind.config = { theme: { extend: { colors: {
   teal: { 400:'#2a52c4', 500:'#183FB0', 600:'#122E78', 700:'#122E78' },
-  ink: '#0f172a', sub:'#475569', mute:'#94A3B8',
+  ink:'#0f172a', sub:'#475569', mute:'#94A3B8',
 }, fontFamily: { sans: ['Pretendard Variable','Pretendard','sans-serif'] } } } }
 </script>
 <style>
@@ -22,236 +22,161 @@ tailwind.config = { theme: { extend: { colors: {
   .fld{ background:#f1f5f9; border:1px solid #e2e8f0; border-radius:12px; padding:9px 12px; font-size:13px; font-weight:700; color:#475569; }
   .tag-bad{ background:#fee2e2; color:#dc2626; }
   .tag-good{ background:#dcfce7; color:#16a34a; }
-  .step{ display:flex; align-items:center; gap:8px; }
-  .step-dot{ width:22px;height:22px;border-radius:999px;background:#183FB0;color:#fff;font-weight:900;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+  .tag-mem{ background:#eff6ff; color:#183FB0; }
   .hidden-soft{ display:none; }
   .btn-primary{ background:#183FB0; color:#fff; font-weight:900; border-radius:16px; }
+  .seg{ font-size:13px; font-weight:900; padding:9px 0; border-radius:12px; text-align:center; cursor:pointer; }
+  .seg-on{ background:#183FB0; color:#fff; }
+  .seg-off{ background:#f1f5f9; color:#64748b; }
+  .stepbtn{ width:38px;height:38px;border-radius:12px;background:#f1f5f9;color:#183FB0;font-weight:900;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer; }
 </style>
 </head>
 <body class="min-h-screen">
-
 <div class="max-w-6xl mx-auto px-5 py-8">
 
-  <!-- 헤더 -->
   <div class="mb-2 flex items-center gap-2">
-    <span class="chip" style="background:#183FB0;color:#fff;">LAB · 미리보기</span>
+    <span class="chip" style="background:#183FB0;color:#fff;">LAB · 미리보기 v2</span>
     <span class="text-xs font-black text-mute">실제 앱 아님 · 배치/동선 확인용</span>
   </div>
-  <h1 class="text-2xl font-black text-ink">매치 관리 단순화 시안</h1>
-  <p class="text-sub font-bold mt-1 text-sm leading-relaxed">관리자가 매치표를 만드는 화면을 단순화합니다. 왼쪽이 <b class="text-red-500">지금</b>, 오른쪽이 <b class="text-teal-600">바뀐 안</b>이에요.</p>
+  <h1 class="text-2xl font-black text-ink">매치 순서 — 단순화 시안</h1>
+  <p class="text-sub font-bold mt-1 text-sm leading-relaxed">
+    <b class="text-teal-600">회원</b>은 경기 순서만 보고, <b class="text-teal-600">운영진/관리자</b>만 설정 화면을 봐요.<br>
+    관리자 설정은 <b class="text-ink">① 팀 수(자동) · ② 구장 수 · ③ 구장 인원(5:5/6:6)</b> 딱 3개로 경기 순서를 만듭니다.
+  </p>
 
-  <!-- 흐름 비교 (단계) -->
-  <div class="card p-5 mt-6">
-    <p class="font-black text-ink mb-3">한눈에 보는 단계 수</p>
-    <div class="grid md:grid-cols-2 gap-5">
-      <div>
-        <div class="flex items-center gap-2 mb-3"><span class="chip tag-bad">지금 · 7단계</span></div>
-        <div class="space-y-2 text-sm font-bold text-sub">
-          <div class="step"><span class="step-dot">1</span> 모임 탭</div>
-          <div class="step"><span class="step-dot">2</span> 예정 모임 카드 탭</div>
-          <div class="step"><span class="step-dot">3</span> <b class="text-ink">[운영]</b> 버튼(톱니)</div>
-          <div class="step"><span class="step-dot">4</span> [매치표] 카드 선택</div>
-          <div class="step"><span class="step-dot" style="background:#dc2626">5</span> <span class="tag-bad chip">또!</span> ‘매치 관리 ON’ 토글</div>
-          <div class="step"><span class="step-dot" style="background:#dc2626">6</span> <span class="tag-bad chip">설정과다</span> 설정 서브탭 잔뜩 입력</div>
-          <div class="step"><span class="step-dot">7</span> 생성 → 저장(💾) 따로</div>
-        </div>
-      </div>
-      <div>
-        <div class="flex items-center gap-2 mb-3"><span class="chip tag-good">바뀜 · 4단계</span></div>
-        <div class="space-y-2 text-sm font-bold text-sub">
-          <div class="step"><span class="step-dot">1</span> 모임 탭</div>
-          <div class="step"><span class="step-dot">2</span> 예정 모임 카드 탭</div>
-          <div class="step"><span class="step-dot">3</span> <b class="text-ink">[운영]</b> → [매치표]</div>
-          <div class="step"><span class="step-dot" style="background:#16a34a">4</span> <b class="text-ink">바로 열림</b> → 큰 [만들기] 버튼 하나</div>
-          <div class="pl-8 text-xs text-mute">세밀 설정은 필요할 때만 <b>[고급 설정 ▸]</b> 펼치기</div>
-          <div class="pl-8 text-xs text-mute">‘매치 관리 ON’ 토글 없어짐 · 통계는 만든 뒤에만</div>
-        </div>
-      </div>
-    </div>
+  <!-- 역할 구분 -->
+  <div class="grid md:grid-cols-2 gap-4 mt-6">
+    <div class="card p-4"><span class="chip tag-mem">회원</span><p class="font-black text-ink mt-2">경기 순서 보기만</p><p class="text-sub text-sm font-bold mt-0.5">설정·버튼 없이 "몇 라운드에 우리 팀이 어느 구장" 만 봄</p></div>
+    <div class="card p-4"><span class="chip tag-good">운영진 · 관리자</span><p class="font-black text-ink mt-2">3개만 정하면 순서 자동 생성</p><p class="text-sub text-sm font-bold mt-0.5">팀 수(자동)·구장 수·구장 인원 → [경기 순서 만들기]</p></div>
   </div>
 
-  <!-- 화면 목업 비교 -->
-  <div class="grid lg:grid-cols-2 gap-8 mt-8 justify-items-center">
+  <!-- 화면 목업 -->
+  <div class="grid lg:grid-cols-3 gap-6 mt-8 justify-items-center items-start">
 
-    <!-- ============ 지금 (복잡) ============ -->
+    <!-- ① 지금 (복잡) -->
     <div>
-      <div class="text-center mb-3"><span class="chip tag-bad">지금 화면</span></div>
+      <div class="text-center mb-3"><span class="chip tag-bad">① 지금 (복잡)</span></div>
       <div class="phone">
-        <div class="phone-top">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-black text-mute tracking-widest">매치 · 관리</span>
-            <span class="text-slate-400 text-lg font-black">✕</span>
-          </div>
-          <p class="font-black text-lg text-ink mt-1">7월 5일 매칭</p>
-        </div>
-        <div class="p-4 space-y-3 max-h-[560px] overflow-y-auto">
-
-          <!-- 중복 관문: 매치 관리 토글 -->
-          <div class="flex items-center justify-between card p-3" style="border:1px dashed #f87171;background:#fff5f5;">
-            <span class="text-sm font-black text-red-500">⚙️ 매치 관리  OFF</span>
-            <span class="w-11 h-6 rounded-full bg-slate-300 relative"><span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full"></span></span>
-          </div>
-          <p class="text-[11px] text-red-400 font-bold text-center -mt-1">↑ 여기서 또 켜야 아래가 열려요 (중복)</p>
-
-          <!-- 서브탭 3개 -->
-          <div class="flex gap-1.5 text-xs font-black">
-            <span class="flex-1 text-center py-2 rounded-lg bg-teal-500 text-white">설정</span>
-            <span class="flex-1 text-center py-2 rounded-lg bg-slate-100 text-slate-500">매치표</span>
-            <span class="flex-1 text-center py-2 rounded-lg bg-slate-100 text-slate-500">통계</span>
-            <span class="px-2.5 py-2 rounded-lg bg-slate-100 text-slate-500">💾</span>
-            <span class="px-2.5 py-2 rounded-lg bg-slate-100 text-slate-500">📷</span>
-          </div>
-
-          <!-- 기본 설정 카드 (필드 잔뜩) -->
-          <div class="card p-3 space-y-2">
-            <p class="font-black text-sm text-ink">기본 설정</p>
-            <div class="fld">모임 선택 ▾</div>
-            <div class="fld">모임 날짜 · 2026-07-05</div>
-            <div class="flex gap-2">
-              <div class="fld flex-1">시작 20 : 00</div>
-              <div class="fld flex-1" style="border-color:#fecaca">종료 22 : 00</div>
-            </div>
-            <div class="flex gap-2">
-              <div class="fld flex-1">경기 12분</div>
-              <div class="fld flex-1">휴식 3분</div>
-              <div class="fld flex-1">교체 1.5분</div>
-            </div>
-          </div>
-
-          <!-- 구장 프리셋 카드 -->
-          <div class="card p-3 space-y-2">
-            <div class="flex items-center justify-between"><p class="font-black text-sm text-ink">구장 프리셋</p><span class="text-xs font-black text-teal-500">+ 추가</span></div>
-            <div class="flex gap-1.5 flex-wrap">
-              <span class="chip bg-slate-100 text-slate-500">직접입력</span>
-              <span class="chip bg-teal-500 text-white">잠실 3면</span>
-              <span class="chip bg-slate-100 text-slate-500">망원 2면</span>
-            </div>
-            <div class="flex gap-1.5">
-              <span class="fld flex-1 text-center">A구장 ✓</span>
-              <span class="fld flex-1 text-center">B구장 ✓</span>
-              <span class="fld flex-1 text-center">C구장 ✓</span>
-            </div>
-            <div class="flex items-center gap-2 text-xs font-bold text-slate-500"><span class="w-4 h-4 rounded bg-teal-500"></span> 5:5 인원 초과 시 제외(strict)</div>
-          </div>
-
+        <div class="phone-top"><div class="flex items-center justify-between"><span class="text-[11px] font-black text-mute tracking-widest">매치 · 관리</span><span class="text-slate-400 text-lg font-black">✕</span></div><p class="font-black text-lg text-ink mt-1">7월 5일 매칭</p></div>
+        <div class="p-4 space-y-3 max-h-[520px] overflow-y-auto">
+          <div class="flex items-center justify-between card p-3" style="border:1px dashed #f87171;background:#fff5f5;"><span class="text-sm font-black text-red-500">⚙️ 매치 관리  OFF</span><span class="w-11 h-6 rounded-full bg-slate-300 relative"><span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full"></span></span></div>
+          <p class="text-[11px] text-red-400 font-bold text-center -mt-1">↑ 또 켜야 열림 (중복)</p>
+          <div class="flex gap-1.5 text-xs font-black"><span class="flex-1 text-center py-2 rounded-lg bg-teal-500 text-white">설정</span><span class="flex-1 text-center py-2 rounded-lg bg-slate-100 text-slate-500">매치표</span><span class="flex-1 text-center py-2 rounded-lg bg-slate-100 text-slate-500">통계</span><span class="px-2 py-2 rounded-lg bg-slate-100 text-slate-500">💾</span></div>
+          <div class="card p-3 space-y-2"><p class="font-black text-sm text-ink">기본 설정</p><div class="fld">모임 선택 ▾</div><div class="fld">모임 날짜 · 2026-07-05</div><div class="flex gap-2"><div class="fld flex-1">시작 20:00</div><div class="fld flex-1">종료 22:00</div></div><div class="flex gap-2"><div class="fld flex-1">경기 12분</div><div class="fld flex-1">휴식 3분</div><div class="fld flex-1">교체 1.5분</div></div></div>
+          <div class="card p-3 space-y-2"><div class="flex justify-between"><p class="font-black text-sm text-ink">구장 프리셋</p><span class="text-xs font-black text-teal-500">+ 추가</span></div><div class="flex gap-1.5 flex-wrap"><span class="chip bg-slate-100 text-slate-500">직접입력</span><span class="chip bg-teal-500 text-white">잠실 3면</span><span class="chip bg-slate-100 text-slate-500">망원 2면</span></div><div class="flex gap-1.5"><span class="fld flex-1 text-center">A ✓</span><span class="fld flex-1 text-center">B ✓</span><span class="fld flex-1 text-center">C ✓</span></div><div class="flex items-center gap-2 text-xs font-bold text-slate-500"><span class="w-4 h-4 rounded bg-teal-500"></span> 5:5 초과 제외(strict)</div></div>
           <button class="w-full py-3 btn-primary">매치 테이블 생성</button>
         </div>
       </div>
     </div>
 
-    <!-- ============ 바뀜 (단순) ============ -->
+    <!-- ② 바뀜 · 관리자 (눌러보기) -->
     <div>
-      <div class="text-center mb-3"><span class="chip tag-good">바뀐 안 (눌러보세요)</span></div>
+      <div class="text-center mb-3"><span class="chip tag-good">② 바뀜 · 관리자 (눌러보세요)</span></div>
       <div class="phone">
-        <div class="phone-top">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-black text-mute tracking-widest">매치 · 관리</span>
-            <span class="text-slate-400 text-lg font-black">✕</span>
-          </div>
-          <p class="font-black text-lg text-ink mt-1">7월 5일 매칭</p>
-        </div>
+        <div class="phone-top"><div class="flex items-center justify-between"><span class="text-[11px] font-black text-mute tracking-widest">경기 순서 · 관리</span><span class="text-slate-400 text-lg font-black">✕</span></div><p class="font-black text-lg text-ink mt-1">7월 5일 매칭</p></div>
 
-        <!-- 상태 1: 매치표 없음 -->
-        <div id="newState" class="p-5 space-y-4">
-          <div class="text-center pt-6 pb-2">
-            <div class="text-5xl mb-3">🏟️</div>
-            <p class="font-black text-ink text-[17px]">아직 매치표가 없어요</p>
-            <p class="text-sub font-bold text-sm mt-1">확정된 팀 편성으로 바로 만들 수 있어요</p>
-          </div>
-          <button onclick="document.getElementById('newState').classList.add('hidden-soft');document.getElementById('madeState').classList.remove('hidden-soft');"
-            class="w-full py-4 btn-primary text-[15px]">이 팀 편성으로 매치표 만들기</button>
+        <!-- 설정 화면 (진입 즉시, 토글 없음) -->
+        <div id="setup" class="p-5 space-y-4">
+          <div class="flex items-center gap-2 p-3 rounded-xl bg-emerald-50"><span class="text-emerald-500 text-lg">✓</span><div><p class="font-black text-emerald-700 text-sm">4팀 편성 완료</p><p class="text-[11px] text-emerald-600 font-bold">빨강·파랑·노랑·초록 (팀 수는 팀편성에서 자동)</p></div></div>
 
-          <!-- 고급 설정 아코디언 -->
-          <button onclick="var a=document.getElementById('adv');var c=document.getElementById('advCaret');a.classList.toggle('hidden-soft');c.textContent=a.classList.contains('hidden-soft')?'▸':'▾';"
-            class="w-full flex items-center justify-between px-4 py-3 card text-sm font-black text-sub">
-            <span>고급 설정 <span class="text-mute font-bold">(경기·구장 등)</span></span>
-            <span id="advCaret">▸</span>
-          </button>
-          <div id="adv" class="hidden-soft space-y-3">
-            <div class="card p-3 space-y-2">
-              <div class="flex gap-2">
-                <div class="fld flex-1">경기 12분</div>
-                <div class="fld flex-1">휴식 3분</div>
-                <div class="fld flex-1">교체 1.5분</div>
-              </div>
-              <div class="flex gap-1.5 flex-wrap">
-                <span class="chip bg-teal-500 text-white">잠실 3면</span>
-                <span class="chip bg-slate-100 text-slate-500">망원 2면</span>
-                <span class="chip bg-slate-100 text-slate-500">직접입력</span>
-              </div>
-              <div class="flex items-center gap-2 text-xs font-bold text-slate-500"><span class="w-4 h-4 rounded bg-teal-500"></span> 5:5 인원 초과 시 제외</div>
+          <div>
+            <p class="font-black text-ink text-sm mb-2">구장 수</p>
+            <div class="flex items-center justify-center gap-4">
+              <span class="stepbtn" onclick="chgCourt(-1)">－</span>
+              <span id="courtN" class="text-3xl font-black text-ink w-10 text-center">2</span>
+              <span class="stepbtn" onclick="chgCourt(1)">＋</span>
             </div>
+          </div>
+
+          <div>
+            <p class="font-black text-ink text-sm mb-2">구장 인원 제한</p>
+            <div class="grid grid-cols-2 gap-2">
+              <span id="s55" class="seg seg-on" onclick="setSize('5')">5 : 5</span>
+              <span id="s66" class="seg seg-off" onclick="setSize('6')">6 : 6</span>
+            </div>
+          </div>
+
+          <button onclick="document.getElementById('setup').classList.add('hidden-soft');document.getElementById('made').classList.remove('hidden-soft');"
+            class="w-full py-4 btn-primary text-[15px]">이 편성으로 경기 순서 만들기</button>
+
+          <!-- 고급 설정 -->
+          <button onclick="var a=document.getElementById('adv');var c=document.getElementById('advC');a.classList.toggle('hidden-soft');c.textContent=a.classList.contains('hidden-soft')?'▸':'▾';"
+            class="w-full flex items-center justify-between px-4 py-3 card text-sm font-black text-sub"><span>고급 설정 <span class="text-mute font-bold">(경기 시간·구장 이름)</span></span><span id="advC">▸</span></button>
+          <div id="adv" class="hidden-soft card p-3 space-y-2">
+            <div class="flex gap-2"><div class="fld flex-1">경기 12분</div><div class="fld flex-1">휴식 3분</div><div class="fld flex-1">교체 1.5분</div></div>
+            <div class="flex gap-2"><div class="fld flex-1 text-center">A구장</div><div class="fld flex-1 text-center">B구장</div></div>
             <p class="text-[11px] text-mute font-bold text-center">평소엔 접혀 있고, 바꿀 때만 펼치면 돼요</p>
           </div>
         </div>
 
-        <!-- 상태 2: 생성 후 (매치표 + 라운드 컨트롤) -->
-        <div id="madeState" class="hidden-soft p-4 space-y-3">
-          <div class="flex gap-1.5 text-xs font-black">
-            <span class="flex-1 text-center py-2 rounded-lg bg-teal-500 text-white">매치표</span>
-            <span class="flex-1 text-center py-2 rounded-lg bg-slate-100 text-slate-500">통계</span>
-            <span class="px-2.5 py-2 rounded-lg bg-slate-100 text-slate-500">💾</span>
-          </div>
+        <!-- 생성 후 (순서표 + 라운드 컨트롤) -->
+        <div id="made" class="hidden-soft p-4 space-y-3">
+          <div class="flex items-center justify-between"><p class="font-black text-ink">경기 순서 <span id="cfgEcho" class="text-xs font-bold text-mute">(2구장 · 5:5)</span></p><span class="text-xs font-black text-teal-500">💾 저장됨</span></div>
           <div class="card p-3">
             <p class="text-[11px] font-black text-mute mb-2">1라운드</p>
             <div class="space-y-2">
-              <div class="flex items-center justify-between bg-slate-50 rounded-xl p-2.5 text-sm font-black"><span class="text-teal-600">🔴 빨강</span><span class="text-mute">A구장</span><span class="text-slate-700">🔵 파랑</span></div>
-              <div class="flex items-center justify-between bg-slate-50 rounded-xl p-2.5 text-sm font-black"><span class="text-yellow-600">🟡 노랑</span><span class="text-mute">B구장</span><span class="text-emerald-600">🟢 초록</span></div>
+              <div class="flex items-center justify-between bg-slate-50 rounded-xl p-2.5 text-sm font-black"><span class="text-red-500">🔴 빨강</span><span class="text-mute">A</span><span class="text-blue-600">🔵 파랑</span></div>
+              <div class="flex items-center justify-between bg-slate-50 rounded-xl p-2.5 text-sm font-black"><span class="text-yellow-600">🟡 노랑</span><span class="text-mute">B</span><span class="text-emerald-600">🟢 초록</span></div>
             </div>
           </div>
-          <!-- 라운드 컨트롤 -->
-          <div class="card p-3 flex items-center justify-between">
-            <button class="px-3 py-2 rounded-lg bg-slate-100 text-slate-500 text-xs font-black">‹ 이전</button>
-            <div class="text-center"><p class="text-xs font-black text-ink">1 / 5 라운드</p></div>
-            <button class="px-3 py-2 rounded-lg bg-teal-500 text-white text-xs font-black">다음 ›</button>
+          <div class="card p-3">
+            <p class="text-[11px] font-black text-mute mb-2">2라운드</p>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between bg-slate-50 rounded-xl p-2.5 text-sm font-black"><span class="text-red-500">🔴 빨강</span><span class="text-mute">A</span><span class="text-emerald-600">🟢 초록</span></div>
+              <div class="flex items-center justify-between bg-slate-50 rounded-xl p-2.5 text-sm font-black"><span class="text-blue-600">🔵 파랑</span><span class="text-mute">B</span><span class="text-yellow-600">🟡 노랑</span></div>
+            </div>
           </div>
-          <div class="flex gap-2">
-            <button class="flex-1 py-2.5 rounded-xl bg-red-50 text-red-500 text-xs font-black">이 라운드 종료</button>
-            <button class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-black">자동 진행</button>
-          </div>
-          <button onclick="document.getElementById('madeState').classList.add('hidden-soft');document.getElementById('newState').classList.remove('hidden-soft');"
-            class="w-full py-2 text-xs font-black text-mute">↺ 처음 화면으로 (시안 되돌리기)</button>
+          <div class="card p-3 flex items-center justify-between"><button class="px-3 py-2 rounded-lg bg-slate-100 text-slate-500 text-xs font-black">‹ 이전</button><p class="text-xs font-black text-ink">1 / 5 라운드</p><button class="px-3 py-2 rounded-lg bg-teal-500 text-white text-xs font-black">다음 ›</button></div>
+          <div class="flex gap-2"><button class="flex-1 py-2.5 rounded-xl bg-red-50 text-red-500 text-xs font-black">라운드 종료</button><button class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-black">자동 진행</button></div>
+          <button onclick="document.getElementById('made').classList.add('hidden-soft');document.getElementById('setup').classList.remove('hidden-soft');" class="w-full py-2 text-xs font-black text-mute">↺ 다시 설정 (시안 되돌리기)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 회원 화면 (보기 전용) -->
+    <div>
+      <div class="text-center mb-3"><span class="chip tag-mem">③ 회원 (보기 전용)</span></div>
+      <div class="phone">
+        <div class="phone-top"><div class="flex items-center justify-between"><span class="text-[11px] font-black text-mute tracking-widest">오늘의 경기 순서</span><span class="text-slate-400 text-lg font-black">✕</span></div><p class="font-black text-lg text-ink mt-1">7월 5일 매칭</p></div>
+        <div class="p-4 space-y-3">
+          <div class="flex gap-1.5 text-xs font-black"><span class="flex-1 text-center py-2 rounded-lg bg-teal-500 text-white">내 경기</span><span class="flex-1 text-center py-2 rounded-lg bg-slate-100 text-slate-500">전체 경기</span></div>
+          <div class="card p-3" style="border:2px solid #183FB0;"><div class="flex items-center justify-between mb-2"><p class="text-[11px] font-black text-teal-600">1라운드 · 지금</p><span class="chip" style="background:#C2F94A;color:#15171E;">진행 중</span></div><div class="flex items-center justify-between bg-slate-50 rounded-xl p-3 text-base font-black"><span class="text-red-500">🔴 빨강</span><span class="text-mute text-xs">A구장</span><span class="text-blue-600">🔵 파랑</span></div></div>
+          <div class="card p-3"><p class="text-[11px] font-black text-mute mb-2">2라운드</p><div class="flex items-center justify-between bg-slate-50 rounded-xl p-2.5 text-sm font-black"><span class="text-red-500">🔴 빨강</span><span class="text-mute text-xs">A구장</span><span class="text-emerald-600">🟢 초록</span></div></div>
+          <div class="card p-3 opacity-70"><p class="text-[11px] font-black text-mute mb-2">3라운드</p><div class="flex items-center justify-between bg-slate-50 rounded-xl p-2.5 text-sm font-black"><span class="text-red-500">🔴 빨강</span><span class="text-mute text-xs">B구장</span><span class="text-yellow-600">🟡 노랑</span></div></div>
+          <p class="text-center text-[11px] text-mute font-bold pt-1">설정·버튼 없음 · 순서만 보여요</p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 무엇이 바뀌나 -->
+  <!-- 요약 -->
   <div class="card p-5 mt-8">
-    <p class="font-black text-ink mb-3">무엇이 바뀌나요</p>
-    <div class="grid md:grid-cols-2 gap-4 text-sm">
-      <div>
-        <p class="chip tag-good inline-block mb-2">없애는 것</p>
-        <ul class="space-y-1.5 text-sub font-bold list-disc pl-5">
-          <li><b class="text-ink">‘매치 관리 ON’ 토글</b> — 들어가면 바로 열림</li>
-          <li><b class="text-ink">모임 선택·날짜·시간 재입력</b> — 이미 들어온 모임 걸로 자동</li>
-          <li><b class="text-ink">빈 통계 탭</b> — 매치표 만든 뒤에만 표시</li>
-        </ul>
-      </div>
-      <div>
-        <p class="chip bg-slate-200 text-slate-600 inline-block mb-2">접는 것(고급 설정)</p>
-        <ul class="space-y-1.5 text-sub font-bold list-disc pl-5">
-          <li>경기·휴식·<b class="text-ink">교체 시간</b></li>
-          <li>구장 프리셋·직접입력</li>
-          <li>5:5 인원 초과 제외(strict)</li>
-        </ul>
-      </div>
+    <p class="font-black text-ink mb-3">이렇게 바뀝니다</p>
+    <div class="grid md:grid-cols-3 gap-4 text-sm">
+      <div><p class="chip tag-good inline-block mb-2">관리자 설정 = 3개만</p><ul class="space-y-1 text-sub font-bold list-disc pl-5"><li>팀 수 (팀편성 자동)</li><li>구장 수 (＋/－)</li><li>구장 인원 (5:5 / 6:6)</li></ul></div>
+      <div><p class="chip bg-slate-200 text-slate-600 inline-block mb-2">고급 설정으로 접기</p><ul class="space-y-1 text-sub font-bold list-disc pl-5"><li>경기·휴식·교체 시간</li><li>구장 이름</li><li>‘매치 관리 ON’ 토글 삭제</li></ul></div>
+      <div><p class="chip tag-mem inline-block mb-2">회원</p><ul class="space-y-1 text-sub font-bold list-disc pl-5"><li>경기 순서만 보기</li><li>내 경기 강조</li><li>설정·버튼 없음</li></ul></div>
     </div>
-    <div class="mt-4 p-3 rounded-xl bg-teal-50 text-teal-700 text-xs font-bold">
-      ✅ 매치표 <b>생성 알고리즘·저장·워치(시계) 동기화 등 핵심 기능은 그대로</b>입니다. 화면 동선만 단순해져요.
-    </div>
+    <div class="mt-4 p-3 rounded-xl bg-teal-50 text-teal-700 text-xs font-bold">✅ 현재 생성 알고리즘이 이미 <b>팀·구장수·구장인원(5:5/6:6)</b>으로 돌아가서, <b>핵심 로직은 그대로</b> 두고 UI만 이 3개로 줄이면 됩니다.</div>
   </div>
 
-  <!-- 확인할 질문 -->
+  <!-- 확인 질문 -->
   <div class="card p-5 mt-6" style="border:1px solid #c7d2fe;background:#f5f7ff;">
-    <p class="font-black text-ink mb-2">확정 전에 여쭤볼 것 2가지</p>
+    <p class="font-black text-ink mb-2">확정 전 여쭤볼 것</p>
     <ol class="space-y-2 text-sm font-bold text-sub list-decimal pl-5">
-      <li><b class="text-ink">교체 시간 · 5:5 제외 옵션</b>을 이렇게 [고급 설정] 안에 접어도 괜찮을까요? (자주 안 바꾸시면 접는 게 깔끔)</li>
-      <li>이미 <b class="text-ink">매치표가 만들어져 있을 때</b>, 들어가면 첫 화면을 <b>‘매치표(생성 후)’</b>로 바로 열까요? (없을 때만 만들기 버튼)</li>
+      <li>구장 인원을 <b class="text-ink">모든 구장 같은 값(5:5 또는 6:6)</b>으로 두면 될까요? 아니면 <b class="text-ink">구장마다 다르게</b>(A=5:5, B=6:6)도 필요한가요? (현재 알고리즘은 구장별 다른 크기도 지원해요)</li>
+      <li>경기/휴식/교체 시간과 구장 이름은 <b class="text-ink">[고급 설정]에 접어두기</b> — 괜찮을까요?</li>
     </ol>
   </div>
 
-  <p class="text-center text-mute text-xs font-bold mt-8">모이다 · 매치 관리 단순화 시안 (lab-match-admin.html)</p>
+  <p class="text-center text-mute text-xs font-bold mt-8">모이다 · 매치 순서 단순화 시안 v2 (lab-match-admin.html)</p>
 </div>
+
+<script>
+  var court = 2, size = '5';
+  function chgCourt(d){ court = Math.max(1, Math.min(6, court+d)); document.getElementById('courtN').textContent = court; echo(); }
+  function setSize(s){ size = s; document.getElementById('s55').className = 'seg ' + (s==='5'?'seg-on':'seg-off'); document.getElementById('s66').className = 'seg ' + (s==='6'?'seg-on':'seg-off'); echo(); }
+  function echo(){ document.getElementById('cfgEcho').textContent = '('+court+'구장 · '+size+':'+size+')'; }
+</script>
 </body>
 </html>
