@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LAB · 홈 카드 이번 라운드 상대/구장</title>
+<style>
+  :root{ --accent:#183FB0; --accent-deep:#122E78; }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  body{ font-family:'Pretendard Variable',Pretendard,-apple-system,sans-serif; background:#eef1f6; color:#0f172a; padding:20px 14px 60px; }
+  .wrap{ max-width:440px; margin:0 auto; }
+  h1{ font-size:15px; font-weight:900; color:#334155; margin-bottom:4px; }
+  .sub{ font-size:12px; color:#94A3B8; font-weight:700; margin-bottom:16px; line-height:1.5; }
+  /* 컨트롤 */
+  .ctrl{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:18px; }
+  .ctrl button{ border:none; border-radius:10px; padding:8px 14px; font-weight:900; font-size:12px; cursor:pointer;
+    background:#fff; color:#64748b; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .ctrl button.on{ background:var(--accent-deep); color:#fff; }
+  .seg{ display:inline-flex; background:#e2e8f0; border-radius:12px; padding:4px; gap:4px; }
+  .seg button{ box-shadow:none; background:transparent; }
+  .seg button.on{ background:#fff; color:var(--accent-deep); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  /* 카드 공통 */
+  .card{ border-radius:24px; padding:20px; color:#fff; box-shadow:0 6px 18px -8px rgba(15,23,42,.22); margin-bottom:14px; }
+  .chdr{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+  .klabel{ font-size:11px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; opacity:.8; }
+  .kbadge{ font-size:11px; font-weight:900; padding:4px 12px; border-radius:999px; background:rgba(255,255,255,.22); }
+  .cdate{ font-size:22px; font-weight:900; line-height:1.15; }
+  .cmeta{ font-size:12px; font-weight:800; opacity:.8; margin-top:3px; }
+  /* 조끼 발표 묶음 */
+  .vestrow{ display:flex; align-items:center; gap:18px; padding:8px 0 4px; }
+  .patch{ width:112px; height:112px; border-radius:26px; background:#fff; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; box-shadow:0 8px 20px rgba(0,0,0,.18); }
+  .patch span{ font-weight:900; font-size:58px; line-height:1; }
+  .vesttxt .l1{ font-size:14px; font-weight:900; opacity:.85; }
+  .vesttxt .l2{ font-size:23px; font-weight:900; line-height:1.2; margin-top:2px; }
+  .vesttxt .l2 small{ font-size:16px; }
+  .vesttxt .l3{ font-size:12px; font-weight:900; opacity:.7; margin-top:7px; }
+  /* 이번 라운드 패널 */
+  .panel{ margin-top:14px; border-radius:18px; padding:14px 16px; background:rgba(255,255,255,.14); }
+  .ptitle{ font-size:11px; font-weight:900; letter-spacing:.04em; opacity:.7; margin-bottom:10px; }
+  .ptitle b{ opacity:1; }
+  .badge{ border-radius:14px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; box-shadow:0 4px 12px rgba(0,0,0,.15); }
+  /* 옵션 A: 크게 VS */
+  .vsbig{ display:flex; align-items:center; justify-content:center; gap:16px; }
+  .vsbig .badge{ width:74px; height:74px; font-size:34px; }
+  .vsbig .vs{ font-size:22px; font-weight:900; font-style:italic; opacity:.55; }
+  .vsbig .side{ text-align:center; }
+  .vsbig .side p{ font-size:11px; font-weight:900; margin-top:6px; opacity:.8; }
+  .court{ margin-top:12px; display:flex; justify-content:center; }
+  .court span{ display:inline-flex; align-items:center; gap:6px; background:#fff; color:#0f172a; font-weight:900;
+    font-size:14px; padding:8px 18px; border-radius:999px; box-shadow:0 4px 12px rgba(0,0,0,.1); }
+  /* 옵션 B: 한 줄 */
+  .vsline{ display:flex; align-items:center; gap:10px; }
+  .vsline .badge{ width:38px; height:38px; font-size:19px; border-radius:11px; }
+  .vsline .nm{ font-size:16px; font-weight:900; }
+  .vsline .vs{ font-size:12px; font-weight:900; font-style:italic; opacity:.5; }
+  .vsline .ct{ margin-left:auto; display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,.9); color:#0f172a;
+    font-weight:900; font-size:13px; padding:6px 13px; border-radius:999px; }
+  /* 휴식 */
+  .rest{ display:flex; align-items:center; justify-content:center; gap:10px; padding:6px 0; font-size:17px; font-weight:900; }
+  .note{ font-size:11px; color:#94A3B8; text-align:center; margin-top:10px; }
+  .icon{ width:1em; height:1em; display:inline-block; vertical-align:-.12em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>홈 카드 · 이번 라운드 상대/구장</h1>
+  <p class="sub">조끼색·번호처럼, 홈 모임카드 안에서 이번 라운드 상대팀과 구장을 바로 보여주는 시안입니다.<br>버튼으로 시안/상태를 바꿔 비교하세요.</p>
+
+  <div class="ctrl">
+    <div class="seg" id="optSeg">
+      <button data-opt="A" class="on">시안 A · 크게</button>
+      <button data-opt="B">시안 B · 한 줄</button>
+    </div>
+  </div>
+  <div class="ctrl">
+    <button data-st="play" class="on">경기 있음</button>
+    <button data-st="rest">이번 라운드 휴식</button>
+  </div>
+
+  <div id="cardHost"></div>
+
+  <p class="note">※ 실제 앱에서는 라운드가 진행되면(다음 라운드로 넘어가면) 상대·구장이 자동으로 바뀝니다.</p>
+</div>
+
+<script>
+  // ─ 데모 데이터 ─
+  const VEST = [
+    {hex:'#ec4899', name:'핑크', light:false},
+    {hex:'#38bdf8', name:'하늘', light:false},
+    {hex:'#a3e635', name:'연두', light:true},
+    {hex:'#facc15', name:'노랑', light:true},
+    {hex:'#2563eb', name:'파랑', light:false},
+    {hex:'#ef4444', name:'빨강', light:false},
+  ];
+  const me = { name:'재원', teamIdx:2, letter:'C', jersey:3 };  // 연두 3번
+  const oppIdx = 4, oppLetter = 'E';                            // 파랑 E팀
+  const court = '2구장', roundNo = 1, total = 4, time = '20:00';
+
+  let opt = 'A', st = 'play';
+
+  const svg = (p)=>`<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  const iPin  = svg('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>');
+  const iCoffee = svg('<path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/>');
+
+  function badge(idx, letter){
+    return `<div class="badge" style="background:${VEST[idx].hex}">${letter}</div>`;
+  }
+
+  function panelPlay(){
+    if(opt==='A'){
+      return `
+      <div class="panel">
+        <p class="ptitle">현재 <b>${roundNo}라운드</b> / ${total} · 이번 상대</p>
+        <div class="vsbig">
+          <div class="side">${badge(me.teamIdx, me.letter)}<p>우리 팀</p></div>
+          <span class="vs">VS</span>
+          <div class="side">${badge(oppIdx, oppLetter)}<p>상대 팀</p></div>
+        </div>
+        <div class="court"><span>${iPin}${court}</span></div>
+      </div>`;
+    }
+    return `
+      <div class="panel">
+        <p class="ptitle">현재 <b>${roundNo}라운드</b> / ${total} · 이번 상대</p>
+        <div class="vsline">
+          ${badge(me.teamIdx, me.letter)}<span class="nm">${me.letter}팀</span>
+          <span class="vs">vs</span>
+          ${badge(oppIdx, oppLetter)}<span class="nm">${oppLetter}팀</span>
+          <span class="ct">${iPin}${court}</span>
+        </div>
+      </div>`;
+  }
+  function panelRest(){
+    return `
+      <div class="panel">
+        <p class="ptitle">현재 <b>${roundNo}라운드</b> / ${total}</p>
+        <div class="rest" style="color:#fff">${iCoffee} 이번 라운드는 쉬어가요</div>
+      </div>`;
+  }
+
+  function render(){
+    const v = VEST[me.teamIdx];
+    const ink = v.light ? '#15171E' : '#fff';
+    const numColor = v.light ? '#1e293b' : v.hex;
+    const host = document.getElementById('cardHost');
+    host.innerHTML = `
+      <div class="card" style="background:${v.hex}; color:${ink}">
+        <div class="chdr">
+          <span class="klabel">정기 모임</span>
+          <span class="kbadge">오늘 · ${time}</span>
+        </div>
+        <div class="cdate">6월 30일 (일)</div>
+        <div class="cmeta">양산 실내풋살장 · 18명 참여</div>
+
+        <div class="vestrow">
+          <div class="patch"><span style="color:${numColor}">${me.jersey}</span></div>
+          <div class="vesttxt">
+            <p class="l1">오늘 ${me.name}님은</p>
+            <p class="l2">${v.name}색 ${me.jersey}번<small>이에요!</small></p>
+            <p class="l3">${me.letter}팀 · ${v.name} 조끼</p>
+          </div>
+        </div>
+
+        ${st==='play' ? panelPlay() : panelRest()}
+      </div>`;
+  }
+
+  document.getElementById('optSeg').addEventListener('click', e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    opt = b.dataset.opt;
+    document.querySelectorAll('#optSeg button').forEach(x=>x.classList.toggle('on', x===b));
+    render();
+  });
+  document.querySelectorAll('[data-st]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      st = btn.dataset.st;
+      document.querySelectorAll('[data-st]').forEach(x=>x.classList.toggle('on', x===btn));
+      render();
+    });
+  });
+
+  render();
+</script>
+</body>
+</html>
