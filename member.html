@@ -923,7 +923,7 @@ function App() {
                         fit={true}
                         notifPermission={notifPermission} registerFcmToken={registerFcmToken}
                         onTabChange={navTab} meetingDayInfo={meetingDayInfo} teamReady={teamReady} meetings={visibleMeetings} members={roster.allMembers} attendHistory={attend.attendHistory}
-                        participantCount={meetingParticipants.length}
+                        participantCount={meetingParticipants.length} rosterCount={(roster.activeMembers||[]).length}
                         allowFromDisplay={allowFromDisplay} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
                         scheduleData={scheduleData}
                         matchLocalIndex={match.localMatchIndex} matchCompleted={match.localCompletedMatches}

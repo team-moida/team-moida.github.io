@@ -379,7 +379,7 @@ const fmtRegDT = (iso) => {
 const NextMeetingCard = ({
     meeting, kind, isActive, dayInfo, darkMode, isAdminMode, onTabChange, members,
     memberData, showToast, showAlert, showConfirm, regDuesUnpaid, regDuesBlock, regPenaltyUnpaid, regPenaltyTotal,
-    mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount, scheduleData,
+    mySession, teamReady, myTeamInfo, myTeamIdx, allowFromDisplay, participantCount, rosterCount, scheduleData,
     matchLocalIndex, matchCompleted, onMatchPrev, onMatchNext, onMatchToggleComplete, onMatchAutoAdvance,
     isMeetingOver, isMeetingEndSaved, onEndMeeting, onGenerateQR, onEditMeeting, onDeleteMeeting,
     onOpenAttendModal, onInlineGPS, onInlineQR, enableQR, onOpenKiosk, fill, fitFill, homeRich,
@@ -471,6 +471,21 @@ const NextMeetingCard = ({
         prevRegStatus.current = cur;
     }, [myReg && myReg.status, curCount, justApplied]);
     const onHomeApply = (e) => { e.stopPropagation(); if (!regHandlers) return; setJustApplied(true); regHandlers.handleRegister(); };
+    const onHomeDecline = (e) => { e.stopPropagation(); if (!regHandlers) return; (typeof showConfirm === 'function' ? showConfirm('미참', '이번 모임에 미참으로 표시할까요?\n신청 버튼이 사라져요.', regHandlers.handleDecline) : regHandlers.handleDecline()); };
+    const onHomeUndoDecline = (e) => { e.stopPropagation(); if (!regHandlers) return; regHandlers.handleUndoDecline(); };
+    // 운영진 인원 파악: 이 모임의 신청(확정+대기)·미참 집계 (관리자만 구독)
+    const [regAgg, setRegAgg] = React.useState({ applied: 0, declined: 0 });
+    React.useEffect(() => {
+        if (!isAdminMode || !showRegBlock || !meeting?.date) { setRegAgg({ applied: 0, declined: 0 }); return; }
+        const mid = (typeof getMeetingId === 'function') ? getMeetingId(meeting) : meeting.date;
+        const unsub = getCol('registrations').where('meetingId', '==', mid).onSnapshot(snap => {
+            let applied = 0, declined = 0;
+            snap.forEach(d => { const s = (d.data() || {}).status; if (s === 'confirmed' || s === 'waiting') applied++; else if (s === 'declined') declined++; });
+            setRegAgg({ applied, declined });
+        }, () => setRegAgg({ applied: 0, declined: 0 }));
+        return () => unsub();
+    }, [isAdminMode, showRegBlock, meeting?.date, meeting?.meetingType]);
+    const undecidedCount = Math.max(0, (rosterCount || 0) - regAgg.applied - regAgg.declined);
     const _now = Date.now();
     const _regOpenMs = meeting?.registrationOpenAt ? new Date(meeting.registrationOpenAt).getTime() : null;
     const _regCloseMs = meeting?.registrationCloseAt ? new Date(meeting.registrationCloseAt).getTime() : null;
@@ -590,6 +605,11 @@ const NextMeetingCard = ({
                         <div className={`flex items-center gap-1.5 text-xs font-black ${ink70}`}>
                             <Icon.Clock size={14} className="flex-shrink-0 opacity-60"/><span className="truncate">신청 시작 전 · {fmtRegDT(meeting.registrationOpenAt)}부터</span>
                         </div>
+                    ) : myReg?.status === 'declined' ? (
+                        <div className="flex items-center justify-between gap-2">
+                            <span className={`flex items-center gap-1.5 text-sm font-black ${ink} min-w-0`}><Icon.X size={16} className="flex-shrink-0"/><span className="truncate">이번 모임 미참</span></span>
+                            <span role="button" onClick={onHomeUndoDecline} className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${chip} active:scale-95 cursor-pointer flex-shrink-0`}>되돌리기</span>
+                        </div>
                     ) : (myReg?.status === 'confirmed' && absentType) ? (
                         /* 신청 마감 후 — 못 오면 불참/노쇼 신청 (시간 단계별 라벨·색) */
                         (fillOn && !(teamReady && myTeamInfo)) ? (
@@ -695,39 +715,30 @@ const NextMeetingCard = ({
                         <div className={`text-xs font-black ${ink70} text-center py-1`}>미납 벌금이 있어 신청할 수 없어요</div>
                     ) : (regDuesBlock && regDuesUnpaid) ? (
                         <div className={`text-xs font-black ${ink70} text-center py-1`}>회비 미납 — 신청할 수 없어요</div>
-                    ) : fillOn ? (
-                        <div className="w-full flex-1 flex items-center justify-center gap-6 py-1">
-                            <span role="button" onClick={onHomeApply}
-                                className="flex-shrink-0 flex flex-col items-center justify-center rounded-full text-white active:scale-95 transition-all cursor-pointer"
-                                style={{ width:180, height:180, background:'#f97316', boxShadow:'0 0 0 9px rgba(249,115,22,.12), 0 18px 34px -14px rgba(249,115,22,.65)' }}>
-                                <Icon.CheckSq size={42}/>
-                                <span className="font-black text-[24px] mt-2">신청하기</span>
-                            </span>
-                            <div className="flex flex-col gap-3 min-w-0">
-                                <span className={`text-sm font-black ${ink80}`}>{kind==='match' ? '매칭 신청' : (regFCFS ? '선착순 신청' : '모임 신청')}</span>
-                                <div>
-                                    <p className={`text-[11px] font-black ${ink70} mb-0.5`}>현재 인원</p>
-                                    <p className={`text-[26px] font-black ${ink} leading-none`}>{curCount}<span className="text-base font-black ml-0.5">명</span></p>
-                                </div>
-                                <div>
-                                    <p className={`text-[11px] font-black ${ink70} mb-0.5`}>정원</p>
-                                    <p className={`text-[26px] font-black ${ink} leading-none`}>{kind==='match' ? <span className="text-[19px]">남 {meeting.maxMale||0} · 여 {meeting.maxFemale||0}</span> : <>{meeting.maxLimit||18}<span className="text-base font-black ml-0.5">명</span></>}</p>
-                                </div>
-                            </div>
-                        </div>
                     ) : (
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <span className={`font-black ${ink80} text-xs`}>{kind==='match' ? '매칭 신청' : (regFCFS ? '선착순 신청' : '모임 신청')}</span>
-                                {regFCFS && kind!=='match' && <span className={`font-black ${ink70} text-xs`}>{curCount} / {meeting.maxLimit||18}명</span>}
+                        <div className={fillOn ? 'w-full' : ''}>
+                            <div className="flex items-center justify-between mb-3">
+                                <span className={`text-sm font-black ${ink80}`}>{kind==='match' ? '매칭 신청' : (regFCFS ? '선착순 신청' : '모임 신청')}</span>
+                                <span className={`text-xs font-black ${ink70}`}>{kind==='match' ? `현재 ${curCount} · 남${meeting.maxMale||0}·여${meeting.maxFemale||0}` : `현재 ${curCount} / ${meeting.maxLimit||18}명`}</span>
                             </div>
                             <span role="button" onClick={onHomeApply}
-                                className="w-full flex items-center justify-center gap-2 rounded-2xl font-black cursor-pointer py-3 text-sm text-white active:scale-95"
-                                style={{ background:'#f97316', boxShadow:'0 10px 22px -10px rgba(249,115,22,.5)' }}>
-                                <Icon.CheckSq size={16}/> 신청하기
+                                className="w-full flex items-center justify-center gap-2 rounded-2xl font-black cursor-pointer active:scale-95"
+                                style={{ background:'#C2F94A', color:'#15171E', padding: fillOn ? '17px' : '14px', fontSize: fillOn ? '17px' : '15px', boxShadow:'0 12px 24px -12px rgba(194,249,74,.95)' }}>
+                                <Icon.CheckSq size={fillOn ? 20 : 16}/> 신청하기
+                            </span>
+                            <span role="button" onClick={onHomeDecline}
+                                className={`w-full flex items-center justify-center gap-2 rounded-2xl font-black cursor-pointer active:scale-95 mt-2.5 ${ink}`}
+                                style={{ padding:'13px', fontSize:'14px', background: dark?'rgba(0,0,0,0.08)':'rgba(255,255,255,0.12)', border:`1.5px solid ${dark?'rgba(0,0,0,0.18)':'rgba(255,255,255,0.32)'}` }}>
+                                <Icon.X size={15}/> 이번엔 미참할게요
                             </span>
                         </div>
                     )}
+                </div>
+            )}
+            {isAdminMode && showRegBlock && !regBeforeOpen && (
+                <div className={`mt-2 flex items-center justify-center gap-1.5 text-[11px] font-black ${ink70}`}>
+                    <Icon.Users size={12} className="flex-shrink-0 opacity-70"/>
+                    <span>신청 {regAgg.applied} · 미참 {regAgg.declined} · 미응답 {undecidedCount}</span>
                 </div>
             )}
             {isActive ? (
@@ -1984,7 +1995,7 @@ const MyActivitySummaryCard = ({ attendHistory, memberInfo, onTabChange }) => {
 const TabHome = ({
     notifPermission, registerFcmToken, onTabChange,
     meetingDayInfo, teamReady, allowFromDisplay,
-    myTeamInfo, myTeamIdx, memberData, memberInfo, meetings, members, participantCount, scheduleData, attendHistory,
+    myTeamInfo, myTeamIdx, memberData, memberInfo, meetings, members, participantCount, rosterCount, scheduleData, attendHistory,
     matchLocalIndex, matchCompleted, onMatchPrev, onMatchNext, onMatchToggleComplete, onMatchAutoAdvance,
     mySession, meetingSettings, meetingSettingsMatch, darkMode,
     memberName, announcements, onOpenAnnouncements,
@@ -2035,7 +2046,7 @@ const TabHome = ({
         <NextMeetingCard key={c.kind} homeRich={!!fit} meeting={c.meeting} kind={c.kind} isActive={c.isActive}
             dayInfo={c.dayInfo} darkMode={darkMode} isAdminMode={isAdminMode} onTabChange={onTabChange} members={members}
             mySession={mySession} teamReady={teamReady} myTeamInfo={myTeamInfo} myTeamIdx={myTeamIdx}
-            allowFromDisplay={allowFromDisplay} participantCount={participantCount} scheduleData={scheduleData}
+            allowFromDisplay={allowFromDisplay} participantCount={participantCount} rosterCount={rosterCount} scheduleData={scheduleData}
             matchLocalIndex={matchLocalIndex} matchCompleted={matchCompleted}
             onMatchPrev={onMatchPrev} onMatchNext={onMatchNext} onMatchToggleComplete={onMatchToggleComplete} onMatchAutoAdvance={onMatchAutoAdvance}
             isMeetingOver={isMeetingOver} isMeetingEndSaved={isMeetingEndSaved} onEndMeeting={onEndMeeting}

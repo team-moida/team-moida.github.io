@@ -394,5 +394,54 @@ function makeRegistrationHandlers({ meetingDate, memberData, meetingSettings, sh
         }
     };
 
-    return { handleRegister, handleCancel, handleAbsent, handleUndoAbsent };
+    // 미참(declined) — 신청 안 한 사람이 "이번 모임 안 옴"을 미리 표시. 인원 카운트(confirmed/waiting)엔 영향 없음.
+    // registrations 문서 status:'declined' + 모임/미러의 declinedCount만 증가(운영진 파악용).
+    const handleDecline = async () => {
+        if (!meetingDate || !memberData?.memberId) return;
+        const regRef = getRegistrationsCol().doc(`${meetingId}_${memberData.memberId}`);
+        const meetingRef = getMeetingsCol().doc(meetingId);
+        const mirrorRef = getCol('settings').doc(mirrorDocId);
+        try {
+            await db.runTransaction(async (tx) => {
+                const regDoc = await tx.get(regRef);
+                if (regDoc.exists) throw new Error('이미 응답했습니다');   // 신청/미참 기록 있으면 막기
+                tx.set(regRef, {
+                    meetingDate, meetingId,
+                    meetingType: mType === 'match' ? 'match' : 'self',
+                    memberId: memberData.memberId,
+                    name: memberData.name || '', gender: memberData.gender || '', level: memberData.level || '',
+                    status: 'declined',
+                    registeredAt: FieldValue.serverTimestamp(),
+                });
+                tx.set(meetingRef, { declinedCount: FieldValue.increment(1) }, { merge: true });
+                tx.set(mirrorRef, { declinedCount: FieldValue.increment(1) }, { merge: true });
+            });
+            showToast && showToast('이번 모임 미참으로 표시했어요.', 'info');
+        } catch (e) {
+            if (e.message === '이미 응답했습니다') showAlert && showAlert('알림', '이미 신청 또는 미참한 모임이에요.');
+            else { console.error('미참 오류:', e); showAlert && showAlert('오류', '처리 중 오류가 발생했어요. 다시 시도해주세요.'); }
+        }
+    };
+
+    const handleUndoDecline = async () => {
+        if (!meetingDate || !memberData?.memberId) return;
+        const regRef = getRegistrationsCol().doc(`${meetingId}_${memberData.memberId}`);
+        const meetingRef = getMeetingsCol().doc(meetingId);
+        const mirrorRef = getCol('settings').doc(mirrorDocId);
+        try {
+            await db.runTransaction(async (tx) => {
+                const regDoc = await tx.get(regRef);
+                if (!regDoc.exists || regDoc.data().status !== 'declined') throw new Error('미참 상태가 아닙니다');
+                tx.delete(regRef);
+                tx.set(meetingRef, { declinedCount: FieldValue.increment(-1) }, { merge: true });
+                tx.set(mirrorRef, { declinedCount: FieldValue.increment(-1) }, { merge: true });
+            });
+            showToast && showToast('미참을 되돌렸어요.', 'success');
+        } catch (e) {
+            if (e.message === '미참 상태가 아닙니다') showAlert && showAlert('알림', '미참 상태가 아니에요.');
+            else { console.error('미참 취소 오류:', e); showAlert && showAlert('오류', '처리 중 오류가 발생했어요. 다시 시도해주세요.'); }
+        }
+    };
+
+    return { handleRegister, handleCancel, handleAbsent, handleUndoAbsent, handleDecline, handleUndoDecline };
 }
