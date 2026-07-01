@@ -398,7 +398,8 @@ const NextMeetingCard = ({
     // 매칭=라임(밝은)→어두운 글자 / 정기=인디고→흰 글자 / 팀공개=조끼색(밝으면 어두운 글자)
     const dark = teamReveal ? vestLightText : (kind === 'match');
     const cardBg = teamReveal ? (VEST_HEX[myTeamIdx] || cfg.accent) : (kind === 'match' ? '#C2F94A' : cfg.accent);
-    const cardShadow = teamReveal ? `0 16px 34px -6px ${(VEST_HEX[myTeamIdx] || '#000000')}66`
+    const cardShadow = homeRich ? '0 6px 18px -8px rgba(15,23,42,0.22)'   // 홈 카드: 컬러 글로우(하늘색 띠) 대신 은은한 중립 그림자
+        : teamReveal ? `0 16px 34px -6px ${(VEST_HEX[myTeamIdx] || '#000000')}66`
         : (kind === 'match' ? '0 16px 34px -6px rgba(163,224,53,0.5)' : `0 16px 34px -6px ${cfg.accent}66`);
     const ink   = dark ? 'text-[#15171E]'    : 'text-white';
     const ink90 = dark ? 'text-[#15171E]/90' : 'text-white/90';
