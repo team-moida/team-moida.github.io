@@ -270,19 +270,42 @@ const RosterStatsView = ({ activeMembers, attendHistory, attendHistoryTrash = []
         </div>
     );
 };
-// ─── 명단 회비 목록 이미지 저장 (현재 필터 목록을 그대로 캡처) ───
+// ─── 명단 회비 목록 이미지 내보내기 (현재 필터 목록 캡처) ───
+// 스마트 분기: 모바일=공유 시트(카톡 바로) → PC=클립보드 복사(붙여넣기) → 실패 시 다운로드.
 const ROSTER_FILTER_LABELS = { all:'전체', monthly:'월납', half:'반년납', full:'1년납', rest:'휴식', special:'특별휴식', unpaid:'미납', expiring:'종료예정' };
-async function captureRosterList(fileLabel, showAlert) {
+async function exportRosterList(fileLabel, showToast, showAlert) {
     await new Promise(r => setTimeout(r, 60));   // 렌더 안정 대기
+    const notify = (msg, type) => { try { showToast ? showToast(msg, type) : (showAlert && showAlert('안내', msg)); } catch(_) {} };
     try {
         const el = document.getElementById('roster-capture-area');
         if (!el) return;
         const canvas = await window.html2canvas(el, { scale: 2, backgroundColor: '#f8fafc', useCORS: true });
+        const fileName = `모이다_명단_${fileLabel}`;
+        const isMobile = /iphone|ipad|ipod|android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent)); // iPadOS=Mac+터치
+        // 1) 모바일: 공유 시트(파일) → 카톡 등으로 바로 전송
+        if (isMobile && navigator.share) {
+            const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+            const file = blob && new File([blob], `${fileName}.jpg`, { type: 'image/jpeg' });
+            if (file && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+                try { await navigator.share({ files: [file], title: fileName }); return; }
+                catch (e) { if (e && e.name === 'AbortError') return; }   // 사용자가 취소 → 조용히 종료
+            }
+        }
+        // 2) PC: 클립보드 복사(image/png) → 카톡 등에 붙여넣기
+        if (navigator.clipboard && window.ClipboardItem) {
+            try {
+                const blobPng = await new Promise(res => canvas.toBlob(res, 'image/png'));
+                await navigator.clipboard.write([new window.ClipboardItem({ 'image/png': blobPng })]);
+                notify('이미지를 복사했어요 · 붙여넣기(Ctrl+V) 하세요', 'success');
+                return;
+            } catch (e) { /* 클립보드 실패 → 다운로드 폴백 */ }
+        }
+        // 3) 폴백: 다운로드
         const link = document.createElement('a');
-        link.download = `모이다_명단_${fileLabel}.jpg`;
+        link.download = `${fileName}.jpg`;
         link.href = canvas.toDataURL('image/jpeg', 0.92);
         link.click();
-    } catch (e) { showAlert && showAlert('오류', '이미지 저장 실패'); }
+    } catch (e) { notify('이미지 내보내기 실패', 'error'); }
 }
 // 가로 칩 줄을 PC에서 마우스 드래그로 좌우 스크롤 (터치는 기본 스크롤 사용). ref 콜백으로 1회 바인딩.
 const attachDragScroll = (el) => {
@@ -308,7 +331,7 @@ const TabRoster = ({
     rosterSubTab, setRosterSubTab,
     setIsAddModalOpen,
     activeMembers, allMembers, resignedMembers, attendHistory, attendHistoryTrash,
-    showConfirm, showAlert,
+    showConfirm, showAlert, showToast,
     setEditingMember,
     setResigningMember, setResignForm,
     handleRestoreResigned, setDeletingMember,
@@ -448,8 +471,8 @@ const TabRoster = ({
                     ))}
                 </div>
                 <div className="flex justify-end mb-2">
-                    <button onClick={()=>captureRosterList(`${targetMonth}_${ROSTER_FILTER_LABELS[filterCategory]||''}`, showAlert)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 font-black text-xs active:scale-95 transition-all"><Icon.Camera size={14}/>이미지 저장</button>
+                    <button onClick={()=>exportRosterList(`${targetMonth}_${ROSTER_FILTER_LABELS[filterCategory]||''}`, showToast, showAlert)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 font-black text-xs active:scale-95 transition-all"><Icon.Camera size={14}/>이미지 공유</button>
                 </div>
                 <div id="roster-capture-area" style={{background:'#f8fafc'}} className="rounded-2xl p-2">
                     <div className="px-1 pt-0.5 pb-2.5">
