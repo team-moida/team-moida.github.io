@@ -2021,47 +2021,52 @@ const TabAttend = ({
                                                 </div>
                                             </div>
                                         )}
-                                        <div className="space-y-1.5">
+                                        {selEligibleNormal.length === 0 ? (
+                                            <div className="card border-slate-100 rounded-2xl p-4 text-center text-slate-400 text-xs font-black">이 달 회비 납부 회원이 없습니다</div>
+                                        ) : (
+                                        <div className="grid grid-cols-3 gap-2">
                                             {selEligibleNormal.map(member => {
                                                 const isSelected = selSessionList.some(p=>p.memberId===member.id);
                                                 return (
                                                     <button key={member.id} onClick={()=>attendToggleParticipant(member, selectedMeeting)}
-                                                        className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-teal-50 border-teal-300':'card border-slate-100 hover:border-slate-200'}`}>
-                                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-[12px] font-black transition-all ${isSelected?'bg-teal-500 text-white':'border-2 border-slate-300 text-slate-300'}`}>
-                                                            {isSelected ? (pickOrder[member.id] || <Icon.Check size={12} className="text-white"/>) : ''}
+                                                        className={`relative flex flex-col items-center justify-center gap-1.5 p-2 aspect-square rounded-2xl border transition-all ${isSelected?'bg-teal-50 border-teal-300':'card border-slate-100'}`}>
+                                                        <div className={`absolute top-1.5 left-1.5 w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-black transition-all ${isSelected?'bg-teal-500 text-white':'border-2 border-slate-200'}`}>
+                                                            {isSelected ? (pickOrder[member.id] || <Icon.Check size={13} className="text-white"/>) : ''}
                                                         </div>
-                                                        <span className="font-black text-sm text-slate-800 flex-1 min-w-0 truncate">{member.name}</span>
-                                                        {member.gender==='여성'&&<span className="shrink-0 text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
-                                                        {ADMIN_ROLES.includes(member.role)&&<span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded-lg font-black ${getRoleBadgeClass(member.role)}`}>{member.role}</span>}
-                                                        <span className="shrink-0 text-[9px] font-black text-slate-400">{member.level}</span>
+                                                        <span className="font-black text-sm text-slate-800 truncate max-w-full px-1">{member.name}</span>
+                                                        <div className="flex items-center justify-center gap-1 flex-wrap">
+                                                            {member.gender==='여성'&&<span className="text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
+                                                            {ADMIN_ROLES.includes(member.role)&&<span className={`text-[9px] px-1.5 py-0.5 rounded-lg font-black ${getRoleBadgeClass(member.role)}`}>{member.role}</span>}
+                                                            <span className="text-[9px] font-black text-slate-400">{member.level}</span>
+                                                        </div>
                                                     </button>
                                                 );
                                             })}
-                                            {selEligibleNormal.length === 0 && (
-                                                <div className="card border-slate-100 rounded-2xl p-4 text-center text-slate-400 text-xs font-black">이 달 회비 납부 회원이 없습니다</div>
-                                            )}
                                         </div>
+                                        )}
                                         {selEligibleRest.length > 0 && (
                                             <div className="mt-4">
                                                 <p className="text-xs font-black text-orange-500 uppercase tracking-widest mb-2 px-1">특별휴식 · 휴식 회원 (게스트 참여)</p>
-                                                <div className="space-y-1.5">
+                                                <div className="grid grid-cols-3 gap-2">
                                                     {selEligibleRest.map(member => {
                                                         const isSelected = selSessionList.some(p=>p.memberId===member.id);
                                                         const _monthStr = selectedMeeting?.date?.substring(0,7)||'';
                                                         const msType = getMembershipStatus(member, _monthStr)?.type;
-                                                        const badge = member.isSpecialRest ? '특별휴식' : (msType==='반년'?'반년납 휴식':'1년납 휴식');
+                                                        const badge = member.isSpecialRest ? '특별휴식' : (msType==='반년'?'반년납':'1년납');
                                                         const guestUsed = !member.isSpecialRest && tmSessionData.some(p=>p.memberId===member.id&&p.isGuest&&p.date&&p.date.substring(0,7)===_monthStr&&p.date!==selectedMeeting.date);
                                                         return (
                                                             <button key={member.id} onClick={()=>attendToggleParticipantAsGuest(member, selectedMeeting)}
-                                                                className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left ${isSelected?'bg-orange-50 border-orange-300':'card border-slate-100 hover:border-slate-200'}`}>
-                                                                <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-[12px] font-black transition-all ${isSelected?'bg-orange-400 text-white':'border-2 border-slate-300 text-slate-300'}`}>
-                                                                    {isSelected ? (pickOrder[member.id] || <Icon.Check size={12} className="text-white"/>) : ''}
+                                                                className={`relative flex flex-col items-center justify-center gap-1.5 p-2 aspect-square rounded-2xl border transition-all ${isSelected?'bg-orange-50 border-orange-300':'card border-slate-100'}`}>
+                                                                <div className={`absolute top-1.5 left-1.5 w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-black transition-all ${isSelected?'bg-orange-400 text-white':'border-2 border-slate-200'}`}>
+                                                                    {isSelected ? (pickOrder[member.id] || <Icon.Check size={13} className="text-white"/>) : ''}
                                                                 </div>
-                                                                <span className="font-black text-sm text-slate-800 flex-1 min-w-0 truncate">{member.name}</span>
-                                                                {member.gender==='여성'&&<span className="shrink-0 text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
-                                                                {guestUsed && <span className="shrink-0 text-[9px] px-1.5 py-0.5 bg-rose-100 text-rose-600 rounded-lg font-black">게스트 소진</span>}
-                                                                <span className="shrink-0 text-[9px] px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-lg font-black">{badge}</span>
-                                                                <span className="shrink-0 text-[9px] font-black text-slate-400">{member.level}</span>
+                                                                <span className="font-black text-sm text-slate-800 truncate max-w-full px-1">{member.name}</span>
+                                                                <div className="flex items-center justify-center gap-1 flex-wrap">
+                                                                    {member.gender==='여성'&&<span className="text-[9px] px-1 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
+                                                                    {guestUsed && <span className="text-[9px] px-1 py-0.5 bg-rose-100 text-rose-600 rounded-lg font-black">소진</span>}
+                                                                    <span className="text-[9px] px-1 py-0.5 bg-orange-100 text-orange-600 rounded-lg font-black">{badge}</span>
+                                                                    <span className="text-[9px] font-black text-slate-400">{member.level}</span>
+                                                                </div>
                                                             </button>
                                                         );
                                                     })}
