@@ -765,6 +765,7 @@ function App() {
     });
 
     const { activeMeeting, activeSelf, activeMatch, handleSaveMeeting, handleDeleteMeeting, restoreMeeting, purgeMeeting, changeMeetingManager } = makeMeetingHandlers({ meetings, showAlert, showConfirm, isDevMode });
+    const [mgrPickOpen, setMgrPickOpen] = useState(false);   // 담당자 변경 팝업(모임 상세 헤더의 [변경] 버튼)
     // 기록 탭 삭제 — 모임 문서 + 저장된 출석 기록(history) + 잔여 신청/세션 함께 삭제
     const handleDeleteMeetingRecord = (meeting, hist) => {
         const kindLabel = (meeting.meetingType === 'match') ? '매칭' : '정기';
@@ -1007,8 +1008,10 @@ function App() {
                 )}
                 {tab === 'meeting' && viewMeeting && isAdminMode && (
                     <div>
-                        <MeetingDetailHeader meeting={viewMeeting}
+                        <MeetingDetailHeader meeting={viewMeeting} isAdminMode={isAdminMode}
+                            managerName={viewMeeting.managerName} onChangeManager={() => setMgrPickOpen(true)}
                             onBack={() => { if (meetingSubTab === 'team' || meetingSubTab === 'match') setMeetingSubTab(''); else setViewMeetingId(null); }} />
+                        <ManagerPickModal open={mgrPickOpen} meeting={viewMeeting} managers={managers} onPick={changeMeetingManager} onClose={() => setMgrPickOpen(false)} />
                     </div>
                 )}
                 {/* 운영진 전용 — 관리 카드(모임정보·팀·매치 3줄). 줄을 누르면 해당 편집 화면으로 */}

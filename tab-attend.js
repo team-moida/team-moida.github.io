@@ -1486,7 +1486,7 @@ const MemberMeetingList = ({ meetings, memberData, expandId, onGoHome, showToast
 };
 
 // ─── 모임 상세 상단 헤더 (뒤로가기 + 모임 요약) ──────────────────────────────────
-const MeetingDetailHeader = ({ meeting, onBack, isAdminMode, onOpenAdminHub }) => {
+const MeetingDetailHeader = ({ meeting, onBack, isAdminMode, onOpenAdminHub, managerName, onChangeManager }) => {
     const kind = (meeting.meetingType || 'self') === 'match' ? 'match' : 'self';
     const cfg = MEETING_KIND[kind];
     const dayInfo = computeMeetingDay(meeting.date, meeting.start);
@@ -1503,6 +1503,13 @@ const MeetingDetailHeader = ({ meeting, onBack, isAdminMode, onOpenAdminHub }) =
                 </div>
                 <p className="font-black text-slate-800 truncate mt-0.5">{fmtMeetingDate(meeting.date)} · {meeting.start}~{meeting.end}</p>
                 {meeting.location && <p className="text-[11px] text-slate-400 truncate flex items-center gap-1"><Icon.MapPin size={11} className="flex-shrink-0"/><span className="truncate">{meeting.location}</span></p>}
+                {isAdminMode && onChangeManager && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                        <span className="text-[11px] font-black text-slate-400 shrink-0">담당</span>
+                        <span className="text-[11px] font-black text-slate-600 truncate">{managerName || '미지정'}</span>
+                        <button onClick={onChangeManager} className="shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 text-blue-500 text-[10px] font-black active:scale-95 transition-all"><Icon.Users size={11}/> 변경</button>
+                    </div>
+                )}
             </div>
             {isAdminMode && onOpenAdminHub && (
                 <button onClick={onOpenAdminHub} className="shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl text-white font-black text-[12.5px] active:scale-95 transition-all" style={{background:'#183FB0'}}>
@@ -1838,18 +1845,7 @@ const TabAttend = ({
                                     </div>
                                 </div>
 
-                                {/* 담당자 (운영진 전용 · 변경 가능) — 담당자가 못 올 때 다른 운영진으로 교체 */}
-                                {isAdminMode && rosterOnly && (
-                                    <div className="card border-slate-100 rounded-2xl p-4 mb-4">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                <span className="text-[11px] font-black text-slate-400 shrink-0">담당</span>
-                                                <span className="text-sm font-black text-slate-800 truncate">{selectedMeeting.managerName || '미지정'}</span>
-                                            </div>
-                                            <button onClick={() => setMgrPickOpen(true)} className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-500 text-xs font-black active:scale-95 transition-all"><Icon.Users size={13}/> 변경</button>
-                                        </div>
-                                    </div>
-                                )}
+                                {/* 담당자 표시·변경은 상단 헤더(MeetingDetailHeader)로 이동 */}
                                 {/* 불참·노쇼 신청 (운영진 전용) — 푸시 알림을 놓쳐도 여기서 확인 */}
                                 {isAdminMode && absentRegs.length > 0 && (
                                     <div className="card border-slate-100 rounded-2xl p-4 mb-4">
