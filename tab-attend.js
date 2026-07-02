@@ -2022,7 +2022,7 @@ const TabAttend = ({
                                         {selEligibleNormal.length === 0 ? (
                                             <div className="card border-slate-100 rounded-2xl p-4 text-center text-slate-400 text-xs font-black">이 달 회비 납부 회원이 없습니다</div>
                                         ) : (
-                                        <div className="grid grid-cols-3 gap-2">
+                                        <div className="grid grid-cols-4 gap-2">
                                             {selEligibleNormal.map(member => {
                                                 const isSelected = selSessionList.some(p=>p.memberId===member.id);
                                                 const isApplied = appliedIds.has(member.id);   // 신청자=라임 / 수동 선정=청록
@@ -2036,7 +2036,7 @@ const TabAttend = ({
                                                             {member.gender==='여성'&&<span className="px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black flex-shrink-0" style={{fontSize:'clamp(8px,2.3vw,10px)'}}>W</span>}
                                                             {ADMIN_ROLES.includes(member.role)&&<span className={`px-1.5 py-0.5 rounded-lg font-black flex-shrink-0 ${getRoleBadgeClass(member.role)}`} style={{fontSize:'clamp(8px,2.3vw,10px)'}}>{member.role}</span>}
                                                         </div>
-                                                        <span className="font-black text-slate-800 truncate max-w-full px-1 text-center" style={{fontSize:'clamp(18px,5.4vw,23px)'}}>{member.name}</span>
+                                                        <span className="font-black text-slate-800 truncate max-w-full px-1 text-center" style={{fontSize:'clamp(14px,4.3vw,20px)'}}>{member.name}</span>
                                                     </button>
                                                 );
                                             })}
@@ -2045,7 +2045,7 @@ const TabAttend = ({
                                         {selEligibleRest.length > 0 && (
                                             <div className="mt-4">
                                                 <p className="text-xs font-black text-orange-500 uppercase tracking-widest mb-2 px-1">특별휴식 · 휴식 회원 (게스트 참여)</p>
-                                                <div className="grid grid-cols-3 gap-2">
+                                                <div className="grid grid-cols-4 gap-2">
                                                     {selEligibleRest.map(member => {
                                                         const isSelected = selSessionList.some(p=>p.memberId===member.id);
                                                         const _monthStr = selectedMeeting?.date?.substring(0,7)||'';
@@ -2063,7 +2063,7 @@ const TabAttend = ({
                                                                     {guestUsed && <span className="px-1 py-0.5 bg-rose-100 text-rose-600 rounded-lg font-black flex-shrink-0" style={{fontSize:'clamp(8px,2.3vw,10px)'}}>소진</span>}
                                                                     <span className="px-1 py-0.5 bg-orange-100 text-orange-600 rounded-lg font-black flex-shrink-0" style={{fontSize:'clamp(8px,2.3vw,10px)'}}>{badge}</span>
                                                                 </div>
-                                                                <span className="font-black text-slate-800 truncate max-w-full px-1 text-center" style={{fontSize:'clamp(18px,5.4vw,23px)'}}>{member.name}</span>
+                                                                <span className="font-black text-slate-800 truncate max-w-full px-1 text-center" style={{fontSize:'clamp(14px,4.3vw,20px)'}}>{member.name}</span>
                                                             </button>
                                                         );
                                                     })}
