@@ -2037,7 +2037,6 @@ const TabAttend = ({
                                                         <div className="flex items-center justify-center gap-1 flex-wrap">
                                                             {member.gender==='여성'&&<span className="text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
                                                             {ADMIN_ROLES.includes(member.role)&&<span className={`text-[9px] px-1.5 py-0.5 rounded-lg font-black ${getRoleBadgeClass(member.role)}`}>{member.role}</span>}
-                                                            <span className="text-[9px] font-black text-slate-400">{member.level}</span>
                                                         </div>
                                                     </button>
                                                 );
@@ -2065,7 +2064,6 @@ const TabAttend = ({
                                                                     {member.gender==='여성'&&<span className="text-[9px] px-1 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
                                                                     {guestUsed && <span className="text-[9px] px-1 py-0.5 bg-rose-100 text-rose-600 rounded-lg font-black">소진</span>}
                                                                     <span className="text-[9px] px-1 py-0.5 bg-orange-100 text-orange-600 rounded-lg font-black">{badge}</span>
-                                                                    <span className="text-[9px] font-black text-slate-400">{member.level}</span>
                                                                 </div>
                                                             </button>
                                                         );
