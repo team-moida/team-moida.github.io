@@ -2029,15 +2029,15 @@ const TabAttend = ({
                                                 const isSelected = selSessionList.some(p=>p.memberId===member.id);
                                                 return (
                                                     <button key={member.id} onClick={()=>attendToggleParticipant(member, selectedMeeting)}
-                                                        className={`relative flex flex-col items-center justify-center gap-1.5 p-2 aspect-square rounded-2xl border transition-all ${isSelected?'bg-teal-50 border-teal-300':'card border-slate-100'}`}>
-                                                        <div className={`absolute top-1.5 left-1.5 w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-black transition-all ${isSelected?'bg-teal-500 text-white':'border-2 border-slate-200'}`}>
-                                                            {isSelected ? (pickOrder[member.id] || <Icon.Check size={13} className="text-white"/>) : ''}
+                                                        className={`relative flex items-center justify-center aspect-square p-2 rounded-2xl border transition-all ${isSelected?'bg-teal-50 border-teal-300':'card border-slate-100'}`}>
+                                                        <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center gap-1 overflow-hidden">
+                                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-black flex-shrink-0 transition-all ${isSelected?'bg-teal-500 text-white':'border-2 border-slate-200'}`}>
+                                                                {isSelected ? (pickOrder[member.id] || <Icon.Check size={13} className="text-white"/>) : ''}
+                                                            </div>
+                                                            {member.gender==='여성'&&<span className="px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black flex-shrink-0" style={{fontSize:'clamp(8px,2.3vw,10px)'}}>W</span>}
+                                                            {ADMIN_ROLES.includes(member.role)&&<span className={`px-1.5 py-0.5 rounded-lg font-black flex-shrink-0 ${getRoleBadgeClass(member.role)}`} style={{fontSize:'clamp(8px,2.3vw,10px)'}}>{member.role}</span>}
                                                         </div>
-                                                        <span className="font-black text-sm text-slate-800 truncate max-w-full px-1">{member.name}</span>
-                                                        <div className="flex items-center justify-center gap-1 flex-wrap">
-                                                            {member.gender==='여성'&&<span className="text-[9px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
-                                                            {ADMIN_ROLES.includes(member.role)&&<span className={`text-[9px] px-1.5 py-0.5 rounded-lg font-black ${getRoleBadgeClass(member.role)}`}>{member.role}</span>}
-                                                        </div>
+                                                        <span className="font-black text-slate-800 truncate max-w-full px-1 text-center" style={{fontSize:'clamp(12px,3.6vw,15px)'}}>{member.name}</span>
                                                     </button>
                                                 );
                                             })}
@@ -2055,16 +2055,16 @@ const TabAttend = ({
                                                         const guestUsed = !member.isSpecialRest && tmSessionData.some(p=>p.memberId===member.id&&p.isGuest&&p.date&&p.date.substring(0,7)===_monthStr&&p.date!==selectedMeeting.date);
                                                         return (
                                                             <button key={member.id} onClick={()=>attendToggleParticipantAsGuest(member, selectedMeeting)}
-                                                                className={`relative flex flex-col items-center justify-center gap-1.5 p-2 aspect-square rounded-2xl border transition-all ${isSelected?'bg-orange-50 border-orange-300':'card border-slate-100'}`}>
-                                                                <div className={`absolute top-1.5 left-1.5 w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-black transition-all ${isSelected?'bg-orange-400 text-white':'border-2 border-slate-200'}`}>
-                                                                    {isSelected ? (pickOrder[member.id] || <Icon.Check size={13} className="text-white"/>) : ''}
+                                                                className={`relative flex items-center justify-center aspect-square p-2 rounded-2xl border transition-all ${isSelected?'bg-orange-50 border-orange-300':'card border-slate-100'}`}>
+                                                                <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center gap-1 overflow-hidden">
+                                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-black flex-shrink-0 transition-all ${isSelected?'bg-orange-400 text-white':'border-2 border-slate-200'}`}>
+                                                                        {isSelected ? (pickOrder[member.id] || <Icon.Check size={13} className="text-white"/>) : ''}
+                                                                    </div>
+                                                                    {member.gender==='여성'&&<span className="px-1 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black flex-shrink-0" style={{fontSize:'clamp(8px,2.3vw,10px)'}}>W</span>}
+                                                                    {guestUsed && <span className="px-1 py-0.5 bg-rose-100 text-rose-600 rounded-lg font-black flex-shrink-0" style={{fontSize:'clamp(8px,2.3vw,10px)'}}>소진</span>}
+                                                                    <span className="px-1 py-0.5 bg-orange-100 text-orange-600 rounded-lg font-black flex-shrink-0" style={{fontSize:'clamp(8px,2.3vw,10px)'}}>{badge}</span>
                                                                 </div>
-                                                                <span className="font-black text-sm text-slate-800 truncate max-w-full px-1">{member.name}</span>
-                                                                <div className="flex items-center justify-center gap-1 flex-wrap">
-                                                                    {member.gender==='여성'&&<span className="text-[9px] px-1 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black">W</span>}
-                                                                    {guestUsed && <span className="text-[9px] px-1 py-0.5 bg-rose-100 text-rose-600 rounded-lg font-black">소진</span>}
-                                                                    <span className="text-[9px] px-1 py-0.5 bg-orange-100 text-orange-600 rounded-lg font-black">{badge}</span>
-                                                                </div>
+                                                                <span className="font-black text-slate-800 truncate max-w-full px-1 text-center" style={{fontSize:'clamp(12px,3.6vw,15px)'}}>{member.name}</span>
                                                             </button>
                                                         );
                                                     })}
