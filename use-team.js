@@ -3,7 +3,7 @@ function useTeam({ isAdminMode, meetingSettings, allMembers }) {
     const ms = (v) => v?.toMillis?.() ?? (v?.seconds ? v.seconds * 1000 : (typeof v === 'string' ? (Date.parse(v) || 0) : 0));
 
     const [isTeamPanelOpen, setIsTeamPanelOpen] = useState(false);
-    const [teamMakerTab, setTeamMakerTab] = useState('generator');
+    const [teamMakerTab, setTeamMakerTab] = useState('results');   // 팀 화면 기본 = 결과(편성 결과). 생성/수정은 마법사(generator)로 진입
     const [tmSessionData, setTmSessionData] = useState([]);
     const [tmMonthlyStatuses, setTmMonthlyStatuses] = useState({});
     const [excludedIds, setExcludedIds] = useState([]);

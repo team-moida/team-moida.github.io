@@ -22,6 +22,7 @@ const TabTeam = ({
 }) => {
     const { useState } = React;
     const [draftSelectMode, setDraftSelectMode] = useState(false);
+    const [wizStep, setWizStep] = useState(1);   // 팀 만들기 마법사 단계 (1 대상 · 2 팀수/옵션)
     return (
     <div className="animate-in">
         {teamsDisabled ? (
@@ -54,21 +55,31 @@ const TabTeam = ({
         {/* ── 관리자 편성 패널 (편성 관리 토글 제거 — 운영진이면 바로 편성 도구) ── */}
         {isAdminMode ? (
             <div>
-                {/* 서브탭 */}
-                <div className="flex gap-2 mb-4">
-                    {[['generator','편성'],['results','결과'],['storage','기록']].map(([v,l]) => (
-                        <button key={v} onClick={() => setTeamMakerTab(v)}
-                            className={`px-3 py-2 rounded-xl font-black text-xs transition-all ${teamMakerTab===v?'bg-teal-500 text-white shadow':'text-slate-400 bg-slate-100'}`}>{l}</button>
-                    ))}
-                    <div className="flex-1"/>
-                    {editTeams.length > 0 && !isCapturing && (
-                        <button onClick={tmCapture} className="p-2 rounded-xl bg-slate-100 text-slate-400"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
-                    )}
-                </div>
+                {/* 상단 네비는 각 화면(결과/마법사) 안에 둔다 */}
 
-                {/* 편성 탭 */}
+                {/* 생성/수정 마법사 */}
                 {teamMakerTab === 'generator' && (
-                    <div className="space-y-3">
+                    <div>
+                        <div className="flex items-center gap-2 mb-4">
+                            <button onClick={() => setTeamMakerTab('results')} className="shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 text-slate-600 font-black text-xs active:scale-95"><Icon.ChevronLeft size={15}/> 결과</button>
+                            <p className="text-base font-black text-slate-800">팀 만들기</p>
+                        </div>
+                        <div className="flex items-center mb-4 px-1">
+                            {[['대상'],['팀수·옵션'],['편성 결과']].map(([lb], i) => {
+                                const n = i + 1, on = wizStep === n, done = wizStep > n;
+                                return (
+                                    <React.Fragment key={n}>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black ${on?'bg-teal-500 text-white':done?'bg-teal-100 text-teal-600':'bg-slate-200 text-slate-400'}`}>{done?<Icon.Check size={12}/>:n}</span>
+                                            <span className={`text-[11px] font-black ${on?'text-teal-600':'text-slate-400'}`}>{lb}</span>
+                                        </div>
+                                        {n < 3 && <span className={`flex-1 h-0.5 mx-1.5 rounded ${done?'bg-teal-500':'bg-slate-200'}`}/>}
+                                    </React.Fragment>
+                                );
+                            })}
+                        </div>
+                        <div className="space-y-3">
+                        {wizStep === 1 && (
                         <div className="card border-slate-100 rounded-2xl p-4">
                             <div className="flex items-center justify-between mb-2">
                                 <div>
@@ -86,6 +97,8 @@ const TabTeam = ({
                                 ))}
                             </div>
                         </div>
+                        )}
+                        {wizStep === 2 && (
                         <div className="card border-slate-100 rounded-2xl p-4">
                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">팀 수</p>
                             <div className="grid grid-cols-5 gap-2 mb-3">
@@ -108,7 +121,8 @@ const TabTeam = ({
                                 ))}
                             </div>
                         </div>
-                        {tmEntryList.length > 0 && (
+                        )}
+                        {wizStep === 1 && tmEntryList.length > 0 && (
                             <div className="card border-slate-100 rounded-2xl p-4">
                                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">편성 대상 (탭하여 제외)</p>
                                 <div className="flex flex-wrap gap-1.5">
@@ -129,27 +143,45 @@ const TabTeam = ({
                                 </div>
                             </div>
                         )}
-                        <button onClick={generateTeams} disabled={tmActiveList.length < teamingSettings.teamCount}
-                            className="w-full py-4 bg-teal-500 text-white rounded-2xl font-black text-base shadow-xl disabled:opacity-30 flex items-center justify-center gap-2">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                            팀 자동 편성
-                        </button>
+                        </div>
+                        <div className="flex gap-2 mt-4">
+                            {wizStep > 1 && <button onClick={() => setWizStep(wizStep - 1)} className="shrink-0 flex items-center gap-1 px-5 py-4 rounded-2xl bg-slate-100 text-slate-600 font-black active:scale-95"><Icon.ChevronLeft size={16}/> 이전</button>}
+                            {wizStep === 1 ? (
+                                <button onClick={() => setWizStep(2)} className="flex-1 py-4 rounded-2xl text-white font-black text-base active:scale-95 flex items-center justify-center gap-1" style={{background:'#183FB0'}}>다음 <Icon.ChevronRight size={16}/></button>
+                            ) : (
+                                <button onClick={tmReGenerate} disabled={tmActiveList.length < teamingSettings.teamCount} className="flex-1 py-4 rounded-2xl text-white font-black text-base active:scale-95 disabled:opacity-30 flex items-center justify-center gap-2" style={{background:'#183FB0'}}><Icon.Zap size={16}/> 팀 자동 편성</button>
+                            )}
+                        </div>
                     </div>
                 )}
 
-                {/* 결과 탭 */}
+                {/* 결과 (기본 화면) */}
                 {teamMakerTab === 'results' && (
                     <div>
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[17px] font-black text-slate-800">팀 편성</p>
+                                {editTeams.length > 0 && <p className="text-[11.5px] font-black text-slate-400 truncate">{editTeams.length}팀 · {editMeetingDate || tmMeetingDate || ''}{editIsConfirmed ? ' · 확정·공개됨' : ' · 미확정'}</p>}
+                            </div>
+                            {editTeams.length > 0 && !isCapturing && (
+                                <button onClick={tmCapture} className="shrink-0 p-2 rounded-xl bg-slate-100 text-slate-400"><Icon.Camera size={15}/></button>
+                            )}
+                            <button onClick={() => setTeamMakerTab('storage')} className="shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 text-slate-500 font-black text-xs active:scale-95"><Icon.History size={14}/> 기록</button>
+                            {editTeams.length > 0 && (
+                                <button onClick={() => { setWizStep(1); setTeamMakerTab('generator'); }} className="shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl text-white font-black text-xs active:scale-95" style={{background:'#183FB0'}}><Icon.Edit size={13}/> 수정</button>
+                            )}
+                        </div>
                         {editTeams.length === 0
-                            ? <div className="text-center py-16 text-slate-400"><div className="flex justify-center mb-3 opacity-30"><Icon.Users size={48}/></div><p className="font-black">편성 탭에서 팀을 생성해주세요</p></div>
+                            ? (
+                                <div className="card border-slate-100 rounded-2xl p-10 text-center">
+                                    <div className="flex justify-center mb-3 text-slate-300"><Icon.Users size={44}/></div>
+                                    <p className="font-black text-slate-700">아직 팀이 편성되지 않았어요</p>
+                                    <p className="text-xs font-bold text-slate-400 mt-1">아래 버튼으로 단계별로 팀을 만들어요</p>
+                                    <button onClick={() => { setWizStep(1); setTeamMakerTab('generator'); }} className="mt-5 inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl text-white font-black text-base active:scale-95" style={{background:'#183FB0', boxShadow:'0 12px 24px -12px rgba(24,63,176,.6)'}}><Icon.Plus size={18}/> 팀 생성</button>
+                                </div>
+                            )
                             : (
                                 <div>
-                                    {editMeetingDate && (
-                                        <div className="rounded-xl p-3 mb-3 bg-blue-50 border border-blue-100 flex items-center justify-between">
-                                            <p className="font-black text-slate-800 text-sm">{editMeetingDate} 팀 편성</p>
-                                            {editIsConfirmed && <span className="text-[10px] font-black px-2 py-0.5 bg-emerald-100 text-emerald-600 rounded-lg inline-flex items-center gap-1"><Icon.Check size={11}/>확정됨</span>}
-                                        </div>
-                                    )}
                                     <div id="tm-capture-area" className="grid grid-cols-2 gap-2 mb-3">
                                         {editTeams.map((team, teamIdx) => (
                                             <div key={teamIdx}
