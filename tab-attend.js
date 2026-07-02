@@ -2037,7 +2037,7 @@ const TabAttend = ({
                                                             {member.gender==='여성'&&<span className="px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black flex-shrink-0" style={{fontSize:'clamp(8px,2.3vw,10px)'}}>W</span>}
                                                             {ADMIN_ROLES.includes(member.role)&&<span className={`px-1.5 py-0.5 rounded-lg font-black flex-shrink-0 ${getRoleBadgeClass(member.role)}`} style={{fontSize:'clamp(8px,2.3vw,10px)'}}>{member.role}</span>}
                                                         </div>
-                                                        <span className="font-black text-slate-800 truncate max-w-full px-1 text-center" style={{fontSize:'clamp(12px,3.6vw,15px)'}}>{member.name}</span>
+                                                        <span className="font-black text-slate-800 truncate max-w-full px-1 text-center" style={{fontSize:'clamp(18px,5.4vw,23px)'}}>{member.name}</span>
                                                     </button>
                                                 );
                                             })}
@@ -2064,7 +2064,7 @@ const TabAttend = ({
                                                                     {guestUsed && <span className="px-1 py-0.5 bg-rose-100 text-rose-600 rounded-lg font-black flex-shrink-0" style={{fontSize:'clamp(8px,2.3vw,10px)'}}>소진</span>}
                                                                     <span className="px-1 py-0.5 bg-orange-100 text-orange-600 rounded-lg font-black flex-shrink-0" style={{fontSize:'clamp(8px,2.3vw,10px)'}}>{badge}</span>
                                                                 </div>
-                                                                <span className="font-black text-slate-800 truncate max-w-full px-1 text-center" style={{fontSize:'clamp(12px,3.6vw,15px)'}}>{member.name}</span>
+                                                                <span className="font-black text-slate-800 truncate max-w-full px-1 text-center" style={{fontSize:'clamp(18px,5.4vw,23px)'}}>{member.name}</span>
                                                             </button>
                                                         );
                                                     })}
