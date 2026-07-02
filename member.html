@@ -369,10 +369,11 @@ function App() {
     const teamStatus = (team.teamDraftData?.teams?.length)
         ? { label: `${team.teamDraftData.teams.length}팀 확정`, done: true }
         : { label: '아직 안 나눔', done: false };
-    const _matchRounds = Array.isArray(scheduleData?.rounds) ? scheduleData.rounds.length
+    // 매치표 존재/개수 = scheduleData.schedule.list(경기 목록) 기준 — 홈 카드 hasBoard와 동일 소스.
+    const _matchGames = Array.isArray(scheduleData?.schedule?.list) ? scheduleData.schedule.list.length
         : Array.isArray(scheduleData?.schedule) ? scheduleData.schedule.length
-        : Array.isArray(scheduleData) ? scheduleData.length : 0;
-    const matchStatus = _matchRounds > 0 ? { label: `${_matchRounds}라운드 생성됨`, done: true } : { label: '아직 안 만듦', done: false };
+        : Array.isArray(scheduleData?.rounds) ? scheduleData.rounds.length : 0;
+    const matchStatus = _matchGames > 0 ? { label: `${_matchGames}경기 생성됨`, done: true } : { label: '아직 안 만듦', done: false };
     const attend = useAttend({
         isAdminMode, memberData, meetingSettings: displayMeetingSettings,
         tmSessionData: team.tmSessionData,
