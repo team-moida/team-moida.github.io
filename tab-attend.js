@@ -1486,10 +1486,12 @@ const MemberMeetingList = ({ meetings, memberData, expandId, onGoHome, showToast
 };
 
 // ─── 모임 상세 상단 헤더 (뒤로가기 + 모임 요약) ──────────────────────────────────
-const MeetingDetailHeader = ({ meeting, onBack, isAdminMode, onOpenAdminHub, managerName, onChangeManager }) => {
+const MeetingDetailHeader = ({ meeting, onBack, isAdminMode, onOpenAdminHub, managerName, onChangeManager, selCount, selMax }) => {
     const kind = (meeting.meetingType || 'self') === 'match' ? 'match' : 'self';
     const cfg = MEETING_KIND[kind];
     const dayInfo = computeMeetingDay(meeting.date, meeting.start);
+    const _showCount = typeof selCount === 'number' && typeof selMax === 'number';
+    const _full = _showCount && selCount >= selMax;
     return (
         <div className="flex items-center gap-2.5 mb-3">
             <button onClick={onBack} className="p-2 rounded-xl bg-slate-100 text-slate-600 shrink-0 active:scale-95 transition-all">
@@ -1511,6 +1513,12 @@ const MeetingDetailHeader = ({ meeting, onBack, isAdminMode, onOpenAdminHub, man
                     </div>
                 )}
             </div>
+            {_showCount && (
+                <div className="shrink-0 flex flex-col items-end gap-1 ml-1">
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${_full ? 'bg-rose-50 text-rose-500' : 'bg-teal-50 text-teal-600'}`}>{_full ? '마감' : '모집중'}</span>
+                    <span className={`font-black leading-none ${_full ? 'text-teal-600' : 'text-slate-800'}`} style={{fontSize:'19px'}}>{selCount}<span className="text-[13px] text-slate-400">/{selMax}명</span></span>
+                </div>
+            )}
             {isAdminMode && onOpenAdminHub && (
                 <button onClick={onOpenAdminHub} className="shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl text-white font-black text-[12.5px] active:scale-95 transition-all" style={{background:'#183FB0'}}>
                     <Icon.Settings size={14}/> 운영
@@ -1832,18 +1840,7 @@ const TabAttend = ({
                                 </div>
                                 )}
 
-                                {/* sticky 인원 카운터 */}
-                                <div style={{position:'sticky',top:0,zIndex:40,marginLeft:'-1rem',marginRight:'-1rem',marginBottom:16,padding:'10px 1rem',background:darkMode?'rgba(15,23,42,0.96)':'rgba(248,250,252,0.96)',backdropFilter:'blur(8px)',borderBottom:`1px solid ${darkMode?'#334155':'#e2e8f0'}`,boxShadow:'0 1px 6px rgba(0,0,0,0.06)'}}>
-                                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                                        <span style={{fontSize:10,fontWeight:900,color:'var(--c-sub)',textTransform:'uppercase',letterSpacing:'0.1em'}}>선정 인원</span>
-                                        <div style={{display:'flex',alignItems:'center',gap:8}}>
-                                            <span style={{fontSize:15,fontWeight:900,color:selSessionList.length>=(selectedMeeting?.maxLimit||18)?'var(--c-accent)':darkMode?'#f1f5f9':'#1e293b'}}>
-                                                {selSessionList.length} / {selectedMeeting?.maxLimit||18}명
-                                            </span>
-                                            {selSessionList.length>=(selectedMeeting?.maxLimit||18)&&<span style={{fontSize:9,fontWeight:900,padding:'2px 8px',background:'#dbe3f6',color:'var(--c-accent-deep)',borderRadius:6}}>마감</span>}
-                                        </div>
-                                    </div>
-                                </div>
+                                {/* 선정 인원·마감/모집중 표시는 상단 헤더(MeetingDetailHeader)로 이동 */}
 
                                 {/* 담당자 표시·변경은 상단 헤더(MeetingDetailHeader)로 이동 */}
                                 {/* 불참·노쇼 신청 (운영진 전용) — 푸시 알림을 놓쳐도 여기서 확인 */}

@@ -374,6 +374,9 @@ function App() {
         : Array.isArray(scheduleData?.schedule) ? scheduleData.schedule.length
         : Array.isArray(scheduleData?.rounds) ? scheduleData.rounds.length : 0;
     const matchStatus = _matchGames > 0 ? { label: `${_matchGames}경기 생성됨`, done: true } : { label: '아직 안 만듦', done: false };
+    // 선정 인원(모임 상세 헤더 우측 표시) — TabAttend selSessionList와 동일 소스(tmSessionData + sessionMatchesMeeting)
+    const selCount = (viewMeeting && typeof sessionMatchesMeeting === 'function') ? (team.tmSessionData || []).filter(p => sessionMatchesMeeting(p, viewMeeting)).length : 0;
+    const selMax = viewMeeting ? ((viewMeeting.meetingType === 'match') ? ((viewMeeting.maxMale||0)+(viewMeeting.maxFemale||0)) : (viewMeeting.maxLimit || 18)) : 18;
     const attend = useAttend({
         isAdminMode, memberData, meetingSettings: displayMeetingSettings,
         tmSessionData: team.tmSessionData,
@@ -1010,6 +1013,7 @@ function App() {
                     <div>
                         <MeetingDetailHeader meeting={viewMeeting} isAdminMode={isAdminMode}
                             managerName={viewMeeting.managerName} onChangeManager={() => setMgrPickOpen(true)}
+                            selCount={selCount} selMax={selMax}
                             onBack={() => { if (meetingSubTab === 'team' || meetingSubTab === 'match') setMeetingSubTab(''); else setViewMeetingId(null); }} />
                         <ManagerPickModal open={mgrPickOpen} meeting={viewMeeting} managers={managers} onPick={changeMeetingManager} onClose={() => setMgrPickOpen(false)} />
                     </div>
