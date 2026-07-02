@@ -61,7 +61,6 @@ const TabTeam = ({
                 {teamMakerTab === 'generator' && (
                     <div>
                         <div className="flex items-center gap-2 mb-4">
-                            <button onClick={() => setTeamMakerTab('results')} className="shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 text-slate-600 font-black text-xs active:scale-95"><Icon.ChevronLeft size={15}/> 결과</button>
                             <p className="text-base font-black text-slate-800">팀 만들기</p>
                         </div>
                         <div className="flex items-center mb-4 px-1">
@@ -165,7 +164,7 @@ const TabTeam = ({
                         )}
                         </div>
                         <div className="flex gap-2 mt-4">
-                            {wizStep > 1 && <button onClick={() => setWizStep(wizStep - 1)} className="shrink-0 flex items-center gap-1 px-5 py-4 rounded-2xl bg-slate-100 text-slate-600 font-black active:scale-95"><Icon.ChevronLeft size={16}/> 이전</button>}
+                            <button onClick={() => wizStep > 1 ? setWizStep(wizStep - 1) : setTeamMakerTab('results')} className="shrink-0 flex items-center gap-1 px-5 py-4 rounded-2xl bg-slate-100 text-slate-600 font-black active:scale-95"><Icon.ChevronLeft size={16}/> 이전</button>
                             {wizStep === 1 ? (
                                 <button onClick={() => setWizStep(2)} className="flex-1 py-4 rounded-2xl text-white font-black text-base active:scale-95 flex items-center justify-center gap-1" style={{background:'#183FB0'}}>다음 <Icon.ChevronRight size={16}/></button>
                             ) : (
