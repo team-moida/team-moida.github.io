@@ -79,25 +79,37 @@ const TabTeam = ({
                             })}
                         </div>
                         <div className="space-y-3">
-                        {wizStep === 1 && (
-                        <div className="card border-slate-100 rounded-2xl p-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <div>
-                                    <p className="text-[10px] font-black text-teal-500 uppercase tracking-widest">모임 날짜</p>
-                                    <p className="font-black text-slate-800">{tmMeetingDate || '날짜 미설정'}</p>
+                        {wizStep === 1 && (() => {
+                            const fem = tmActiveList.filter(p => String((allMembers.find(mm => mm.id === (p.memberId||p.id)) || {}).gender || p.gender || '').startsWith('여')).length;
+                            const male = tmActiveList.length - fem;
+                            return (
+                            <div className="card border-slate-100 rounded-2xl p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-black text-teal-500 uppercase tracking-widest">편성 대상</p>
+                                        <p className="text-3xl font-black text-slate-800 leading-none mt-1">{tmActiveList.length}<span className="text-base font-black ml-0.5">명</span></p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <div className="text-center px-4 py-2 rounded-xl bg-slate-50">
+                                            <p className="text-[10px] font-black text-slate-400">남</p>
+                                            <p className="text-xl font-black text-slate-700 leading-none mt-0.5">{male}</p>
+                                        </div>
+                                        <div className="text-center px-4 py-2 rounded-xl bg-pink-50">
+                                            <p className="text-[10px] font-black text-pink-400">여</p>
+                                            <p className="text-xl font-black text-pink-600 leading-none mt-0.5">{fem}</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-2xl font-black text-slate-800">{tmActiveList.length}명</p>
-                                    <p className="text-[10px] text-slate-400">편성 대상</p>
-                                </div>
+                                {Object.values(tmLevelStats).some(c => c > 0) && (
+                                    <div className="flex gap-1 flex-wrap mt-3 pt-3 border-t border-slate-100">
+                                        {Object.entries(tmLevelStats).map(([lvl, count]) => count > 0 && (
+                                            <span key={lvl} className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${getLevelColor(lvl)}`}>{lvl}단계:{count}명</span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                            <div className="flex gap-1 flex-wrap">
-                                {Object.entries(tmLevelStats).map(([lvl, count]) => count > 0 && (
-                                    <span key={lvl} className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${getLevelColor(lvl)}`}>{lvl}단계:{count}명</span>
-                                ))}
-                            </div>
-                        </div>
-                        )}
+                            );
+                        })()}
                         {wizStep === 2 && (
                         <div className="card border-slate-100 rounded-2xl p-4">
                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">팀 수</p>
