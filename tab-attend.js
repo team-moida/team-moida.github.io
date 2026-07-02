@@ -2025,12 +2025,12 @@ const TabAttend = ({
                                         <div className="grid grid-cols-3 gap-2">
                                             {selEligibleNormal.map(member => {
                                                 const isSelected = selSessionList.some(p=>p.memberId===member.id);
-                                                const isApplied = appliedIds.has(member.id);   // 신청자=주황 / 수동 선정=청록
+                                                const isApplied = appliedIds.has(member.id);   // 신청자=라임 / 수동 선정=청록
                                                 return (
                                                     <button key={member.id} onClick={()=>attendToggleParticipant(member, selectedMeeting)}
                                                         className={`relative flex items-center justify-center aspect-square p-2 rounded-2xl border transition-all ${isSelected?'bg-teal-50 border-teal-300':'card border-slate-100'}`}>
                                                         <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center gap-1 overflow-hidden">
-                                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-black flex-shrink-0 transition-all ${isSelected?(isApplied?'bg-orange-500 text-white':'bg-teal-500 text-white'):'border-2 border-slate-200'}`}>
+                                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-black flex-shrink-0 transition-all ${isSelected?(isApplied?'bg-live text-[#15171E]':'bg-teal-500 text-white'):'border-2 border-slate-200'}`}>
                                                                 {isSelected ? (pickOrder[member.id] || <Icon.Check size={13} className="text-white"/>) : ''}
                                                             </div>
                                                             {member.gender==='여성'&&<span className="px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black flex-shrink-0" style={{fontSize:'clamp(8px,2.3vw,10px)'}}>W</span>}
