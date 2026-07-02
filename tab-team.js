@@ -149,10 +149,10 @@ const TabTeam = ({
                                     </button>
                                 ))}
                             </div>
-                            <div className="space-y-1.5">
+                            <div className="flex flex-wrap gap-1.5">
                                 {[{key:'keepCouples',label:'커플 같은 팀 유지'},{key:'avoidOverlap',label:'지난 주 팀메이트 중복 회피'}].map(opt => (
                                     <button key={opt.key} onClick={() => setTeamingSettings(p => ({...p, [opt.key]: !p[opt.key]}))}
-                                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border transition-all ${teamingSettings[opt.key]?'bg-teal-50 border-teal-200':'bg-white border-slate-200'}`}>
+                                        className={`w-fit flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${teamingSettings[opt.key]?'bg-teal-50 border-teal-200':'bg-white border-slate-200'}`}>
                                         <div className={`w-4 h-4 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${teamingSettings[opt.key]?'bg-teal-500 border-teal-500':'border-slate-300'}`}>
                                             {teamingSettings[opt.key] && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
                                         </div>
