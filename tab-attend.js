@@ -1805,7 +1805,8 @@ const TabAttend = ({
                 {(rosterOnly || attendSubTab === 'roster') && selectedMeeting && (
                     <div className="min-w-0">
                             <div>
-                                {/* 헤더: 모임 정보 + 모임 종료 */}
+                                {/* 헤더: 모임 정보 + 모임 종료 — rosterOnly(명단/팀)는 상단 MeetingDetailHeader와 날짜·시간이 중복이라 숨김 */}
+                                {!rosterOnly && (
                                 <div className="flex items-center gap-3 mb-4">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 flex-wrap">
@@ -1814,7 +1815,7 @@ const TabAttend = ({
                                         </div>
                                         <p className="text-xs text-slate-400">{selectedMeeting.start} ~ {selectedMeeting.end}</p>
                                     </div>
-                                    {!rosterOnly && isViewActive && (
+                                    {isViewActive && (
                                         <button onClick={attendHandleEndMeeting}
                                             disabled={attendIsPending || !isMeetingOver || attendHistory.some(h => h.date === meetingSettings?.date)}
                                             className={`px-3 py-2 rounded-xl font-black text-xs transition-all disabled:opacity-30 ${attendHistory.some(h => h.date === meetingSettings?.date) ? 'bg-emerald-50 text-emerald-500' : isMeetingOver ? 'bg-rose-500 text-white active:scale-95' : 'bg-slate-100 text-slate-300'}`}>
@@ -1822,6 +1823,7 @@ const TabAttend = ({
                                         </button>
                                     )}
                                 </div>
+                                )}
 
                                 {/* sticky 인원 카운터 */}
                                 <div style={{position:'sticky',top:0,zIndex:40,marginLeft:'-1rem',marginRight:'-1rem',marginBottom:16,padding:'10px 1rem',background:darkMode?'rgba(15,23,42,0.96)':'rgba(248,250,252,0.96)',backdropFilter:'blur(8px)',borderBottom:`1px solid ${darkMode?'#334155':'#e2e8f0'}`,boxShadow:'0 1px 6px rgba(0,0,0,0.06)'}}>
