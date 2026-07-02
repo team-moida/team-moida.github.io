@@ -1221,14 +1221,222 @@ const MemberMeetingCard = ({ meeting, memberData, open, onToggle, onGoHome, show
     );
 };
 
-// ─── 회원용 모임 목록 (예정 모임 카드 + 단일오픈 아코디언) ──────────────────────────
+// ─── 회원용 모임 상세 (단일 스크롤 — 홈 '다음 모임' 톤 히어로) ────────────────────────
+// 목록에서 카드를 탭하면 진입. 신청/취소/불참·노쇼 로직은 MemberMeetingCard와 동일(검증된 흐름 재사용).
+// 1단계: 히어로(일시·장소·담당 + 신청)까지. 내 팀·매치표·명단은 다음 단계에서 이 아래에 추가.
+const MemberMeetingDetail = ({ meeting, memberData, onBack, onGoHome, showToast, showAlert, showConfirm }) => {
+    window.useMoidaBack?.(true, onBack);
+    const kind = (meeting.meetingType || 'self') === 'match' ? 'match' : 'self';
+    const isMatch = kind === 'match';
+    const dayInfo = computeMeetingDay(meeting.date, meeting.start);
+    const isLiveOrToday = !!(dayInfo && (dayInfo.type === 'started' || dayInfo.type === 'today'));
+    const _md = meeting.date ? new Date(meeting.date + 'T00:00:00') : null;
+    const _ok = _md && !isNaN(_md.getTime());
+    const dDay = _ok ? _md.getDate() : '';
+    const dMon = _ok ? ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'][_md.getMonth()] : '';
+    const dDow = _ok ? ['일','월','화','수','목','금','토'][_md.getDay()] : '';
+
+    // 색/톤 — 정기=인디고(흰 글자) / 매칭=라임(어두운 글자). 홈 카드와 동일.
+    const dark = isMatch;
+    const bg = isMatch ? '#C2F94A' : '#183FB0';
+    const glow = isMatch ? '0 16px 34px -6px rgba(163,224,53,0.5)' : '0 16px 34px -6px rgba(24,63,176,0.42)';
+    const ink   = dark ? 'text-[#15171E]'    : 'text-white';
+    const ink85 = dark ? 'text-[#15171E]/85' : 'text-white/85';
+    const ink80 = dark ? 'text-[#15171E]/80' : 'text-white/80';
+    const ink70 = dark ? 'text-[#15171E]/70' : 'text-white/70';
+    const ink60 = dark ? 'text-[#15171E]/60' : 'text-white/60';
+    const chip  = dark ? 'bg-black/10 text-[#15171E]' : 'bg-white/25 text-white';
+    const softBorder = dark ? 'rgba(0,0,0,0.16)' : 'rgba(255,255,255,0.22)';
+    const btnInk = dark ? '#15171E' : '#122E78';
+
+    // 내 신청 상태 (registrations 구독)
+    const _meId = memberData?.memberId;
+    const regEnabled = !!meeting?.isRegistrationEnabled;
+    const showRegBlock = regEnabled && !!_meId;
+    const [myReg, setMyReg] = React.useState(null);
+    React.useEffect(() => {
+        if (!showRegBlock || !meeting?.date) { setMyReg(null); return; }
+        const mid = (typeof getMeetingId === 'function') ? getMeetingId(meeting) : meeting.date;
+        const unsub = getCol('registrations').doc(`${mid}_${_meId}`)
+            .onSnapshot(d => setMyReg(d.exists ? (d.data() || null) : null), () => setMyReg(null));
+        return () => unsub();
+    }, [showRegBlock, _meId, meeting?.date, meeting?.meetingType]);
+
+    // 현재 인원 (weekly_session · 노쇼 제외)
+    const [liveCount, setLiveCount] = React.useState(null);
+    React.useEffect(() => {
+        if (!meeting?.date) { setLiveCount(null); return; }
+        const _mid = (typeof getMeetingId === 'function') ? getMeetingId(meeting) : meeting.date;
+        const unsub = getCol('weekly_session').where('date', '==', meeting.date)
+            .onSnapshot(snap => {
+                const n = snap.docs.map(d => d.data())
+                    .filter(p => p.status !== '노쇼' && (p.meetingId ? p.meetingId === _mid : !String(_mid).endsWith('__match'))).length;
+                setLiveCount(n);
+            }, () => setLiveCount(null));
+        return () => unsub();
+    }, [meeting?.date, meeting?.meetingType]);
+    const maxLimit = isMatch ? ((meeting.maxMale || 0) + (meeting.maxFemale || 0)) : (meeting.maxLimit || 18);
+    const curCount = (liveCount != null) ? liveCount : 0;
+
+    const regHandlers = React.useMemo(() => (showRegBlock && typeof makeRegistrationHandlers === 'function')
+        ? makeRegistrationHandlers({ meetingDate: meeting.date, memberData, meetingSettings: meeting, showToast, showAlert, showConfirm })
+        : null, [showRegBlock, _meId, meeting?.date, meeting?.meetingType]);
+
+    const _now = Date.now();
+    const _regOpenMs = meeting?.registrationOpenAt ? new Date(meeting.registrationOpenAt).getTime() : null;
+    const _regCloseMs = meeting?.registrationCloseAt ? new Date(meeting.registrationCloseAt).getTime() : null;
+    const regBeforeOpen = _regOpenMs && _now < _regOpenMs;
+    const regAfterClose = _regCloseMs && _now > _regCloseMs;
+
+    const absentType = (regAfterClose && myReg?.status === 'confirmed' && typeof getAbsentType === 'function')
+        ? getAbsentType(meeting.date, meeting.end) : null;
+    const absentFine = absentType === 'noshow_1' ? 10000 : absentType === 'noshow_2' ? 20000 : 0;
+    const isNoshowStage = absentType === 'noshow_1' || absentType === 'noshow_2';
+    const absentColor = absentFine === 20000 ? '#EF4444' : absentFine === 10000 ? '#EA580C' : '#F59E0B';
+    const undoAbsentOk = (myReg?.status === 'absent' || myReg?.status === 'noshow') && typeof getAbsentType === 'function' && !!getAbsentType(meeting.date, meeting.end);
+
+    const [cancelAsk, setCancelAsk] = React.useState(false);
+    const [absentAsk, setAbsentAsk] = React.useState(false);
+    const [absentReason, setAbsentReason] = React.useState('');
+    const onAbsentConfirm = () => { if (regHandlers) regHandlers.handleAbsent(absentReason.trim()); setAbsentAsk(false); setAbsentReason(''); };
+
+    return (
+        <div className="animate-in">
+            {/* 상단 바 */}
+            <div className="flex items-center gap-2.5 mb-3">
+                <button onClick={onBack} className="p-2 rounded-xl bg-slate-100 text-slate-600 shrink-0 active:scale-95 transition-all"><Icon.ArrowLeft size={18}/></button>
+                <p className="font-black text-slate-800 truncate">{fmtMeetingDate(meeting.date)} · {isMatch ? '매칭' : '정기모임'}</p>
+            </div>
+
+            {/* ① + ② 히어로 (홈 톤) — 일시·장소·담당 + 내 신청 */}
+            <div className={`rounded-3xl p-5 ${ink}`} style={{ background: bg, boxShadow: glow }}>
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                    <p className={`text-xs font-black uppercase tracking-widest ${ink80}`}>{isMatch ? '매칭모임' : '정기모임'}</p>
+                    {dayInfo && dayInfo.type !== 'past' && dayInfo.label && (
+                        dayInfo.type === 'started'
+                            ? <span className={`text-xs font-black px-3 py-1 rounded-full ${dark ? 'bg-[#15171E] text-live' : 'bg-live text-[#15171E]'}`}>{dayInfo.label}</span>
+                            : <span className={`text-xs font-black px-3 py-1 rounded-xl ${ink}`} style={{ background: dark ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.2)' }}>{dayInfo.label}</span>
+                    )}
+                </div>
+                {_ok ? (
+                    <div className="flex items-end gap-3">
+                        <span className="font-black text-[84px] leading-[0.78] tracking-tight tabular-nums">{dDay}</span>
+                        <div className="pb-2">
+                            <p className={`text-[13px] font-black ${ink60} tracking-wider leading-none`}>{dMon}</p>
+                            <p className="text-[22px] font-black leading-tight mt-1">{dDow}요일</p>
+                        </div>
+                    </div>
+                ) : (
+                    <p className="font-black text-[28px] leading-none tracking-tight">{fmtMeetingDate(meeting.date)}</p>
+                )}
+                {isMatch && meeting.opponentName && <p className={`text-sm font-black ${ink85} mt-2 truncate`}>vs {meeting.opponentName}</p>}
+                <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 text-sm font-bold ${ink85}`}>
+                    <span className="flex items-center gap-1"><span className="text-[15px] leading-none flex-shrink-0">⏰</span>{meeting.start} ~ {meeting.end}</span>
+                    {meeting.location && <span className="flex items-center gap-1 min-w-0"><span className="text-[15px] leading-none flex-shrink-0">📍</span><span className="truncate">{meeting.location}</span></span>}
+                    <span className="flex items-center gap-1"><span className="text-[15px] leading-none flex-shrink-0">👥</span>{isMatch ? `현재 ${curCount}명 · 남 ${meeting.maxMale||0}·여 ${meeting.maxFemale||0}` : `현재 ${curCount} · 정원 ${maxLimit}명`}</span>
+                    {meeting.managerName && <span className="flex items-center gap-1"><span className="text-[15px] leading-none flex-shrink-0">🧑‍💼</span>담당 {meeting.managerName}</span>}
+                </div>
+
+                {/* 내 신청 */}
+                {showRegBlock ? (
+                    <div className="mt-4 pt-4 border-t" style={{ borderColor: softBorder }}>
+                        {regBeforeOpen ? (
+                            <div className={`flex items-center gap-1.5 text-sm font-black ${ink70}`}><Icon.Clock size={14} className="flex-shrink-0 opacity-70"/><span>곧 신청이 열려요</span></div>
+                        ) : (myReg?.status === 'absent' || myReg?.status === 'noshow') ? (
+                            <div className="flex items-center justify-between gap-2">
+                                <span className={`flex items-center gap-1.5 text-sm font-black ${ink} min-w-0`}><Icon.AlertTriangle size={16} className="flex-shrink-0"/><span className="truncate">{myReg.status === 'noshow' ? '노쇼' : '불참'} 신청됨</span></span>
+                                {undoAbsentOk && <span role="button" onClick={() => regHandlers && regHandlers.handleUndoAbsent()} className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${chip} active:scale-95 cursor-pointer flex-shrink-0`}>취소</span>}
+                            </div>
+                        ) : (myReg?.status === 'confirmed' && absentType) ? (
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className={`flex items-center gap-1 text-sm font-black ${ink}`}><Icon.Check size={14} className="flex-shrink-0"/>참가 확정</span>
+                                    <span className={`text-[11px] font-black ${ink70}`}>{absentType === 'noshow_2' ? '당일 노쇼 벌금 2만원' : absentFine > 0 ? '노쇼 벌금 1만원' : '미리 알리면 벌금 없음'}</span>
+                                </div>
+                                <button onClick={() => setAbsentAsk(true)} className="w-full flex items-center justify-center gap-2 rounded-2xl font-black py-3 text-sm text-white active:scale-95 transition-all" style={{ background: absentColor }}><Icon.AlertTriangle size={15}/> {absentType === 'noshow_2' ? '당일 노쇼' : isNoshowStage ? '노쇼' : '불참'} 신청</button>
+                            </div>
+                        ) : (myReg?.status === 'confirmed' && regAfterClose) ? (
+                            <div className={`flex items-center gap-1.5 text-sm font-black ${ink}`}><Icon.Check size={15} className="flex-shrink-0"/><span>참가 확정</span></div>
+                        ) : myReg?.status === 'confirmed' ? (
+                            <div className="flex items-center justify-between gap-2">
+                                <span className={`flex items-center gap-1.5 text-sm font-black ${ink} min-w-0`}><Icon.Check size={16} className="flex-shrink-0"/><span className="truncate">신청 완료</span></span>
+                                <span role="button" onClick={() => setCancelAsk(true)} className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${chip} active:scale-95 cursor-pointer flex-shrink-0`}>신청 취소</span>
+                            </div>
+                        ) : myReg?.status === 'waiting' ? (
+                            <div className="flex items-center justify-between gap-2">
+                                <span className={`flex items-center gap-1.5 text-sm font-black ${ink} min-w-0`}><Icon.Clock size={16} className="flex-shrink-0"/><span className="truncate">대기 {myReg.waitingNumber || ''}번</span></span>
+                                <span role="button" onClick={() => setCancelAsk(true)} className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${chip} active:scale-95 cursor-pointer flex-shrink-0`}>대기 취소</span>
+                            </div>
+                        ) : regAfterClose ? (
+                            <div className={`flex items-center gap-1.5 text-sm font-black ${ink70}`}><Icon.X size={15} className="flex-shrink-0"/><span>신청이 마감됐어요</span></div>
+                        ) : (
+                            <button onClick={() => regHandlers && regHandlers.handleRegister()} className="w-full flex items-center justify-center gap-2 rounded-2xl font-black py-3.5 text-[15px] active:scale-95 transition-all" style={{ background: '#fff', color: btnInk }}><Icon.UserPlus size={18}/> 이 모임 신청하기</button>
+                        )}
+                    </div>
+                ) : (
+                    <div className="mt-4 pt-4 border-t" style={{ borderColor: softBorder }}>
+                        <div className={`flex items-center gap-1.5 text-sm font-black ${ink70}`}><span>아직 신청을 받지 않아요</span></div>
+                    </div>
+                )}
+            </div>
+
+            {/* 내 팀 · 매치표 · 참가 명단 — 다음 단계에서 이 아래에 추가 (지금은 홈 안내) */}
+            <div className="card rounded-2xl p-4 mt-3">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#eef2fb', color: '#122E78' }}><Icon.Info size={20}/></div>
+                    <div className="flex-1 min-w-0">
+                        <p className="font-black text-[14px] text-slate-800">내 팀 · 매치표 · 참가 명단</p>
+                        <p className="text-[12px] font-bold text-slate-400 mt-0.5">곧 이 화면에서 바로 볼 수 있어요</p>
+                    </div>
+                </div>
+                {isLiveOrToday && <button onClick={onGoHome} className="w-full mt-3 py-3 rounded-xl font-black text-sm active:scale-95 transition-all" style={{ background: '#eef2fb', color: '#122E78' }}>지금은 홈에서 자세히 보기 ›</button>}
+            </div>
+
+            {/* 신청 취소 확인 팝업 */}
+            {cancelAsk && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 animate-in" style={{ background: 'rgba(15,23,42,.46)', backdropFilter: 'blur(2px)' }} onClick={() => setCancelAsk(false)}>
+                    <div className="bg-white rounded-3xl p-7 pt-8 max-w-[320px] w-full text-center" style={{ boxShadow: '0 30px 70px -22px rgba(0,0,0,.45)' }} onClick={e => e.stopPropagation()}>
+                        <div className="w-[66px] h-[66px] rounded-full mx-auto mb-4 flex items-center justify-center text-white" style={{ background: '#F59E0B' }}><span className="text-[34px] font-black leading-none">!</span></div>
+                        <p className="text-[18px] font-black text-slate-900">신청을 취소할까요?</p>
+                        <div className="mt-3.5 text-left text-[12px] font-bold leading-relaxed rounded-2xl px-3.5 py-3" style={{ background: '#fff7ed', border: '1px solid #fed7aa', color: '#9a3412' }}>
+                            지금 취소하면 다시 신청할 때 <b className="whitespace-nowrap">순번이 맨 뒤로 밀려요.</b> 정원이 찼다면 대기로 넘어갈 수 있어요.
+                        </div>
+                        <div className="flex gap-2 mt-5">
+                            <button onClick={() => setCancelAsk(false)} className="flex-1 py-3.5 rounded-2xl bg-slate-100 text-slate-500 font-black text-[14.5px] active:scale-95">그대로 둘게요</button>
+                            <button onClick={() => { setCancelAsk(false); regHandlers && regHandlers.handleCancel(); }} className="flex-1 py-3.5 rounded-2xl text-white font-black text-[14.5px] active:scale-95" style={{ background: '#EF4444' }}>신청 취소</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* 불참/노쇼 신청 — 사유 입력 팝업 */}
+            {absentAsk && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 animate-in" style={{ background: 'rgba(15,23,42,.46)', backdropFilter: 'blur(2px)' }} onClick={() => { setAbsentAsk(false); setAbsentReason(''); }}>
+                    <div className="bg-white rounded-3xl p-7 pt-8 max-w-[330px] w-full" style={{ boxShadow: '0 30px 70px -22px rgba(0,0,0,.45)' }} onClick={e => e.stopPropagation()}>
+                        <div className="w-[66px] h-[66px] rounded-full mx-auto mb-4 flex items-center justify-center text-white" style={{ background: absentColor }}><Icon.AlertTriangle size={30}/></div>
+                        <p className="text-[18px] font-black text-slate-900 text-center">{absentType === 'noshow_2' ? '당일 노쇼 신청' : isNoshowStage ? '노쇼 신청' : '불참 신청'}</p>
+                        <p className="text-[12.5px] font-bold text-slate-400 text-center mt-1.5 leading-relaxed">{absentType === 'noshow_2' ? '당일 노쇼로 기록되고 벌금 2만원이 부과돼요.' : absentFine > 0 ? '노쇼로 기록되고 벌금 1만원이 부과돼요.' : '미리 알려주셔서 벌금 없이 처리돼요.'}</p>
+                        <textarea value={absentReason} onChange={e => setAbsentReason(e.target.value)} rows={2} maxLength={200} placeholder={isNoshowStage ? '노쇼 사유 (선택) — 예: 갑작스런 일정' : '불참 사유 (선택) — 예: 컨디션 난조'} className="w-full mt-4 border border-slate-200 rounded-2xl px-3.5 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-200"/>
+                        <div className="text-left text-[11.5px] font-bold leading-relaxed rounded-2xl px-3.5 py-2.5 mt-2" style={{ background: '#fff7ed', border: '1px solid #fed7aa', color: '#9a3412' }}>
+                            담당 운영진에게 알림이 가요. 다시 참석하려면 취소할 수 있지만 <b className="whitespace-nowrap">순번은 맨 뒤로</b> 밀려요.
+                        </div>
+                        <div className="flex gap-2 mt-4">
+                            <button onClick={() => { setAbsentAsk(false); setAbsentReason(''); }} className="flex-1 py-3.5 rounded-2xl bg-slate-100 text-slate-500 font-black text-[14.5px] active:scale-95">그대로 둘게요</button>
+                            <button onClick={onAbsentConfirm} className="flex-1 py-3.5 rounded-2xl text-white font-black text-[14.5px] active:scale-95" style={{ background: absentColor }}>{absentType === 'noshow_2' ? '당일 노쇼' : isNoshowStage ? '노쇼' : '불참'} 신청</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ─── 회원용 모임 목록 (예정 모임 카드 → 탭하면 상세 페이지로) ──────────────────────────
 const MemberMeetingList = ({ meetings, memberData, expandId, onGoHome, showToast, showAlert, showConfirm }) => {
     const upcoming = (meetings || [])
         .filter(m => m && m.date && !isMeetingEnded(m))
         .sort((a, b) => a.date.localeCompare(b.date) || (a.meetingType || 'self').localeCompare(b.meetingType || 'self'));
-    const [openId, setOpenId] = React.useState(expandId || null);
-    React.useEffect(() => { if (expandId) setOpenId(expandId); }, [expandId]);
-    const toggle = (id) => setOpenId(prev => prev === id ? null : id);
+    const [selId, setSelId] = React.useState(expandId || null);
+    React.useEffect(() => { if (expandId) setSelId(expandId); }, [expandId]);
     // 정기모임 안내 행
     const [recur, setRecur] = React.useState(undefined);
     React.useEffect(() => {
@@ -1236,6 +1444,13 @@ const MemberMeetingList = ({ meetings, memberData, expandId, onGoHome, showToast
             d => { const data = d.exists ? d.data() : null; setRecur(data && data.enabled ? data : null); }, () => setRecur(null));
         return () => unsub();
     }, []);
+    // 선택한 모임이 있으면 상세 페이지로 전환 (전역 라우팅 대신 목록 내부 상태)
+    const selMeeting = (meetings || []).find(m => m.id === selId) || null;
+    if (selMeeting) {
+        return <MemberMeetingDetail meeting={selMeeting} memberData={memberData}
+            onBack={() => setSelId(null)} onGoHome={onGoHome}
+            showToast={showToast} showAlert={showAlert} showConfirm={showConfirm} />;
+    }
     const WD = ['일','월','화','수','목','금','토'];
     return (
         <div className="animate-in space-y-3">
@@ -1248,7 +1463,7 @@ const MemberMeetingList = ({ meetings, memberData, expandId, onGoHome, showToast
                     </div>
                 </div>
             )}
-            <p className="text-[11px] font-black text-slate-400 px-1">예정 모임 · 눌러서 신청</p>
+            <p className="text-[11px] font-black text-slate-400 px-1">예정 모임 · 눌러서 자세히 보기</p>
             {upcoming.length === 0 ? (
                 <div className="card rounded-2xl p-8 text-center text-slate-400">
                     <div className="flex justify-center mb-3 opacity-30"><Icon.Calendar size={36}/></div>
@@ -1258,13 +1473,13 @@ const MemberMeetingList = ({ meetings, memberData, expandId, onGoHome, showToast
                 <div className="space-y-2.5">
                     {upcoming.map(m => (
                         <MemberMeetingCard key={m.id} meeting={m} memberData={memberData}
-                            open={openId === m.id} onToggle={() => toggle(m.id)} onGoHome={onGoHome}
+                            open={false} onToggle={() => setSelId(m.id)} onGoHome={onGoHome}
                             showToast={showToast} showAlert={showAlert} showConfirm={showConfirm} />
                     ))}
                 </div>
             )}
             <p className="text-[12px] font-bold text-slate-400 leading-relaxed card rounded-2xl px-4 py-3.5 mt-1">
-                모임 탭은 <b className="text-slate-600">일정 보고 신청</b>까지만이에요. 내 팀·번호·출석체크·매치표 같은 자세한 진행은 모임이 임박했을 때 <b className="text-slate-600">홈 탭</b>에서 볼 수 있어요.
+                모임 카드를 누르면 <b className="text-slate-600">일시·장소·내 신청</b>을 한 화면에서 볼 수 있어요. 내 팀·번호·매치표·명단도 곧 여기서 볼 수 있게 준비 중이에요.
             </p>
         </div>
     );
