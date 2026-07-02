@@ -1644,16 +1644,21 @@ const TabAttend = ({
     const [mgrPickOpen, setMgrPickOpen] = React.useState(false);
     // 이 모임의 불참·노쇼 신청 목록 (운영진 확인용) — registrations에서 직접 구독. 불참은 명단에서 사라지므로 여기서만 보임.
     const [absentRegs, setAbsentRegs] = React.useState([]);
+    const [appliedIds, setAppliedIds] = React.useState(() => new Set());  // 신청(확정·대기)한 회원 id — 명단에서 수동 선정과 색 구분
     React.useEffect(() => {
-        if (!isAdminMode || !selectedMeeting?.date) { setAbsentRegs([]); return; }
+        if (!isAdminMode || !selectedMeeting?.date) { setAbsentRegs([]); setAppliedIds(new Set()); return; }
         const mid = (typeof getMeetingId === 'function') ? getMeetingId(selectedMeeting) : selectedMeeting.date;
         const _ms = (v) => v?.toMillis?.() ?? (v?.seconds ? v.seconds * 1000 : (typeof v === 'string' ? (Date.parse(v) || 0) : 0));
         const unsub = getCol('registrations').where('meetingId', '==', mid).onSnapshot(snap => {
-            const list = snap.docs.map(d => d.data())
+            const all = snap.docs.map(d => d.data());
+            const list = all
                 .filter(r => r.status === 'absent' || r.status === 'noshow')
                 .sort((a, b) => _ms(b.absentAt) - _ms(a.absentAt));   // 최근 신청 먼저
             setAbsentRegs(list);
-        }, () => setAbsentRegs([]));
+            const applied = new Set();
+            all.forEach(r => { if (r.status === 'confirmed' || r.status === 'waiting') applied.add(r.memberId); });
+            setAppliedIds(applied);
+        }, () => { setAbsentRegs([]); setAppliedIds(new Set()); });
         return () => unsub();
     }, [isAdminMode, selectedMeeting?.date, selectedMeeting?.meetingType]);
     const _fmtAbsAt = (v) => {
@@ -2020,11 +2025,12 @@ const TabAttend = ({
                                         <div className="grid grid-cols-3 gap-2">
                                             {selEligibleNormal.map(member => {
                                                 const isSelected = selSessionList.some(p=>p.memberId===member.id);
+                                                const isApplied = appliedIds.has(member.id);   // 신청자=주황 / 수동 선정=청록
                                                 return (
                                                     <button key={member.id} onClick={()=>attendToggleParticipant(member, selectedMeeting)}
                                                         className={`relative flex items-center justify-center aspect-square p-2 rounded-2xl border transition-all ${isSelected?'bg-teal-50 border-teal-300':'card border-slate-100'}`}>
                                                         <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center gap-1 overflow-hidden">
-                                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-black flex-shrink-0 transition-all ${isSelected?'bg-teal-500 text-white':'border-2 border-slate-200'}`}>
+                                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-black flex-shrink-0 transition-all ${isSelected?(isApplied?'bg-orange-500 text-white':'bg-teal-500 text-white'):'border-2 border-slate-200'}`}>
                                                                 {isSelected ? (pickOrder[member.id] || <Icon.Check size={13} className="text-white"/>) : ''}
                                                             </div>
                                                             {member.gender==='여성'&&<span className="px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-lg font-black flex-shrink-0" style={{fontSize:'clamp(8px,2.3vw,10px)'}}>W</span>}
