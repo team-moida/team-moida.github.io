@@ -98,27 +98,48 @@ const TabTeam = ({
                                         ))}
                                     </div>
                                 )}
-                                {tmEntryList.length > 0 && (
-                                    <div className="mt-3 pt-3 border-t border-slate-100">
-                                        <p className="text-[10px] font-black text-slate-400 mb-2">탭하여 제외</p>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {tmEntryList.map(p => {
-                                                const mi = allMembers.find(mm => mm.id === p.memberId) || {};
-                                                const lvl = mi.level || p.level;
-                                                const isExcluded = excludedIds.includes(p.memberId || p.id);
-                                                return (
-                                                    <button key={p.id} onClick={() => setExcludedIds(prev => prev.includes(p.memberId||p.id) ? prev.filter(id => id !== (p.memberId||p.id)) : [...prev, p.memberId||p.id])}
-                                                        className={`px-2.5 py-1.5 rounded-lg text-xs font-black flex items-center gap-1 border transition-all ${isExcluded?'bg-slate-100 border-slate-200 opacity-40 line-through':'bg-white border-slate-200'}`}>
-                                                        <span>{mi.name || p.name}</span>
-                                                        {(mi.gender||p.gender)==='여성' && <span className="text-pink-400">W</span>}
-                                                        {p.isGuest && <span className="text-[8px] px-1 bg-slate-700 text-white rounded">G</span>}
-                                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${getLevelColor(lvl)}`}>{lvl}</span>
-                                                    </button>
-                                                );
-                                            })}
+                                {tmEntryList.length > 0 && (() => {
+                                    const _gender = (p) => String((allMembers.find(mm => mm.id === p.memberId) || {}).gender || p.gender || '').startsWith('여') ? 'F' : 'M';
+                                    const _lvlNum = (p) => { const l = parseInt((allMembers.find(mm => mm.id === p.memberId) || {}).level || p.level || 0); return l > 6 ? l - 6 : l; };
+                                    const _chip = (p) => {
+                                        const mi = allMembers.find(mm => mm.id === p.memberId) || {};
+                                        const lvl = mi.level || p.level;
+                                        const isExcluded = excludedIds.includes(p.memberId || p.id);
+                                        return (
+                                            <button key={p.id} onClick={() => setExcludedIds(prev => prev.includes(p.memberId||p.id) ? prev.filter(id => id !== (p.memberId||p.id)) : [...prev, p.memberId||p.id])}
+                                                className={`px-2.5 py-1.5 rounded-lg text-xs font-black flex items-center gap-1 border transition-all ${isExcluded?'bg-slate-100 border-slate-200 opacity-40 line-through':'bg-white border-slate-200'}`}>
+                                                <span>{mi.name || p.name}</span>
+                                                {(mi.gender||p.gender)==='여성' && <span className="text-pink-400">W</span>}
+                                                {p.isGuest && <span className="text-[8px] px-1 bg-slate-700 text-white rounded">G</span>}
+                                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${getLevelColor(lvl)}`}>{lvl}</span>
+                                            </button>
+                                        );
+                                    };
+                                    return (
+                                        <div className="mt-3 pt-3 border-t border-slate-100">
+                                            <p className="text-[10px] font-black text-slate-400 mb-2">탭하여 제외</p>
+                                            <div className="space-y-2.5">
+                                                {[{k:'M',label:'남',color:'text-slate-500'},{k:'F',label:'여',color:'text-pink-500'}].map(g => {
+                                                    const inG = tmEntryList.filter(p => _gender(p) === g.k);
+                                                    if (!inG.length) return null;
+                                                    const levels = [1,2,3,4,5,6].filter(l => inG.some(p => _lvlNum(p) === l));
+                                                    return (
+                                                        <div key={g.k}>
+                                                            <p className={`text-[10px] font-black mb-1.5 ${g.color}`}>{g.label} {inG.length}</p>
+                                                            <div className="space-y-1">
+                                                                {levels.map(l => (
+                                                                    <div key={l} className="flex flex-wrap gap-1.5">
+                                                                        {inG.filter(p => _lvlNum(p) === l).map(_chip)}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    );
+                                })()}
                             </div>
                             );
                         })()}
