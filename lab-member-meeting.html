@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>회원용 모임 상세 — 단일 스크롤 LAB</title>
+<style>
+  :root{ --accent:#183FB0; --accent-deep:#122E78; --ink:#0f172a; --sub:#64748b; --line:#e6eaf2; --bg:#f4f6fa; --live:#C2F94A;
+         --green:#059669; --amber:#d97706; --red:#ef4444; --orange:#f97316; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; font-family:'Pretendard',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:radial-gradient(125% 90% at 50% -8%, #e8ecf9 0%, #f3f5fb 46%, #f4f6fa 100%); min-height:100vh; color:var(--ink); user-select:none; }
+  .wrap{ max-width:440px; margin:0 auto; padding:16px 16px calc(28px + env(safe-area-inset-bottom)); }
+  h1{ font-size:18px; font-weight:900; margin:6px 4px 2px; }
+  .lead{ font-size:12px; font-weight:700; color:#94a3b8; margin:0 4px 14px; line-height:1.6; }
+  .lead b{ color:var(--accent-deep); }
+
+  /* 시점 토글 (LAB 전용) */
+  .seg{ display:flex; gap:5px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:5px; box-shadow:0 4px 14px rgba(0,0,0,.05); margin-bottom:16px; }
+  .seg button{ flex:1; border:0; background:transparent; border-radius:10px; padding:9px 4px; font-weight:900; font-size:11px; color:#64748b; cursor:pointer; font-family:inherit; }
+  .seg button.on{ background:var(--accent); color:#fff; }
+
+  /* 상세 헤더 */
+  .dhead{ display:flex; align-items:flex-start; gap:10px; margin-bottom:6px; }
+  .back{ width:38px; height:38px; border-radius:12px; background:#eef1f7; border:0; color:#475569; font-size:18px; font-weight:900; flex-shrink:0; cursor:pointer; }
+  .dhead .meta{ min-width:0; padding-top:1px; }
+  .dhead .tags{ display:flex; align-items:center; gap:6px; }
+  .dhead .badge{ font-size:10px; font-weight:900; color:#fff; background:var(--accent); padding:2px 8px; border-radius:8px; }
+  .dhead .dlabel{ font-size:10px; font-weight:900; color:#94a3b8; }
+  .dhead .when{ font-size:16px; font-weight:900; margin-top:4px; }
+  .dhead .place{ font-size:12px; font-weight:700; color:#94a3b8; margin-top:2px; }
+  .dhead .who{ font-size:12px; font-weight:700; color:#94a3b8; margin-top:1px; }
+
+  .crumb{ font-size:11px; font-weight:900; color:#94a3b8; margin:18px 2px 8px; text-transform:uppercase; letter-spacing:.08em; }
+
+  /* 카드 공통 (운영진 모임정보 톤) */
+  .card{ background:#fff; border:1px solid var(--line); border-radius:20px; overflow:hidden; box-shadow:0 4px 14px rgba(0,0,0,.05); }
+  .row{ display:flex; align-items:center; gap:13px; padding:15px; border-top:1px solid #f1f5f9; }
+  .row:first-child{ border-top:0; }
+  .ic{ width:46px; height:46px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:21px; flex-shrink:0; }
+  .ic.info{ background:#eef2fb; color:#122E78; } .ic.team{ background:#dcfce7; color:#15803d; }
+  .ic.match{ background:#fee2e2; color:#b91c1c; } .ic.list{ background:#f1f5f9; color:#475569; }
+  .rbody{ flex:1; min-width:0; }
+  .rbody .nm{ font-size:15.5px; font-weight:900; }
+  .rbody .desc{ font-size:11.5px; font-weight:700; color:#94a3b8; margin-top:2px; }
+  .stat{ display:inline-block; font-size:10.5px; font-weight:900; padding:2px 9px; border-radius:999px; margin-top:7px; }
+  .stat.done{ background:#ecfdf5; color:#059669; } .stat.todo{ background:#fffbeb; color:#d97706; } .stat.muted{ background:#f1f5f9; color:#94a3b8; }
+
+  /* ② 내 신청 카드 (가장 강조) */
+  .mecard .top{ display:flex; align-items:center; gap:14px; padding:17px 16px 4px; }
+  .mecard .bignum{ width:56px; height:56px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:900; flex-shrink:0; }
+  .mecard .bt{ min-width:0; }
+  .mecard .bt b{ font-size:18px; font-weight:900; display:block; }
+  .mecard .bt span{ font-size:12.5px; font-weight:800; color:#94a3b8; }
+  .count{ padding:12px 16px 2px; }
+  .count .lab{ display:flex; justify-content:space-between; font-size:11.5px; font-weight:900; color:#94a3b8; margin-bottom:6px; }
+  .bar{ height:8px; border-radius:999px; background:#eef1f7; overflow:hidden; }
+  .bar > i{ display:block; height:100%; border-radius:999px; background:var(--accent); }
+  .act{ width:calc(100% - 32px); margin:14px 16px 16px; border:0; font-family:inherit; font-weight:900; font-size:15px; border-radius:14px; padding:14px; cursor:pointer; }
+  .act.apply{ background:var(--orange); color:#fff; }
+  .act.ghost{ background:#eef1f7; color:#475569; }
+  .act.attend{ background:var(--accent); color:#fff; }
+
+  /* ③ 내 팀 조끼 */
+  .vest{ width:46px; height:46px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900; color:#fff; flex-shrink:0; border:3px solid #fff; box-shadow:0 0 0 1px var(--line); }
+
+  /* ④ 매치 행 */
+  .mr{ display:flex; align-items:center; gap:10px; padding:11px 15px; border-top:1px solid #f1f5f9; font-size:13px; font-weight:800; }
+  .mr .rd{ font-weight:900; color:var(--accent-deep); width:26px; flex-shrink:0; }
+  .mr.me{ background:#f8faff; }
+  .mr .court{ margin-left:auto; font-size:11px; font-weight:900; color:#94a3b8; }
+  .more{ text-align:center; font-size:12px; font-weight:800; color:#94a3b8; padding:12px; border-top:1px solid #f1f5f9; cursor:pointer; }
+
+  /* ⑤ 명단 행 */
+  .pr{ display:flex; align-items:center; gap:10px; padding:9px 15px; border-top:1px solid #f1f5f9; }
+  .pr .av{ width:30px; height:30px; border-radius:9px; background:#eef2fb; color:var(--accent-deep); font-weight:900; font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .pr .nm{ font-size:13.5px; font-weight:800; flex:1; }
+  .pr .tg{ font-size:10.5px; font-weight:900; padding:2px 8px; border-radius:999px; }
+  .pr .tg.att{ background:#ecfdf5; color:#059669; } .pr .tg.app{ background:#eef2fb; color:#122E78; } .pr .tg.wait{ background:#fffbeb; color:#d97706; }
+
+  .note{ font-size:12px; font-weight:800; color:#475569; margin:18px 4px 0; line-height:1.7; background:#fff; border:1px solid var(--line); border-radius:14px; padding:13px 14px; }
+  .note b{ color:var(--accent-deep); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>회원용 모임 상세 — 단일 스크롤 LAB</h1>
+  <p class="lead">모임 카드를 누르면 <b>한 페이지에서 위→아래로</b> 다 봐요. 운영진 모임정보 UI(흰 카드·아이콘·상태칩)와 같은 톤. 아래 <b>시점</b>을 바꿔 섹션이 켜지고 꺼지는 걸 보세요. (읽기 전용 · 애니메이션 없음)</p>
+
+  <div class="seg" id="seg">
+    <button data-v="pre" class="on">신청 전</button>
+    <button data-v="done">신청 완료</button>
+    <button data-v="wait">대기</button>
+    <button data-v="reveal">팀·매치 발표</button>
+  </div>
+
+  <!-- ① 헤더 -->
+  <div class="dhead">
+    <button class="back">‹</button>
+    <div class="meta">
+      <div class="tags"><span class="badge">정기</span><span class="dlabel" id="dday">D-3</span></div>
+      <div class="when">7월 5일 (토) · 20:00~22:00</div>
+      <div class="place">📍 ○○풋살장 A</div>
+      <div class="who">🧑‍💼 담당 김총무</div>
+    </div>
+  </div>
+
+  <div id="body"></div>
+
+  <p class="note">구성: ① 헤더(일시·장소·담당) → ② <b>내 신청</b>(가장 크게 — 신청/대기/불참) → ③ <b>내 팀</b>(조끼색·번호) → ④ <b>매치표</b>(내 경기) → ⑤ <b>참가 명단</b>. 팀·매치는 <b>정해지기 전엔 숨기거나 한 줄</b>로만 보여줘서 안 복잡해요.</p>
+</div>
+
+<script>
+let phase='pre';
+
+function meCard(){
+  if(phase==='pre') return `
+   <div class="crumb">내 신청</div>
+   <div class="card mecard">
+     <div class="top"><div class="bignum" style="background:#f1f5f9;color:#94a3b8">＋</div>
+       <div class="bt"><b>아직 신청 안 함</b><span>선착순 · 신청하면 순번이 잡혀요</span></div></div>
+     <div class="count"><div class="lab"><span>현재 신청</span><span>13 / 18명</span></div><div class="bar"><i style="width:72%"></i></div></div>
+     <button class="act apply">이 모임 신청하기</button>
+   </div>`;
+  if(phase==='done') return `
+   <div class="crumb">내 신청</div>
+   <div class="card mecard">
+     <div class="top"><div class="bignum" style="background:#ecfdf5;color:#059669">✓</div>
+       <div class="bt"><b>신청 완료 · 13번째</b><span>선착순 확정</span></div></div>
+     <div class="count"><div class="lab"><span>현재 신청</span><span>13 / 18명</span></div><div class="bar"><i style="width:72%"></i></div></div>
+     <button class="act ghost">신청 취소 · 불참</button>
+   </div>`;
+  if(phase==='wait') return `
+   <div class="crumb">내 신청</div>
+   <div class="card mecard">
+     <div class="top"><div class="bignum" style="background:#fffbeb;color:#d97706">3</div>
+       <div class="bt"><b>대기 3번</b><span>정원 마감 · 앞사람 취소 시 자동 확정</span></div></div>
+     <div class="count"><div class="lab"><span>현재 신청</span><span>18 / 18명 · 마감</span></div><div class="bar"><i style="width:100%;background:#d97706"></i></div></div>
+     <button class="act ghost">대기 취소</button>
+   </div>`;
+  // reveal
+  return `
+   <div class="crumb">내 신청</div>
+   <div class="card mecard">
+     <div class="top"><div class="bignum" style="background:#ecfdf5;color:#059669">✓</div>
+       <div class="bt"><b>참여 확정</b><span>출석 체크는 경기장에서</span></div></div>
+     <button class="act attend">QR 출석 체크</button>
+   </div>`;
+}
+
+function teamCard(){
+  if(phase==='reveal') return `
+   <div class="crumb">내 팀</div>
+   <div class="card">
+     <div class="row"><div class="vest" style="background:#ef4444">7</div>
+       <div class="rbody"><div class="nm">빨강 7번</div><div class="desc">2팀 · 빨강 조끼 · 우리 팀 6명</div>
+       <span class="stat done">팀 공개됨</span></div></div>
+   </div>`;
+  return `
+   <div class="crumb">내 팀</div>
+   <div class="card">
+     <div class="row"><div class="ic team">🦺</div>
+       <div class="rbody"><div class="nm">팀 편성 전이에요</div><div class="desc">팀이 정해지면 내 조끼색·번호가 여기 표시돼요</div>
+       <span class="stat muted">대기 중</span></div></div>
+   </div>`;
+}
+
+function matchCard(){
+  if(phase!=='reveal') return ''; // 매치표 없으면 섹션 자체를 숨김
+  return `
+   <div class="crumb">매치표</div>
+   <div class="card">
+     <div class="row"><div class="ic match">⚔️</div>
+       <div class="rbody"><div class="nm">내 경기 2 · 코트 A</div><div class="desc">전체 5경기 · 아래는 내가 뛰는 경기</div></div></div>
+     <div class="mr me"><span class="rd">1R</span><span>🟥 빨강 vs 🟨 노랑</span><span class="court">코트 A</span></div>
+     <div class="mr me"><span class="rd">2R</span><span>🟥 빨강 vs 🟦 파랑</span><span class="court">코트 A</span></div>
+     <div class="mr"><span class="rd">3R</span><span>빨강 쉼</span><span class="court">휴식</span></div>
+     <div class="more">전체 경기 보기 ›</div>
+   </div>`;
+}
+
+function rosterCard(){
+  const cls = phase==='reveal' ? 'att' : 'app';
+  const t   = phase==='reveal' ? '출석' : '신청';
+  const p=(av,nm,c,tx)=>`<div class="pr"><div class="av">${av}</div><div class="nm">${nm}</div><span class="tg ${c}">${tx}</span></div>`;
+  return `
+   <div class="crumb">참가 명단</div>
+   <div class="card">
+     <div class="row"><div class="ic list">👥</div>
+       <div class="rbody"><div class="nm">참가 명단</div><div class="desc">13명 신청 · 대기 1명</div></div></div>
+     ${p('김','김모이',cls,t)}${p('이','이풋살',cls,t)}${p('박','박패스',cls,t)}${p('최','최슈팅','wait','대기 1')}
+     <div class="more">+ 9명 더 보기 ›</div>
+   </div>`;
+}
+
+function render(){
+  document.getElementById('dday').textContent = phase==='reveal' ? 'D-DAY' : (phase==='wait' ? 'D-1' : 'D-3');
+  document.getElementById('body').innerHTML = meCard()+teamCard()+matchCard()+rosterCard();
+}
+document.getElementById('seg').addEventListener('click', function(e){
+  var b=e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#seg button').forEach(function(x){ x.classList.remove('on'); });
+  b.classList.add('on'); phase=b.dataset.v; render();
+});
+render();
+</script>
+</body>
+</html>
