@@ -1981,9 +1981,9 @@ const TabAttend = ({
                                 ) : (
                                     <div>
                                         {selectedMeeting.isRegistrationEnabled && (
-                                            <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-2xl mb-3 text-xs font-black text-amber-600">
-                                                <Icon.AlertTriangle size={14} className="flex-shrink-0"/>선착순 신청 진행 중 — 수동 편집 시 신청 카운터와 어긋날 수 있습니다
-                                            </div>
+                                            <p className="flex items-center gap-1 px-1 mb-2 text-[10.5px] font-bold text-amber-500">
+                                                <Icon.AlertTriangle size={11} className="flex-shrink-0"/>선착순 신청 진행 중 — 수동 편집 시 신청 카운터와 어긋날 수 있어요
+                                            </p>
                                         )}
                                         <div className="flex items-center justify-between mb-3 px-1 gap-2">
                                             <p className="text-xs font-black text-slate-700 uppercase tracking-widest shrink-0">회원 선정</p>
