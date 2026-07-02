@@ -201,7 +201,7 @@ const TabTeam = ({
                             )
                             : (
                                 <div>
-                                    <div id="tm-capture-area" className="grid grid-cols-2 gap-2 mb-3">
+                                    <div id="tm-capture-area" className={`grid gap-2 mb-3 ${(editTeams.length === 3 || editTeams.length >= 5) ? 'grid-cols-3' : 'grid-cols-2'}`}>
                                         {editTeams.map((team, teamIdx) => (
                                             <div key={teamIdx}
                                                 className={`rounded-2xl border-2 p-3 ${getTeamCard(teamIdx)} transition-all ${selectedMemberTM && selectedMemberTM.teamIdx !== teamIdx ? 'ring-2 ring-teal-300' : ''}`}
