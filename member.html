@@ -1038,10 +1038,10 @@ function App() {
                 )}
                 {/* 운영진 전용 — 팀 편성 화면 상단 [명단 | 팀] 토글 (정기 모임만) */}
                 {tab === 'meeting' && viewMeeting && isAdminMode && meetingSubTab === 'team' && viewKind !== 'match' && (
-                    <div className="flex gap-1.5 p-1 bg-slate-100 rounded-2xl mb-3 animate-in">
+                    <div className="inline-flex w-fit gap-1.5 p-1 bg-slate-100 rounded-2xl mb-3 animate-in">
                         {[['roster','명단'],['team','팀']].map(([v,l]) => (
                             <button key={v} onClick={() => setTeamSubView(v)}
-                                className={`flex-1 py-2 rounded-xl text-sm font-black transition-all ${teamSubView===v?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>{l}</button>
+                                className={`min-w-[62px] py-2 px-4 rounded-xl text-sm font-black transition-all ${teamSubView===v?'bg-white text-teal-600 shadow-sm':'text-slate-400'}`}>{l}</button>
                         ))}
                     </div>
                 )}
