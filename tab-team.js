@@ -122,16 +122,12 @@ const TabTeam = ({
                                                 {[{k:'M',label:'남',color:'text-slate-500'},{k:'F',label:'여',color:'text-pink-500'}].map(g => {
                                                     const inG = tmEntryList.filter(p => _gender(p) === g.k);
                                                     if (!inG.length) return null;
-                                                    const levels = [1,2,3,4,5,6].filter(l => inG.some(p => _lvlNum(p) === l));
+                                                    const sorted = [...inG].sort((a, b) => _lvlNum(a) - _lvlNum(b));
                                                     return (
                                                         <div key={g.k}>
                                                             <p className={`text-[10px] font-black mb-1.5 ${g.color}`}>{g.label} {inG.length}</p>
-                                                            <div className="space-y-1">
-                                                                {levels.map(l => (
-                                                                    <div key={l} className="flex flex-wrap gap-1.5">
-                                                                        {inG.filter(p => _lvlNum(p) === l).map(_chip)}
-                                                                    </div>
-                                                                ))}
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {sorted.map(_chip)}
                                                             </div>
                                                         </div>
                                                     );
