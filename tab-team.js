@@ -84,27 +84,39 @@ const TabTeam = ({
                             const male = tmActiveList.length - fem;
                             return (
                             <div className="card border-slate-100 rounded-2xl p-4">
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-end justify-between">
                                     <div>
                                         <p className="text-[10px] font-black text-teal-500 uppercase tracking-widest">편성 대상</p>
                                         <p className="text-3xl font-black text-slate-800 leading-none mt-1">{tmActiveList.length}<span className="text-base font-black ml-0.5">명</span></p>
                                     </div>
-                                    <div className="flex gap-2">
-                                        <div className="text-center px-4 py-2 rounded-xl bg-slate-50">
-                                            <p className="text-[10px] font-black text-slate-400">남</p>
-                                            <p className="text-xl font-black text-slate-700 leading-none mt-0.5">{male}</p>
-                                        </div>
-                                        <div className="text-center px-4 py-2 rounded-xl bg-pink-50">
-                                            <p className="text-[10px] font-black text-pink-400">여</p>
-                                            <p className="text-xl font-black text-pink-600 leading-none mt-0.5">{fem}</p>
-                                        </div>
-                                    </div>
+                                    <p className="text-sm font-black text-slate-500">남 {male} · <span className="text-pink-500">여 {fem}</span></p>
                                 </div>
                                 {Object.values(tmLevelStats).some(c => c > 0) && (
                                     <div className="flex gap-1 flex-wrap mt-3 pt-3 border-t border-slate-100">
                                         {Object.entries(tmLevelStats).map(([lvl, count]) => count > 0 && (
-                                            <span key={lvl} className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${getLevelColor(lvl)}`}>{lvl}단계:{count}명</span>
+                                            <span key={lvl} className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${getLevelColor(lvl)}`}>{lvl} · {count}명</span>
                                         ))}
+                                    </div>
+                                )}
+                                {tmEntryList.length > 0 && (
+                                    <div className="mt-3 pt-3 border-t border-slate-100">
+                                        <p className="text-[10px] font-black text-slate-400 mb-2">탭하여 제외</p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {tmEntryList.map(p => {
+                                                const mi = allMembers.find(mm => mm.id === p.memberId) || {};
+                                                const lvl = mi.level || p.level;
+                                                const isExcluded = excludedIds.includes(p.memberId || p.id);
+                                                return (
+                                                    <button key={p.id} onClick={() => setExcludedIds(prev => prev.includes(p.memberId||p.id) ? prev.filter(id => id !== (p.memberId||p.id)) : [...prev, p.memberId||p.id])}
+                                                        className={`px-2.5 py-1.5 rounded-lg text-xs font-black flex items-center gap-1 border transition-all ${isExcluded?'bg-slate-100 border-slate-200 opacity-40 line-through':'bg-white border-slate-200'}`}>
+                                                        <span>{mi.name || p.name}</span>
+                                                        {(mi.gender||p.gender)==='여성' && <span className="text-pink-400">W</span>}
+                                                        {p.isGuest && <span className="text-[8px] px-1 bg-slate-700 text-white rounded">G</span>}
+                                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${getLevelColor(lvl)}`}>{lvl}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -133,27 +145,6 @@ const TabTeam = ({
                                 ))}
                             </div>
                         </div>
-                        )}
-                        {wizStep === 1 && tmEntryList.length > 0 && (
-                            <div className="card border-slate-100 rounded-2xl p-4">
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">편성 대상 (탭하여 제외)</p>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {tmEntryList.map(p => {
-                                        const mi = allMembers.find(mm => mm.id === p.memberId) || {};
-                                        const lvl = mi.level || p.level;
-                                        const isExcluded = excludedIds.includes(p.memberId || p.id);
-                                        return (
-                                            <button key={p.id} onClick={() => setExcludedIds(prev => prev.includes(p.memberId||p.id) ? prev.filter(id => id !== (p.memberId||p.id)) : [...prev, p.memberId||p.id])}
-                                                className={`px-2.5 py-1.5 rounded-lg text-xs font-black flex items-center gap-1 border transition-all ${isExcluded?'bg-slate-100 border-slate-200 opacity-40 line-through':'bg-white border-slate-200'}`}>
-                                                <span>{mi.name || p.name}</span>
-                                                {(mi.gender||p.gender)==='여성' && <span className="text-pink-400">W</span>}
-                                                {p.isGuest && <span className="text-[8px] px-1 bg-slate-700 text-white rounded">G</span>}
-                                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${getLevelColor(lvl)}`}>{lvl}</span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
                         )}
                         </div>
                         <div className="flex gap-2 mt-4">
